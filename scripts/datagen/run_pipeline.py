@@ -28,6 +28,7 @@ from molmo_spaces.configs.camera_configs import (
 )
 from molmo_spaces.configs.policy_configs import (
     AStarNavToObjPolicyConfig,
+    BlockStackingPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickAndPlaceNextToPlannerPolicyConfig,
     PickAndPlacePlannerPolicyConfig,
@@ -164,6 +165,9 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     elif task_type == "nav_to_obj":
         datagen_cfg = NavToObjBaseConfig()
         datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
+    elif task_type == "block_stacking":
+        datagen_cfg = BlockSupportConfig()
+        datagen_cfg.policy_config = BlockStackingPolicyConfig()
     else:
         raise ValueError(f"Invalid task type: {task_type}")
 
@@ -289,6 +293,7 @@ def main(args: argparse.ArgumentParser) -> None:
         exp_config.seed = 42  # new seed
         exp_config.filter_for_successful_trajectories = False  # see eval failures
         exp_config.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)  # for eval
+        exp_config.task_sampler_config.eval_without_obj_pos_changes = args.eval_without_obj_pos_changes
     elif args.config:  # 2) load an experiment config
         exp_config = get_config_class(args.config)()
     else:  # 3) create config from arguments
@@ -372,5 +377,8 @@ if __name__ == "__main__":
     args.add_argument("--randomize_scene", type=bool, default=False, help="randomize scene all")
     args.add_argument("--seed", type=int, default=2, help="random seed")
     args.add_argument("--run_name_prefix", type=str, default="", help="prefix for run name")
+    args.add_argument("--eval_without_obj_pos_changes", type=str, default=False,
+                      help="Whether to run without obj pos changes in eval benchmark, relevant with --eval flag")
+
     args = args.parse_args()
     main(args)

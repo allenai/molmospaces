@@ -364,6 +364,21 @@ class DoorOpeningPolicyConfig(BasePolicyConfig):
     verbose: bool = False  # Enable verbose output for debugging
 
 
+class BlockStackingPolicyConfig(ObjectManipulationPlannerPolicyConfig):
+    policy_cls: type = None
+    move_settle_time: float = 0.5
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from mujoco_thor.policy.solvers.object_manipulation.block_stacking_planner_policy import (
+                BlockStackingPlannerPolicy,
+            )
+
+            self.policy_cls = BlockStackingPlannerPolicy
+
+
 class NavToObjPlannerPolicyConfig(BasePolicyConfig):
     """Base configuration for navigation to object planner policies."""
 

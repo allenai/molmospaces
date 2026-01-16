@@ -74,6 +74,14 @@ class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     # grasp libraries to use for filtering, if None all available libraries will be used
     grasp_libraries: list[str] | None = None
 
+    # Optional eval parameter, if we're running eval with a created benchmark but want
+    # to omit the object position changes in that benchmark (e.g. if we're running a control
+    # experiment for a cluttering benchmark and want to get results in the same scenes but
+    # without the cluttering). Set this to True if you want to turn off object pos changes.
+    # Default behavior with false is that object position updates saved in the benchmark get
+    # picked up.
+    eval_without_obj_pos_changes: bool = False
+
 
 class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     """Configuration for Franka move-to-pose task sampler."""
@@ -89,6 +97,22 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     # Distance constraints
     max_robot_to_target_dist: float = 0.6
     max_robot_to_obj_dist: float = 0.6
+
+    # Cluttering configuration
+    clutter_scene_around_target_object: bool = (
+        True  # change to True if you want cluttering in pick task for commonsense
+    )
+    covering: bool = (
+        True  # If you want objects sampled on top of pickup object as opposed to around
+    )
+    clutter_with_taller_objects: bool = False  # If you want the surrounding clutter to be taller.
+    # Typically set this if you want occlusion rather than covering.
+    clutter_with_semantically_similar_objects: bool = (
+        True  # If you want the surrounding clutter to be
+    )
+    # similar objects, e.g. put forks neby if the pickup object is a spoon. Useful for eval of adversarial
+    # cases for VLAs.
+    num_clutter_objects: int = 20  # Number of clutter objects to place around the target object
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over

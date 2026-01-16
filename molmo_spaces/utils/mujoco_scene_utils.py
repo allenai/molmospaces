@@ -271,6 +271,59 @@ def place_object_near(
         )
 
 
+def clear_surface(
+    data: MjData,
+    supporting_geom_id: int,
+    object_ids_to_keep: list[int],
+    angle_threshold: float = np.radians(30),
+):
+    """Method to clear surface of graspable objects aside from object ids to keep.
+    Loops through collisions involving the supporting geom. For any object in contact
+    with the surface (where the normal is vertical), if the object is not in the keep list,
+    moves it to [10, 10, 10].
+    Args:
+        data: MjData object
+        supporting_geom_id: ID of receptacle surface to clear
+        object_ids_to_keep: IDs of objects to keep (won't be moved)
+        angle_threshold: Threshold for the angle between the normal and the vertical axis, in radians
+    """
+    model = data.model
+    cos_threshold = np.cos(angle_threshold)
+    away_pose = np.eye(4)
+    away_pose[:3, 3] = np.array([10.0, 10.0, 10.0])
+
+    # Track which objects we've already moved to avoid moving the same object multiple times
+    moved_objects = set()
+
+    for c in data.contact:
+        # Check if this contact involves the supporting geom
+        geom1, geom2 = c.geom
+
+        if geom1 == supporting_geom_id or geom2 == supporting_geom_id:
+            # Get the other geom in the contact (not the supporting geom)
+            other_geom_id = geom2 if geom1 == supporting_geom_id else geom1
+
+            # Get the normal vector
+            normal = c.frame[:3] / np.linalg.norm(c.frame[:3])
+
+            # Flip normal if needed so it points away from the supporting geom
+            if geom2 == supporting_geom_id:
+                normal = -normal
+
+            # Check if the normal is vertical (pointing upwards)
+            if normal[2] >= cos_threshold:
+                # Get the body that owns the other geom
+                other_body_id = model.body_rootid[model.geom_bodyid[other_geom_id]]
+
+                # If this object is not in the keep list and we haven't already moved it
+                if other_body_id not in object_ids_to_keep and other_body_id not in moved_objects:
+                    # Use the same position update method as place_object_near
+                    object_body = create_mjthor_body(data, other_body_id)
+                    object_body.pose = away_pose
+                    mujoco.mj_fwdPosition(model, data)
+                    moved_objects.add(other_body_id)
+
+
 def get_supporting_geom(
     data: MjData, object_id: int, angle_threshold: float = np.radians(80)
 ) -> int | None:

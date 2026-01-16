@@ -46,6 +46,8 @@ from molmo_spaces.utils.task_relevant_objects_and_workspace_utils import (
 if TYPE_CHECKING:
     from molmo_spaces.configs.base_pick_config import PickBaseConfig
 
+INTERSECTION_THRESHOLD = -0.005
+
 
 log = logging.getLogger(__name__)
 
@@ -213,6 +215,11 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         candidate_objects = self.balance_sample_names(candidate_objects)
         np.random.shuffle(candidate_objects)
         self.candidate_objects = candidate_objects
+        # The below list is optionally used in the cluttering scripts if we want to put
+        # taller objects around the pick object
+        self.candidate_objects_height_sorted = sorted(
+            self.candidate_objects, key=lambda obj: -obj.aabb_size[2]
+        )
 
     def randomize_scene(self, env: CPUMujocoEnv, robot_view) -> None:
         """Setup scene state: robot joints, texture randomization, cameras."""
@@ -815,6 +822,11 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             expression_priority
         )
 
+        log.info("About to clutter the scene")
+
+        # Clutter scene with additional objects if enabled
+        self._clutter_scene_around_pickup_object(env)
+
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_context_expressions")
 
@@ -1117,6 +1129,323 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             log.debug(
                 f"[TARGET POSITIONING] Target on receptacle '{support_name}' at height {target_z:.3f}m"
             )
+
+    def _sort_objects_by_semantic_similarity(
+        self, objects: list[MjThorObject], reference_obj_name: str, om
+    ) -> list[MjThorObject]:
+        """Sort objects by CLIP semantic similarity to a reference object.
+        Args:
+            objects: List of objects to sort
+            reference_obj_name: Name of reference object to compare against
+            om: Object manager for getting metadata
+        Returns:
+            Sorted list with most similar objects first
+        """
+        reference_meta = om.object_metadata(reference_obj_name)
+        reference_asset_id = reference_meta.get("asset_id")
+
+        if not reference_asset_id or reference_asset_id not in ObjectMeta.annotation():
+            log.warning(
+                f"[SEMANTIC SORTING] No asset_id for '{reference_obj_name}', returning unsorted"
+            )
+            return objects
+
+        # Get CLIP text features for reference object (semantic descriptions)
+        reference_text_features = ObjectMeta.description_text_features(reference_asset_id)
+        reference_norm = reference_text_features / np.linalg.norm(
+            reference_text_features, axis=-1, keepdims=True
+        )
+
+        # Compute similarity for each object
+        similarities = []
+        for obj in objects:
+            other_meta = om.object_metadata(obj.name)
+            other_asset_id = other_meta.get("asset_id")
+
+            if other_asset_id and other_asset_id in ObjectMeta.annotation():
+                other_text_features = ObjectMeta.description_text_features(other_asset_id)
+                other_norm = other_text_features / np.linalg.norm(
+                    other_text_features, axis=-1, keepdims=True
+                )
+
+                # Compute cosine similarity between text descriptions
+                similarity = np.dot(reference_norm, other_norm)
+                similarities.append((obj, similarity))
+            else:
+                # No asset_id, put at end with low similarity
+                similarities.append((obj, -1.0))
+
+        # Sort by similarity (highest first)
+        sorted_objects = [obj for obj, sim in sorted(similarities, key=lambda x: -x[1])]
+        log.info(
+            f"[SEMANTIC SORTING] Sorted {len(sorted_objects)} objects by similarity to '{reference_obj_name}'"
+        )
+        return sorted_objects
+
+    def _clutter_scene_around_pickup_object(self, env: CPUMujocoEnv) -> None:
+        """Randomly reposition 4 graspable objects to be within 4cm of the pickup object.
+        Args:
+            env: The MuJoCo environment
+        """
+        if not self.config.task_sampler_config.clutter_scene_around_target_object:
+            log.debug("[SCENE CLUTTERING] Cluttering disabled, skipping")
+            return
+
+        # Get the pickup object
+        pickup_obj_name = self.config.task_config.pickup_obj_name
+        om = env.object_managers[env.current_batch_index]
+        pickup_obj = om.get_object_by_name(pickup_obj_name)
+        pickup_pos = pickup_obj.position
+
+        log.info(
+            f"[SCENE CLUTTERING] Cluttering scene around '{pickup_obj_name}' at position ({pickup_pos[0]:.3f}, {pickup_pos[1]:.3f}, {pickup_pos[2]:.3f})"
+        )
+
+        # Get all candidate objects excluding the pickup object
+        if self.config.task_sampler_config.clutter_with_taller_objects:
+            # In this case, we can only sample clutter objects from those taller than the current pickup object
+            other_objects = []
+            for other_obj in self.candidate_objects_height_sorted:
+                if other_obj.name == pickup_obj.name:
+                    break
+                other_objects.append(other_obj)
+            print(
+                f"The current object is {pickup_obj.name}, the taller objects are {[o.name for o in other_objects]}, all objects height sorted were {[o.name for o in self.candidate_objects_height_sorted]}"
+            )
+        else:
+            other_objects = [obj for obj in self.candidate_objects if obj.name != pickup_obj_name]
+
+        # Sort by semantic similarity if requested
+        if self.config.task_sampler_config.clutter_with_semantically_similar_objects:
+            other_objects = self._sort_objects_by_semantic_similarity(
+                other_objects, pickup_obj_name, om
+            )
+            print(
+                f"Pickup object: {pickup_obj_name}, semantically similar objects (sorted): {[o.name for o in other_objects[:10]]}"
+            )
+
+        num_clutter_objects = self.config.task_sampler_config.num_clutter_objects
+        if len(other_objects) < num_clutter_objects:
+            log.warning(
+                f"[SCENE CLUTTERING] Only {len(other_objects)} objects available for cluttering (need {num_clutter_objects}), using all available"
+            )
+            num_clutter_objects = len(other_objects)
+
+        # Randomly select objects to clutter
+        clutter_objects = np.random.choice(other_objects, size=num_clutter_objects, replace=False)
+
+        # Clutter radius in meters (10cm)
+        clutter_radius = 0.1
+        min_radius = 0.05
+
+        # Reposition each clutter object
+        for i, clutter_obj in enumerate(clutter_objects):
+            # Try multiple times to find a collision-free position
+            max_placement_attempts = 200
+            collision_free_position = None
+
+            # TODO: fix collision logic to settle within the loop and check penetration and retry if that happens
+            curr_clutter_radius = clutter_radius
+            for attempt in range(max_placement_attempts):
+                # Sample random position within clutter_radius of pickup object
+                # Use spherical coordinates for uniform sampling
+                theta = np.random.uniform(0, 2 * np.pi)  # Azimuthal angle (full circle)
+
+                # Polar angle sampling depends on covering vs occlusion mode
+                if self.config.task_sampler_config.covering:
+                    # Covering: sample from above (0 to pi/4 = 0 to 45 degrees from vertical)
+                    phi = np.random.uniform(0, np.pi / 4)
+                else:
+                    # Occlusion: sample from around the sides (2*pi/5 to pi/2 = ~72 to 90 degrees)
+                    phi = np.random.uniform(2 * np.pi / 5, np.pi / 2)
+
+                r = np.random.uniform(min_radius, curr_clutter_radius)  # Radial distance
+
+                # Convert to Cartesian offset
+                offset_x = r * np.sin(phi) * np.cos(theta)
+                offset_y = r * np.sin(phi) * np.sin(theta)
+                offset_z = r * np.cos(phi)
+
+                # Calculate new position
+                new_pos = pickup_pos + np.array([offset_x, offset_y, offset_z])
+
+                # Temporarily set the object's position to check for collisions
+                old_qpos = None
+                body_jntadr = env.current_model.body_jntadr[clutter_obj.object_id]
+                body_jntnum = env.current_model.body_jntnum[clutter_obj.object_id]
+
+                if body_jntnum > 0:
+                    jnt_id = body_jntadr
+                    jnt_type = env.current_model.jnt_type[jnt_id]
+                    if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                        qposadr = env.current_model.jnt_qposadr[jnt_id]
+                        old_qpos = env.current_data.qpos[qposadr : qposadr + 3].copy()
+                        env.current_data.qpos[qposadr : qposadr + 3] = new_pos
+
+                # Forward kinematics to update body positions
+                mujoco.mj_forward(env.current_model, env.current_data)
+
+                # Helper function to get all ancestor bodies (including self)
+                def get_ancestors(body_id):
+                    """Get all bodies in the parent chain up to (but not including) world."""
+                    ancestors = []
+                    current = body_id
+                    while current != 0:  # Stop at world body
+                        ancestors.append(current)
+                        current = env.current_model.body_parentid[current]
+                    return ancestors
+
+                # Check for collisions
+                has_collision = False
+                if env.current_data.ncon > 0:
+                    # Check all contacts to see if this object is involved
+                    for contact_idx in range(env.current_data.ncon):
+                        contact = env.current_data.contact[contact_idx]
+                        geom1 = contact.geom1
+                        geom2 = contact.geom2
+
+                        # Get body IDs for the geoms
+                        body1 = env.current_model.geom_bodyid[geom1]
+                        body2 = env.current_model.geom_bodyid[geom2]
+
+                        # Get all ancestors (parent chain) for both bodies
+                        ancestors1 = get_ancestors(body1)
+                        ancestors2 = get_ancestors(body2)
+
+                        # Check if clutter object is in either ancestor chain
+                        clutter_in_contact1 = clutter_obj.object_id in ancestors1
+                        clutter_in_contact2 = clutter_obj.object_id in ancestors2
+
+                        if clutter_in_contact1 or clutter_in_contact2:
+                            # Get the root bodies to identify what the clutter object is colliding with
+                            # root_body1 = ancestors1[0] if ancestors1 else body1
+                            # root_body2 = ancestors2[0] if ancestors2 else body2
+
+                            # Identify the other object involved in the contact
+                            # if clutter_obj.object_id in ancestors1:
+                            #     other_root_body = root_body2
+                            # else:
+                            #     other_root_body = root_body1
+
+                            # Reject ANY contact - we want no penetration at placement time
+                            has_collision = True
+                            # log.info(
+                            #     f"[SCENE CLUTTERING]     Attempt {attempt + 1}: (Clutter obj name: {clutter_obj.name}) Collision detected with body {env.current_model.body(other_root_body).name}, both objs are {env.current_model.body(root_body1).name} and {env.current_model.body(root_body2).name}"
+                            # )
+                            break
+                else:
+                    log.info("Env has no contacts to loop through")
+
+                # Restore old position if collision detected
+                if has_collision:
+                    if old_qpos is not None:
+                        env.current_data.qpos[qposadr : qposadr + 3] = old_qpos
+                        mujoco.mj_forward(env.current_model, env.current_data)
+                    # Every 20 failed iterations, we increase the radius by 5cm
+                    if attempt % 20 == 19:
+                        curr_clutter_radius += 0.05
+                        # log.info(
+                        #     f"[SCENE CLUTTERING]       20 attempts failed, increasing clutter radius to {curr_clutter_radius}m"
+                        # )
+                    continue
+                else:
+                    # No collision - use this position
+                    collision_free_position = new_pos
+                    log.info(
+                        f"[SCENE CLUTTERING]     Found collision-free position on attempt {attempt + 1} for clutter object {clutter_obj.name}"
+                    )
+                    break
+
+            # Use the collision-free position, or fall back to last attempt if none found
+            if collision_free_position is None:
+                log.info(
+                    f"[SCENE CLUTTERING]   Object {i + 1}/4: Could not find collision-free position for clutter object {clutter_obj.name} after {max_placement_attempts} attempts, using last attempt"
+                )
+                new_pos = new_pos  # Use last sampled position
+            else:
+                new_pos = collision_free_position
+
+            # Set the object's new position
+            old_pos = clutter_obj.position.copy()
+
+            # Check if object has a freejoint (most movable objects do)
+            body_jntadr = env.current_model.body_jntadr[clutter_obj.object_id]
+            body_jntnum = env.current_model.body_jntnum[clutter_obj.object_id]
+
+            if body_jntnum > 0:
+                # Object has joints - modify qpos (joint positions)
+                jnt_id = body_jntadr
+                jnt_type = env.current_model.jnt_type[jnt_id]
+
+                if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                    # Freejoint: qpos has 7 values (3 pos + 4 quat)
+                    qposadr = env.current_model.jnt_qposadr[jnt_id]
+                    env.current_data.qpos[qposadr : qposadr + 3] = new_pos
+                    # Keep existing quaternion (rotation)
+                    # log.info("[SCENE CLUTTERING]     Modified qpos for freejoint object")
+                else:
+                    # Other joint types - try modifying xpos (less reliable)
+                    env.current_data.xpos[clutter_obj.object_id] = new_pos
+                    # log.info(f"[SCENE CLUTTERING]     Modified xpos for joint type {jnt_type}")
+            else:
+                # No joints - modify xpos directly
+                env.current_data.xpos[clutter_obj.object_id] = new_pos
+                # log.info("[SCENE CLUTTERING]     Modified xpos for fixed body")
+
+            distance = np.linalg.norm(new_pos - pickup_pos)
+            log.info(
+                f"[SCENE CLUTTERING]   Object {i + 1}/4: '{clutter_obj.name}' "
+                f"moved from ({old_pos[0]:.3f}, {old_pos[1]:.3f}, {old_pos[2]:.3f}) "
+                f"to ({new_pos[0]:.3f}, {new_pos[1]:.3f}, {new_pos[2]:.3f}), "
+                f"distance={distance * 100:.2f}cm"
+            )
+
+        # Forward physics to update scene state
+        mujoco.mj_forward(env.current_model, env.current_data)
+
+        # Settle the scene to let objects fall and stabilize
+        log.info("[SCENE CLUTTERING] Settling scene for 100 steps...")
+        mujoco.mj_step(env.current_model, env.current_data, nstep=100)
+        obj_ids_to_delete = set()
+        # Check for contacts between knife and fork
+        for i_con in range(env.current_data.ncon):
+            contact = env.current_data.contact[i_con]
+            geom_id_1, geom_id_2 = contact.geom[0], contact.geom[1]
+            body_id_1, body_id_2 = env.current_model.geom_bodyid[[geom_id_1, geom_id_2]]
+            root_id_1, root_id_2 = env.current_model.body_rootid[[body_id_1, body_id_2]]
+
+            # breakpoint()
+            is_root_1_free = env.current_model.body_dofnum[root_id_1].item() == 6
+            is_root_2_free = env.current_model.body_dofnum[root_id_2].item() == 6
+
+            # Get body names
+            body_name_1 = env.current_model.body(root_id_1).name
+            body_name_2 = env.current_model.body(root_id_2).name
+
+            # Check if one is a knife and one is a fork
+            if body_name_1 != "" and body_name_2 != "":
+                if is_root_1_free and is_root_2_free:
+                    if contact.dist < INTERSECTION_THRESHOLD:
+                        # Just delete the first
+                        obj_ids_to_delete.add(root_id_1)
+
+        # # Delete bodies that are in collision by moving them far away
+        away_pos = np.array([10.0, 10.0, 10.0])
+        for body_id in obj_ids_to_delete:
+            body_jntadr = env.current_model.body_jntadr[body_id]
+            body_jntnum = env.current_model.body_jntnum[body_id]
+
+            if body_jntnum > 0:
+                jnt_id = body_jntadr
+                jnt_type = env.current_model.jnt_type[jnt_id]
+
+                if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                    qposadr = env.current_model.jnt_qposadr[jnt_id]
+                    env.current_data.qpos[qposadr : qposadr + 3] = away_pos
+
+        log.info(
+            f"[SCENE CLUTTERING] Positioned {num_clutter_objects} clutter objects within {clutter_radius * 100}cm of pickup object"
+        )
 
     @staticmethod
     def add_placement_target(
