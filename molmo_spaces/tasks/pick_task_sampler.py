@@ -1169,7 +1169,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 )
 
                 # Compute cosine similarity between text descriptions
-                similarity = np.dot(reference_norm, other_norm)
+                similarity = np.dot(reference_norm.reshape((-1,)), other_norm.reshape((-1,)))
                 similarities.append((obj, similarity))
             else:
                 # No asset_id, put at end with low similarity
@@ -1215,13 +1215,30 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         else:
             other_objects = [obj for obj in self.candidate_objects if obj.name != pickup_obj_name]
 
-        # Sort by semantic similarity if requested
-        if self.config.task_sampler_config.clutter_with_semantically_similar_objects:
+        # Helper to extract class from object name (e.g., "plate_ad540817fe2632d8b49916da70118c0a_1_0_0" -> "plate")
+        def get_object_class(obj_name: str) -> str:
+            return obj_name.split("_")[0]
+
+        pickup_class = get_object_class(pickup_obj_name)
+
+        # Filter/sort by semantic similarity or same class
+        if self.config.task_sampler_config.clutter_with_same_class_objects:
+            # Filter to ONLY objects with the same class as pickup
+            other_objects = [
+                obj for obj in other_objects if get_object_class(obj.name) == pickup_class
+            ]
+            log.info(
+                f"[SCENE CLUTTERING] Filtering to same class '{pickup_class}': {len(other_objects)} objects"
+            )
+        elif self.config.task_sampler_config.clutter_with_semantically_similar_objects:
+            # Sort by similarity, then filter OUT objects with the same class
             other_objects = self._sort_objects_by_semantic_similarity(
                 other_objects, pickup_obj_name, om
             )
-            print(
-                f"Pickup object: {pickup_obj_name}, semantically similar objects (sorted): {[o.name for o in other_objects[:10]]}"
+            # Remove objects with the exact same class (we want similar but not identical)
+            # other_objects = [obj for obj in other_objects if get_object_class(obj.name) != pickup_class]
+            log.info(
+                f"[SCENE CLUTTERING] Pickup class '{pickup_class}', semantically similar (excluding same class): {[o.name for o in other_objects[:10]]}"
             )
 
         num_clutter_objects = self.config.task_sampler_config.num_clutter_objects

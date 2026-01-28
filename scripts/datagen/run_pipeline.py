@@ -359,7 +359,7 @@ if __name__ == "__main__":
         help="ithor, procthor-10k, procthor-objaverse, procthor-100k-debug",
     )
     args.add_argument("--data_split", type=str, default="train", help="train or test")
-    args.add_argument("--house_inds", type=int, default=1, help="house indices")
+    args.add_argument("--house_inds", type=int, nargs="+", default=[1], help="house indices")
     args.add_argument(
         "--target_types", type=str, default=None, help="comma separated list of target types"
     )
