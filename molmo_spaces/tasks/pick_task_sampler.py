@@ -136,6 +136,29 @@ def _get_cached_valid_pickupables(
     return _VALID_PICKUPABLE_CACHE
 
 
+class SameClassClutterMetadataAdder:
+    """Helper class to add metadata for dynamically added clutter objects."""
+
+    def __init__(self, name_to_meta: dict):
+        import threading
+
+        self.pending = True
+        self.semaphore = threading.Semaphore()
+        self.name_to_meta = name_to_meta
+
+    def add_meta(self, metadata):
+        if self.pending:
+            self.semaphore.acquire()
+            try:
+                if self.pending:
+                    for name, meta in self.name_to_meta.items():
+                        if name not in metadata["objects"]:
+                            metadata["objects"][name] = meta
+                    self.pending = False
+            finally:
+                self.semaphore.release()
+
+
 class PickTaskSampler(BaseMujocoTaskSampler):
     """
     Default task sampler for pick tasks with house iteration control.
@@ -188,11 +211,186 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             self._remove_candidate_object(obj_name)
             log.info(f"Removed {obj_name} after {count} grasp failures (threshold: {max_failures})")
 
+    def update_scene(self, scene_path: str | None = None, variant: str = "base") -> None:
+        """Override to store scene path for use in add_auxiliary_objects."""
+        if scene_path is None:
+            scene_path = self._current_house_scene_path(variant=variant)
+        # Store for use in add_auxiliary_objects
+        self._current_scene_path = scene_path
+        # Reset clutter tracking for new scene
+        self._same_class_clutter_objects = {}
+        self._same_class_clutter_metadata_adder = None
+        super().update_scene(scene_path=scene_path, variant=variant)
+
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
         """Use this function to put task specific assets into the scene."""
         self.config.policy_config.policy_cls.add_auxiliary_objects(self.config, spec)
         if self.config.task_sampler_config.added_pickup_objects is not None:
             self._add_pickupables_to_scene(spec)
+
+        # Add same-class clutter objects if enabled
+        if self.config.task_sampler_config.clutter_with_same_class_objects:
+            self._add_same_class_clutter_objects(spec)
+
+    def _add_same_class_clutter_objects(self, spec: MjSpec) -> None:
+        """Pre-add clutter objects for same-class cluttering.
+
+        For each unique asset in the scene that matches pickup_types,
+        we add num_clutter_objects instances that will be positioned later.
+        """
+        if self._current_scene_path is None:
+            log.warning(
+                "[SAME CLASS CLUTTER] No scene path available, skipping clutter object setup"
+            )
+            return
+
+        # Load scene metadata to get all objects and their asset_ids
+        scene_metadata = get_scene_metadata(self._current_scene_path)
+        if scene_metadata is None:
+            log.warning(
+                f"[SAME CLASS CLUTTER] Could not load scene metadata from {self._current_scene_path}"
+            )
+            return
+
+        objects_meta = scene_metadata.get("objects", {})
+        if not objects_meta:
+            log.warning("[SAME CLASS CLUTTER] No objects in scene metadata")
+            return
+
+        pickup_types = self.config.task_sampler_config.pickup_types or []
+        num_clutter = self.config.task_sampler_config.num_clutter_objects
+
+        # Collect unique asset_ids that match pickup types
+        # asset_id -> (category, boundingBox, first_object_name for reference)
+        asset_id_to_info: dict[str, dict] = {}
+
+        for obj_name, obj_meta in objects_meta.items():
+            asset_id = obj_meta.get("asset_id")
+            if not asset_id:
+                continue
+
+            # Check if this object type is in pickup_types
+            category = obj_meta.get("category", "").lower()
+            object_enum = obj_meta.get("object_enum", "").lower()
+
+            # If pickup_types is empty, all objects are candidates
+            # Otherwise, check if category or object_enum matches
+            if pickup_types:
+                type_match = any(
+                    pt.lower() in category or pt.lower() in object_enum or category in pt.lower()
+                    for pt in pickup_types
+                )
+                if not type_match:
+                    continue
+
+            # Check if we have grasp data for this asset
+            if not has_grasp_folder(asset_id):
+                continue
+
+            if asset_id not in asset_id_to_info:
+                asset_id_to_info[asset_id] = {
+                    "category": obj_meta.get("category", "unknown"),
+                    "boundingBox": obj_meta.get("boundingBox", {"x": 0.1, "y": 0.1, "z": 0.1}),
+                    "reference_name": obj_name,
+                }
+
+        if not asset_id_to_info:
+            log.info("[SAME CLASS CLUTTER] No matching assets found for clutter")
+            return
+
+        log.info(
+            f"[SAME CLASS CLUTTER] Found {len(asset_id_to_info)} unique assets to add clutter for"
+        )
+
+        # Add a staging floor for clutter objects (similar to PickAndPlaceTaskSampler)
+        total_clutter_objects = len(asset_id_to_info) * num_clutter
+        staging_floor_center_x = 20 + (total_clutter_objects - 1) * 0.5
+        spec.worldbody.add_geom(
+            name="clutter_staging_floor",
+            type=mujoco.mjtGeom.mjGEOM_BOX,
+            pos=[staging_floor_center_x, 20, -2],
+            size=[total_clutter_objects + 2, 2, 0.1],
+            contype=8,
+            conaffinity=15,
+            group=4,
+        )
+
+        name_to_meta = {}
+        clutter_idx = 0
+
+        for asset_id, info in asset_id_to_info.items():
+            try:
+                clutter_xml = install_uid(asset_id)
+            except ValueError as e:
+                log.debug(f"[SAME CLASS CLUTTER] Could not install asset {asset_id}: {e}")
+                continue
+
+            clutter_names = []
+
+            for i in range(num_clutter):
+                try:
+                    clutter_spec = MjSpec.from_file(str(clutter_xml))
+                except Exception as e:
+                    log.debug(f"[SAME CLASS CLUTTER] Could not load spec for {asset_id}: {e}")
+                    break
+
+                if len(clutter_spec.worldbody.bodies) != 1:
+                    log.debug(
+                        f"[SAME CLASS CLUTTER] {clutter_xml} has {len(clutter_spec.worldbody.bodies)} bodies, expected 1"
+                    )
+                    if len(clutter_spec.worldbody.bodies) == 0:
+                        break
+
+                clutter_obj: mujoco.MjsBody = clutter_spec.worldbody.bodies[0]
+
+                # Add freejoint if not present
+                if not clutter_obj.first_joint():
+                    clutter_obj.add_joint(
+                        name=f"clutter_{asset_id[:8]}_{i}_jntfree",
+                        type=mujoco.mjtJoint.mjJNT_FREE,
+                        damping=OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING,
+                    )
+
+                # Position off-screen initially
+                attach_frame = spec.worldbody.add_frame(
+                    pos=[20 + clutter_idx * 1.0, 20, 5],
+                    quat=R.from_euler("x", 90, degrees=True).as_quat(scalar_first=True),
+                )
+
+                namespace = f"clutter_{asset_id[:16]}_{i}/"
+                attach_frame.attach_body(clutter_obj, namespace, "")
+
+                clutter_body_name = clutter_obj.name
+                clutter_names.append(clutter_body_name)
+
+                # Track metadata for the added object
+                name_to_meta[clutter_body_name] = {
+                    "asset_id": asset_id,
+                    "category": info["category"],
+                    "object_enum": "clutter_object",
+                    "is_static": False,
+                    "boundingBox": info["boundingBox"],
+                }
+
+                # Save added object path for scene recreation
+                xml_path_rel = clutter_xml.relative_to(ASSETS_DIR)
+                self.config.task_config.added_objects[clutter_body_name] = xml_path_rel
+
+                clutter_idx += 1
+
+            if clutter_names:
+                self._same_class_clutter_objects[asset_id] = clutter_names
+                log.debug(
+                    f"[SAME CLASS CLUTTER] Added {len(clutter_names)} clutter objects for asset {asset_id}"
+                )
+
+        if name_to_meta:
+            self._same_class_clutter_metadata_adder = SameClassClutterMetadataAdder(name_to_meta)
+
+        log.info(
+            f"[SAME CLASS CLUTTER] Pre-added clutter for {len(self._same_class_clutter_objects)} assets, "
+            f"total {sum(len(v) for v in self._same_class_clutter_objects.values())} objects"
+        )
 
     def init_scene(self, env) -> None:
         # initialize randomizers here
@@ -892,6 +1090,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             parts = pickup_obj.name.split("/")
             if len(parts) == 3 and len(parts[1].split("_")) == 2:
                 log.info(f"Skipping possibly added object {pickup_obj.name}")
+            # Skip pre-added clutter objects (they have "clutter_" prefix in their namespace)
+            if "clutter_" in pickup_obj.name:
                 continue
 
             # Check if grasp files exist for this object
@@ -1223,13 +1423,40 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
         # Filter/sort by semantic similarity or same class
         if self.config.task_sampler_config.clutter_with_same_class_objects:
-            # Filter to ONLY objects with the same class as pickup
-            other_objects = [
-                obj for obj in other_objects if get_object_class(obj.name) == pickup_class
-            ]
-            log.info(
-                f"[SCENE CLUTTERING] Filtering to same class '{pickup_class}': {len(other_objects)} objects"
-            )
+            # Try to use pre-added clutter objects of the same asset
+            pickup_asset_id = self._get_pickup_asset_id(env, pickup_obj_name)
+            if pickup_asset_id and pickup_asset_id in self._same_class_clutter_objects:
+                # Add metadata for clutter objects if needed
+                if self._same_class_clutter_metadata_adder is not None:
+                    self._same_class_clutter_metadata_adder.add_meta(env.current_scene_metadata)
+
+                # Convert pre-added clutter object names to MjThorObject instances
+                clutter_names = self._same_class_clutter_objects[pickup_asset_id]
+                other_objects = []
+                for clutter_name in clutter_names:
+                    try:
+                        clutter_obj = MjThorObject(clutter_name, env.current_data)
+                        other_objects.append(clutter_obj)
+                    except KeyError:
+                        log.warning(
+                            f"[SCENE CLUTTERING] Pre-added clutter object {clutter_name} not found"
+                        )
+                log.info(
+                    f"[SCENE CLUTTERING] Using {len(other_objects)} pre-added clutter objects "
+                    f"for asset {pickup_asset_id}"
+                )
+            else:
+                # Fall back to existing scene objects of the same class
+                log.info(
+                    f"[SCENE CLUTTERING] No pre-added clutter for asset {pickup_asset_id}, "
+                    f"falling back to scene objects of same class '{pickup_class}'"
+                )
+                other_objects = [
+                    obj for obj in other_objects if get_object_class(obj.name) == pickup_class
+                ]
+                log.info(
+                    f"[SCENE CLUTTERING] Found {len(other_objects)} same-class objects in scene"
+                )
         elif self.config.task_sampler_config.clutter_with_semantically_similar_objects:
             # Sort by similarity, then filter OUT objects with the same class
             other_objects = self._sort_objects_by_semantic_similarity(
@@ -1463,6 +1690,13 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         log.info(
             f"[SCENE CLUTTERING] Positioned {num_clutter_objects} clutter objects within {clutter_radius * 100}cm of pickup object"
         )
+
+    def _get_pickup_asset_id(self, env: CPUMujocoEnv, pickup_obj_name: str) -> str | None:
+        """Get the asset_id for a pickup object from scene metadata."""
+        scene_metadata = env.current_scene_metadata
+        if scene_metadata is None:
+            return None
+        return scene_metadata.get("objects", {}).get(pickup_obj_name, {}).get("asset_id", None)
 
     @staticmethod
     def add_placement_target(

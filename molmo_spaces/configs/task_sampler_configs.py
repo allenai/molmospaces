@@ -113,10 +113,10 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         # cases for VLAs.
     )
     clutter_with_same_class_objects: bool = (
-        False  # If you want the surrounding clutter to be the same object
+        True  # If you want the surrounding clutter to be the same object
     )
 
-    num_clutter_objects: int = 10  # Number of clutter objects to place around the target object
+    num_clutter_objects: int = 2  # Number of clutter objects to place around the target object
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over
