@@ -36,7 +36,7 @@ Download the checkpoint and start the policy server (leave it running in a separ
 ```bash
 git clone https://github.com/omarrayyann/openpi
 mkdir checkpoints && cd checkpoints
-gsutil cp -r gs://openpi-assets/pi0_fast_droid_jointpos .
+gsutil cp -r gs://openpi-assets/pi05_droid_jointpos .
 other options: `pi05_droid_jointpos`, `pi0_fast_droid_jointpos`, `pi0_droid_jointpos`
 ```
 
