@@ -22,6 +22,26 @@ class PiPolicyConfig(BasePolicyConfig):
 
             self.policy_cls = PI_Policy
 
+class DreamZeroPolicyConfig(BasePolicyConfig):
+    checkpoint_path: str = "checkpoints/dreamzero"
+    remote_config: dict = dict(host="localhost", port=0000)
+    prompt_object_word_num: str = 1  # number of words as the object name
+    prompt_templates: list[str] | None = None
+    grasping_type: str = "binary"
+    grasping_threshold: float = 0.5
+    chunk_size: int = 24
+    light_level: float = 0.0
+
+    policy_cls: type = None
+    policy_type: str = "learned"
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
+            self.policy_cls = DreamZero_Policy
+
 class CAPPolicyConfig(BasePolicyConfig):
     remote_config: dict = dict(host="localhost", port=8765)
     prompt_templates: list[str] | None = None
