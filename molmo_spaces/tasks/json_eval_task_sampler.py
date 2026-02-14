@@ -210,7 +210,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         # Apply robot-specific evaluation overrides if configured
         robot_override = getattr(exp_config, '_robot_eval_override', None)
         if robot_override is not None:
-            robot_override.apply_overrides(episode_spec, self._camera_config)
+            robot_override(episode_spec, self._camera_config)
 
         super().__init__(exp_config)
 

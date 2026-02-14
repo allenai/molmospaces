@@ -93,13 +93,15 @@ class JsonEvalRunner(ParallelRolloutRunner):
             custom_object_path=custom_object_path,
             custom_object_name=custom_object_name,
         )
-        
-        # Apply robot-specific evaluation overrides if configured
+
+        return exp_config
+
+    @staticmethod
+    def adjust_robot(exp_config: MlSpacesExpConfig) -> None:
+        """Apply robot-specific evaluation overrides if configured."""
         robot_override = get_robot_override(exp_config.robot_config)
         if robot_override is not None:
             exp_config._robot_eval_override = robot_override
-        
-        return exp_config
 
     def __init__(
         self,

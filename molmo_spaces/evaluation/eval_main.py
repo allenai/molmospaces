@@ -544,6 +544,7 @@ def run_evaluation(
         custom_object_path=custom_object_path,
         custom_object_name=custom_object_name,
     )
+    JsonEvalRunner.adjust_robot(exp_config)
 
     # Resolve checkpoint path for logging
     resolved_checkpoint = checkpoint_path or getattr(
