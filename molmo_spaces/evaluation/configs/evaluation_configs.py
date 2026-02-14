@@ -34,6 +34,7 @@ from pathlib import Path
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
+    DreamZeroPolicyConfig,
     PiPolicyConfig,
     TeleopPolicyConfig,
 )
@@ -153,3 +154,11 @@ class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):
         self.robot_config.action_noise_config.enabled = False
 
 
+class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+    policy_config: DreamZeroPolicyConfig = DreamZeroPolicyConfig()
+    policy_dt_ms: float = 500.0  # Match your model's expected control rate
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
