@@ -61,6 +61,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "rby1": "20251224",
         "rby1m": "20251224",
         "franka_droid": "20260127",
+        "franka_cap": "20260213",
         "floating_rum": "20251110",
         "floating_robotiq": "20260208_retry4",
     },

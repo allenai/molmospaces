@@ -29,6 +29,7 @@ from pathlib import Path
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner
 from molmo_spaces.evaluation.benchmark_schema import EpisodeSpec, load_all_episodes
+from molmo_spaces.evaluation.robot_eval_overrides import get_robot_override
 from molmo_spaces.tasks.json_eval_task_sampler import JsonEvalTaskSampler
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.profiler_utils import DatagenProfiler
@@ -92,6 +93,12 @@ class JsonEvalRunner(ParallelRolloutRunner):
             custom_object_path=custom_object_path,
             custom_object_name=custom_object_name,
         )
+        
+        # Apply robot-specific evaluation overrides if configured
+        robot_override = get_robot_override(exp_config.robot_config)
+        if robot_override is not None:
+            exp_config._robot_eval_override = robot_override
+        
         return exp_config
 
     def __init__(

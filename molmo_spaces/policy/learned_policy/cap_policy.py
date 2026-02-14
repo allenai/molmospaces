@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation as R
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
 from molmo_spaces.policy.learned_policy.rum_client import RUMClient
+from molmo_spaces.policy.learned_policy.utils import PromptSampler
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -31,12 +32,14 @@ class CAP_Policy(InferencePolicy):
         task_type: str,
     ) -> None:
         super().__init__(exp_config, exp_config.task_type)
+        self.task_type = task_type
         self.remote_config = exp_config.policy_config.remote_config
         self.grasping_type = exp_config.policy_config.grasping_type
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.use_vlm = exp_config.policy_config.use_vlm
         self.use_exo = exp_config.policy_config.exo_vlm
-        self.prepare_model()
+        self.prompt_sampler = PromptSampler()
+        self.model = None
 
     def prepare_model(self):
         host = "localhost"
@@ -72,80 +75,54 @@ class CAP_Policy(InferencePolicy):
         cv2.waitKey(1)
 
     def obs_to_model_input(self, obs):
-
+        if self.model is None:
+            self.prepare_model()
 
         if hasattr(self, "T_world_object") is False or self.T_world_object is None:
-            
-            if not self.use_exo:
-                object_name = self.task.config.task_config.pickup_obj_name
-                T_world_object = np.eye(4)
-                T_world_object[:3, 3] = self.task.env.mj_datas[0].body(object_name).xpos.copy()
-                T_world_object[:3, :3] = (
-                    self.task.env.mj_datas[0].body(object_name).xmat.reshape(3, 3).copy()
-                )
-                self.T_world_object = T_world_object
+            if not self.use_vlm:
+                T_base_object = obs["object_poses"][self.task.config.task_config.pickup_obj_name]
+                T_world_base = np.eye(4)
+                T_world_base[:3, 3] = obs["robot_base_pose"][:3]
+                T_world_base[:3, :3] = R.from_quat(
+                    obs["robot_base_pose"][3:7], scalar_first=True
+                ).as_matrix()
+                self.T_world_object = T_world_base @ T_base_object
             else:
                 exo_depth = obs["exo_camera_1_depth"]
                 exo_rgb = obs["exo_camera_1"]
                 ego_depth = obs["wrist_camera_depth"]
                 ego_rgb = obs["wrist_camera"]
-
                 point_norm = self.model.infer_point(
                     rgb=exo_rgb if self.use_exo else ego_rgb,
                     object_name=self.prompt_sampler.clean_object_name(self.task),
-                    task=self.task_policy,
+                    task=self.task_type,
                 )
-
                 if self.use_exo:
-                    x_norm, y_norm = point_norm
-                    width, height = exo_rgb.shape[1], exo_rgb.shape[0]
-                    x = int(x_norm * width)
-                    y = int(y_norm * height)
-                    depth_value = exo_depth[y, x] + 0.03
-                    fovy = math.radians(71)
-                    f = height / (2 * np.tan(fovy / 2))
-                    cam_mat = np.array([[f, 0, width / 2], [0, f, height / 2], [0, 0, 1]])
-                    cx = cam_mat[0, 2]
-                    cy = cam_mat[1, 2]
-                    fx = cam_mat[0, 0]
-                    fy = cam_mat[1, 1]
-                    z_cam = -depth_value
-                    x_cam = -(x - cx) * z_cam / fx
-                    y_cam = -(cy - y) * z_cam / fy
-                    p_cam = np.array([x_cam, y_cam, z_cam])   
+                    K = np.array(obs['sensor_param_exo_camera_1']['intrinsic_cv'])
                 else:
-                    x_norm, y_norm = point_norm
-                    width, height = ego_rgb.shape[1], ego_rgb.shape[0]
-                    x = int(x_norm * width)
-                    y = int(y_norm * height)
-                    depth_value = ego_depth[y, x] + 0.03
-                    fovy = math.radians(53)
-                    f = height / (2 * np.tan(fovy / 2))
-                    cam_mat = np.array([[f, 0, width / 2], [0, f, height / 2], [0, 0, 1]])
-                    cx = cam_mat[0, 2]
-                    cy = cam_mat[1, 2]
-                    fx = cam_mat[0, 0]
-                    fy = cam_mat[1, 1]
-                    z_cam = -depth_value
-                    x_cam = -(x - cx) * z_cam / fx
-                    y_cam = -(cy - y) * z_cam / fy
-                    p_cam = np.array([x_cam, y_cam, z_cam])
-
+                    K = np.array(obs['sensor_param_wrist_camera']['intrinsic_cv'])
+                fovy = 2 * np.arctan((2*K[1,2]) / (2*K[1,1]))
+                x_norm, y_norm = point_norm
+                width, height = (exo_rgb.shape[1], exo_rgb.shape[0]) if self.use_exo else (ego_rgb.shape[1], ego_rgb.shape[0])
+                x = int(x_norm * width)
+                y = int(y_norm * height)
+                depth_value = exo_depth[y, x] + 0.03 if self.use_exo else ego_depth[y, x] + 0.03
+                f = height / (2 * np.tan(fovy / 2))
+                cam_mat = np.array([[f, 0, width / 2], [0, f, height / 2], [0, 0, 1]])
+                cx = cam_mat[0, 2]
+                cy = cam_mat[1, 2]
+                fx = cam_mat[0, 0]
+                fy = cam_mat[1, 1]
+                z_cam = -depth_value
+                x_cam = -(x - cx) * z_cam / fx
+                y_cam = -(cy - y) * z_cam / fy
+                p_cam = np.array([x_cam, y_cam, z_cam])  
+                T_corr = np.eye(4)
+                T_corr[:3, :3] = np.diag([1, -1, -1])
                 if self.use_exo:
-                    camera_pose = np.eye(4)
-                    link0_pose = np.eye(4)
-                    link0_pose[:3, 3] = self.task.env.mj_datas[0].body("robot_0/fr3_link0").xpos.copy()
-                    link0_pose[:3, :3] = self.task.env.mj_datas[0].body("robot_0/fr3_link0").xmat.reshape(3, 3).copy()
-                    camera_offset = np.array([0.1, 0.57, 0.66])
-                    camera_quat = np.array([-0.3633, -0.1241, 0.4263, 0.8191])
-                    camera_rot = R.from_quat(camera_quat, scalar_first=True).as_matrix()
-                    camera_pose[:3, :3] = link0_pose[:3, :3] @ camera_rot
-                    camera_pose[:3, 3] = link0_pose[:3, 3] + link0_pose[:3, :3] @ camera_offset
+                    camera_pose = np.array(obs['sensor_param_exo_camera_1']["cam2world_gl"].copy()) @ T_corr
                 else:
-                    camera_pose = np.eye(4)
-                    camera_pose[:3, 3] = self.task.env.mj_datas[0].camera("robot_0/gripper/wrist_camera").xpos.copy()
-                    camera_pose[:3, :3] = self.task.env.mj_datas[0].camera("robot_0/gripper/wrist_camera").xmat.reshape(3, 3).copy()
-
+                    camera_pose = np.array(obs['sensor_param_wrist_camera']["cam2world_gl"].copy()) @ T_corr
                 p_world = camera_pose[:3, :3] @ p_cam + camera_pose[:3, 3]
                 self.T_world_object = np.eye(4)
                 self.T_world_object[:3, 3] = p_world
@@ -215,7 +192,6 @@ class CAP_Policy(InferencePolicy):
         if jp is not None:
             action.update({mg_id: jp[mg_id] for mg_id in mgs_except_gripper})
 
-        action["gripper"] = self.previous_gripper_state.copy()
         if self.grasping_type == "binary":
             if self.is_grasping:
                 action["gripper"] = np.array([-255.0])
@@ -234,10 +210,8 @@ class CAP_Policy(InferencePolicy):
         info = super().get_info()
    
         info["policy_checkpoint"] = self.model_name
-        info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.prompt_sampler.get_prompt(self.task)
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()
         return info

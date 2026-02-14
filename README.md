@@ -215,7 +215,8 @@ To control a robot via phone based teleoperation do the following (only iPhones 
     --benchmark_dir assets/bench/path-to-bnechmark.json \
     --task_horizon_steps 1000
     ```
-3. Scan the QR-Code that shows up using the app (or manually enter the ip:port). Example terminal output:
+3. Ensure your phone and the machine running the pipeline are connected to the same network.
+4. Scan the QR-Code that shows up using the app (or manually enter the ip:port) while connected to a similar network. Example terminal output:
    ```bash
    TeleDex Session Starting on port 8888...
    Session Started. Details:
@@ -223,7 +224,7 @@ To control a robot via phone based teleoperation do the following (only iPhones 
    Port: 8888
    Waiting for a device to connect...
    ```
-4. Start teleoperating!
+5. Start teleoperating!
 
 - Click the Toggle to Grasp
 - Click the Button to go to the next episode

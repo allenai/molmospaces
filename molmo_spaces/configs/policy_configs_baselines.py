@@ -29,8 +29,8 @@ class CAPPolicyConfig(BasePolicyConfig):
     grasping_threshold: float = 0.7
     policy_cls: type = None
     policy_type: str = "learned"
-    use_vlm: bool = False
-    exo_vlm: bool = True # not used if use_vlm is False
+    use_vlm: bool = False  # required for non-pick tasks
+    exo_vlm: bool = True  # not used if use_vlm is False
 
     def model_post_init(self, __context) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
