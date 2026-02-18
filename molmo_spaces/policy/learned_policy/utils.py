@@ -15,14 +15,14 @@ logging.basicConfig(level=logging.INFO)
 class PromptSampler:
     DEFAULT_TEMPLATES_BY_TASK = {
         "pick": [
-            "Pick up the {}.",
+            "pick up the {}.",
         ],
-        "open": ["Open the {}."],
+        "open": ["open the {}."],
         "pick_and_place": [
-            "Pick up the {} and place it on the {}.",
+            "pick up the {} and place it on the {}.",
         ],
         "close": [
-            "Close the {}.",
+            "close the {}.",
         ],
     }
 

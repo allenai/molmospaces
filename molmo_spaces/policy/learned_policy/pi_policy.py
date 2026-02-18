@@ -93,7 +93,7 @@ class PI_Policy(InferencePolicy):
 
     def obs_to_model_input(self, obs):
         # self.render(obs)
-        prompt = self.prompt_sampler.get_prompt(self.task)
+        prompt = self.prompt_sampler.get_prompt(self.task).lower()
 
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         exo_camera_key = "droid_shoulder_light_randomization" if "droid_shoulder_light_randomization" in obs else "exo_camera_1"
