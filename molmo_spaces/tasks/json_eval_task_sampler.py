@@ -271,7 +271,8 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
                 f"Episode spec missing 'language.task_description'. house_index={spec.house_index}"
             )
 
-    def _infer_task_type(self, spec: EpisodeSpec) -> str:
+    @staticmethod
+    def _infer_task_type(spec: EpisodeSpec) -> str:
         """Infer task_type from episode spec.
 
         Uses task_type from spec if available, otherwise infers from task_cls.
@@ -282,6 +283,8 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             return task_type
 
         # Infer from task_cls
+        log.warning("Deprecated spec missing 'task.task_type', inferring from 'task.task_cls'. ")
+
         task_cls = spec.get_task_cls()
         task_cls_to_type = {
             "molmo_spaces.tasks.pick_task.PickTask": "pick",
@@ -290,6 +293,9 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.opening_tasks.RBY1DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.nav_task.NavToObjTask": "nav_to_obj",
         }
+        for k,v in task_cls_to_type.items():
+            task_cls_to_type[k.replace("molmo_spaces", "mujoco_thor")] = v  # TODO(rose): forking branch
+            
         if task_cls in task_cls_to_type:
             return task_cls_to_type[task_cls]
 

@@ -535,6 +535,7 @@ def run_evaluation(
         task_horizon=resolved_task_horizon,
         num_workers=num_workers,
     )
+    exp_config.task_type = "pick_and_place"
 
     # Patch config with evaluation-specific runtime parameters
     exp_config = JsonEvalRunner.patch_config(
