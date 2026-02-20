@@ -102,7 +102,6 @@ class PI_Policy(InferencePolicy):
             prompt = self.task.get_task_description()
         else:
             prompt = self.prompt_sampler.get_prompt(self.task).lower()
-        log.info(f"The prompt is: {prompt}")
 
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         exo_camera_key = "droid_shoulder_light_randomization" if "droid_shoulder_light_randomization" in obs else "exo_camera_1"
@@ -162,6 +161,10 @@ class PI_Policy(InferencePolicy):
         info["policy_grasping_type"] = self.grasping_type
         if self.prompt_sampler is not None:
             info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        else:
+            info["prompt"] = self.task.get_task_description()
+        log.info(f"Current prompt: {info['prompt']}")
+        
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()
         return info
