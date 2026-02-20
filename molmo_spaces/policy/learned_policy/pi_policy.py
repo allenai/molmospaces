@@ -102,7 +102,7 @@ class PI_Policy(InferencePolicy):
             prompt = self.task.get_task_description()
         else:
             prompt = self.prompt_sampler.get_prompt(self.task).lower()
-        log.info(f"The prompt is: {self._cached_prompt}")
+        log.info(f"The prompt is: {prompt}")
 
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         exo_camera_key = "droid_shoulder_light_randomization" if "droid_shoulder_light_randomization" in obs else "exo_camera_1"
