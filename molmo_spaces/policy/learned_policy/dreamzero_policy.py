@@ -6,6 +6,7 @@ from typing import Dict, Tuple
 
 import cv2
 import numpy as np
+import websockets.exceptions
 import websockets.sync.client
 from openpi_client import msgpack_numpy
 
@@ -27,25 +28,12 @@ class DreamZeroWebsocketClient:
         self._uri = f"ws://{host}:{port}"
         self._packer = msgpack_numpy.Packer()
         self._ws, self._server_metadata = self._wait_for_server()
+        # store the URI that actually worked so reconnects reuse it
+        self._connected_uri = self._uri
 
-    def _wait_for_server(self) -> Tuple[websockets.sync.client.ClientConnection, Dict]:
-        logging.info(f"Waiting for server at {self._uri}...")
-        try:
-            conn = websockets.sync.client.connect(
-                self._uri,
-                compression=None,
-                max_size=None,
-                ping_interval=PING_INTERVAL_SECS,
-                ping_timeout=PING_TIMEOUT_SECS,
-            )
-            metadata = msgpack_numpy.unpackb(conn.recv())
-            return conn, metadata
-        except:
-            logging.info("Connection to server with ws:// failed. Trying wss:// ...")
-
-        self._uri = "wss://" + self._uri.split("//")[1]
+    def _connect_once(self, uri: str) -> Tuple[websockets.sync.client.ClientConnection, Dict]:
         conn = websockets.sync.client.connect(
-            self._uri,
+            uri,
             compression=None,
             max_size=None,
             ping_interval=PING_INTERVAL_SECS,
@@ -54,11 +42,42 @@ class DreamZeroWebsocketClient:
         metadata = msgpack_numpy.unpackb(conn.recv())
         return conn, metadata
 
+    def _wait_for_server(self) -> Tuple[websockets.sync.client.ClientConnection, Dict]:
+        logging.info(f"Waiting for server at {self._uri}...")
+        try:
+            conn, metadata = self._connect_once(self._uri)
+            return conn, metadata
+        except Exception:
+            logging.info("Connection with ws:// failed. Trying wss:// ...")
+
+        wss_uri = "wss://" + self._uri.split("//")[1]
+        conn, metadata = self._connect_once(wss_uri)
+        self._uri = wss_uri
+        return conn, metadata
+
+    def _reconnect(self) -> None:
+        retry_delay = 2
+        while True:
+            logging.warning(f"WebSocket connection closed. Reconnecting to {self._connected_uri}...")
+            try:
+                self._ws, self._server_metadata = self._connect_once(self._connected_uri)
+                logging.info("Reconnected to server.")
+                return
+            except Exception as e:
+                logging.warning(f"Reconnect failed: {e}. Retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+
     def infer(self, obs: Dict) -> Dict:
         obs["endpoint"] = "infer"
         data = self._packer.pack(obs)
-        self._ws.send(data)
-        response = self._ws.recv()
+        try:
+            self._ws.send(data)
+            response = self._ws.recv()
+        except websockets.exceptions.ConnectionClosedError:
+            logging.warning("ConnectionClosedError during infer. Reconnecting and retrying...")
+            self._reconnect()
+            self._ws.send(data)
+            response = self._ws.recv()
         if isinstance(response, str):
             raise RuntimeError(f"Error in inference server:\n{response}")
         return msgpack_numpy.unpackb(response)
@@ -68,8 +87,14 @@ class DreamZeroWebsocketClient:
             reset_info = {}
         reset_info["endpoint"] = "reset"
         data = self._packer.pack(reset_info)
-        self._ws.send(data)
-        response = self._ws.recv()
+        try:
+            self._ws.send(data)
+            response = self._ws.recv()
+        except websockets.exceptions.ConnectionClosedError:
+            logging.warning("ConnectionClosedError during reset. Reconnecting and retrying...")
+            self._reconnect()
+            self._ws.send(data)
+            response = self._ws.recv()
         return response
 
 class DreamZero_Policy(InferencePolicy):

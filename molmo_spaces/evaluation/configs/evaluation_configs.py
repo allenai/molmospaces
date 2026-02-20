@@ -127,7 +127,7 @@ class JsonBenchmarkEvalConfig(MlSpacesExpConfig):
 class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: PiPolicyConfig = PiPolicyConfig()
-    policy_dt_ms: float = 500.0  # Match your model's expected control rate
+    policy_dt_ms: float = 100.0  # Match your model's expected control rate
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
@@ -157,7 +157,7 @@ class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):
 class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: DreamZeroPolicyConfig = DreamZeroPolicyConfig()
-    policy_dt_ms: float = 500.0  # Match your model's expected control rate
+    policy_dt_ms: float = 100.0
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
