@@ -187,7 +187,6 @@ class PromptSampler:
         else:
             self._cached_prompt = self.prompt_templates[self.current_index].format(object_name)
 
-        log.info(f"The prompt is: {self._cached_prompt}")
         return self._cached_prompt
 
     def clean_object_name(self, task: BaseMujocoTask) -> str:
