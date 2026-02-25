@@ -47,6 +47,11 @@ from molmo_spaces.evaluation.benchmark_schema import (
     RobotMountedCameraSpec,
     get_task_spec_field_names,
 )
+from molmo_spaces.env.data_views import (
+    MlSpacesArticulationObject,
+    MlSpacesObject,
+    create_mlspaces_body,
+)
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
@@ -285,6 +290,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         task_cls = spec.get_task_cls()
         task_cls_to_type = {
             "molmo_spaces.tasks.pick_task.PickTask": "pick",
+            "molmo_spaces.tasks.opening_tasks.OpeningTask": "open",
             "molmo_spaces.tasks.pick_and_place_task.PickAndPlaceTask": "pick_and_place",
             "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.opening_tasks.RBY1DoorOpeningTask": "door_opening",
@@ -297,6 +303,53 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             f"Cannot infer task_type from task_cls: {task_cls}. "
             f"'task_type' should be specified explicitly in the episode spec."
         )
+
+    def set_joint_values(self, env: CPUMujocoEnv) -> None:
+        # set the pickup object joint positions
+        om = env.object_managers[env.current_batch_index]
+        pickup_obj = om.get_object_by_name(self.episode_spec.task["pickup_obj_name"])
+        from molmo_spaces.utils.grasp_sample import has_joint_grasp_file
+
+        if not isinstance(pickup_obj, MlSpacesArticulationObject):
+            return
+        # only do MlSpacesArticulationObject
+
+        # initialize the task target state
+        joint_names = pickup_obj.joint_names
+        joint_names_with_grasp_file = []
+        for joint_name in joint_names:
+            thor_object_name = (
+                env.current_scene_metadata.get("objects", {})
+                .get(pickup_obj.name, {})
+                .get("asset_id", None)
+            )
+            thor_joint_name = (
+                env.current_scene_metadata.get("objects", {})
+                .get(pickup_obj.name, {})
+                .get("name_map", {})
+                .get("joints", {})
+                .get(joint_name, None)
+            )
+            if has_joint_grasp_file(thor_object_name, thor_joint_name):
+                joint_names_with_grasp_file.append(joint_name)
+        if len(joint_names_with_grasp_file) == 0:
+            raise ValueError(f"No joints with grasp file found for {pickup_obj.name}")
+
+        target_joint_name = None
+        try:
+            target_joint_name = self.episode_spec.task["joint_name"]
+        except AttributeError:
+            log.warning(f"Not setting joint of {pickup_obj}")
+            return
+
+        target_joint_index = list(joint_names).index(target_joint_name)
+        try:
+            joint_start_position = self.episode_spec.task["joint_start_position"][0]
+        except AttributeError as e:
+            log.warning("Not setting joint.")
+            raise e
+
+        pickup_obj.set_joint_position(target_joint_index, joint_start_position)
 
     def _build_camera_config_from_spec(self, episode_spec: EpisodeSpec) -> CameraSystemConfig:
         """Build a CameraSystemConfig from the episode spec's camera list.
@@ -514,6 +567,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
                     body.quat = pose[3:7]
 
         mujoco.mj_forward(model, data)
+        self.set_joint_values(env)
 
         # Set robot joint positions from episode spec
         for group_name, qpos in self.episode_spec.robot.init_qpos.items():
