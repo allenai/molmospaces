@@ -347,7 +347,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             joint_start_position = self.episode_spec.task["joint_start_position"][0]
             if not np.isclose(joint_start_position, 0.0, atol=0.001):
                 self.config.task_type = "close"
-        except AttributeError as e:
+        except (AttributeError, KeyError):
             log.warning("Not setting joint.")
             raise e
 
