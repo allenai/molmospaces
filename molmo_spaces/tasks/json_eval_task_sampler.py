@@ -338,7 +338,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         target_joint_name = None
         try:
             target_joint_name = self.episode_spec.task["joint_name"]
-        except AttributeError:
+        except (AttributeError, KeyError):
             log.warning(f"Not setting joint of {pickup_obj}")
             return
 
