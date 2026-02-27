@@ -111,7 +111,7 @@ class OpeningTask(PickTask):
                 else:
                     rewards_envs[n] = 0.0
 
-        if self.config.task_type == "close":
+        elif self.config.task_type == "close":
             # for close, assume only one object is open
             for n in range(self._env.n_batch):
                 assert len(self.articulation_objects) == 1
@@ -130,6 +130,9 @@ class OpeningTask(PickTask):
 
             # negate the quanity
             rewards_envs = 1 - rewards_envs
+        else:
+            raise ValueError(f"Invalid task type: {self.config.task_type}")
+        
         return rewards_envs
 
     def get_info(self) -> list[dict[str, Any]]:
