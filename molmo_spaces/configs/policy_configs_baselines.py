@@ -9,7 +9,6 @@ class PiPolicyConfig(BasePolicyConfig):
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 8
-    light_level: float = 0.0
 
     policy_cls: type = None
     policy_type: str = "learned"
@@ -30,7 +29,6 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 24
-    light_level: float = 0.0
 
     policy_cls: type = None
     policy_type: str = "learned"
