@@ -31,6 +31,7 @@ from molmo_spaces.utils.mp_logging import (
 )
 from molmo_spaces.utils.profiler_utils import DatagenProfiler, Profiler
 from molmo_spaces.utils.save_utils import prepare_episode_for_saving, save_trajectories
+from molmo_spaces.policy.learned_policy.utils import PromptSampler
 
 # Set multiprocessing context based on CUDA availability
 # forkserver is safer for CUDA, spawn for fallback
@@ -127,6 +128,13 @@ def setup_policy(
 
     if preloaded_policy is not None:
         policy = preloaded_policy
+        if policy.task_type != exp_config.task_type:
+            policy.task_type = exp_config
+            policy.prompt_sampler = PromptSampler(
+                task_type=exp_config.task_type,
+                prompt_templates=exp_config.policy_config.prompt_templates,
+                prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            )
     else:
         policy = exp_config.policy_config.policy_cls(exp_config, task)
 
