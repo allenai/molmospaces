@@ -8,6 +8,8 @@ class PiPolicyConfig(BasePolicyConfig):
     # remote_config: None -> launch local server
     # or dict(host,port) -> attaches to remote server
     remote_config: dict | None = dict(host="localhost", port=8080)
+    prompt_object_word_num: str = 1  # number of words as the object name
+    prompt_templates: list[str] | None = None
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 8

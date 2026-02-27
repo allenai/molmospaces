@@ -100,7 +100,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
 
     # Cluttering configuration
     clutter_scene_around_target_object: bool = (
-        True  # change to True if you want cluttering in pick task for commonsense
+        False  # change to True if you want cluttering in pick task for commonsense
     )
     covering: bool = (
         False  # If you want objects sampled on top of pickup object as opposed to around
@@ -113,7 +113,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         # cases for VLAs.
     )
     clutter_with_same_class_objects: bool = (
-        True  # If you want the surrounding clutter to be the same object
+        False  # If you want the surrounding clutter to be the same object
     )
 
     num_clutter_objects: int = 2  # Number of clutter objects to place around the target object

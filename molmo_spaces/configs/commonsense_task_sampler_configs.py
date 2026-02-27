@@ -15,3 +15,24 @@ class BlockSupportTaskSamplerConfig(PickTaskSamplerConfig):
     # Disable cluttering since we focus on the support cube
     clutter_scene_around_target_object: bool = False
     max_robot_to_block_dist: float = 0.7
+
+
+class MugBallPickTaskSamplerConfig(PickTaskSamplerConfig):
+    """Configuration for the mug-ball pick task sampler."""
+
+    task_sampler_class: type | None = None  # Will be set to MugBallPickTaskSampler
+
+    clutter_scene_around_target_object: bool = False
+    max_robot_to_block_dist: float = 0.7
+
+
+class SemanticGraspPickTaskSamplerConfig(PickTaskSamplerConfig):
+    """Configuration for the semantic grasp pick task sampler."""
+
+    task_sampler_class: type | None = None  # Will be set to SemanticGraspPickTaskSampler
+
+    clutter_scene_around_target_object: bool = False
+    pickup_types: list[str] = [
+        # "ButterKnife", "Cup", "Fork", "Knife", "Ladle", "Mug", "Pan", "Spoon",
+        "Pan",
+    ]

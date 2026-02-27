@@ -100,6 +100,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
                     raise
 
     def render(self, obs):
+        obs = obs[0]
         views = np.concatenate([obs["wrist_camera"], obs["exo_camera_1"]], axis=1)
         cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
         cv2.waitKey(1)
@@ -123,26 +124,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         if isinstance(obs, list | tuple):
             obs = obs[0]
 
-        grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
-        exo_camera_key = (
-            "droid_shoulder_light_randomization"
-            if "droid_shoulder_light_randomization" in obs
-            else "exo_camera_1"
-        )
-        wrist_camera_key = (
-            "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
-        )
-        model_input = {
-            "observation/exterior_image_1_left": resize_with_pad(obs[exo_camera_key], 224, 224),
-            "observation/wrist_image_left": resize_with_pad(obs[wrist_camera_key], 224, 224),
-            "observation/joint_position": np.array(obs["qpos"]["arm"][:7]).reshape(
-                7,
-            ),
-            "observation/gripper_position": np.array(grip).reshape(
-                1,
-            ),
-            "prompt": prompt.lower(),
-        }
+        model_input["prompt"] = prompt
         return model_input
 
     def inference_model(self, model_input):

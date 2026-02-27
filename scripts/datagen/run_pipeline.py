@@ -168,6 +168,12 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     elif task_type == "block_stacking":
         datagen_cfg = BlockSupportConfig()
         datagen_cfg.policy_config = BlockStackingPolicyConfig()
+    elif task_type == "mug_ball_pick":
+        datagen_cfg = MugBallPickConfig()
+        datagen_cfg.policy_config = PickPlannerPolicyConfig()
+    elif task_type == "semantic_grasp_pick":
+        datagen_cfg = SemanticGraspPickConfig()
+        datagen_cfg.policy_config = PickPlannerPolicyConfig()
     else:
         raise ValueError(f"Invalid task type: {task_type}")
 
@@ -316,7 +322,7 @@ def main(args: argparse.ArgumentParser) -> None:
             exp_config.task_horizon = 80
         elif args.policy == "pi":
             exp_config.policy_dt_ms = 500
-            exp_config.task_horizon = 300
+            exp_config.task_horizon = 100 # FIXME: was 300 change back this is just debugging
         elif args.policy == "teleop":
             exp_config.policy_dt_ms = 40  # More responsive for teleoperation
             exp_config.task_horizon = 1000

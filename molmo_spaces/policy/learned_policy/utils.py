@@ -27,6 +27,9 @@ class PromptSampler:
         "close": [
             "close the {}.",
         ],
+        "mug_ball_pick": [
+            "Pick up the mug with the ball under it.",
+        ],
     }
 
     def __init__(

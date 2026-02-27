@@ -31,6 +31,7 @@ from molmo_spaces.utils.grasps import (
     has_valid_pickup_grasps,
 )
 from molmo_spaces.utils.grasp_sample import (
+    get_grasp_collision_body_name,
     get_noncolliding_grasp_mask,
 )
 from molmo_spaces.utils.lazy_loading_utils import install_uid
@@ -187,6 +188,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         self._added_pickup_staging_poses: dict = {}
         self.added_objects: dict = {}
         self._valid_candidate_uids: list[str] | None = None
+        # Same-class clutter object tracking
+        # Maps asset_id -> list of clutter object names that were pre-added
+        self._same_class_clutter_objects: dict[str, list[str]] = {}
+        self._same_class_clutter_metadata_adder: SameClassClutterMetadataAdder | None = None
+        # Store the current scene path for use in add_auxiliary_objects
+        self._current_scene_path: str | None = None
 
     def _remove_candidate_object(self, obj_name: str) -> None:
         """Remove an object from candidate_objects list."""
@@ -284,7 +291,10 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                     continue
 
             # Check if we have grasp data for this asset
-            if not has_grasp_folder(asset_id):
+            if not has_pickup_grasp_path(
+                asset_id,
+                grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+            ):
                 continue
 
             if asset_id not in asset_id_to_info:
@@ -880,13 +890,18 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
             mujoco.mj_forward(env.current_model, env.current_data)
 
-            # Check grasp feasibility
+            # Check grasp feasibility before proceeding
+            # Only run collision check if grasp_collision bodies were added to the scene
+            # (they are added by the policy's add_auxiliary_objects when filter_colliding_grasps is True)
+            has_grasp_collision_bodies = (
+                get_grasp_collision_body_name(0) in env.current_model.names.decode()
+            )
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_check_grasps")
 
             pickup_obj = om.get_object_by_name(pickup_obj_name)
             asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
-            if asset_uid:
+            if asset_uid and has_grasp_collision_bodies:
                 try:
                     grasp_poses_world = get_pickup_grasps(
                         env,

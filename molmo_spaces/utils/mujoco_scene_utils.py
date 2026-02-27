@@ -320,6 +320,13 @@ def clear_surface(
                     # Use the same position update method as place_object_near
                     object_body = create_mjthor_body(data, other_body_id)
                     object_body.pose = away_pose
+                    # Disable gravity and zero velocities so displaced objects
+                    # don't fall forever through empty space
+                    jnt_id = model.body_jntadr[other_body_id]
+                    if jnt_id != -1 and model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_FREE:
+                        dofadr = model.jnt_dofadr[jnt_id]
+                        data.qvel[dofadr : dofadr + 6] = 0
+                    model.body_gravcomp[other_body_id] = 1.0
                     mujoco.mj_fwdPosition(model, data)
                     moved_objects.add(other_body_id)
 
