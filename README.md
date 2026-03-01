@@ -18,6 +18,15 @@
   <a href="https://huggingface.co/datasets/allenai/molmospaces">
     <img alt="Datasets" src="https://img.shields.io/badge/HF-Datasets-yellow?logo=huggingface">
   </a>
+  <a href="https://molmospaces.allen.ai/leaderboard">
+  <img alt="Leaderboard"
+       src="https://img.shields.io/badge/MolmoSpaces-Leaderboard-blue">
+</a>
+
+<a href="https://molmospaces.allen.ai/demo">
+  <img alt="Demo"
+       src="https://img.shields.io/badge/MolmoSpaces-Demo-orange">
+</a>
 </p>
 
 <div align="center">
@@ -33,6 +42,7 @@
 - **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
 - **[2026/02/11]** 🔥 **Datasets** for assets and scenes in MJCF and USDa format,
 - **[2026/02/11]** 🔥 **Benchmark** for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs
+- **[2026/02/27]** 🔥 **Leaderboards** are [out](https://molmospaces.allen.ai/leaderboard).
 - **[Coming Soon]** 🔥 Code for scripted planners, data generation, and benchmark creation
 
 
