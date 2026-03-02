@@ -59,14 +59,27 @@ class CAPPolicyConfig(BasePolicyConfig):
             self.policy_cls = CAP_Policy
 
 class TeleopPolicyConfig(BasePolicyConfig):
-    name: str = "teleop"
+    device: str = "keyboard"  # "spacemouse", "keyboard", "phone"
     policy_cls: type = None
     policy_type: str = "teleop"
+    # keyboard params
+    step_size: float = 0.005
+    rot_step: float = 0.02
+    # spacemouse params
+    pos_sensitivity: float = 0.005
+    rot_sensitivity: float = 0.02
+    product_id: int = 50741  # 50741=wireless, 50734=wired
 
     def model_post_init(self, __context) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         super().model_post_init(__context)
         if self.policy_cls is None:
-            from molmo_spaces.policy.learned_policy.phone_policy import Phone_Policy
-
-            self.policy_cls = Phone_Policy
+            if self.device == "keyboard":
+                from molmo_spaces.policy.learned_policy.keyboard_policy import Keyboard_Policy
+                self.policy_cls = Keyboard_Policy
+            elif self.device == "spacemouse":
+                from molmo_spaces.policy.learned_policy.spacemouse_policy import SpaceMouse_Policy
+                self.policy_cls = SpaceMouse_Policy
+            elif self.device == "phone":
+                from molmo_spaces.policy.learned_policy.phone_policy import Phone_Policy
+                self.policy_cls = Phone_Policy

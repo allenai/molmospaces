@@ -147,7 +147,7 @@ class CAPPolicyEvalConfig(JsonBenchmarkEvalConfig):
 class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: TeleopPolicyConfig = TeleopPolicyConfig()
-    policy_dt_ms: float = 40  # More responsive for teleoperation
+    policy_dt_ms: float = 40
 
     def model_post_init(self, __context):
         super().model_post_init(__context)

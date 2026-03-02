@@ -21,6 +21,7 @@ dependencies = [
     "future>=1.0.0",
     "gymnasium",
     "h5py>=3.10.0",
+    "hidapi",
     "imageio[ffmpeg]",
     "jax~=0.6.2",
     "jaxlie~=1.5.0",
