@@ -46,8 +46,23 @@ def cap_robot_eval_override(
     }
 
 
+def franka_panda_robot_eval_override(
+    episode_spec: EpisodeSpec,
+    camera_config: CameraSystemConfig,
+) -> None:
+    log.info("Applying Franka Panda robot evaluation overrides")
+
+    for cam in camera_config.cameras:
+        if cam.name == "wrist_camera":
+            cam.reference_body_names = ["robot_0/hand"]
+            break
+
+    episode_spec.robot.init_qpos["arm"][0] = -0.785398
+
+
 ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {
     "FrankaCAPRobotConfig": cap_robot_eval_override,
+    "FrankaPandaRobotConfig": franka_panda_robot_eval_override,
 }
 
 

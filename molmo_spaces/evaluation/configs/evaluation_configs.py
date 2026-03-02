@@ -35,10 +35,12 @@ from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
     DreamZeroPolicyConfig,
+    LAPPolicyConfig,
     PiPolicyConfig,
+    StereoVLAPolicyConfig,
     TeleopPolicyConfig,
 )
-from molmo_spaces.configs.robot_configs import FrankaCAPRobotConfig, FrankaRobotConfig
+from molmo_spaces.configs.robot_configs import FrankaCAPRobotConfig, FrankaPandaRobotConfig, FrankaRobotConfig
 from molmo_spaces.configs.task_configs import BaseMujocoTaskConfig
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
@@ -148,6 +150,26 @@ class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: TeleopPolicyConfig = TeleopPolicyConfig()
     policy_dt_ms: float = 40  # More responsive for teleoperation
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+class LAPPolicyEvalConfig(JsonBenchmarkEvalConfig):
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+    policy_config: LAPPolicyConfig = LAPPolicyConfig()
+    policy_dt_ms: float = 100.0
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+class StereoVLAPolicyEvalConfig(JsonBenchmarkEvalConfig):
+    robot_config: FrankaPandaRobotConfig = FrankaPandaRobotConfig()
+    policy_config: StereoVLAPolicyConfig = StereoVLAPolicyConfig()
+    policy_dt_ms: float = 100.0
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
