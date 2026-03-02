@@ -13,7 +13,7 @@ dependencies = [
     "boto3>=1.35.0",
     "coacd>=1.0.7",
     "compress-json>=1.1.1",
-    "decord; sys_platform == 'linux'", # For Linux
+    "decord; sys_platform == 'linux' and platform_machine == 'x86_64'", # decord wheels are not available on linux aarch64
     "eva-decord; sys_platform == 'darwin'", # For macOS
     "einops>=0.8.1",
     "ffmpeg-python>=0.2.0",
