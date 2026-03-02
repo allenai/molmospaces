@@ -5,20 +5,11 @@
   <h1>MolmoSpaces: A Large-Scale Open Ecosystem for Robot Manipulation and Navigation</h1>
 </div>
 
-<p align="center">
-  <a href="https://github.com/allenai/molmospaces/blob/main/LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/github/license/allenai/OLMo">
-  </a>
-  <a href="https://allenai.org/blog/molmospaces">
-    <img alt="Blog Post" src="https://img.shields.io/badge/MolmoSpaces-Blog-F0529C">
-  </a>
-  <a href="https://allenai.org/papers/molmospaces">
-    <img alt="Paper URL" src="https://img.shields.io/badge/MolmoSpaces-Paper-105257">
-  </a>
-  <a href="https://huggingface.co/datasets/allenai/molmospaces">
-    <img alt="Datasets" src="https://img.shields.io/badge/HF-Datasets-yellow?logo=huggingface">
-  </a>
-</p>
+</br>
+<div align="center">
+  <a href="http://allenai.org/papers/molmospaces" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='36'><rect width='100' height='36' rx='18' fill='%234A90E2'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='DejaVu Sans,sans-serif' font-size='13' fill='white'>📄 Paper</text></svg>"/></a>&nbsp;&nbsp;<a href="https://github.com/allenai/molmospaces" target="_blank" rel="noopener noreferrer"><img alt="Code" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='36'><rect width='100' height='36' rx='18' fill='%23181717'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='DejaVu Sans,sans-serif' font-size='13' fill='white'>💻 Code</text></svg>"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/datasets/allenai/molmospaces" target="_blank" rel="noopener noreferrer"><img alt="Data" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='36'><rect width='100' height='36' rx='18' fill='%23FF9D00'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='DejaVu Sans,sans-serif' font-size='13' fill='white'>🤗 Data</text></svg>"/></a>&nbsp;&nbsp;<a href="https://molmospaces.allen.ai/" target="_blank" rel="noopener noreferrer"><img alt="Demo" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='36'><rect width='100' height='36' rx='18' fill='%2300C853'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='DejaVu Sans,sans-serif' font-size='13' fill='white'>🚀 Demo</text></svg>"/></a>&nbsp;&nbsp;<a href="https://molmospaces.allen.ai/leaderboard" target="_blank" rel="noopener noreferrer"><img alt="Leaderboard" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='36'><rect width='140' height='36' rx='18' fill='%23E91E63'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='DejaVu Sans,sans-serif' font-size='13' fill='white'>🏆 Leaderboard</text></svg>"/></a>
+</div>
+<br/>
 
 <div align="center">
   <img src="docs/images/Multi_Simulator_Pan.jpg" alt="Multi-Simulator-Pan" width="1200" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
@@ -30,10 +21,11 @@
 
 ---
 ### Updates
-- **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
-- **[2026/02/11]** 🔥 **Datasets** for assets and scenes in MJCF and USDa format,
-- **[2026/02/11]** 🔥 **Benchmark** for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs
 - **[Coming Soon]** 🔥 Code for scripted planners, data generation, and benchmark creation
+- **[2026/02/27]** 🔥 **Leaderboards** are [out](https://molmospaces.allen.ai/leaderboard).
+- **[2026/02/11]** 🔥 **Benchmark** for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs
+- **[2026/02/11]** 🔥 **Datasets** for assets and scenes in MJCF and USDa format,
+- **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
 
 
 
