@@ -64,6 +64,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "franka_cap": "20260213",
         "floating_rum": "20251110",
         "floating_robotiq": "20260208_retry4",
+        #"franka_fr3": "20250827",
     },
     scenes={
         "ithor": "20251217",
