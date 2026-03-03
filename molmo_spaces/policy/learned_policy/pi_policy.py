@@ -12,6 +12,7 @@ from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+SAMPLE_PROMPTS = False 
 
 class PI_Policy(InferencePolicy):
     def __init__(
@@ -21,11 +22,14 @@ class PI_Policy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config, exp_config.task_type)
         self.remote_config = exp_config.policy_config.remote_config
-        self.prompt_sampler = PromptSampler(
-            task_type=exp_config.task_type,
-            prompt_templates=exp_config.policy_config.prompt_templates,
-            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
-        )
+        if SAMPLE_PROMPTS:
+            self.prompt_sampler = PromptSampler(
+                task_type=exp_config.task_type,
+                prompt_templates=exp_config.policy_config.prompt_templates,
+                prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            )
+        else:
+            self.prompt_sampler = None
         self.checkpoint_path = exp_config.policy_config.checkpoint_path
         self.grasping_type = exp_config.policy_config.grasping_type
         self.chunk_size = exp_config.policy_config.chunk_size
@@ -35,7 +39,8 @@ class PI_Policy(InferencePolicy):
     def reset(self):
         self.actions_buffer = None
         self.current_buffer_index = 0
-        self.prompt_sampler.next()
+        if self.prompt_sampler is not None:
+            self.prompt_sampler.next()
         self.starting_time = None
 
     def prepare_model(self):
@@ -93,7 +98,10 @@ class PI_Policy(InferencePolicy):
 
     def obs_to_model_input(self, obs):
         # self.render(obs)
-        prompt = self.prompt_sampler.get_prompt(self.task).lower()
+        if self.prompt_sampler is None:
+            prompt = self.task.get_task_description()
+        else:
+            prompt = self.prompt_sampler.get_prompt(self.task).lower()
 
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         exo_camera_key = "droid_shoulder_light_randomization" if "droid_shoulder_light_randomization" in obs else "exo_camera_1"
@@ -151,7 +159,12 @@ class PI_Policy(InferencePolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        if self.prompt_sampler is not None:
+            info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        else:
+            info["prompt"] = self.task.get_task_description()
+        log.info(f"Current prompt: {info['prompt']}")
+        
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()
         return info
