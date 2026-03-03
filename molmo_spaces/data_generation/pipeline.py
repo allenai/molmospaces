@@ -749,6 +749,9 @@ class ParallelRolloutRunner:
                 profiler.start("task_step")
             if datagen_profiler is not None:
                 datagen_profiler.start("task_step")
+            if action_cmd == None:
+                print("Policy returned None action, ending episode")
+                break
             observation, reward, terminal, truncated, infos = task.step(action_cmd)
             if profiler is not None:
                 profiler.end("task_step")

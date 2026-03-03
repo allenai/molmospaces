@@ -4,6 +4,7 @@ import time
 
 import cv2
 import numpy as np
+from pynput import keyboard
 
 try:
     import hid
@@ -148,7 +149,25 @@ class SpaceMouse_Policy(InferencePolicy):
         self.pos_sensitivity = exp_config.policy_config.pos_sensitivity
         self.rot_sensitivity = exp_config.policy_config.rot_sensitivity
         self._mouse = _SpaceMouseReader(exp_config.policy_config.product_id)
-        log.info("SpaceMouse ready. Right click: engage. Left click: toggle gripper. Right double-click: disengage.")
+        self._pressed = set()
+        self._listener = keyboard.Listener(
+            on_press=self._on_press,
+            on_release=self._on_release,
+        )
+        self._listener.start()
+        log.info("SpaceMouse ready. Right click: engage. Left click: toggle gripper. Right double-click: disengage. q: pause.")
+
+    def _on_press(self, key):
+        self._pressed.add(key)
+
+    def _on_release(self, key):
+        self._pressed.discard(key)
+
+    def _key(self, char):
+        return keyboard.KeyCode.from_char(char) in self._pressed
+
+    def _is_paused(self):
+        return self._key("q")
 
     def reset(self):
         self.init_robot_pose = None
@@ -236,14 +255,15 @@ class SpaceMouse_Policy(InferencePolicy):
         }
 
     def inference_model(self, model_input):
+        if self._is_paused():
+            return None
+
         ctrl = self._mouse.control if self._mouse.engaged else [0.0] * 6
-        log.info(f"engaged={self._mouse.engaged} ctrl={[round(v,3) for v in ctrl]} gripper_open={self._mouse.gripper_open}")
         delta_pos = np.array(ctrl[:3]) * self.pos_sensitivity
         delta_rot = R.from_euler("xyz", np.array(ctrl[3:]) * self.rot_sensitivity).as_matrix()
 
         new_position = self.current_position + self.current_rotation @ delta_pos
         new_rotation = delta_rot @ self.current_rotation
-        log.info(f"target_position={np.round(new_position, 4)}")
 
         gripper_open = self._mouse.gripper_open
 
