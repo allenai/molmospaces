@@ -61,6 +61,7 @@ class PickTaskConfig(BaseMujocoTaskConfig):
     pickup_obj_name: str | None = None
 
     # Task parameters
+    scene_settle_duration: float = 0.0  # seconds to wait for scene to settle before measuring poses
     succ_pos_threshold: float = 0.01  # lower threshold lift height in meters
     # succ_rot_threshold: float = 0.15  # Rotation success threshold in radians
 
