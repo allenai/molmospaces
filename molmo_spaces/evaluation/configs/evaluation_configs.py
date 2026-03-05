@@ -187,7 +187,7 @@ class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: PiPolicyConfig = PiPolicyConfig()
     # policy_dt_ms: float = 200.0  # Match your model's expected control rate
-    policy_dt_ms: float = 66.0  # ~15hz
+    policy_dt_ms: float = 500.0  # ~15hz
     end_on_success: bool = True  # End episode immediately upon success, ignoring task_horizon
 
     def model_post_init(self, __context):

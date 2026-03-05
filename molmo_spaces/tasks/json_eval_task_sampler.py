@@ -37,6 +37,7 @@ from molmo_spaces.configs.task_configs import (
     NavToObjTaskConfig,
     OpeningTaskConfig,
     PickAndPlaceColorTaskConfig,
+    PackingTaskConfig,
     PickAndPlaceNextToTaskConfig,
     PickAndPlaceTaskConfig,
     PickTaskConfig,
@@ -82,6 +83,7 @@ TASK_CLASS_TO_CONFIG_CLASS: dict[str, type[BaseMujocoTaskConfig]] = {
     "OpeningTask": OpeningTaskConfig,
     "DoorOpeningTask": DoorOpeningTaskConfig,
     "NavToObjTask": NavToObjTaskConfig,
+    "PackingTask": PackingTaskConfig,
 }
 
 # Mapping from task class names to their benchmark schema spec classes.
@@ -345,6 +347,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.pick_and_place_color_task.PickAndPlaceColorTask": "pick_and_place_color",
             "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.nav_task.NavToObjTask": "nav_to_obj",
+            "mujoco_thor.tasks.packing_task.PackingTask": "packing",
         }
 
         if task_cls in task_cls_to_type:
@@ -637,9 +640,15 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         mujoco.mj_forward(model, data)
         self.set_joint_values(env)
 
-        # Set robot joint positions from episode spec
-        for group_name, qpos in self.episode_spec.robot.init_qpos.items():
-            robot_view.get_move_group(group_name).joint_pos = np.array(qpos)
+        # Set robot joint positions (override with known-good qpos for packing eval)
+        test_qpos = {
+            "base": [],
+            "arm": [[0, -1 / 5 * np.pi, 0, -4 / 5 * np.pi, 0, 3 / 5 * np.pi, 0.0]],
+            "gripper": [0.00296, 0.00296],
+        }
+        for group_name in self.episode_spec.robot.init_qpos:
+            robot_view.get_move_group(group_name).joint_pos = test_qpos[group_name]
+
         mujoco.mj_forward(model, data)
 
         for robot in env.robots:

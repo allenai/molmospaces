@@ -161,6 +161,12 @@ class PickAndPlaceColorTaskSpec(PickAndPlaceTaskSpec):
     other_receptacle_start_poses: dict[str, list[float]] | None = None
 
 
+class PackingTaskSpec(PickAndPlaceTaskSpec):
+    """Task-specific parameters for packing tasks."""
+
+    packing_object_names: list[str] | None = None
+
+
 class OpenCloseTaskSpec(BaseTaskSpec):
     """Task-specific parameters for open/close tasks."""
 
@@ -203,6 +209,7 @@ class DoorOpeningTaskSpec(BaseTaskSpec):
 TaskSpec = (
     PickTaskSpec
     | PickAndPlaceTaskSpec
+    | PackingTaskSpec
     | PickAndPlaceColorTaskSpec
     | PickAndPlaceNextToTaskSpec
     | OpenCloseTaskSpec
@@ -216,6 +223,7 @@ ALL_TASK_SPEC_CLASSES: list[type[BaseTaskSpec]] = [
     PickAndPlaceTaskSpec,
     PickAndPlaceNextToTaskSpec,
     PickAndPlaceColorTaskSpec,
+    PackingTaskSpec,
     OpenCloseTaskSpec,
     NavToObjTaskSpec,
     DoorOpeningTaskSpec,

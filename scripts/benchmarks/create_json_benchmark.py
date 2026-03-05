@@ -395,6 +395,9 @@ def frozen_config_to_episode_spec(
     add_if_present("task_success_threshold")
     add_if_present("any_inst_of_category")
 
+    # Packing fields
+    add_if_present("packing_object_names")
+
     # Nav fields
     add_if_present("pickup_obj_candidates")
 
@@ -519,14 +522,46 @@ def analyze_single_hdf5_for_json(
                 raise ValueError(f"Trajectory {traj_key} has empty 'actions' group")
             episode_data["episode_length"] = len(actions_group[action_keys[0]])
 
-            # Success/failure - require success field
-            if "success" not in traj_group:
-                raise ValueError(f"Trajectory {traj_key} missing 'success' field")
-            success_array = np.array(traj_group["success"])
-            if len(success_array) == 0:
-                raise ValueError(f"Trajectory {traj_key} has empty 'success' array")
-            episode_data["success"] = bool(success_array[-1])
-            episode_data["first_success"] = np.argmax(success_array)
+            # Task progress (from task_info sensor, if available)
+            task_progress = None
+            try:
+                extra_group = traj_group["obs"]["extra"]
+                if "task_info" in extra_group:
+                    task_info_ds = extra_group["task_info"]
+                    if len(task_info_ds) > 0:
+                        last_entry = task_info_ds[-1]
+                        if isinstance(last_entry, (bytes, np.bytes_)):
+                            task_info_str = last_entry.decode("utf-8") if isinstance(last_entry, bytes) else bytes(last_entry).rstrip(b"\x00").decode("utf-8")
+                        elif isinstance(last_entry, np.ndarray):
+                            task_info_str = bytes(last_entry).rstrip(b"\x00").decode("utf-8")
+                        else:
+                            task_info_str = str(last_entry)
+                        task_info_dict = json.loads(task_info_str)
+                        task_progress = task_info_dict.get("task_progress")
+                        if task_progress is None:
+                            log.debug(
+                                f"{traj_key}: task_info keys={list(task_info_dict.keys())}, "
+                                f"'task_progress' not found"
+                            )
+                else:
+                    log.debug(
+                        f"{traj_key}: obs/extra keys={list(extra_group.keys())}, "
+                        f"'task_info' not found"
+                    )
+            except (KeyError, json.JSONDecodeError, UnicodeDecodeError) as e:
+                log.debug(f"{traj_key}: failed to parse task_info: {e}")
+            episode_data["task_progress"] = task_progress
+
+            # Success/failure - use task_progress if available, fall back to success field
+            if task_progress is not None:
+                episode_data["success"] = True  # will be filtered by task_progress_thresh later
+            elif "success" in traj_group:
+                success_array = np.array(traj_group["success"])
+                if len(success_array) == 0:
+                    raise ValueError(f"Trajectory {traj_key} has empty 'success' array")
+                episode_data["success"] = bool(success_array[-1])
+            else:
+                raise ValueError(f"Trajectory {traj_key} missing both 'task_progress' and 'success'")
 
             # Extract object info for balancing
             episode_data["object_name"] = obs_scene.get("object_name")
@@ -754,6 +789,12 @@ def main():
         help="Only print statistics, don't create benchmark",
     )
     parser.add_argument(
+        "--task_progress_thresh",
+        type=float,
+        default=None,
+        help="Minimum task_progress to consider an episode successful (e.g., 0.5 = at least half objects packed). If not set, uses the 'success' field.",
+    )
+    parser.add_argument(
         "--test",
         action="store_true",
         help="Test mode: process only 20 H5 files and create 5-episode benchmark",
@@ -810,10 +851,16 @@ def main():
     df_all = pd.DataFrame(rows)
     df_all["is_obja"] = df_all["object_category"].str.startswith("obja", na=False)
 
-    # Filter for successful episodes
-    # df_succ = df_all[df_all["success"] == True].copy()
-    df_succ = df_all[(df_all["success"] == True) & (df_all["first_success"] > 0)].copy()
-    # df_succ = df_all[(df_all["success"] == True) & (df_all["first_success"] >= 150)].copy()
+    # Filter for successful episodes (use task_progress threshold if provided)
+    if args.task_progress_thresh is not None and "task_progress" in df_all.columns:
+        mask = df_all["task_progress"].notna() & (df_all["task_progress"] >= args.task_progress_thresh)
+        df_succ = df_all[mask].copy()
+        log.info(
+            f"Filtering by task_progress >= {args.task_progress_thresh}: "
+            f"{mask.sum()}/{len(df_all)} episodes pass"
+        )
+    else:
+        df_succ = df_all[df_all["success"] == True].copy()
 
     # Exclude laptops for open/close tasks (based on current script logic)
     if "Open" in args.base_path or "Close" in args.base_path:

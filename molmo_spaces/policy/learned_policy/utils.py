@@ -22,7 +22,7 @@ class PromptSampler:
             "pick up the {} and place it on the {}.",
         ],
         "packing": [
-            "pack container.",
+            "pick up each item and pack it into the box.",
         ],
         "close": [
             "close the {}.",
@@ -85,6 +85,17 @@ class PromptSampler:
     def get_prompt(self, task: BaseMujocoTask) -> str:
         if self._cached_prompt is not None:
             return self._cached_prompt
+
+        # Check if the per-episode task_type differs from construction time
+        # (e.g., JsonBenchmarkEvalConfig overrides task_type per episode)
+        current_task_type = getattr(task.env.config, "task_type", self.task_type)
+        if (
+            current_task_type != self.task_type
+            and current_task_type in self.DEFAULT_TEMPLATES_BY_TASK
+        ):
+            self.task_type = current_task_type
+            self.prompt_templates = self.DEFAULT_TEMPLATES_BY_TASK[current_task_type]
+            self.current_index = 0
 
         object_uid = self.get_target_object_uid(task)
         target_name = task.env.config.task_config.pickup_obj_name

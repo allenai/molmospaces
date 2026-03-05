@@ -103,7 +103,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         True  # change to True if you want cluttering in pick task for commonsense
     )
     covering: bool = (
-        True  # If you want objects sampled on top of pickup object as opposed to around
+        False  # If you want objects sampled on top of pickup object as opposed to around
     )
     clutter_with_taller_objects: bool = True  # If you want the surrounding clutter to be taller.
     # Typically set this if you want occlusion rather than covering.
@@ -258,8 +258,10 @@ class PickAndPlaceColorTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
 
 
 class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
-    base_pose_sampling_radius_range: tuple[float, float] = (0.2, 0.6)
+    base_pose_sampling_radius_range: tuple[float, float] = (0.0, 0.7)
     min_object_to_receptacle_dist: float = 0.20  # 5cm further than default (0.15)
+    robot_object_z_offset_random_min: float = -0.25
+    robot_object_z_offset_random_max: float = 0.25
     box_uids: list[str] | None = None  # If None, uses Box_1..Box_30
 
 
