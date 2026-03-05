@@ -1,6 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
+
+# Allow importing molmo_spaces_isaac when run via isaaclab.sh -p .../viewer.py
+_src = Path(__file__).resolve().parent.parent.parent  # viewer -> assets -> molmo_spaces_isaac -> src
+if _src.exists() and str(_src) not in sys.path:
+    sys.path.insert(0, str(_src))
 
 from isaaclab.app import AppLauncher
 
@@ -38,8 +45,9 @@ from isaaclab.utils import configclass
 from pxr import Usd
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces_isaac import molmo_spaces_isaac_ROOT
-from molmo_spaces_isaac.utils.common import load_thor_assets_metadata
+from molmo_spaces_isaac import MOLMO_SPACES_ISAAC_BASE_DIR
+from molmo_spaces_isaac.arena.thor_asset import get_thor_assets_root
+from molmo_spaces_isaac.utils.common import PACKAGE_ROOT, load_thor_assets_metadata
 from molmo_spaces_isaac.utils.prims import (
     compute_bbox_size,
     get_prim_local_pose,
@@ -47,15 +55,18 @@ from molmo_spaces_isaac.utils.prims import (
     set_prim_pose,
 )
 
-DEFAULT_ASSETS_DIR = molmo_spaces_isaac_ROOT / "assets" / "usd" / "objects" / "thor"
+# Use same THOR root as Arena (MOLMO_ISAAC_ASSETS_ROOT / MOLMO_THOR_USD_DIR, then repo)
+DEFAULT_ASSETS_DIR = get_thor_assets_root()
 DEFAULT_MODEL_PATH = DEFAULT_ASSETS_DIR / "Apple_1_mesh" / "Apple_1_mesh.usda"
 
-DEFAULT_SCENES_DIR = molmo_spaces_isaac_ROOT / "assets" / "usd" / "scenes"
+DEFAULT_SCENES_DIR = PACKAGE_ROOT / "assets" / "usd" / "scenes"
 DEFAULT_SCENE_PATH = DEFAULT_SCENES_DIR / "ithor" / "FloorPlan1_physics" / "scene.usda"
 
-DEFAULT_RECORD_DIR = molmo_spaces_isaac_ROOT / "output" / "videos"
+DEFAULT_RECORD_DIR = PACKAGE_ROOT / "output" / "videos"
 
-DEFAULT_USD_THOR_METADATA = molmo_spaces_isaac_ROOT / "usd_assets_metadata.json"
+# Prefer repo root or package resources (file ships in resources/)
+_default_metadata = PACKAGE_ROOT / "usd_assets_metadata.json"
+DEFAULT_USD_THOR_METADATA = _default_metadata if _default_metadata.is_file() else MOLMO_SPACES_ISAAC_BASE_DIR / "resources" / "usd_assets_metadata.json"
 
 FIX_ASSETS_ROTATION = R.from_rotvec([90, 0, 0], degrees=True)
 
@@ -113,7 +124,7 @@ class AssetsViewerEnvCfg(DirectRLEnvCfg):
     episode_length_s: float = 100.0
     state_space = 0
 
-    sim: SimulationCfg = SimulationCfg(device="cpu", dt=1 / 120, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(device="cuda:0", dt=1 / 120, render_interval=decimation)
     scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1, env_spacing=1.0)
 
     mode: eMode = eMode.SINGLE
@@ -245,9 +256,29 @@ def main() -> int:
     if args.model != "" and Path(args.model).is_file():
         model_path = Path(args.model)
 
+    # Prefer GPU; fall back to CPU when PyTorch is not compiled with CUDA (e.g. Isaac Sim aarch64).
+    sim_device = getattr(args, "device", "cuda:0") or "cuda:0"
+    if sim_device == "cuda":
+        sim_device = "cuda:0"
+    if sim_device.startswith("cuda"):
+        try:
+            cuda_ok = torch.cuda.is_available()
+        except Exception:
+            cuda_ok = False
+        if not cuda_ok:
+            print("Torch not compiled with CUDA; using device cpu for simulation.", flush=True)
+            sim_device = "cpu"
+        else:
+            try:
+                torch.zeros(1, device=sim_device)
+            except AssertionError:
+                print("Torch not compiled with CUDA; using device cpu for simulation.", flush=True)
+                sim_device = "cpu"
+
     env_cfg = AssetsViewerEnvCfg()
     env_cfg.mode = eMode(args.mode)
     env_cfg.model_path = model_path if model_path is not None else DEFAULT_MODEL_PATH
+    env_cfg.sim.device = sim_device
     env_cfg.category = args.category
     env_cfg.use_mesh = args.use_mesh
 

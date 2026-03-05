@@ -1,28 +1,13 @@
+import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 
-import msgspec
+# Repo root (utils/common.py -> utils -> molmo_spaces_isaac -> repo)
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 @dataclass
-class BaseIsaaclabArgs:
-    headless: bool = False
-    livestream: int = -1
-    enable_cameras: bool = False
-    xr: bool = False
-    device: str = "cuda:0"
-    verbose: bool = False
-    info: bool = False
-    experience: str = ""
-    rendering_mode: Literal["performance", "balanced", "quality"] = "quality"
-    kit_args: str = ""
-    anim_recording_enabled: bool = False
-    anim_recording_start_time: float = 0
-    anim_recording_stop_time: float = 10
-
-
-class AssetGenMetadata(msgspec.Struct):
+class AssetGenMetadata:
     asset_id: str
     hash_id: str
     articulated: bool
@@ -33,8 +18,18 @@ def load_thor_assets_metadata(filepath: Path) -> dict[str, AssetGenMetadata]:
     if not filepath.is_file():
         raise RuntimeError(f"The given file '{filepath.as_posix()}' is not a valid file")
 
-    usd_assets_metadata: dict[str, AssetGenMetadata] = {}
-    with open(filepath, "rb") as fhandle:
-        usd_assets_metadata = msgspec.json.decode(fhandle.read(), type=dict[str, AssetGenMetadata])
+    with open(filepath, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    return usd_assets_metadata
+    result: dict[str, AssetGenMetadata] = {}
+    for key, val in data.items():
+        if isinstance(val, dict):
+            result[key] = AssetGenMetadata(
+                asset_id=val.get("asset_id", key),
+                hash_id=val.get("hash_id", ""),
+                articulated=bool(val.get("articulated", False)),
+                bbox_size=list(val.get("bbox_size", [])),
+            )
+        else:
+            result[key] = AssetGenMetadata(asset_id=key, hash_id="", articulated=False, bbox_size=[])
+    return result
