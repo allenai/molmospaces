@@ -8,21 +8,21 @@ from mujoco import MjSpec, mjtGeom
 from PIL import Image
 from scipy.spatial.transform import Rotation as R
 
-from mujoco_thor.env.data_views import MjThorObject, create_mjthor_body
-from mujoco_thor.env.env import CPUMujocoEnv
-from mujoco_thor.mujoco_thor_constants import ASSETS_DIR
-from mujoco_thor.tasks.commonsense_tasks.mug_ball_pick_task import MugBallPickTask
-from mujoco_thor.tasks.pick_task_sampler import PickTaskSampler, SameClassClutterMetadataAdder
-from mujoco_thor.tasks.task_sampler_errors import RobotPlacementError
-from mujoco_thor.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
-from mujoco_thor.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
-from mujoco_thor.utils.lazy_loading_utils import install_uid
-from mujoco_thor.utils.mj_model_and_data_utils import body_base_pos, geom_aabb
-from mujoco_thor.utils.mujoco_scene_utils import (
+from molmo_spaces.env.data_views import MjThorObject, create_mjthor_body
+from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task import MugBallPickTask
+from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler, SameClassClutterMetadataAdder
+from molmo_spaces.tasks.task_sampler_errors import RobotPlacementError
+from molmo_spaces.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
+from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
+from molmo_spaces.utils.lazy_loading_utils import install_uid
+from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos, geom_aabb
+from molmo_spaces.utils.mujoco_scene_utils import (
     get_supporting_geom,
     place_object_near,
 )
-from mujoco_thor.utils.pose import pose_mat_to_7d
+from molmo_spaces.utils.pose import pose_mat_to_7d
 
 if TYPE_CHECKING:
     pass

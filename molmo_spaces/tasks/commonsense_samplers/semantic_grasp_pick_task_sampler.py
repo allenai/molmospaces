@@ -1,13 +1,13 @@
 import functools
 import logging
 
-from mujoco_thor.env.data_views import MjThorObject
-from mujoco_thor.env.env import CPUMujocoEnv
-from mujoco_thor.mujoco_thor_constants import ASSETS_DIR
-from mujoco_thor.tasks.commonsense_tasks.semantic_grasp_pick_task import SemanticGraspPickTask
-from mujoco_thor.tasks.pick_task_sampler import PickTaskSampler
-from mujoco_thor.tasks.task_sampler_errors import HouseInvalidForTask
-from mujoco_thor.utils.grasp_sample import has_valid_grasp_file
+from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task import SemanticGraspPickTask
+from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
+from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask
+from molmo_spaces.utils.grasp_sample import has_valid_grasp_file
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
         for obj in candidates:
             asset_uid = self.get_asset_uid_from_object(env, obj.name)
             if asset_uid is None:
-                from mujoco_thor.utils.asset_names import get_thor_name
+                from molmo_spaces.utils.asset_names import get_thor_name
 
                 asset_uid = get_thor_name(env.current_model, obj)
 
@@ -67,7 +67,7 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
         pickup_obj_name = self.config.task_config.pickup_obj_name
         asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
         if asset_uid is None:
-            from mujoco_thor.utils.asset_names import get_thor_name
+            from molmo_spaces.utils.asset_names import get_thor_name
 
             pickup_obj = MjThorObject(data=env.current_data, object_name=pickup_obj_name)
             asset_uid = get_thor_name(env.current_model, pickup_obj)

@@ -23,7 +23,12 @@ from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
-from molmo_spaces.utils.scene_maps import ProcTHORMap, iTHORMap, sample_around_point
+from molmo_spaces.utils.scene_maps import (
+    ProcTHORMap,
+    iTHORMap,
+    sample_around_point,
+    sample_around_points,
+)
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 
 if TYPE_CHECKING:
@@ -1034,6 +1039,251 @@ class CPUMujocoEnv(BaseMujocoEnv):
         retry_time_ms = total_time_ms - map_time_ms
         log.info(
             f"[PLACE_ROBOT_NEAR] ❌ Failed after {attempts_made} attempts | "
+            f"map={map_time_ms:.1f}ms, retries={retry_time_ms:.1f}ms, total={total_time_ms:.1f}ms"
+        )
+        return False
+
+    def place_robot_near_multiple(
+        self,
+        robot_view,
+        targets: list,
+        face_target_index: int = 0,
+        max_tries: int = 10,
+        sampling_radius_range: tuple[float, float] = (0.0, 1.0),
+        robot_safety_radius: float = 0.35,
+        preserve_z: float = None,
+        face_target: bool = True,
+        check_camera_visibility: bool = False,
+        visibility_resolver=None,
+        excluded_positions: list[np.ndarray] | None = None,
+        exclusion_threshold: float | None = None,
+        save_visibility_frames_dir: Path | str | None = None,
+    ) -> bool:
+        """Place robot within reach of multiple targets (intersection of annuli).
+
+        Mirrors place_robot_near but samples from the intersection of annuli
+        around all targets. The robot faces the target at face_target_index.
+
+        Args:
+            targets: List of targets (np.ndarray, Object, or str).
+            face_target_index: Index into targets for orientation.
+            (remaining args identical to place_robot_near)
+
+        Returns:
+            True if placement succeeded.
+        """
+        if len(targets) == 0:
+            raise ValueError("Must provide at least one target")
+        if len(targets) == 1:
+            return self.place_robot_near(
+                robot_view=robot_view,
+                target=targets[0],
+                max_tries=max_tries,
+                sampling_radius_range=sampling_radius_range,
+                robot_safety_radius=robot_safety_radius,
+                preserve_z=preserve_z,
+                face_target=face_target,
+                check_camera_visibility=check_camera_visibility,
+                visibility_resolver=visibility_resolver,
+                excluded_positions=excluded_positions,
+                exclusion_threshold=exclusion_threshold,
+                save_visibility_frames_dir=save_visibility_frames_dir,
+            )
+
+        if exclusion_threshold is None:
+            exclusion_threshold = (
+                self.config.task_sampler_config.robot_placement_exclusion_threshold
+            )
+
+        log.debug(
+            f"[PLACE_ROBOT_MULTI] Starting robot placement near {len(targets)} targets (max_tries={max_tries})"
+        )
+
+        # Extract positions from all targets
+        target_positions = []
+        for t in targets:
+            if isinstance(t, np.ndarray):
+                if t.shape != (3,):
+                    raise ValueError("Target point must be a 3D numpy array")
+                target_positions.append(t)
+            elif isinstance(t, MjThorArticulationObject):
+                target_positions.append(t.get_joint_leaf_body_position(0))
+            elif isinstance(t, MjThorObject):
+                target_positions.append(t.position)
+            elif isinstance(t, str):
+                obj = create_mjthor_body(self.current_data, t)
+                target_positions.append(obj.position)
+            else:
+                raise ValueError(f"Target must be np.ndarray, Object, or str, got {type(t)}")
+
+        for i, pos in enumerate(target_positions):
+            log.debug(f"[PLACE_ROBOT_MULTI] Target {i}: ({pos[0]:.3f}, {pos[1]:.3f}, {pos[2]:.3f})")
+
+        face_pos = np.mean(np.stack(target_positions), axis=0)
+
+        # Robot Z height
+        initial_robot_z = preserve_z if preserve_z is not None else robot_view.base.pose[2, 3]
+        log.debug(f"[PLACE_ROBOT_MULTI] Robot Z: {initial_robot_z:.6f}m")
+        log.debug(
+            f"[PLACE_ROBOT_MULTI] Sampling radius: {sampling_radius_range[0]:.3f}–{sampling_radius_range[1]:.3f}m"
+        )
+
+        import time
+
+        place_start_time = time.perf_counter()
+        map_time_ms = 0.0
+        attempts_made = 0
+
+        try:
+            map_start_time = time.perf_counter()
+            thormap = self.get_thormap(agent_radius=robot_safety_radius, px_per_m=200)
+            map_time_ms = (time.perf_counter() - map_start_time) * 1000
+
+            # Build intersection mask on free points
+            free_points = thormap.get_free_points()
+            valid_mask = np.ones(len(free_points), dtype=bool)
+            for pos in target_positions:
+                dist = np.linalg.norm(free_points[:, :2] - pos[:2], axis=1)
+                valid_mask &= (dist > sampling_radius_range[0]) & (dist < sampling_radius_range[1])
+            valid_points = free_points[valid_mask]
+
+            if len(valid_points) > 0:
+                log.debug(
+                    f"[PLACE_ROBOT_MULTI] Found {len(valid_points)} free points in intersection"
+                )
+
+                points_2d = [pos[:2] for pos in target_positions]
+
+                # PHASE 1: Find collision-free candidate poses
+                collision_free_poses = []
+                for attempt in range(max_tries):
+                    attempts_made = attempt + 1
+                    sampled_point = sample_around_points(thormap, points_2d, sampling_radius_range)
+
+                    robot_base_pos = np.array([sampled_point[0], sampled_point[1], initial_robot_z])
+
+                    # Check excluded positions
+                    if excluded_positions:
+                        is_excluded = np.any(
+                            np.linalg.norm(
+                                np.stack(excluded_positions)[:, :2] - robot_base_pos[None, :2],
+                                axis=-1,
+                            )
+                            < exclusion_threshold
+                        )
+                        if is_excluded:
+                            if attempt < 5:
+                                log.debug(
+                                    f"[PLACE_ROBOT_MULTI] Attempt {attempt + 1}: Position excluded"
+                                )
+                            continue
+
+                    # Calculate orientation facing face_target_index
+                    if face_target:
+                        xy_vec = face_pos[:2] - robot_base_pos[:2]
+                        if np.linalg.norm(xy_vec) > 1e-6:
+                            robot_base_yaw = np.arctan2(xy_vec[1], xy_vec[0])
+                        else:
+                            robot_base_yaw = 0.0
+                        if "rum" in self.config.robot_config.robot_cls.__name__.lower():
+                            robot_base_pitch = -np.arctan2(
+                                face_pos[2] - robot_base_pos[2],
+                                np.linalg.norm(xy_vec),
+                            )
+                        else:
+                            robot_base_pitch = 0.0
+                    else:
+                        robot_base_yaw = 0.0
+                        robot_base_pitch = 0.0
+
+                    # Yaw randomization
+                    randomization_range = (
+                        self.config.task_sampler_config.robot_placement_rotation_range_rad
+                    )
+                    if randomization_range > 0:
+                        robot_base_yaw += np.random.uniform(
+                            -randomization_range, randomization_range
+                        )
+
+                    robot_base_quat = R.from_euler(
+                        "xyz", [0, robot_base_pitch, robot_base_yaw], degrees=False
+                    ).as_quat(scalar_first=True)
+
+                    robot_pose = np.eye(4)
+                    robot_pose[:3, 3] = robot_base_pos
+                    robot_pose[:3, :3] = R.from_quat(robot_base_quat, scalar_first=True).as_matrix()
+
+                    log.debug(
+                        f"[PLACE_ROBOT_MULTI] Attempt {attempt + 1}: pos={robot_base_pos} yaw={np.degrees(robot_base_yaw):.1f}deg"
+                    )
+
+                    if not self.check_if_robot_collision_at_base_pose(
+                        robot_view, robot_pose, "robot_0/"
+                    ):
+                        collision_free_poses.append((robot_pose, robot_base_pos, robot_base_yaw))
+                        log.debug(
+                            f"[PLACE_ROBOT_MULTI] Collision-free pose #{len(collision_free_poses)}"
+                        )
+                        if not check_camera_visibility:
+                            break
+                        if len(collision_free_poses) >= self.config.collision_free_pose_limit:
+                            break
+                    elif attempt < 5:
+                        log.debug("[PLACE_ROBOT_MULTI]   Collision detected, retrying...")
+
+                # PHASE 2: Visibility checks on collision-free candidates
+                for pose_idx, (robot_pose, robot_base_pos, _robot_base_yaw) in enumerate(
+                    collision_free_poses
+                ):
+                    robot_view.base.pose = robot_pose
+                    mujoco.mj_forward(self.current_model, self.current_data)
+
+                    if check_camera_visibility:
+                        self.camera_manager.registry.update_all_cameras(self)
+                        visibility_satisfied, visibility_results = (
+                            self.check_camera_visibility_constraints(
+                                visibility_resolver=visibility_resolver
+                            )
+                        )
+                        if not visibility_satisfied:
+                            log.debug(
+                                f"[PLACE_ROBOT_MULTI] Candidate {pose_idx + 1}/{len(collision_free_poses)}: Visibility not met"
+                            )
+                            continue
+                        else:
+                            log.debug(
+                                f"[PLACE_ROBOT_MULTI] Visibility satisfied: {visibility_results}"
+                            )
+
+                    total_time_ms = (time.perf_counter() - place_start_time) * 1000
+                    retry_time_ms = total_time_ms - map_time_ms
+                    log.info(
+                        f"[PLACE_ROBOT_MULTI] Success after {attempts_made} samples, "
+                        f"{len(collision_free_poses)} collision-free, {pose_idx + 1} visibility checks | "
+                        f"map={map_time_ms:.1f}ms, retries={retry_time_ms:.1f}ms, total={total_time_ms:.1f}ms"
+                    )
+                    for i, pos in enumerate(target_positions):
+                        d = np.linalg.norm(robot_base_pos[:2] - pos[:2])
+                        log.debug(f"[PLACE_ROBOT_MULTI] Distance to target {i}: {d:.3f}m")
+                    return True
+
+                if len(collision_free_poses) > 0:
+                    log.debug(
+                        f"[PLACE_ROBOT_MULTI] {len(collision_free_poses)} collision-free poses, none satisfied visibility"
+                    )
+            else:
+                log.debug("[PLACE_ROBOT_MULTI] No free points in intersection of annuli")
+
+        except ValueError as e:
+            log.warning(f"[PLACE_ROBOT_MULTI] {e}")
+        except Exception as e:
+            log.exception(e)
+            log.debug(f"[PLACE_ROBOT_MULTI] Occupancy map failed: {e}")
+
+        total_time_ms = (time.perf_counter() - place_start_time) * 1000
+        retry_time_ms = total_time_ms - map_time_ms
+        log.info(
+            f"[PLACE_ROBOT_MULTI] Failed after {attempts_made} attempts | "
             f"map={map_time_ms:.1f}ms, retries={retry_time_ms:.1f}ms, total={total_time_ms:.1f}ms"
         )
         return False

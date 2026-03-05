@@ -263,6 +263,19 @@ class CuroboPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
     ]
 
 
+class PackingPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
+    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        from mujoco_thor.policy.solvers.object_manipulation.packing_planner_policy import (
+            PackingPlannerPolicy,
+        )
+
+        self.policy_cls = PackingPlannerPolicy
+
+
 class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
 

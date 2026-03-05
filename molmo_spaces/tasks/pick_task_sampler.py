@@ -194,6 +194,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         self._same_class_clutter_metadata_adder: SameClassClutterMetadataAdder | None = None
         # Store the current scene path for use in add_auxiliary_objects
         self._current_scene_path: str | None = None
+        # Computed robot qpos to be applied after cluttering
+        self._init_robot_qpos: dict[str, np.ndarray] = {}
 
     def _remove_candidate_object(self, obj_name: str) -> None:
         """Remove an object from candidate_objects list."""
@@ -439,7 +441,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         mujoco.mj_resetData(model, data)
         mujoco.mj_forward(model, data)
 
-        # Set robot joints
+        # Compute robot joint positions (applied after cluttering in _sample_task)
+        self._init_robot_qpos = {}
         for group_name, qpos in self.config.robot_config.init_qpos.items():
             qpos = np.array(qpos)
             if (
@@ -450,7 +453,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 perturb = np.random.uniform(-noise_mag, noise_mag)
             else:
                 perturb = np.zeros_like(qpos)
-            robot_view.get_move_group(group_name).joint_pos = qpos + perturb
+            self._init_robot_qpos[group_name] = qpos + perturb
 
         # Reset controllers and sync head ctrl with qpos.
         # mj_resetData zeros all ctrl values. For move groups with controllers, reset() re-syncs
@@ -1040,6 +1043,14 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         # Clutter scene with additional objects if enabled
         self._clutter_scene_around_pickup_object(env)
 
+        # Apply robot qpos after cluttering so the robot doesn't interfere with placement
+        robot_view = env.current_robot.robot_view
+        for group_name, joint_pos in self._init_robot_qpos.items():
+            robot_view.get_move_group(group_name).joint_pos = joint_pos
+
+        if self._datagen_profiler is not None:
+            self._datagen_profiler.end("generate_context_expressions")
+
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_context_expressions")
 
@@ -1404,6 +1415,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         """
         if not self.config.task_sampler_config.clutter_scene_around_target_object:
             log.debug("[SCENE CLUTTERING] Cluttering disabled, skipping")
+            pickup_obj_name = self.config.task_config.pickup_obj_name
+            self._placed_clutter_object_names = [pickup_obj_name]
             return
 
         # Get the pickup object
@@ -1503,7 +1516,6 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             max_placement_attempts = 200
             collision_free_position = None
 
-            # TODO: fix collision logic to settle within the loop and check penetration and retry if that happens
             curr_clutter_radius = clutter_radius
             for attempt in range(max_placement_attempts):
                 # Sample random position within clutter_radius of pickup object
@@ -1659,36 +1671,29 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 f"distance={distance * 100:.2f}cm"
             )
 
-        # Forward physics to update scene state
-        mujoco.mj_forward(env.current_model, env.current_data)
-
-        # Settle the scene to let objects fall and stabilize
-        log.info("[SCENE CLUTTERING] Settling scene for 100 steps...")
-        mujoco.mj_step(env.current_model, env.current_data, nstep=100)
+            # Settle after each placement so subsequent objects check against settled positions
+            mujoco.mj_forward(env.current_model, env.current_data)
+            mujoco.mj_step(env.current_model, env.current_data, nstep=300)
+        # Remove any free-body objects that are interpenetrating after settling
         obj_ids_to_delete = set()
-        # Check for contacts between knife and fork
         for i_con in range(env.current_data.ncon):
             contact = env.current_data.contact[i_con]
             geom_id_1, geom_id_2 = contact.geom[0], contact.geom[1]
             body_id_1, body_id_2 = env.current_model.geom_bodyid[[geom_id_1, geom_id_2]]
             root_id_1, root_id_2 = env.current_model.body_rootid[[body_id_1, body_id_2]]
 
-            # breakpoint()
             is_root_1_free = env.current_model.body_dofnum[root_id_1].item() == 6
             is_root_2_free = env.current_model.body_dofnum[root_id_2].item() == 6
 
-            # Get body names
             body_name_1 = env.current_model.body(root_id_1).name
             body_name_2 = env.current_model.body(root_id_2).name
 
-            # Check if one is a knife and one is a fork
             if body_name_1 != "" and body_name_2 != "":
                 if is_root_1_free and is_root_2_free:
                     if contact.dist < INTERSECTION_THRESHOLD:
-                        # Just delete the first
                         obj_ids_to_delete.add(root_id_1)
 
-        # # Delete bodies that are in collision by moving them far away
+        # Move interpenetrating bodies far away to effectively remove them
         away_pos = np.array([10.0, 10.0, 10.0])
         for body_id in obj_ids_to_delete:
             body_jntadr = env.current_model.body_jntadr[body_id]
@@ -1705,6 +1710,27 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         log.info(
             f"[SCENE CLUTTERING] Positioned {num_clutter_objects} clutter objects within {clutter_radius * 100}cm of pickup object"
         )
+
+        # Build list of clutter object names that survived (not moved to away_pos)
+        survived_names = []
+        for clutter_obj in reversed(clutter_objects):
+            body_id = clutter_obj.object_id
+            body_jntadr = env.current_model.body_jntadr[body_id]
+            body_jntnum = env.current_model.body_jntnum[body_id]
+            if body_jntnum > 0:
+                jnt_id = body_jntadr
+                jnt_type = env.current_model.jnt_type[jnt_id]
+                if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                    qposadr = env.current_model.jnt_qposadr[jnt_id]
+                    pos = env.current_data.qpos[qposadr : qposadr + 3]
+                    if np.allclose(pos, away_pos):
+                        continue
+            survived_names.append(clutter_obj.name)
+
+        # Append the pickup object at the end (pack clutter first, then the original target)
+        survived_names.append(pickup_obj_name)
+        self._placed_clutter_object_names = survived_names
+        log.info(f"[SCENE CLUTTERING] Packing order: {self._placed_clutter_object_names}")
 
     def _get_pickup_asset_id(self, env: CPUMujocoEnv, pickup_obj_name: str) -> str | None:
         """Get the asset_id for a pickup object from scene metadata."""

@@ -103,7 +103,7 @@ class PickAndPlaceColorTaskConfig(PickAndPlaceTaskConfig):
 
 
 class PackingTaskConfig(PickAndPlaceTaskConfig):
-    pass
+    packing_object_names: list[str] | None = None
 
 
 class OpeningTaskConfig(PickTaskConfig):

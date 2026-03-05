@@ -1,8 +1,8 @@
 import numpy as np
 
-from mujoco_thor.env.data_views import MjThorObject
-from mujoco_thor.tasks.pick_task import PickTask
-from mujoco_thor.utils.mujoco_scene_utils import get_supporting_geom
+from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.tasks.pick_task import PickTask
+from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom
 
 
 class BlockSupportTask(PickTask):

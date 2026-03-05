@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 from mujoco import MjSpec, mjtGeom
 
-from mujoco_thor.env.data_views import MjThorObject
-from mujoco_thor.env.env import CPUMujocoEnv
-from mujoco_thor.tasks.commonsense_tasks.block_support_task import BlockSupportTask
-from mujoco_thor.tasks.pick_task_sampler import PickTaskSampler
-from mujoco_thor.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
-from mujoco_thor.utils.mj_model_and_data_utils import body_base_pos
-from mujoco_thor.utils.mujoco_scene_utils import (
+from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.tasks.commonsense_tasks.block_support_task import BlockSupportTask
+from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
+from molmo_spaces.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
+from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
+from molmo_spaces.utils.mujoco_scene_utils import (
     clear_surface,
     get_supporting_geom,
     place_object_near,

@@ -486,6 +486,9 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                     ]
 
     def get_action(self, info: dict[str, Any]) -> dict[str, Any]:
+        if not self.action_primitives:
+            return {"done": True}
+
         if self._check_for_failures():
             return self._handle_failure()
 
@@ -504,9 +507,12 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
         else:
             action = self.action_primitives[-1].get_current_action()
             action["done"] = True
+            log.info("[POLICY] All action primitives completed, setting done=True")
         return action
 
     def get_phase(self) -> str:
+        if not self.action_primitives:
+            return "done"
         if self.action_idx < len(self.action_primitives):
             act_prim = self.action_primitives[self.action_idx]
         else:

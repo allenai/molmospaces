@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-from mujoco_thor.env.data_views import MjThorObject
-from mujoco_thor.tasks.pick_task import PickTask
-from mujoco_thor.utils.pose import pose_mat_to_7d
+from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.tasks.pick_task import PickTask
+from molmo_spaces.utils.pose import pose_mat_to_7d
 
 log = logging.getLogger(__name__)
 

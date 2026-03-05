@@ -6,11 +6,11 @@ from typing import Any
 
 import numpy as np
 
-from mujoco_thor.env.data_views import MjThorObject
-from mujoco_thor.mujoco_thor_constants import ASSETS_DIR, DATA_CACHE_DIR
-from mujoco_thor.tasks.pick_task import PickTask
-from mujoco_thor.utils.grasp_sample import load_grasps_for_object
-from mujoco_thor.utils.pose import pos_quat_to_pose_mat
+from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, DATA_CACHE_DIR
+from molmo_spaces.tasks.pick_task import PickTask
+from molmo_spaces.utils.grasp_sample import load_grasps_for_object
+from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 
 log = logging.getLogger(__name__)
 

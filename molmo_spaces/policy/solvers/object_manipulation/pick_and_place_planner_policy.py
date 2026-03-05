@@ -149,28 +149,10 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
         log.debug(f"  - obj_start (t): {task_config.pickup_obj_start_pose}")
         log.debug(f"  - obj_end (t): {task_config.pickup_obj_goal_pose}")
         log.debug(f"  - Pregrasp position: {pregrasp_pose[:3, 3]}")
-
-        if not self.check_feasible_ik(pregrasp_pose):
-            log.debug("  - ❌ IK FAILED for pregrasp pose!")
-            log.debug(f"  - Pregrasp position: {pregrasp_pose[:3, 3]}")
-            log.debug(f"  - Robot base: {robot_view.base.pose[:3, 3]}")
-            log.debug(
-                f"  - Height difference: {pregrasp_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m"
-            )
-            raise ValueError("IK failed for pregrasp pose")
-
         log.debug(f"  - Grasp pose position: {grasp_pose_world[:3, 3]}")
         log.debug(
             f"  - Grasp height above robot base: {grasp_pose_world[2, 3] - robot_view.base.pose[2, 3]:.3f}m"
         )
-        if not self.check_feasible_ik(grasp_pose_world):
-            log.debug("  - ❌ IK FAILED for grasp pose!")
-            log.debug(f"  - Grasp position: {grasp_pose_world[:3, 3]}")
-            log.debug(f"  - Robot base: {robot_view.base.pose[:3, 3]}")
-            log.debug(
-                f"  - Height difference: {grasp_pose_world[2, 3] - robot_view.base.pose[2, 3]:.3f}m"
-            )
-            raise ValueError("IK failed for grasp pose")
 
         # Lift pose - above grasp position
         place_receptacle_aabb_center, place_receptacle_aabb_size = body_aabb(
@@ -189,10 +171,6 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
             + self.policy_config.place_z_offset
             + postgrasp_height_offset
         )
-
-        if not self.check_feasible_ik(lift_pose):
-            log.debug("  - ❌ IK FAILED for lift pose!")
-            raise ValueError("IK failed for lift pose")
 
         return pregrasp_pose, grasp_pose_world, lift_pose
 
@@ -219,15 +197,9 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
         )
         # offset the EE to ensure the pickup object is in the middle of the receptacle
         preplace_pose[:3, 3] += grasp_pose_world[:3, 3] - pickup_obj.position
-        if not self.check_feasible_ik(preplace_pose):
-            log.debug("  - ❌ IK FAILED for preplace pose!")
-            raise ValueError("IK failed for preplace pose")
 
         place_pose = preplace_pose.copy()
         place_pose[2, 3] = receptacle_top_z + pickup_obj_clearance_offset
-        if not self.check_feasible_ik(place_pose):
-            log.debug("  - ❌ IK FAILED for place pose!")
-            raise ValueError("IK failed for place pose")
 
         postplace_pose = place_pose.copy()
         postplace_pose[:3, 3] -= self.policy_config.end_z_offset * postplace_pose[:3, 2]
@@ -270,24 +242,137 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
             robot_view=robot_view,
             task_config=task_config,
         )
-        target_poses["pregrasp"] = pregrasp_pose
-        target_poses["grasp"] = grasp_pose
-        target_poses["lift"] = lift_pose
-
         preplace_pose, place_pose, postplace_pose = self._get_placement_poses(
             grasp_pose_world=grasp_pose_world,
             pickup_obj=pickup_obj,
             place_receptacle=place_receptacle,
         )
+
+        # Check IK feasibility for all poses
+        placement_pose_names = {"preplace", "place", "postplace"}
+        pose_names = ["pregrasp", "grasp", "lift", "preplace", "place", "postplace"]
+        poses = [pregrasp_pose, grasp_pose, lift_pose, preplace_pose, place_pose, postplace_pose]
+        ik_results = {name: self.check_feasible_ik(pose) for name, pose in zip(pose_names, poses)}
+
+        failed = [name for name, ok in ik_results.items() if not ok]
+
+        # If only placement poses failed, retry with different XY offsets within the receptacle
+        if failed and all(f in placement_pose_names for f in failed):
+            place_receptacle_aabb_center, place_receptacle_aabb_size = body_aabb(
+                self.task.env.current_data.model,
+                self.task.env.current_data,
+                place_receptacle.object_id,
+            )
+            max_placement_retries = 5
+            for retry in range(max_placement_retries):
+                # Sample random XY offset within receptacle footprint
+                xy_offset = np.array(
+                    [
+                        np.random.uniform(
+                            -place_receptacle_aabb_size[0] / 4, place_receptacle_aabb_size[0] / 4
+                        ),
+                        np.random.uniform(
+                            -place_receptacle_aabb_size[1] / 4, place_receptacle_aabb_size[1] / 4
+                        ),
+                    ]
+                )
+                log.info(
+                    f"[PLACEMENT RETRY {retry + 1}/{max_placement_retries}] "
+                    f"Resampling placement with XY offset ({xy_offset[0]:.3f}, {xy_offset[1]:.3f})"
+                )
+
+                # Recompute placement poses with offset
+                retry_preplace = preplace_pose.copy()
+                retry_preplace[:2, 3] += xy_offset
+                retry_place = place_pose.copy()
+                retry_place[:2, 3] += xy_offset
+                retry_postplace = postplace_pose.copy()
+                retry_postplace[:2, 3] += xy_offset
+
+                retry_poses = [
+                    pregrasp_pose,
+                    grasp_pose,
+                    lift_pose,
+                    retry_preplace,
+                    retry_place,
+                    retry_postplace,
+                ]
+                retry_ik = {
+                    name: self.check_feasible_ik(p) for name, p in zip(pose_names, retry_poses)
+                }
+                retry_failed = [name for name, ok in retry_ik.items() if not ok]
+
+                if not retry_failed:
+                    log.info(f"[PLACEMENT RETRY] Success on attempt {retry + 1}")
+                    preplace_pose, place_pose, postplace_pose = (
+                        retry_preplace,
+                        retry_place,
+                        retry_postplace,
+                    )
+                    poses = retry_poses
+                    failed = []
+                    break
+                else:
+                    log.info(f"[PLACEMENT RETRY] Still failing: {', '.join(retry_failed)}")
+
+        if failed:
+            log.warning(
+                f"IK FAILED for: {', '.join(failed)}\n"
+                f"  Pregrasp pos:  {pregrasp_pose[:3, 3]}\n"
+                f"  Grasp pos:     {grasp_pose[:3, 3]}\n"
+                f"  Lift pos:      {lift_pose[:3, 3]}\n"
+                f"  Preplace pos:  {preplace_pose[:3, 3]}\n"
+                f"  Place pos:     {place_pose[:3, 3]}\n"
+                f"  Postplace pos: {postplace_pose[:3, 3]}\n"
+                f"  Robot base:    {robot_view.base.pose[:3, 3]}\n"
+                f"  Height diffs: pregrasp={pregrasp_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m, "
+                f"grasp={grasp_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m, "
+                f"lift={lift_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m, "
+                f"preplace={preplace_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m, "
+                f"place={place_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m, "
+                f"postplace={postplace_pose[2, 3] - robot_view.base.pose[2, 3]:.3f}m"
+            )
+
+            if self.task.viewer is not None:
+                import time
+
+                # Visualize all poses with distinct colors
+                pose_colors = {
+                    "pregrasp": (0, 1, 0, 1),  # green
+                    "grasp": (1, 0, 0, 1),  # red
+                    "lift": (0, 0, 1, 1),  # blue
+                    "preplace": (1, 1, 0, 1),  # yellow
+                    "place": (1, 0, 1, 1),  # magenta
+                    "postplace": (0, 1, 1, 1),  # cyan
+                }
+                for name, pose in zip(pose_names, poses):
+                    self._show_poses(np.array([pose]), style="tcp", color=pose_colors[name])
+                self.task.viewer.sync()
+                color_legend = ", ".join(
+                    f"{name}={'FAIL' if name in failed else 'ok'}" for name in pose_names
+                )
+                log.warning(
+                    f"IK failed poses visualized (showing for 5s). "
+                    f"Colors: Green=pregrasp, Red=grasp, Blue=lift, "
+                    f"Yellow=preplace, Magenta=place, Cyan=postplace. "
+                    f"Status: {color_legend}."
+                )
+                time.sleep(5)
+                # Clear visualized poses
+                self.task.viewer.user_scn.ngeom = 0
+                self.task.viewer.sync()
+
+            raise ValueError(f"IK failed for {', '.join(failed)} pose(s)")
+
+        target_poses["pregrasp"] = pregrasp_pose
+        target_poses["grasp"] = grasp_pose
+        target_poses["lift"] = lift_pose
         target_poses["preplace"] = preplace_pose
         target_poses["place"] = place_pose
         target_poses["postplace"] = postplace_pose
 
-        # debug
-        visualize_poses = True
-        if visualize_poses and self.task.viewer is not None:
+        if self.task.viewer is not None:
             self._show_poses(np.stack(list(target_poses.values()), axis=0), style="tcp")
-            if self.task.viewer:
-                self.task.viewer.sync()
+            self.task.viewer.sync()
 
         return target_poses
