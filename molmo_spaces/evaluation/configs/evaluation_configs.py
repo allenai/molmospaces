@@ -183,6 +183,7 @@ class DummyBenchmarkEvalConfig(JsonBenchmarkEvalConfig):
         self.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)
 
 
+@register_config("PiPolicyEvalConfig")
 class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: PiPolicyConfig = PiPolicyConfig()
@@ -294,6 +295,7 @@ class BrownianMotionPickPlaceColorEvalConfig(BrownianMotionPickPlaceEvalConfig):
     )
 
 
+@register_config("DreamZeroPolicyEvalConfig")
 class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: DreamZeroPolicyConfig = DreamZeroPolicyConfig()

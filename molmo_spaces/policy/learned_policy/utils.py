@@ -9,6 +9,7 @@ from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO)
 
 
@@ -22,7 +23,7 @@ class PromptSampler:
             "pick up the {} and place it on the {}.",
         ],
         "packing": [
-            "pick up each item and pack it into the box.",
+            "pick up the items and place them in the box.",
         ],
         "close": [
             "close the {}.",

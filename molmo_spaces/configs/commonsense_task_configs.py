@@ -11,6 +11,7 @@ class BlockSupportTaskConfig(PickTaskConfig):
 
     task_cls: type | None = None  # Will be set to BlockSupportTask
     place_receptacle_name: str | None = None
+    block_names: list[str] = []  # Ordered list of block body names (block_1, block_2, ...)
 
 
 class MugBallPickTaskConfig(PickTaskConfig):
