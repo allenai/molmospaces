@@ -99,13 +99,14 @@ class LAP_Policy(InferencePolicy):
         cartesian_position = np.concatenate([position, rot6d])
 
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
-        grip = 1.0 if grip > 0.5 else 0.0
+        grip = 1.0 - grip  # invert
+        grip = 1.0 if grip > 0.5 else 0.0  # binarize
         gripper_position = np.array([grip])
 
         return {
             "observation": {
                 "base_0_rgb": resize_with_pad(obs[exo_key], 224, 224),
-                "left_wrist_0_rgb": resize_with_pad(obs[wrist_key], 224, 224),
+                "left_wrist_0_rgb": resize_with_pad(obs[wrist_key][::-1, ::-1], 224, 224),
                 "cartesian_position": cartesian_position,
                 "gripper_position": gripper_position,
                 "joint_position": np.array(obs["qpos"]["arm"][:7]),
@@ -173,10 +174,10 @@ class LAP_Policy(InferencePolicy):
 
         if self.grasping_type == "binary":
             action["gripper"] = (
-                np.array([255.0]) if gripper_val > self.grasping_threshold else np.array([0.0])
+                np.array([0.0]) if gripper_val > self.grasping_threshold else np.array([255.0])
             )
         else:
-            action["gripper"] = gripper_val * np.array([255.0])
+            action["gripper"] = (1.0 - gripper_val) * np.array([255.0])
 
         return action
 
