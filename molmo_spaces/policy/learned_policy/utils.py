@@ -23,7 +23,7 @@ class PromptSampler:
             "pick up the {} and place it on the {}.",
         ],
         "packing": [
-            "pick up the items and place them in the box.",
+            "pick up the {} and place it in the {}.",
         ],
         "close": [
             "close the {}.",
@@ -183,7 +183,7 @@ class PromptSampler:
                 else:
                     object_name += " above" if min_component_value > 0 else " below"
 
-        if self.task_type == "pick_and_place":
+        if self.task_type == "pick_and_place" or self.task_type == "packing":
             # Get place receptacle name from config (format: "place_receptacle/<uid>")
             place_receptacle_full_name = task.env.config.task_config.place_receptacle_name
             if place_receptacle_full_name:

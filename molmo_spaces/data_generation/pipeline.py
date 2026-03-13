@@ -15,6 +15,7 @@ from typing import Any
 import mujoco
 
 # import mujoco.viewer
+import numpy as np
 import psutil
 import torch
 
@@ -174,6 +175,24 @@ def setup_viewer(
                 task.env.mj_datas[0].camera(exp_config.viewer_cam_dict["camera"]).id
             )
             viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
+        else:
+            # Initialize free camera from the wrist camera's pose so the viewer
+            # starts near the workspace (ProcTHOR houses can be far from origin)
+            data = task.env.mj_datas[task.env.current_batch_index]
+            cam_id = data.model.camera("robot_0/gripper/wrist_camera").id
+            cam_pos = data.cam_xpos[cam_id]
+            cam_mat = data.cam_xmat[cam_id].reshape(3, 3)
+            # MuJoCo camera -Z is the forward direction
+            forward = -cam_mat[:, 2]
+            lookat = cam_pos + forward * 0.5  # point 0.5m in front of camera
+            diff = cam_pos - lookat
+            distance = np.linalg.norm(diff)
+            azimuth = np.degrees(np.arctan2(diff[1], diff[0]))
+            elevation = np.degrees(np.arcsin(diff[2] / distance))
+            viewer.cam.lookat[:] = lookat
+            viewer.cam.distance = distance
+            viewer.cam.azimuth = azimuth
+            viewer.cam.elevation = elevation
         viewer.opt.sitegroup[0] = False
     task.viewer = viewer
     return viewer

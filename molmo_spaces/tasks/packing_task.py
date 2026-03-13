@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 class PackingTask(PickAndPlaceTask):
     """Pick and place into a box (packing) task implementation."""
 
-    # Object must be inside the box (base at least 10cm below box top)
-    _support_fallback_z_threshold: float = -0.10
+    # Object must be inside or just above the box (up to 10cm above box top)
+    _support_fallback_z_threshold: float = 0.10
     objects_in_receptacle: set[str] = set()
 
     def get_task_description(self) -> str:
@@ -66,6 +66,7 @@ class PackingTask(PickAndPlaceTask):
                         [om.get_object_by_name(obj_name)],
                         om.get_object_by_name(task_config.place_receptacle_name).geom_ids,
                         fallback_thres=self._support_fallback_z_threshold,
+                        full_depth=True,
                     )
                     names_on_receptacle = {obj.name for obj in objects_on_receptacle}
                     supported = obj_name in names_on_receptacle
@@ -77,12 +78,16 @@ class PackingTask(PickAndPlaceTask):
             all_supported = all(per_object_supported.values())
             success = all_supported and pos_disp_ok and rot_disp_ok
 
-            # log.info(
-            #     f"[PACKING TASK SUCCESS] batch={i} success={success} | "
-            #     f"all_supported={all_supported} ({per_object_supported}), "
-            #     f"pos_disp={pos_disp_norm:.4f} (ok={pos_disp_ok}), "
-            #     f"rot_disp={rot_displacement:.4f} (ok={rot_disp_ok})"
-            # )
+            if self.is_done().any():
+                packed = [name for name, s in per_object_supported.items() if s]
+                not_packed = [name for name, s in per_object_supported.items() if not s]
+                log.info(
+                    f"[PACKING RESULT] batch={i} success={success} progress={task_progress:.0%} "
+                    f"({num_packed}/{len(packing_names)}) | "
+                    f"packed={packed} | not_packed={not_packed} | "
+                    f"receptacle_pos_disp={pos_disp_norm:.4f}m (ok={pos_disp_ok}) "
+                    f"rot_disp={np.degrees(rot_displacement):.1f}deg (ok={rot_disp_ok})"
+                )
 
             metrics.append(
                 {

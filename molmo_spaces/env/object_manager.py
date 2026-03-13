@@ -1514,6 +1514,7 @@ class ObjectManager:
         angle_threshold: float = np.radians(30),
         fallback_thres=0.01,  # 1 cm
         attempt_contact: bool = True,
+        full_depth: bool = False,
     ) -> list[MlSpacesObject]:
         from shapely.geometry import Point, Polygon
 
@@ -1589,11 +1590,14 @@ class ObjectManager:
 
                 body_id = model.body(object_name).id
                 obj_center, obj_ext = body_aabb(model, data, body_id)
-                if bench_poly.contains(Point(*obj_center[:2])):
-                    obj_base_z = obj_center[2] - obj_ext[2] / 2
-                    # Check the base of the object is somewhere between the bbox center below and the fallback thres above
-                    if -be[2] / 2 <= obj_base_z - bench_z <= fallback_thres:
-                        contactless_object_names.add(object_name)
+                obj_base_z = obj_center[2] - obj_ext[2] / 2
+                z_diff = obj_base_z - bench_z
+                z_lower = -be[2] if full_depth else -be[2] / 2
+                if (
+                    bench_poly.contains(Point(*obj_center[:2]))
+                    and z_lower <= z_diff <= fallback_thres
+                ):
+                    contactless_object_names.add(object_name)
 
         # Combine all objects in a single list
         object_list = [

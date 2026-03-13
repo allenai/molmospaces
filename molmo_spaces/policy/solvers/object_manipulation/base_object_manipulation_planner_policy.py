@@ -266,7 +266,15 @@ class TCPMoveSequence(MoveSequence):
         trf = np.linalg.inv(gripper.leaf_frame_to_world) @ curr_target_pose
         pos_err = np.linalg.norm(trf[:3, 3])
         rot_err = R.from_matrix(trf[:3, :3]).magnitude()
-        return pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold
+        failed = pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold
+        if failed:
+            seg_name = self.move_segments[min(self.move_seg_idx, len(self.move_segments) - 1)].name
+            log.info(
+                f"[TCP FAILURE] segment='{seg_name}' pos_err={pos_err:.4f}m (threshold={self.tcp_pos_err_threshold:.4f}) "
+                f"rot_err={np.degrees(rot_err):.1f}deg (threshold={np.degrees(self.tcp_rot_err_threshold):.1f}) "
+                f"gripper_pos={gripper.leaf_frame_to_world[:3, 3]} target_pos={curr_target_pose[:3, 3]}"
+            )
+        return failed
 
 
 class JointMoveSequence(MoveSequence):
@@ -526,18 +534,35 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
     def _check_for_failures(self) -> bool:
         # TODO(abhayd): check for collision with other objects
         if self.action_idx >= len(self.action_primitives):
+            log.debug(
+                f"[FAILURE CHECK] action_idx={self.action_idx} >= num_primitives={len(self.action_primitives)}, all primitives exhausted"
+            )
             return True
         action_primitive = self.action_primitives[self.action_idx]
         return action_primitive.check_failure()
 
     def _handle_failure(self) -> dict[str, Any]:
+        # Log which primitive failed and why
+        if self.action_idx < len(self.action_primitives):
+            failed_prim = self.action_primitives[self.action_idx]
+            phase = failed_prim.get_current_phase()
+            prim_type = type(failed_prim).__name__
+        else:
+            phase = "all_completed"
+            prim_type = "N/A"
+
         if self.retry_count >= self.policy_config.max_retries:
-            log.info(f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed.")
+            log.info(
+                f"Max retries ({self.policy_config.max_retries}) exceeded. Task failed. "
+                f"Last failure: primitive={prim_type} phase='{phase}' action_idx={self.action_idx}/{len(self.action_primitives)}"
+            )
             return {"done": True, "success": False}
 
         self._retry_count += 1
         log.info(
-            f"🔄 Failure detected! Initiating retry {self.retry_count}/{self.policy_config.max_retries}"
+            f"Failure detected at primitive={prim_type} phase='{phase}' "
+            f"action_idx={self.action_idx}/{len(self.action_primitives)}. "
+            f"Retry {self.retry_count}/{self.policy_config.max_retries}"
         )
         self.reset(reset_retries=False)
 
