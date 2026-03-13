@@ -576,6 +576,10 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             log.info(f"Added body to scene: {object_name}")
 
         self._metadata_adder.update(name_to_meta)
+        # Add policy auxiliary objects (e.g. grasp collision bodies for planner policies)
+        policy_cls = self.config.policy_config.policy_cls
+        if hasattr(policy_cls, "add_auxiliary_objects"):
+            policy_cls.add_auxiliary_objects(self.config, spec)
 
     def randomize_scene(self, env: CPUMujocoEnv, robot_view) -> None:
         """

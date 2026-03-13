@@ -62,11 +62,13 @@ class PackingTask(PickAndPlaceTask):
                     frac_weight_threshold=task_config.receptacle_supported_weight_frac,
                 )
                 if not supported:
+                    # Cascading fallback: 1) contact, 2) raycast XY, 3) AABB with 8cm margin
                     objects_on_receptacle = om.objects_on_receptacle(
                         [om.get_object_by_name(obj_name)],
                         om.get_object_by_name(task_config.place_receptacle_name).geom_ids,
                         fallback_thres=self._support_fallback_z_threshold,
                         full_depth=True,
+                        use_raycast_xy=True,
                     )
                     names_on_receptacle = {obj.name for obj in objects_on_receptacle}
                     supported = obj_name in names_on_receptacle

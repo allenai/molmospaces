@@ -23,7 +23,8 @@ class PromptSampler:
             "pick up the {} and place it on the {}.",
         ],
         "packing": [
-            "pick up the {} and place it in the {}.",
+            # "pick up the {} and place it in the {}.",
+            "pack all items on the table in the box.",
         ],
         "close": [
             "close the {}.",

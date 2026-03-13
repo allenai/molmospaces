@@ -1515,7 +1515,17 @@ class ObjectManager:
         fallback_thres=0.01,  # 1 cm
         attempt_contact: bool = True,
         full_depth: bool = False,
+        interior_margin: float = 0.08,
+        use_raycast_xy: bool = False,
     ) -> list[MlSpacesObject]:
+        """Check which objects are on/in a receptacle using cascading logic:
+
+        1. Contact-based check (if attempt_contact=True)
+        2. Raycast XY check (if use_raycast_xy=True)
+        3. AABB volume check with interior_margin
+
+        An object passes if any level succeeds (combined with Z range check).
+        """
         from shapely.geometry import Point, Polygon
 
         from molmo_spaces.utils.mujoco_scene_utils import body_aabb
@@ -1527,10 +1537,10 @@ class ObjectManager:
 
         cos_threshold = np.cos(angle_threshold)
 
-        object_names = set()
+        matched_names = set()
 
+        # --- Stage 1: Contact-based check ---
         if attempt_contact:
-            # Based on contact with the bench geom id:
             for c in data.contact:
                 root_body1, root_body2 = model.body_rootid[model.geom_bodyid[c.geom]]
                 if (c.geom[0] in bench_geom_ids) ^ (c.geom[1] in bench_geom_ids):
@@ -1542,50 +1552,43 @@ class ObjectManager:
                     if c.pos[2] < body_aabb_center[2] and normal[2] >= cos_threshold:
                         cname = model.body(other_body_id).name
                         if cname in valid_names:
-                            object_names.add(cname)
+                            matched_names.add(cname)
 
-        contactless_object_names = set()
+        # --- Compute receptacle geometry (shared by stages 2 & 3) ---
         seen_poly_z = set()
 
         meta_objs = (self.scene_metadata or {}).get("objects", {})
 
         # Fallback: list with objects with aabbs overlapping >= 50% in xy with the bench and "just above" in z
         for geom_id in bench_geom_ids:
-            # Take full body
-            bc, be = body_aabb(model, data, model.body_rootid[model.geom_bodyid[geom_id]])
+            bench_body_id = model.body_rootid[model.geom_bodyid[geom_id]]
+            bc, be = body_aabb(model, data, bench_body_id)
 
-            # Avoid recomputing if all geom ids are part of the same body
             cur_str = f"{np.round(bc, 3).tolist() + np.round(be, 3).tolist()}"
             if cur_str in seen_poly_z:
                 continue
             seen_poly_z.add(cur_str)
 
-            bench_poly = Polygon(
-                [
-                    Point(bc[0] - be[0] / 2, bc[1] - be[1] / 2),
-                    Point(bc[0] + be[0] / 2, bc[1] - be[1] / 2),
-                    Point(bc[0] + be[0] / 2, bc[1] + be[1] / 2),
-                    Point(bc[0] - be[0] / 2, bc[1] + be[1] / 2),
-                ]
-            )
             bench_z = bc[2] + be[2] / 2
 
-            # # Debug
-            # for object_name in object_names:
-            #     body_id = model.body(object_name).id
-            #     obj_center, obj_ext = body_aabb(model, data, body_id)
-            #     assert bench_poly.contains(Point(*obj_center[:2]))
-            #     obj_base_z = obj_center[2] - obj_ext[2] / 2
-            #     print(body_id, object_name, abs(bench_z - obj_base_z) <= fallback_thres)
+            # Build shrunken polygon for stage 3
+            hx = be[0] / 2 - interior_margin
+            hy = be[1] / 2 - interior_margin
+            bench_poly = Polygon(
+                [
+                    Point(bc[0] - hx, bc[1] - hy),
+                    Point(bc[0] + hx, bc[1] - hy),
+                    Point(bc[0] + hx, bc[1] + hy),
+                    Point(bc[0] - hx, bc[1] + hy),
+                ]
+            )
 
             for obj in objs_to_check:
                 object_name = obj.name
 
-                if object_name in object_names:
+                if object_name in matched_names:
                     continue
                 if object_name not in meta_objs:
-                    continue
-                if object_name in contactless_object_names:
                     continue
 
                 body_id = model.body(object_name).id
@@ -1593,19 +1596,114 @@ class ObjectManager:
                 obj_base_z = obj_center[2] - obj_ext[2] / 2
                 z_diff = obj_base_z - bench_z
                 z_lower = -be[2] if full_depth else -be[2] / 2
-                if (
-                    bench_poly.contains(Point(*obj_center[:2]))
-                    and z_lower <= z_diff <= fallback_thres
-                ):
-                    contactless_object_names.add(object_name)
+                z_inside = z_lower <= z_diff <= fallback_thres
+
+                if not z_inside:
+                    log.debug(
+                        f"[CONTAINMENT] {object_name}: z_inside=False "
+                        f"z_diff={z_diff:.4f} z_range=[{z_lower:.4f}, {fallback_thres:.4f}]"
+                    )
+                    continue
+
+                # --- Stage 2: Raycast XY check ---
+                if use_raycast_xy:
+                    raycast_ok = self._raycast_xy_inside(
+                        model,
+                        data,
+                        obj_center,
+                        bench_body_id,
+                        bc,
+                        be,
+                        object_name,
+                    )
+                    if raycast_ok:
+                        matched_names.add(object_name)
+                        continue
+
+                # --- Stage 3: AABB volume check with interior_margin ---
+                aabb_ok = bench_poly.contains(Point(*obj_center[:2]))
+                log.debug(
+                    f"[AABB FALLBACK] {object_name}: xy_inside={aabb_ok} "
+                    f"obj_center={np.round(obj_center, 3).tolist()} "
+                    f"box_center={np.round(bc[:2], 3).tolist()} box_half=[{hx:.3f}, {hy:.3f}]"
+                )
+                if aabb_ok:
+                    matched_names.add(object_name)
 
         # Combine all objects in a single list
         object_list = [
-            self.get_object_by_name(object_name)
-            for object_name in sorted(object_names | contactless_object_names)
+            self.get_object_by_name(object_name) for object_name in sorted(matched_names)
         ]
 
         return object_list
+
+    @staticmethod
+    def _raycast_xy_inside(
+        model,
+        data,
+        obj_center: np.ndarray,
+        bench_body_id: int,
+        bench_center: np.ndarray,
+        bench_extents: np.ndarray,
+        object_name: str = "",
+    ) -> bool:
+        """Check if obj_center is inside the receptacle in XY using raycasts.
+
+        Casts rays in ±X and ±Y from the object's XY position at a Z just above
+        the receptacle base. The point is inside if both rays along each axis
+        hit the receptacle body. The object's own body is excluded from raycasts.
+        """
+        import mujoco as mj
+
+        # Cast from 1cm above the box base so rays hit the walls
+        ray_z = bench_center[2] - bench_extents[2] / 2 + 0.01
+        ray_origin = np.array([obj_center[0], obj_center[1], ray_z], dtype=np.float64)
+
+        geomid = np.zeros(1, dtype=np.int32)
+        dir_labels = ["+X", "-X", "+Y", "-Y"]
+        directions = [
+            np.array([1, 0, 0], dtype=np.float64),
+            np.array([-1, 0, 0], dtype=np.float64),
+            np.array([0, 1, 0], dtype=np.float64),
+            np.array([0, -1, 0], dtype=np.float64),
+        ]
+
+        max_ray_dist = 0.5  # meters
+
+        ray_results = {}
+        inside = True
+        for i in range(0, 4, 2):
+            hits = 0
+            for j in (i, i + 1):
+                # March along the ray, skipping any non-box bodies until we
+                # hit the box or exceed max distance
+                origin = ray_origin.copy()
+                direction = directions[j]
+                total_dist = 0.0
+                found = False
+                for _ in range(20):  # max iterations to skip through other objects
+                    dist = mj.mj_ray(model, data, origin, direction, None, 1, -1, geomid)
+                    if dist < 0:
+                        break
+                    total_dist += dist
+                    if total_dist > max_ray_dist:
+                        break
+                    hit_root = model.body_rootid[model.geom_bodyid[geomid[0]]]
+                    if hit_root == bench_body_id:
+                        ray_results[dir_labels[j]] = f"hit d={total_dist:.3f}"
+                        hits += 1
+                        found = True
+                        break
+                    # Skip past this non-box geom
+                    origin = origin + direction * (dist + 1e-4)
+                if not found:
+                    ray_results[dir_labels[j]] = f"miss (d={total_dist:.3f})"
+            if hits < 2:
+                inside = False
+        log.debug(
+            f"[RAYCAST] {object_name}: origin={np.round(ray_origin, 3).tolist()} inside={inside} rays={ray_results}"
+        )
+        return inside
 
     def objects_on_bench(
         self,

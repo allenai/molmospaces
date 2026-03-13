@@ -271,6 +271,11 @@ def get_args():
         help="The natural language name for the custom object (e.g., 'lemon', 'cup'). "
         "If not provided, will attempt to extract from the object path but could be incorrect.",
     )
+    parser.add_argument(
+        "--viewer",
+        action="store_true",
+        help="Launch MuJoCo passive viewer (run with mjpython).",
+    )
     return parser.parse_args()
 
 
@@ -457,10 +462,14 @@ def run_evaluation(
     camera_config_override: Any | None = None,
     camera_names_override: list[str] | None = None,
     environment_light_intensity: float | None = None,
+<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
     episode_idx: int | None = None,
     add_custom_object: bool = False,
     custom_object_path: str | Path | None = None,
     custom_object_name: str | None = None,
+=======
+    viewer: bool = False,
+>>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
 ) -> EvaluationResults:
     """Run evaluation on a JSON benchmark programmatically.
 
@@ -747,12 +756,16 @@ def main() -> None:
         wandb_project=args.wandb_project,
         max_episodes=args.max_episodes,
         environment_light_intensity=args.environment_light_intensity,
+<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
         camera_config_override=eval_camera_config,
         camera_names_override=args.camera_names,
         episode_idx=args.idx,
         add_custom_object=args.add_custom_object,
         custom_object_path=args.custom_object_path,
         custom_object_name=args.custom_object_name,
+=======
+        viewer=args.viewer,
+>>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
     )
 
     log.info(f"Evaluation complete: {results.success_count}/{results.total_count} successful")
