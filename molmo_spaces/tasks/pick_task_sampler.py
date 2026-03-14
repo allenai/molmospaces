@@ -1675,6 +1675,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             mujoco.mj_forward(env.current_model, env.current_data)
             mujoco.mj_step(env.current_model, env.current_data, nstep=300)
         # Remove any free-body objects that are interpenetrating after settling
+        # Only remove objects that are in our pick/clutter set, not scene furniture
+        clutter_and_pickup_names = {obj.name for obj in clutter_objects} | {pickup_obj_name}
         obj_ids_to_delete = set()
         for i_con in range(env.current_data.ncon):
             contact = env.current_data.contact[i_con]
@@ -1691,7 +1693,14 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if body_name_1 != "" and body_name_2 != "":
                 if is_root_1_free and is_root_2_free:
                     if contact.dist < INTERSECTION_THRESHOLD:
-                        obj_ids_to_delete.add(root_id_1)
+                        in_set_1 = body_name_1 in clutter_and_pickup_names
+                        in_set_2 = body_name_2 in clutter_and_pickup_names
+                        if in_set_1 and in_set_2:
+                            obj_ids_to_delete.add(root_id_1)
+                        elif in_set_1:
+                            obj_ids_to_delete.add(root_id_1)
+                        elif in_set_2:
+                            obj_ids_to_delete.add(root_id_2)
 
         # Move interpenetrating bodies far away to effectively remove them
         away_pos = np.array([10.0, 10.0, 10.0])
