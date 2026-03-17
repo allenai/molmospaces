@@ -276,6 +276,11 @@ def get_args():
         action="store_true",
         help="Launch MuJoCo passive viewer (run with mjpython).",
     )
+    parser.add_argument(
+        "--oracle_termination",
+        action="store_true",
+        help="Terminate episodes early when task success is detected in step info.",
+    )
     return parser.parse_args()
 
 
@@ -469,7 +474,11 @@ def run_evaluation(
     custom_object_name: str | None = None,
 =======
     viewer: bool = False,
+<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
 >>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
+=======
+    oracle_termination: bool = False,
+>>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
 ) -> EvaluationResults:
     """Run evaluation on a JSON benchmark programmatically.
 
@@ -639,6 +648,7 @@ def run_evaluation(
         log.info(f"Overriding policy_config.camera_names: {camera_names_override}")
         exp_config.policy_config.camera_names = camera_names_override
 
+<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
     # Patch config with evaluation-specific runtime parameters
     exp_config = JsonEvalRunner.patch_config(
         exp_config=exp_config,
@@ -649,6 +659,10 @@ def run_evaluation(
         custom_object_name=custom_object_name,
     )
     JsonEvalRunner.adjust_robot(exp_config)
+=======
+    # Oracle termination
+    exp_config.oracle_termination = oracle_termination
+>>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
 
     # Resolve checkpoint path for logging
     resolved_checkpoint = checkpoint_path or getattr(
@@ -765,7 +779,11 @@ def main() -> None:
         custom_object_name=args.custom_object_name,
 =======
         viewer=args.viewer,
+<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
 >>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
+=======
+        oracle_termination=args.oracle_termination,
+>>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
     )
 
     log.info(f"Evaluation complete: {results.success_count}/{results.total_count} successful")

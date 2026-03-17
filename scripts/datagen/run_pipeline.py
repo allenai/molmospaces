@@ -42,6 +42,7 @@ from molmo_spaces.configs.robot_configs import (
     RBY1Config,
     ActionNoiseConfig,
 )
+<<<<<<< HEAD
 from molmo_spaces.configs.robot_configs import (
     BimanualYamRobotConfig,
     FloatingRUMRobotConfig,
@@ -53,6 +54,13 @@ from molmo_spaces.configs.robot_configs import (
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.configs.base_packing_configs import PackingDataGenConfig
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
+=======
+from mujoco_thor.configs.robot_configs import BimanualYamRobotConfig, FloatingRUMRobotConfig, FrankaRobotConfig, I2rtYamRobotConfig, RBY1Config, ActionNoiseConfig
+from mujoco_thor.mujoco_thor_constants import ASSETS_DIR
+from mujoco_thor.utils.resource_manager_setup_utils import str2bool
+from mujoco_thor.configs.base_packing_configs import PackingDataGenConfig, PickPackingDataGenConfig
+from mujoco_thor.data_generation.config.object_manipulation_datagen_configs import (
+>>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify)
     FrankaPickAndPlaceDroidDataGenConfig,
     FrankaPickAndPlaceColorDataGenConfig,
     FrankaPickAndPlaceColorDroidDataGenConfig,
@@ -120,12 +128,8 @@ class MyRolloutRunner(ParallelRolloutRunner):
                 log.info("[ROLLOUT] Terminated: policy returned None action")
                 break
             observation, reward, terminal, truncated, infos = task.step(action_cmd)
-<<<<<<< HEAD
             if end_on_success and "success" in infos[0] and infos[0]["success"]:
-=======
-            if "success" in infos[0] and infos[0]["success"]:
                 log.info(f"[ROLLOUT] Terminated: success detected at step {task.episode_step_count}")
->>>>>>> c17e4d87 (Packing task planner for feasibility verification)
                 success = True
                 break
 
@@ -176,6 +180,8 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     elif task_type == "pick_and_place_next_to":
         datagen_cfg = FrankaPickAndPlaceNextToDroidDataGenConfig()
         datagen_cfg.policy_config = PickAndPlaceNextToPlannerPolicyConfig()
+    elif task_type == "pick_packing":
+        datagen_cfg = PickPackingDataGenConfig()
     elif task_type == "packing":
         datagen_cfg = PackingDataGenConfig()
         datagen_cfg.policy_config = PackingPlannerPolicyConfig(place_z_offset=0.05)
@@ -199,7 +205,7 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     datagen_cfg.data_split = args.data_split  # train or test
     datagen_cfg.task_type = task_type
 
-    datagen_cfg.task_horizon = 1500 if task_type == "packing" else 300
+    datagen_cfg.task_horizon = 1500 if task_type in ("packing", "pick_packing") else 300
     if args.target_types:
         datagen_cfg.task_sampler_config.pickup_types = args.target_types.split(",")
     datagen_cfg.task_sampler_config.samples_per_house = (

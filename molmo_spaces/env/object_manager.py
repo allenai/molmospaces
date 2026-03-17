@@ -1599,7 +1599,7 @@ class ObjectManager:
                 z_inside = z_lower <= z_diff <= fallback_thres
 
                 if not z_inside:
-                    log.debug(
+                    log.info(
                         f"[CONTAINMENT] {object_name}: z_inside=False "
                         f"z_diff={z_diff:.4f} z_range=[{z_lower:.4f}, {fallback_thres:.4f}]"
                     )
@@ -1622,7 +1622,7 @@ class ObjectManager:
 
                 # --- Stage 3: AABB volume check with interior_margin ---
                 aabb_ok = bench_poly.contains(Point(*obj_center[:2]))
-                log.debug(
+                log.info(
                     f"[AABB FALLBACK] {object_name}: xy_inside={aabb_ok} "
                     f"obj_center={np.round(obj_center, 3).tolist()} "
                     f"box_center={np.round(bc[:2], 3).tolist()} box_half=[{hx:.3f}, {hy:.3f}]"
@@ -1700,7 +1700,7 @@ class ObjectManager:
                     ray_results[dir_labels[j]] = f"miss (d={total_dist:.3f})"
             if hits < 2:
                 inside = False
-        log.debug(
+        log.info(
             f"[RAYCAST] {object_name}: origin={np.round(ray_origin, 3).tolist()} inside={inside} rays={ray_results}"
         )
         return inside

@@ -42,6 +42,8 @@ mp_context = mp.get_context("forkserver") if torch.cuda.is_available() else mp.g
 logging.getLogger("curobo").setLevel(logging.WARNING)
 logging.getLogger("trimesh").setLevel(logging.WARNING)
 
+log = logging.getLogger(__name__)
+
 
 def get_process_memory():
     """Get current memory usage of the process in MB"""
@@ -797,6 +799,10 @@ class ParallelRolloutRunner:
             # Add termination if succ
             if end_on_success and "success" in infos[0] and infos[0]["success"]:
                 success = True
+                break
+
+            if end_on_success and "success" in infos[0] and infos[0]["success"]:
+                log.info(f"[ROLLOUT] Early termination: success detected at step {step_count}")
                 break
 
             if viewer is not None:

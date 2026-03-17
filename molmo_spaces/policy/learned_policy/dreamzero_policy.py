@@ -203,7 +203,11 @@ class DreamZero_Policy(InferencePolicy):
             self.starting_time = time.time()
         if self.actions_buffer is None or self.current_buffer_index >= self.chunk_size:
             result = self.model.infer(model_input)
-            self.actions_buffer = result["actions"]
+            log.info(f"Inference result is {result}")
+            if isinstance(result, dict):
+                self.actions_buffer = result["actions"]
+            else:
+                self.actions_buffer = result
             self.current_buffer_index = 0
         model_output = self.actions_buffer[self.current_buffer_index]
         self.current_buffer_index += 1

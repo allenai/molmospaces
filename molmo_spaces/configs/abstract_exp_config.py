@@ -96,6 +96,9 @@ class MlSpacesExpConfig(Config, ABC):
     PolicyConfig: ClassVar[type] = BasePolicyConfig
 
     filter_for_successful_trajectories: bool = True  # If True, only save successful trajectories to main output directory (failed episodes may be sampled 1% for debug directory). If False, save all trajectories to main output directory.
+    oracle_termination: bool = (
+        False  # If True, terminate episodes early when task success is detected in step info
+    )
 
     environment_light_intensity: float = 15000.0
 

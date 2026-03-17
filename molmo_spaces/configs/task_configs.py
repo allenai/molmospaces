@@ -58,7 +58,9 @@ class PickTaskConfig(BaseMujocoTaskConfig):
     pickup_obj_goal_pose: list[float] | None = None
     receptacle_name: str | None = None
     place_target_name: str | None = None
+    place_receptacle_name: str | None = None
     pickup_obj_name: str | None = None
+    packing_object_names: list[str] | None = None
 
     # Task parameters
     scene_settle_duration: float = 0.0  # seconds to wait for scene to settle before measuring poses
@@ -70,7 +72,6 @@ class PickTaskConfig(BaseMujocoTaskConfig):
 
 
 class PickAndPlaceTaskConfig(PickTaskConfig):
-    place_receptacle_name: str | None = None
     place_receptacle_start_pose: list[float] | None = None
     succ_pos_threshold: float = np.inf  # no position success threshold, we use support instead
     receptacle_supported_weight_frac: float = (
@@ -103,7 +104,7 @@ class PickAndPlaceColorTaskConfig(PickAndPlaceTaskConfig):
 
 
 class PackingTaskConfig(PickAndPlaceTaskConfig):
-    packing_object_names: list[str] | None = None
+    pass
 
 
 class OpeningTaskConfig(PickTaskConfig):

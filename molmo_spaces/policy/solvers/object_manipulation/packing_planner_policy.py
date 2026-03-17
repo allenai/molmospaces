@@ -1,8 +1,11 @@
 import logging
 from typing import Any
 
+import numpy as np
+
 from molmo_spaces.configs.abstract_exp_config import MjThorExpConfig
-from molmo_spaces.configs.task_configs import PackingTaskConfig
+from molmo_spaces.configs.task_configs import PickAndPlaceTaskConfig
+from molmo_spaces.env.data_views import MjThorObject
 from molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy import (
     ActionPrimitive,
     JointMoveSequence,
@@ -13,6 +16,8 @@ from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_planner_poli
 )
 from molmo_spaces.tasks.packing_task import PackingTask
 from molmo_spaces.tasks.task import BaseMujocoTask
+from molmo_spaces.utils.grasp_sample import compute_grasp_pose
+from molmo_spaces.utils.mj_model_and_data_utils import body_aabb
 
 log = logging.getLogger(__name__)
 
@@ -23,13 +28,15 @@ class PackingPlannerPolicy(PickAndPlacePlannerPolicy):
     def __init__(self, config: MjThorExpConfig, task: BaseMujocoTask) -> None:
         super().__init__(config, task)
         task_config = config.task_config
-        if isinstance(task_config, PackingTaskConfig) and task_config.packing_object_names:
+        if task_config.packing_object_names:
             self._packing_object_names = task_config.packing_object_names
         else:
             self._packing_object_names = [task_config.pickup_obj_name]
         self._current_object_index = 0
+        self._use_dummy_place_target = not isinstance(task_config, PickAndPlaceTaskConfig)
         log.info(
             f"[PACKING PLANNER] Will pack {len(self._packing_object_names)} objects: {self._packing_object_names}"
+            f" (dummy_place_target={self._use_dummy_place_target})"
         )
 
     def _is_last_object(self) -> bool:
@@ -44,6 +51,134 @@ class PackingPlannerPolicy(PickAndPlacePlannerPolicy):
             ]
             log.info("[PACKING PLANNER] Skipping go_home + noop for intermediate object")
         return trajectory
+
+    def _compute_target_poses(self) -> dict[str, np.ndarray]:
+        """Compute target poses, using a nearby offset for pick tasks without a receptacle."""
+        if not self._use_dummy_place_target:
+            return super()._compute_target_poses()
+
+        task_config = self.config.task_config
+        target_poses = {}
+
+        robot_view = self.task.env.current_robot.robot_view
+        om = self.task.env.object_managers[self.task.env.current_batch_index]
+        pickup_obj: MjThorObject = om.get_object_by_name(task_config.pickup_obj_name)
+
+        grasp_pose_world = compute_grasp_pose(
+            self,
+            pickup_obj,
+            robot_view,
+            check_collision=self.policy_config.filter_colliding_grasps,
+            n_collision_checks=self.policy_config.grasp_collision_max_grasps,
+            collision_batch_size=self.policy_config.grasp_collision_batch_size,
+            check_ik=self.policy_config.filter_feasible_grasps,
+            n_ik_checks=self.policy_config.grasp_feasibility_max_grasps,
+            ik_batch_size=self.policy_config.grasp_feasibility_batch_size,
+            pos_cost_weight=self.policy_config.grasp_pos_cost_weight,
+            rot_cost_weight=self.policy_config.grasp_rot_cost_weight,
+            vertical_cost_weight=self.policy_config.grasp_vertical_cost_weight,
+            com_dist_cost_weight=self.policy_config.grasp_com_dist_cost_weight,
+        )
+
+        # Compute pickup object geometry
+        pickup_obj_aabb_center, pickup_obj_aabb_size = body_aabb(
+            self.task.env.current_data.model, self.task.env.current_data, pickup_obj.object_id
+        )
+        pickup_obj_bottom_z = pickup_obj_aabb_center[2] - pickup_obj_aabb_size[2] / 2
+        pickup_obj_clearance_offset = max(grasp_pose_world[2, 3] - pickup_obj_bottom_z, 0.0)
+
+        # Compute place position: move the object away from the original pick target
+        # Direction is from original pick object → current object, extended outward
+        original_pick_obj = om.get_object_by_name(self.task._original_pickup_obj_name)
+        direction = pickup_obj.position[:2] - original_pick_obj.position[:2]
+        dir_norm = np.linalg.norm(direction)
+        if dir_norm > 1e-3:
+            direction = direction / dir_norm
+        else:
+            # Objects are co-located, pick a random direction
+            angle = np.random.uniform(0, 2 * np.pi)
+            direction = np.array([np.cos(angle), np.sin(angle)])
+
+        surface_z = pickup_obj_bottom_z  # same surface the object is sitting on
+
+        # --- Grasp poses (pregrasp, grasp, lift) ---
+        pregrasp_pose = grasp_pose_world.copy()
+        pregrasp_pose[:3, 3] -= self.policy_config.pregrasp_z_offset * pregrasp_pose[:3, 2]
+
+        lift_pose = grasp_pose_world.copy()
+        lift_pose[2, 3] = (
+            surface_z + pickup_obj_clearance_offset + self.policy_config.place_z_offset
+        )
+
+        # --- Placement poses: try increasing distances until IK passes ---
+        placement_pose_names = {"preplace", "place", "postplace"}
+        pose_names = ["pregrasp", "grasp", "lift", "preplace", "place", "postplace"]
+        best_distance = None
+
+        for distance in [0.10, 0.12, 0.15, 0.18, 0.20]:
+            place_xy = pickup_obj.position[:2] + distance * direction
+
+            preplace_pose = grasp_pose_world.copy()
+            preplace_pose[:2, 3] = place_xy
+            preplace_pose[2, 3] = (
+                surface_z + pickup_obj_clearance_offset + self.policy_config.place_z_offset
+            )
+            preplace_pose[:3, 3] += grasp_pose_world[:3, 3] - pickup_obj.position
+
+            place_pose = preplace_pose.copy()
+            place_pose[2, 3] = surface_z + pickup_obj_clearance_offset
+
+            postplace_pose = place_pose.copy()
+            postplace_pose[:3, 3] -= self.policy_config.end_z_offset * postplace_pose[:3, 2]
+
+            poses = [
+                pregrasp_pose,
+                grasp_pose_world,
+                lift_pose,
+                preplace_pose,
+                place_pose,
+                postplace_pose,
+            ]
+            ik_results = {
+                name: self.check_feasible_ik(pose) for name, pose in zip(pose_names, poses)
+            }
+            failed = [name for name, ok in ik_results.items() if not ok]
+
+            if not failed:
+                best_distance = distance
+                log.info(
+                    f"[PACKING PLANNER] Place target: {distance:.2f}m from "
+                    f"'{task_config.pickup_obj_name}' away from '{self.task._original_pickup_obj_name}'"
+                )
+                break
+            elif all(f in placement_pose_names for f in failed):
+                log.debug(
+                    f"[PACKING PLANNER] Placement IK failed at {distance:.2f}m, trying further"
+                )
+                continue
+            else:
+                # Grasp/lift poses failed — distance won't help
+                break
+
+        if best_distance is None:
+            log.warning(
+                f"IK FAILED for: {', '.join(failed)}\n"
+                + "\n".join(f"  {n}: {p[:3, 3]}" for n, p in zip(pose_names, poses))
+            )
+            raise ValueError(f"IK failed for {', '.join(failed)} pose(s)")
+
+        target_poses["pregrasp"] = pregrasp_pose
+        target_poses["grasp"] = grasp_pose_world
+        target_poses["lift"] = lift_pose
+        target_poses["preplace"] = preplace_pose
+        target_poses["place"] = place_pose
+        target_poses["postplace"] = postplace_pose
+
+        if self.task.viewer is not None:
+            self._show_poses(np.stack(list(target_poses.values()), axis=0), style="tcp")
+            self.task.viewer.sync()
+
+        return target_poses
 
     def _skip_already_packed(self):
         """Skip past any objects that are already in the receptacle."""

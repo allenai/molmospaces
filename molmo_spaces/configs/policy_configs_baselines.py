@@ -30,7 +30,7 @@ class PiPolicyConfig(BasePolicyConfig):
 
 class DreamZeroPolicyConfig(BasePolicyConfig):
     checkpoint_path: str = "checkpoints/dreamzero"
-    remote_config: dict = dict(host="161.35.110.36", port=16767)
+    remote_config: dict = dict(host="ceres-cs-aus-443.reviz.ai2.in", port=5000)
     prompt_object_word_num: str = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
     grasping_type: str = "binary"

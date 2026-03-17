@@ -61,7 +61,12 @@ class PackingTask(PickAndPlaceTask):
                     place_receptacle.body_id,
                     frac_weight_threshold=task_config.receptacle_supported_weight_frac,
                 )
-                if not supported:
+                if supported:
+                    log.info(f"[PACKING] '{obj_name}' supported by weight check")
+                else:
+                    log.info(
+                        f"[PACKING] '{obj_name}' NOT supported by weight check, trying fallback"
+                    )
                     # Cascading fallback: 1) contact, 2) raycast XY, 3) AABB with 8cm margin
                     objects_on_receptacle = om.objects_on_receptacle(
                         [om.get_object_by_name(obj_name)],
@@ -72,6 +77,7 @@ class PackingTask(PickAndPlaceTask):
                     )
                     names_on_receptacle = {obj.name for obj in objects_on_receptacle}
                     supported = obj_name in names_on_receptacle
+                    log.info(f"[PACKING] '{obj_name}' fallback result: supported={supported}")
                 per_object_supported[obj_name] = supported
 
             self.objects_in_receptacle = {name for name, s in per_object_supported.items() if s}
