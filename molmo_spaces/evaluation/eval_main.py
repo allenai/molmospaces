@@ -281,6 +281,25 @@ def get_args():
         action="store_true",
         help="Terminate episodes early when task success is detected in step info.",
     )
+    parser.add_argument(
+        "--house_inds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Only evaluate episodes from these house indices.",
+    )
+    parser.add_argument(
+        "--policy_host",
+        type=str,
+        default=None,
+        help="Override the policy remote_config host (e.g., for PI policy server).",
+    )
+    parser.add_argument(
+        "--policy_port",
+        type=int,
+        default=None,
+        help="Override the policy remote_config port (e.g., for PI policy server).",
+    )
     return parser.parse_args()
 
 
@@ -467,18 +486,15 @@ def run_evaluation(
     camera_config_override: Any | None = None,
     camera_names_override: list[str] | None = None,
     environment_light_intensity: float | None = None,
-<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
     episode_idx: int | None = None,
     add_custom_object: bool = False,
     custom_object_path: str | Path | None = None,
     custom_object_name: str | None = None,
-=======
     viewer: bool = False,
-<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
->>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
-=======
     oracle_termination: bool = False,
->>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
+    house_inds: list[int] | None = None,
+    policy_host: str | None = None,
+    policy_port: int | None = None,
 ) -> EvaluationResults:
     """Run evaluation on a JSON benchmark programmatically.
 
@@ -577,6 +593,10 @@ def run_evaluation(
         else:
             log.info(f"Using provided custom object name: {custom_object_name}")
 
+    if house_inds is not None:
+        house_inds_set = set(house_inds)
+        episodes = [ep for ep in episodes if ep.house_index in house_inds_set]
+        log.info(f"Filtered to {len(episodes)} episodes for house_inds={house_inds}")
     if max_episodes is not None and len(episodes) > max_episodes:
         log.info(f"Evaluating the first {max_episodes} episodes of {len(episodes)} total episodes")
         episodes = episodes[:max_episodes]
@@ -638,7 +658,21 @@ def run_evaluation(
         camera_config_override=camera_config_override,
     )
 
-    # Custom filament settings to overwrite by the user
+    # Override policy remote_config host/port if provided
+    if policy_host is not None or policy_port is not None:
+        remote_config = getattr(exp_config.policy_config, "remote_config", None)
+        if remote_config is None:
+            remote_config = {}
+            exp_config.policy_config.remote_config = remote_config
+        if policy_host is not None:
+            remote_config["host"] = policy_host
+        if policy_port is not None:
+            remote_config["port"] = policy_port
+
+    # Viewer
+    if viewer:
+        exp_config.use_passive_viewer = True
+
     exp_config.environment_light_intensity = (
         environment_light_intensity or exp_config.environment_light_intensity
     )
@@ -659,10 +693,6 @@ def run_evaluation(
         custom_object_name=custom_object_name,
     )
     JsonEvalRunner.adjust_robot(exp_config)
-=======
-    # Oracle termination
-    exp_config.oracle_termination = oracle_termination
->>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
 
     # Resolve checkpoint path for logging
     resolved_checkpoint = checkpoint_path or getattr(
@@ -701,7 +731,7 @@ def run_evaluation(
     # Run evaluation
     # Only pass preloaded policy for single-worker mode. With multiple workers,
     # each worker must create its own connection (WebSocket/msgpack can't be pickled).
-    runner = JsonEvalRunner(exp_config, benchmark_dir)
+    runner = JsonEvalRunner(exp_config, benchmark_dir, house_inds=house_inds)
     success_count, total_count = runner.run(preloaded_policy=preloaded_policy)
 
     # Collect per-episode results
@@ -783,7 +813,13 @@ def main() -> None:
 >>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
 =======
         oracle_termination=args.oracle_termination,
+<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
 >>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
+=======
+        house_inds=args.house_inds,
+        policy_host=args.policy_host,
+        policy_port=args.policy_port,
+>>>>>>> 06b91f74 (Minor eval fixes for quality of life):mujoco_thor/evaluation/eval_main.py
     )
 
     log.info(f"Evaluation complete: {results.success_count}/{results.total_count} successful")

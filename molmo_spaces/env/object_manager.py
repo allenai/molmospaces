@@ -1526,7 +1526,6 @@ class ObjectManager:
 
         An object passes if any level succeeds (combined with Z range check).
         """
-        from shapely.geometry import Point, Polygon
 
         from molmo_spaces.utils.mujoco_scene_utils import body_aabb
 
@@ -1572,16 +1571,16 @@ class ObjectManager:
             bench_z = bc[2] + be[2] / 2
 
             # Build shrunken polygon for stage 3
-            hx = be[0] / 2 - interior_margin
-            hy = be[1] / 2 - interior_margin
-            bench_poly = Polygon(
-                [
-                    Point(bc[0] - hx, bc[1] - hy),
-                    Point(bc[0] + hx, bc[1] - hy),
-                    Point(bc[0] + hx, bc[1] + hy),
-                    Point(bc[0] - hx, bc[1] + hy),
-                ]
-            )
+            # hx = be[0] / 2 - interior_margin
+            # hy = be[1] / 2 - interior_margin
+            # bench_poly = Polygon(
+            #     [
+            #         Point(bc[0] - hx, bc[1] - hy),
+            #         Point(bc[0] + hx, bc[1] - hy),
+            #         Point(bc[0] + hx, bc[1] + hy),
+            #         Point(bc[0] - hx, bc[1] + hy),
+            #     ]
+            # )
 
             for obj in objs_to_check:
                 object_name = obj.name
@@ -1599,7 +1598,7 @@ class ObjectManager:
                 z_inside = z_lower <= z_diff <= fallback_thres
 
                 if not z_inside:
-                    log.info(
+                    log.debug(
                         f"[CONTAINMENT] {object_name}: z_inside=False "
                         f"z_diff={z_diff:.4f} z_range=[{z_lower:.4f}, {fallback_thres:.4f}]"
                     )
@@ -1618,17 +1617,16 @@ class ObjectManager:
                     )
                     if raycast_ok:
                         matched_names.add(object_name)
-                        continue
 
-                # --- Stage 3: AABB volume check with interior_margin ---
-                aabb_ok = bench_poly.contains(Point(*obj_center[:2]))
-                log.info(
-                    f"[AABB FALLBACK] {object_name}: xy_inside={aabb_ok} "
-                    f"obj_center={np.round(obj_center, 3).tolist()} "
-                    f"box_center={np.round(bc[:2], 3).tolist()} box_half=[{hx:.3f}, {hy:.3f}]"
-                )
-                if aabb_ok:
-                    matched_names.add(object_name)
+                # # --- Stage 3: AABB volume check with interior_margin ---
+                # aabb_ok = bench_poly.contains(Point(*obj_center[:2]))
+                # log.debug(
+                #     f"[AABB FALLBACK] {object_name}: xy_inside={aabb_ok} "
+                #     f"obj_center={np.round(obj_center, 3).tolist()} "
+                #     f"box_center={np.round(bc[:2], 3).tolist()} box_half=[{hx:.3f}, {hy:.3f}]"
+                # )
+                # if aabb_ok:
+                #     matched_names.add(object_name)
 
         # Combine all objects in a single list
         object_list = [
@@ -1700,7 +1698,7 @@ class ObjectManager:
                     ray_results[dir_labels[j]] = f"miss (d={total_dist:.3f})"
             if hits < 2:
                 inside = False
-        log.info(
+        log.debug(
             f"[RAYCAST] {object_name}: origin={np.round(ray_origin, 3).tolist()} inside={inside} rays={ray_results}"
         )
         return inside

@@ -111,6 +111,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
         self,
         exp_config: MlSpacesExpConfig,
         benchmark_dir: Path,
+        house_inds: list[int] | None = None,
     ) -> None:
         """
         Initialize the JSON eval runner.

@@ -106,7 +106,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         cv2.waitKey(1)
 
     def obs_to_model_input(self, obs):
-        self.render(obs)
+        # self.render(obs)
         if isinstance(obs, list):
             if len(obs) > 1:
                 log.warning(

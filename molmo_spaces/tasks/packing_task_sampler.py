@@ -160,7 +160,7 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
 
         # Get box receptacle object
         box_obj = om.get_object_by_name(self.place_receptacle_name)
-        log.debug(f"[PACKING] Placing robot near both '{pickup_obj.name}' and box '{box_obj.name}'")
+        log.info(f"[PACKING] Placing robot near both '{pickup_obj.name}' and box '{box_obj.name}'")
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("robot_place_near")
