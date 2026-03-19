@@ -77,5 +77,33 @@ scene from the `ithor` dataset:
 <video src="https://github.com/user-attachments/assets/77fa8123-ec19-4ebf-95a8-5448c14ae826">
 </video>
 
-[0]: <https://docs.isaacsim.omniverse.nvidia.com/5.1.0/index.html> (isaacsim-website)
-[1]: <https://isaac-sim.github.io/IsaacLab/main/index.html> (isaaclab-website)
+---
+
+## Isaac Lab Arena (run MolmoSpaces benchmarks in Arena)
+
+You can run MolmoSpaces pick / pick-and-place benchmark episodes in [Isaac Lab Arena][2] using the same USD assets and benchmark JSONs.
+
+**Prerequisites:** Isaac Lab Arena installed from source ([Arena installation][3]). Set `ISAACLAB_ARENA_PATH` to the Arena repo root if you run from outside that repo.
+
+**Assets and benchmarks:** You need (1) USD assets — THOR and optionally Objaverse under an assets root (e.g. from [allenai/molmospaces](https://huggingface.co/datasets/allenai/molmospaces) or `ms-download` above); (2) a benchmark directory containing `benchmark.json` (e.g. from `molmospaces_bench` or the Hugging Face repo). Layout: THOR at `objects/thor/thor/20260128/` or `objects/thor/`; Objaverse at `objects/objaverse/` with `obja_<id>/obja_<id>.usda` per object.
+
+**Run one episode** (use Arena’s Python via `isaaclab.sh`; the `--` is required):
+
+```bash
+cd /path/to/IsaacLab-Arena
+./submodules/IsaacLab/isaaclab.sh -p /path/to/molmo_spaces_isaac/scripts/run_arena_benchmark_episode.py -- \
+  --assets_root /path/to/molmospaces_isaac \
+  --benchmark_dir /path/to/molmospaces_bench/mujoco/benchmarks/molmospaces-bench-v1/20260210/ithor/FrankaPickandPlaceHardBench/FrankaPickandPlaceHardBench_20260206_json_benchmark \
+  --episode_idx 0
+```
+
+**Options:** `--steps N` (default 5000), `--headless`, `--max_episodes N` (run multiple episodes), `--episode_json /path/to/episode.json` for a single episode file. Policy: **`zero`** (no motion) or **`pi_remote`** (OpenPI server; start the server first). Optional: `--scenes_root /path/to/scenes` to load the episode’s MolmoSpaces scene USD when available; otherwise the script uses the Arena default background (e.g. `--background kitchen`). Environment variables: `MOLMO_ISAAC_ASSETS_ROOT` can replace `--assets_root`; `MOLMO_PI_SERVER_HOST` and `MOLMO_PI_SERVER_PORT` for `pi_remote`.
+
+**Troubleshooting:** (1) **Torch not compiled with CUDA** — The Isaac Sim Python used by `isaaclab.sh` must have a CUDA-enabled PyTorch build. (2) **`ModuleNotFoundError: isaaclab_arena`** — Set `ISAACLAB_ARENA_PATH` to the Arena repo root. (3) **SciPy / conda errors** — Run without conda activated (`conda deactivate`) so `isaaclab.sh` uses Isaac Sim’s Python. (4) Success criteria are geometry-only (lift height for pick; pose/radius for place); no contact sensors or USD patching.
+
+---
+
+[0]: https://docs.isaacsim.omniverse.nvidia.com/5.1.0/index.html
+[1]: https://isaac-sim.github.io/IsaacLab/main/index.html
+[2]: https://isaac-sim.github.io/IsaacLab-Arena/main/index.html
+[3]: https://isaac-sim.github.io/IsaacLab-Arena/main/pages/quickstart/installation.html
