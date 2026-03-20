@@ -79,13 +79,9 @@ class MjOpenGLRenderer(MjAbstractRenderer):
             `height` exceed the dimensions of MuJoCo's offscreen framebuffer.
         """
         if device_id is None:
-            try:
-                import torch
-
-                if torch.cuda.is_available():
-                    device_id = 0
-            except ImportError:
-                pass
+            import os
+            if os.path.exists("/dev/nvidia0"):
+                device_id = 0
 
         super().__init__(**prepare_locals_for_super(locals()))
 

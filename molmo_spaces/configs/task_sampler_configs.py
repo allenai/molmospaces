@@ -46,6 +46,7 @@ class BaseMujocoTaskSamplerConfig(Config):
     robot_placement_exclusion_threshold: float = 0.15
 
     robot_placement_rotation_range_rad: float = 0.25  # +/- approx 15 degrees
+    render_device: int = 0  # Device ID for rendering
 
     # Scene configuration
     enable_texture_randomization: bool = False

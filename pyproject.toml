@@ -13,7 +13,7 @@ dependencies = [
     "boto3>=1.35.0",
     "coacd>=1.0.7",
     "compress-json>=1.1.1",
-    "decord; sys_platform == 'linux'", # For Linux
+    "decord; sys_platform == 'linux' and platform_machine == 'x86_64'", # decord wheels are not available on linux aarch64
     "eva-decord; sys_platform == 'darwin'", # For macOS
     "einops>=0.8.1",
     "ffmpeg-python>=0.2.0",
@@ -55,8 +55,8 @@ dependencies = [
     "teledex",
     "termcolor>=2.0.0",
     "toppra>=0.6.3",
-    "torch~=2.7.0", # torch 2.8.x is brand new and has some regressions vs 2.7.x - prefer to hold back for now - this installs nvidia_cuda_nvrtc_cu12-12.6.77 by default, not 12.8
-    "torchvision>=0.22.0,<0.23.0",
+    "torch>=2.7.0,<2.9", # Allow torch 2.8 for compatibility with jax[cuda12] dependency stack.
+    "torchvision>=0.22.0,<0.24.0",
     "tqdm>=4.65.0",
     "trimesh>=4.7.3",
     "wandb>=0.18.10",

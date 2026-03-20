@@ -203,8 +203,8 @@ class CPUMujocoEnv(BaseMujocoEnv):
             width, height = self.config.camera_config.img_resolution
         else:
             width, height = (640, 480)  # Default resolution
-        self._renderer = MjOpenGLRenderer(model=self.mj_model, width=width, height=height)
-
+        device_id = getattr(self.config.task_sampler_config, "render_device", 0)
+        self._renderer = MjOpenGLRenderer(model=self.mj_model, width=width, height=height, device_id=device_id)
         if self._parallelize and self._n_batch > 1:
             self._executor = ThreadPoolExecutor(max_workers=self._n_batch)
         else:
