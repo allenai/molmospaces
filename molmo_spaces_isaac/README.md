@@ -1,16 +1,9 @@
 # MolmoSpaces-Isaac
 
 This package provides functionality to load objects and scenes from the `MolmoSpaces`
-ecosystem into [`IsaacSim`][0] and [`IsaacLab`][1].
+ecosystem into [`IsaacSim`][0] and [`IsaacLab`][1], as well as the converters used to
+generate the assets and houses from MuJoCo to USD format.
 
----
-
-<p align="center">
-  <b> 🚧 REPOSITORY UNDER DEVELOPMENT 🚧 </b>
-  <br>This package is still experimental and under active development. Breaking changes might occur during updates.
-</p>
-
----
 
 ---
 **Updates 🤖**

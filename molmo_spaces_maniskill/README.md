@@ -4,15 +4,6 @@ This package provides functionality to load objects and scenes from the MolmoSpa
 ecosystem into [`Sapien`][5] and [`ManiSkill`][6].
 
 ---
-
-<p align="center">
-  <b> 🚧 REPOSITORY UNDER DEVELOPMENT 🚧 </b>
-  <br>This package is still experimental and under active development. Breaking changes might occur during updates.
-</p>
-
----
-
----
 **Updates 🤖**
 - **[2026/02/11]** : Code for loading assets and scenes from `MolmoSpaces` in `mjcf` format
 into actors an   d articulations that can be used with a `Sapien` scene or a `ManiSkill` scene.
