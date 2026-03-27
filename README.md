@@ -119,7 +119,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 
 ### Quick Test
 
-Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive viewer (push "w" for wire-frame view to see the robot more easily). Assets should be downloaded automatically for all runs.
+Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive viewer (push "w" for wire-frame view to see the robot more easily, more detils [here](#mujoco-viewer-tips)). Assets should be downloaded automatically for all runs.
 
 ```bash
 # Linux
@@ -230,18 +230,18 @@ auto_import_configs()
 print(list_available_configs())
 ```
 
-## MolmoSpaces Benchmarks and Evaluation
+## Benchmarks and Evaluations
 
 Currently, installing and running the benchmark is only supported in MuJoCo simulator.
 
-### Install the Benchmark
+### Installing Benchmarks
 
 ```bash
 export MLSPACES_ASSETS_DIR=/path/to/symlink/resources
 python -m molmo_spaces.molmo_spaces_constants
 ```
 
-### Run the Benchmark
+### Running Benchmarks
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py \
@@ -254,7 +254,16 @@ python molmo_spaces/evaluation/eval_main.py \
 For more information, please refer to an instruction in the [benchmark](molmo_spaces/evaluation/README.md).
 
 
-## Teleop Input
+## Data Generation
+
+Our data generation system make use of pre-defined experiment configs that specify scenes, robots, tasks and more.
+Example experiment configs can be found in e.g. `molmo_spaces/data_generation/config/object_manipulation_datagen_configs.py`
+
+```bash
+python molmo_spaces/data_generation/main.py FrankaPickOmniCamConfig
+```
+
+## Robot Teleoperation
 
 To control a robot via phone based teleoperation do the following (only iPhones supported).
 
@@ -280,14 +289,6 @@ To control a robot via phone based teleoperation do the following (only iPhones 
 - Click the Toggle to Grasp
 - Click the Button to go to the next episode
 
-## Data Generation
-
-Our data generation system make use of pre-defined experiment configs that specify scenes, robots, tasks and more.
-Example experiment configs can be found in e.g. `molmo_spaces/data_generation/config/object_manipulation_datagen_configs.py`
-
-```bash
-python molmo_spaces/data_generation/main.py FrankaPickOmniCamConfig
-```
 
 ## Development
 
@@ -298,7 +299,6 @@ Before committing, ensure your code is formatted:
 ruff format .
 ```
 
-<!--
 ### Testing
 
 We use pytest for integration testing.
@@ -312,7 +312,7 @@ PYTHONPATH=. pytest mlspaces_tests/data_generation_curobo  # run tests that requ
 > To debug failing tests, use `--log-cli-level DEBUG`
 
 For setting up self-hosted CI runners or building Docker images for Beaker, see **[beaker_scripts/RUNNER_SETUP.md](beaker_scripts/RUNNER_SETUP.md)**.
--->
+
 
 ### Use with Cursor/VSCode
 
@@ -325,7 +325,6 @@ pybind11-stubgen mujoco -o ./typings/
 1. Documentation for the viewer can be found [here](https://mujoco.readthedocs.io/en/stable/programming/samples.html#sasimulate), there are many keyboard shortcuts.
 2. If you have red boxes on top of your objects, go to the left panel and toggle `Group Enable > Site groups >  Site 0`
 3. Interact with objects by double-clicking > Ctrl + right mouse drag. (only with active viewers, not passive ones)
-
 
 
 ## Robot Conventions
