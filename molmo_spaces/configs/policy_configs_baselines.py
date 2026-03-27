@@ -81,6 +81,12 @@ class LAPPolicyConfig(BasePolicyConfig):
 class StereoVLAPolicyConfig(BasePolicyConfig):
     policy_cls: type = None
     policy_type: str = "learned"
+    remote_config: dict = dict(host="localhost", port=6666)
+    proprio_buffer_size: int = 4
+    image_buffer_size: int = 1
+    prompt_templates: list[str] | None = [
+       "pick up {}",
+    ]
 
     def model_post_init(self, __context) -> None:
         super().model_post_init(__context)

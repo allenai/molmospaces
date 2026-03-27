@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.configs.camera_configs import CameraSystemConfig, MjcfCameraConfig
+from molmo_spaces.configs.camera_configs import CameraSystemConfig, MjcfCameraConfig, RobotMountedCameraConfig
 from molmo_spaces.evaluation.benchmark_schema import EpisodeSpec
 
 log = logging.getLogger(__name__)
@@ -56,8 +56,39 @@ def franka_panda_robot_eval_override(
         if cam.name == "wrist_camera":
             cam.reference_body_names = ["robot_0/hand"]
             break
+    
+    camera_config.img_resolution = (256, 256)
 
-    episode_spec.robot.init_qpos["arm"][0] = -0.785398
+    camera_config.cameras.append(
+        RobotMountedCameraConfig(
+            name="stereo_left",
+            reference_body_names=["robot_0/fr3_link0"],
+            camera_offset=[1.35, -0.0315, 0.53],
+            lookat_offset=[0.2, 0.0, 0.0],
+            fov=53.0,
+            visibility_constraints={
+                "__task_objects__": 0.001,
+            },
+        )
+    )
+    camera_config.cameras.append(
+        RobotMountedCameraConfig(
+            name="stereo_right",
+            reference_body_names=["robot_0/fr3_link0"],
+            camera_offset=[1.35, 0.0315, 0.53],
+            lookat_offset=[0.2, 0.0, 0.0],
+            fov=53.0,
+        )
+    )
+
+    episode_spec.robot.init_qpos["arm"][-1] = 0.785398
+    episode_spec.robot.init_qpos["gripper"] = [0.04, 0.04]
+
+    rot_base = R.from_quat(
+        episode_spec.task["robot_base_pose"][3:7], scalar_first=True
+    ).as_matrix()
+    episode_spec.task["robot_base_pose"][:3] += 0.05 * rot_base[0:3, 0]
+    episode_spec.task["robot_base_pose"][2] += 0.05
 
 
 ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {

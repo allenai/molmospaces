@@ -29,7 +29,7 @@ class StereoVLA_Policy(InferencePolicy):
         self.prompt_sampler = PromptSampler(
             task_type=exp_config.task_type,
             prompt_templates=exp_config.policy_config.prompt_templates,
-            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            prompt_object_word_num=1,
         )
         self.proprio_buffer_size = exp_config.policy_config.proprio_buffer_size
         self.image_buffer_size = exp_config.policy_config.image_buffer_size
