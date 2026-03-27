@@ -136,8 +136,7 @@ molmo_spaces/data_generation/main.py  # data generation
 scripts/datagen/run_pipeline.py       # debugging
 ```
 
-For more information on using the other entry-points see the [evaluation](#molmospaces-benchmarks) and [data generation](#data-generation) sections of this readme. The base experiment config class is called `MlSpacesExpConfig` and is located in `molmo_spaces/configs/abstract_exp_config.py`, it contains documentation on configuring experiments.
-
+This readme contains more information on [experiment configs](#experiment-configs) as well as the other entry-points, for those please see the [evaluation](#molmospaces-benchmarks) and [data generation](#data-generation) sections of this readme. 
 
 ## MolmoSpaces Assets
 
@@ -218,7 +217,20 @@ The pinned assets file should have the same structure as `DATA_TYPE_TO_SOURCE_TO
 }
 ```
 
-## MolmoSpaces Benchmarks
+## Experiment Configs
+
+In MolmoSpaces all runs, wheter for data generation or evaluations of policies are define by experiment configus.
+The base experiment config class is called `MlSpacesExpConfig` and is located in `molmo_spaces/configs/abstract_exp_config.py`, it contains documentation on configuring experiments.
+
+To see a list of all currently defined experiment configs run this:
+```python
+from molmo_spaces.data_generation.main import auto_import_configs
+from molmo_spaces.data_generation.config_registry import list_available_configs
+auto_import_configs()
+print(list_available_configs())
+```
+
+## MolmoSpaces Benchmarks and Evaluation
 
 Currently, installing and running the benchmark is only supported in MuJoCo simulator.
 
