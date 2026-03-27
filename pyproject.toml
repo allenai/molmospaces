@@ -60,7 +60,7 @@ dependencies = [
     "wandb>=0.18.10",
     "websockets",
     "pytest", # note (yejin): moved from dev deps since needed in Docker builds
-    "molmospaces-resources==0.0.1b2",
+    "molmospaces-resources==0.0.1b4",
 ]
 [project.optional-dependencies]
 dev = [
