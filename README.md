@@ -119,7 +119,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 
 ### Quick Test
 
-Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive viewer (push "w" for wire-frame view to see the robot more easily, more detils [here](#mujoco-viewer-tips)). Assets should be downloaded automatically for all runs.
+Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive viewer (push "w" for wire-frame view to see the robot more easily, more details [here](#mujoco-viewer-tips)). Assets should be downloaded automatically for all runs.
 
 ```bash
 # Linux
@@ -128,7 +128,7 @@ python scripts/datagen/run_pipeline.py --viewer --seed 3
 mjpython scripts/datagen/run_pipeline.py --viewer --seed 3
 ```
 
-The MolmoSpaces codebase three entry points for data generation, evaluation, and debugging. The two intial enty points make use of experiment configus to configure run. The third is more easily modifayble, with some logic for constructing runs on the fly, however constructing experiments is complicated and not all permutations have been tested fully.
+The MolmoSpaces codebase has three entry points for data generation, evaluation, and debugging. The two initial entry points make use of experiment configs to configure runs. The third is more easily modifiable, with some logic for constructing runs on the fly, however constructing experiments is complicated and not all permutations have been tested fully.
 
 ```bash
 molmo_spaces/evaluation/eval_main.py  # evaluation
@@ -136,7 +136,7 @@ molmo_spaces/data_generation/main.py  # data generation
 scripts/datagen/run_pipeline.py       # debugging
 ```
 
-This readme contains more information on [experiment configs](#experiment-configs) as well as the other entry-points, for those please see the [evaluation](#molmospaces-benchmarks) and [data generation](#data-generation) sections of this readme. 
+This readme contains more information on [experiment configs](#experiment-configs) as well as the other entry-points, for those, please see the [evaluation](#molmospaces-benchmarks) and [data generation](#data-generation) sections of this readme. 
 
 ## MolmoSpaces Assets
 
@@ -144,11 +144,11 @@ Molmospaces provides scenes, objects, robots, and benchmarks. These can be downl
 
 A number of assets are provided; this overview explains the naming of the assets in code:
 
-| Type | Code Name | Paper Name |Desciption|Size|
+| Type | Code Name | Paper Name |Description|Size|
 |---|---|---|---|---|
 | objects| thor |   |hand-crafted kitchen assets ~1.1k||
 | objects| objaverse |  |converted Objaverse assets ~130k||
-| scenes | ithor | MSCrafted |hand-crafted, may articulated assets||
+| scenes | ithor | MSCrafted |hand-crafted, many articulated assets||
 | scenes | procthor-10k | MSProc | procedurally generated with THOR assets||
 | scenes | procthor-objaverse | MSProcObja |procedurally generated with Objaverse assets||
 | scenes | holodeck | MSMultiType |LLM generated with Objaverse assets||
@@ -219,7 +219,7 @@ The pinned assets file should have the same structure as `DATA_TYPE_TO_SOURCE_TO
 
 ## Experiment Configs
 
-In MolmoSpaces all runs, wheter for data generation or evaluations of policies are define by experiment configus.
+In MolmoSpaces all runs, whether for data generation or evaluation of policies, are defined by experiment configs.
 The base experiment config class is called `MlSpacesExpConfig` and is located in `molmo_spaces/configs/abstract_exp_config.py`, it contains documentation on configuring experiments.
 
 To see a list of all currently defined experiment configs run this:
@@ -232,7 +232,7 @@ print(list_available_configs())
 
 ## Benchmarks and Evaluations
 
-Currently, installing and running the benchmark is only supported in MuJoCo simulator.
+Currently, installing and running the benchmark is only supported in the MuJoCo simulator.
 
 ### Installing Benchmarks
 
@@ -246,7 +246,7 @@ python -m molmo_spaces.molmo_spaces_constants
 ```bash
 python molmo_spaces/evaluation/eval_main.py \
     molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig \
-    --benchmark_dir assets/bench/path-to-bnechmark.json \
+    --benchmark_dir assets/bench/path-to-benchmark.json \
     --checkpoint_path <path/to/checkpoint/pi0_fast_droid_jointpos> \
     --task_horizon_steps 500
 ```
@@ -256,7 +256,7 @@ For more information, please refer to an instruction in the [benchmark](molmo_sp
 
 ## Data Generation
 
-Our data generation system make use of pre-defined experiment configs that specify scenes, robots, tasks and more.
+Our data generation system makes use of pre-defined experiment configs that specify scenes, robots, tasks and more.
 Example experiment configs can be found in e.g. `molmo_spaces/data_generation/config/object_manipulation_datagen_configs.py`
 
 ```bash
@@ -272,7 +272,7 @@ To control a robot via phone based teleoperation do the following (only iPhones 
    ```bash
    python molmo_spaces/evaluation/eval_main.py \
     molmo_spaces.evaluation.configs.evaluation_configs:TeleopPolicyEvalConfig \
-    --benchmark_dir assets/bench/path-to-bnechmark.json \
+    --benchmark_dir assets/bench/path-to-benchmark.json \
     --task_horizon_steps 1000
     ```
 3. Ensure your phone and the machine running the pipeline are connected to the same network.
@@ -347,7 +347,7 @@ The artifacts are intended for research and educational use in accordance with [
 
 The xml files have been modified from the original versions provided by the following sources:
 - [mujoco_menagerie / franka_fr3](https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_fr3) - Developed by Franka Robotics
-- [mujoco_menajerie / robotiq_2f85_v4](https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotiq_2f85_v4) - Copyright (c) 2013, ROS-Industrial
+- [mujoco_menagerie / robotiq_2f85_v4](https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotiq_2f85_v4) - Copyright (c) 2013, ROS-Industrial
 - [Rainbow Robotics / rby1-sdk](https://github.com/RainbowRobotics/rby1-sdk) - Copyright 2024-2025 Rainbow Robotics
 - [RUM Gripper](https://github.com/jeffacce/cap-policy) - Copyright (c) 2026 NYU Generalizable Robotics and AI Lab (GRAIL)
 
