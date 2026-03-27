@@ -4,15 +4,6 @@ This package provides functionality to load objects and scenes from the MolmoSpa
 ecosystem into [`Sapien`][5] and [`ManiSkill`][6].
 
 ---
-
-<p align="center">
-  <b> 🚧 REPOSITORY UNDER DEVELOPMENT 🚧 </b>
-  <br>This package is still experimental and under active development. Breaking changes might occur during updates.
-</p>
-
----
-
----
 **Updates 🤖**
 - **[2026/02/11]** : Code for loading assets and scenes from `MolmoSpaces` in `mjcf` format
 into actors an   d articulations that can be used with a `Sapien` scene or a `ManiSkill` scene.
@@ -88,8 +79,7 @@ python -m molmo_spaces_maniskill.examples.ex_mjcf_loader --filepath "assets/mjcf
 
 The viewer should be launched and you should be able to see the fridge in the viewer, like this:
 
-<video src="https://github.com/user-attachments/assets/fa46ae8d-658a-4537-ba05-dae64f1b03a9" controls>
-</video>
+![gif-asset-loader-example-fridge][1]
 
 ### Loading a scene
 
@@ -102,8 +92,26 @@ python -m molmo_spaces_maniskill.examples.ex_scene_loader --filepath assets/mjcf
 
 The viewer should be launched and you should be able to see the scene in the viewer, like this:
 
-<video src="https://github.com/user-attachments/assets/0ea46b7e-1f9c-4c55-9d12-1a913d9411eb" controls>
-</video>
+![gif-scene-loader-example-1][3]
+
+## Finding assets
+
+To search assets of a specific type, we can just do
+
+```python
+from molmo_spaces.utils.object_retriever import ObjectRetriever
+from molmo_spaces.utils.object_metadata import ObjectMeta
+
+r = ObjectRetriever()
+uids, sims = r.query("cellphone")
+for it, (uid, sim) in enumerate(zip(uids, sims)):
+  anno = ObjectMeta.annotation(uid)
+  print(
+      f"{it} {sim=} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
+      f" {anno['description_short']['five_words']}"
+  )
+```
+
 
 ## Citations
 

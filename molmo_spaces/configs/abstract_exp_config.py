@@ -6,7 +6,7 @@ import logging
 import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any, ClassVar
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.configs.camera_configs import (
@@ -21,11 +21,9 @@ from molmo_spaces.configs.policy_configs import BasePolicyConfig
 from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.configs.task_configs import AllTaskConfigs
 from molmo_spaces.configs.task_sampler_configs import BaseMujocoTaskSamplerConfig
+from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.profiler_utils import Profiler
-
-if TYPE_CHECKING:
-    from molmo_spaces.tasks.task import BaseMujocoTask
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +50,9 @@ class MlSpacesExpConfig(Config, ABC):
     sim_dt_ms: float  # Default simulation time step
     seed: int | None = None  # Random seed for task sampling (if None, generates random seed)
     task_horizon: int | None = None  # Maximum number of steps per episode (if None, no time limit)
+    end_on_success: bool = (
+        False  # Whether to end episode immediately upon success (overrides task_horizon if True)
+    )
     collision_free_pose_limit: int = 3
 
     # Scene configuration
@@ -96,6 +97,9 @@ class MlSpacesExpConfig(Config, ABC):
 
     filter_for_successful_trajectories: bool = True  # If True, only save successful trajectories to main output directory (failed episodes may be sampled 1% for debug directory). If False, save all trajectories to main output directory.
 
+    use_filament: bool = False
+    environment_light_intensity: float = 15000.0
+
     def model_post_init(self, _context) -> None:
         """This serves as the __init__() called after internal validation of config parameters"""
         assert (self.policy_dt_ms / self.ctrl_dt_ms).is_integer(), (
@@ -122,6 +126,7 @@ class MlSpacesExpConfig(Config, ABC):
         """Saves the current configuration to the output directory"""
         if output_dir is None:
             output_dir = self.output_dir
+        output_dir = Path(output_dir)
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir.mkdir(parents=True, exist_ok=True)
         config_path = output_dir / f"experiment_config_{timestamp}.pkl"
@@ -207,9 +212,6 @@ class MlSpacesExpConfig(Config, ABC):
         )
 
         assert sc.task_config.robot_base_pose is not None
-
-        # from molmo_spaces.utils.misc_utils import ForkedPdb
-        # ForkedPdb().set_trace()
 
         sc_bytes = pickle.dumps(sc)
         sc_b64 = base64.b64encode(sc_bytes).decode("utf-8")

@@ -34,6 +34,7 @@ Example:
     python scripts/grasps/run_grasps_test.py --scene_dataset ithor --task_type pick
 
 """
+
 import logging
 import datetime
 import argparse
@@ -48,7 +49,10 @@ import mujoco
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.base_open_task_configs import OpeningBaseConfig
 from molmo_spaces.configs.robot_configs import FloatingRobotiq2f85RobotConfig
-from molmo_spaces.configs.policy_configs import PickPlannerPolicyConfig, OpenClosePlannerPolicyConfig
+from molmo_spaces.configs.policy_configs import (
+    PickPlannerPolicyConfig,
+    OpenClosePlannerPolicyConfig,
+)
 from molmo_spaces.configs.camera_configs import FrankaRobotiq2f85CameraSystem
 
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
@@ -57,8 +61,14 @@ from molmo_spaces.utils.profiler_utils import Profiler
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 from molmo_spaces.env.env import CPUMujocoEnv
-from molmo_spaces.env.data_views import MlSpacesObject, MlSpacesArticulationObject, create_mlspaces_body
-from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path, install_scene_from_path
+from molmo_spaces.env.data_views import (
+    MlSpacesObject,
+    MlSpacesArticulationObject,
+)
+from molmo_spaces.utils.lazy_loading_utils import (
+    install_scene_with_objects_and_grasps_from_path,
+    install_scene_from_path,
+)
 from molmo_spaces.env.arena.scene_tweaks import (
     is_body_within_any_site,
     is_body_within_site_in_freespace,
@@ -73,6 +83,7 @@ from molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_pl
     TCPMoveSegment,
     TCPMoveSequence,
 )
+
 # Import grasp loaders - use relative import since we're in the same package
 try:
     from .grasp_loaders import GraspLoader, FileBasedGraspLoader
@@ -80,6 +91,7 @@ except ImportError:
     # Fallback for direct execution
     import sys
     from pathlib import Path
+
     sys.path.insert(0, str(Path(__file__).parent))
     from grasp_loaders import GraspLoader, FileBasedGraspLoader
 from molmo_spaces.utils.constants.object_constants import (
@@ -97,11 +109,14 @@ except ImportError:
     # Fallback: define it here if import fails
     import sys
     from pathlib import Path
+
     sys.path.insert(0, str(Path(__file__).parent))
     from view_grasps import extract_objects_from_metadata
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 def convert_to_json_serializable(obj):
@@ -225,14 +240,16 @@ def check_robot_collision(
 
             # Skip if this is the target object (expected contact during grasping)
             if target_object_name:
-                if (body1_name and body1_name == target_object_name) or \
-                   (body2_name and body2_name == target_object_name):
+                if (body1_name and body1_name == target_object_name) or (
+                    body2_name and body2_name == target_object_name
+                ):
                     continue
 
             # Skip floor contacts (expected)
             floor_names = ["floor", "Floor", "ground", "Ground"]
-            if (body1_name and any(floor_name in body1_name for floor_name in floor_names)) or \
-               (body2_name and any(floor_name in body2_name for floor_name in floor_names)):
+            if (body1_name and any(floor_name in body1_name for floor_name in floor_names)) or (
+                body2_name and any(floor_name in body2_name for floor_name in floor_names)
+            ):
                 continue
 
             # This is a collision with a non-target object
@@ -386,7 +403,9 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
             # observation is a list[dict] (one per environment), extract first element
             if isinstance(observation, list) and len(observation) > 0:
                 obs_dict = observation[0]
-                if isinstance(obs_dict, dict) and observations_list:  # Only append if we have a valid list
+                if (
+                    isinstance(obs_dict, dict) and observations_list
+                ):  # Only append if we have a valid list
                     observations_list.append(obs_dict)
             elif isinstance(observation, dict) and observations_list:
                 observations_list.append(observation)
@@ -396,7 +415,9 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
                 success_result = task.judge_success()
                 # Convert numpy bool/array to Python bool if needed
                 if isinstance(success_result, np.ndarray):
-                    success_result = bool(success_result.item() if success_result.size == 1 else success_result)
+                    success_result = bool(
+                        success_result.item() if success_result.size == 1 else success_result
+                    )
                 elif isinstance(success_result, np.bool_):
                     success_result = bool(success_result)
                 else:
@@ -427,8 +448,12 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
         if not success:
             # Check 1: Robot placement / camera visibility
             try:
-                if hasattr(task, "env") and hasattr(task.env, "check_camera_visibility_constraints"):
-                    all_satisfied, visibility_results = task.env.check_camera_visibility_constraints()
+                if hasattr(task, "env") and hasattr(
+                    task.env, "check_camera_visibility_constraints"
+                ):
+                    all_satisfied, visibility_results = (
+                        task.env.check_camera_visibility_constraints()
+                    )
                     if not all_satisfied:
                         failure_modes.append("robot_placement_camera_not_visible")
                         log.warning(f"Camera visibility check failed: {visibility_results}")
@@ -444,7 +469,9 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
                     # For pick tasks, reward is based on lift height (typically > 0.03 for success)
                     if final_reward < 0.03:
                         failure_modes.append("not_lifted_enough")
-                        log.warning(f"Object not lifted enough: reward={final_reward:.4f} (threshold: 0.03)")
+                        log.warning(
+                            f"Object not lifted enough: reward={final_reward:.4f} (threshold: 0.03)"
+                        )
             except Exception as e:
                 log.debug(f"Could not check reward: {e}")
 
@@ -457,7 +484,9 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
                 # Get gripper finger geom IDs
                 gripper_group = None
                 for move_group in robot_view.get_move_groups():
-                    if hasattr(move_group, "_finger_1_geom_id") and hasattr(move_group, "_finger_2_geom_id"):
+                    if hasattr(move_group, "_finger_1_geom_id") and hasattr(
+                        move_group, "_finger_2_geom_id"
+                    ):
                         gripper_group = move_group
                         break
 
@@ -484,14 +513,17 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
                                 geom2_body = model.geom_bodyid[c.geom2]
 
                                 # Check if contact involves gripper finger and target object
-                                if (c.geom1 in finger_geom_ids and geom2_body == target_body_id) or \
-                                   (c.geom2 in finger_geom_ids and geom1_body == target_body_id):
+                                if (
+                                    c.geom1 in finger_geom_ids and geom2_body == target_body_id
+                                ) or (c.geom2 in finger_geom_ids and geom1_body == target_body_id):
                                     grasped_target = True
                                     break
 
                             if not grasped_target:
                                 failure_modes.append("not_grasped_target_object")
-                                log.warning(f"Gripper not in contact with target object: {target_object_name}")
+                                log.warning(
+                                    f"Gripper not in contact with target object: {target_object_name}"
+                                )
                         except Exception as e:
                             log.debug(f"Could not check grasp contact: {e}")
             except Exception as e:
@@ -507,7 +539,10 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
         if success:
             log.info(f"✅ SUCCESS (judge_success): Task completed successfully")
         else:
-            log.error(f"❌❌❌ FAILED (judge_success): Task failed" + (f" | Failure modes: {', '.join(failure_modes)}" if failure_modes else ""))
+            log.error(
+                f"❌❌❌ FAILED (judge_success): Task failed"
+                + (f" | Failure modes: {', '.join(failure_modes)}" if failure_modes else "")
+            )
 
         # Save video for failed cases using camera sensor observations (always save if enabled)
         if not success and save_failed_video_dir is not None and observations_list:
@@ -549,7 +584,9 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
                             filtered_observations.append(filtered_obs)
 
                 if not filtered_observations:
-                    log.warning(f"No valid camera observations found to save video (had {len(observations_list)} observations)")
+                    log.warning(
+                        f"No valid camera observations found to save video (had {len(observations_list)} observations)"
+                    )
                 else:
                     # Get sensor suite
                     sensor_suite = None
@@ -643,7 +680,9 @@ def test_grasps_for_scene(
     # Extract objects with grasps
     pickup_objects, jointed_objects = extract_objects_from_metadata(model, scene_metadata)
 
-    log.info(f"Found {len(pickup_objects)} pickup objects and {len(jointed_objects)} articulated objects with grasps")
+    log.info(
+        f"Found {len(pickup_objects)} pickup objects and {len(jointed_objects)} articulated objects with grasps"
+    )
 
     # Filter based on task_type
     if task_type == "pick":
@@ -730,7 +769,9 @@ def test_grasps_for_scene(
         if is_within_site:
             in_free_space, _, _ = is_body_within_site_in_freespace(site_id, body_id, model, data)
             if not in_free_space:
-                log.info(f"Skipping {asset_id} (body: {body_name}) - object is inside an enclosed site")
+                log.info(
+                    f"Skipping {asset_id} (body: {body_name}) - object is inside an enclosed site"
+                )
                 continue
 
         object_pos = data.xpos[body_id]
@@ -747,7 +788,9 @@ def test_grasps_for_scene(
         )
         noncolliding_grasps = grasp_poses_world[noncolliding_mask]
 
-        log.info(f"Found {len(noncolliding_grasps)} non-colliding grasps out of {len(grasps)} total")
+        log.info(
+            f"Found {len(noncolliding_grasps)} non-colliding grasps out of {len(grasps)} total"
+        )
 
         if len(noncolliding_grasps) == 0:
             log.warning(f"No non-colliding grasps for {asset_id}")
@@ -822,11 +865,20 @@ def test_grasps_for_scene(
                     break
             if pickup_obj is None:
                 raise ValueError(f"Object {body_name} not found in candidate_objects")
-            log.info(f"Verified object {body_name} exists in environment (type: {type(pickup_obj).__name__})")
+            log.info(
+                f"Verified object {body_name} exists in environment (type: {type(pickup_obj).__name__})"
+            )
         except Exception as e:
-            log.error(f"Object {body_name} not found in environment after scene initialization: {e}")
-            if task_sampler.candidate_objects is not None and len(task_sampler.candidate_objects) > 0:
-                log.error(f"Available objects: {[obj.name for obj in task_sampler.candidate_objects]}")
+            log.error(
+                f"Object {body_name} not found in environment after scene initialization: {e}"
+            )
+            if (
+                task_sampler.candidate_objects is not None
+                and len(task_sampler.candidate_objects) > 0
+            ):
+                log.error(
+                    f"Available objects: {[obj.name for obj in task_sampler.candidate_objects]}"
+                )
             else:
                 log.error("Available objects: None")
             task_sampler.close()
@@ -844,14 +896,12 @@ def test_grasps_for_scene(
             )
             shared_viewer.opt.sitegroup[0] = False
 
-
         # Profile the entire grasp testing loop for this object
         profile_key = f"test_all_grasps_{asset_id}"
         with object_profiler.profile(profile_key):
             # Test each grasp
             for i, grasp_pose in enumerate(test_grasps):
                 try:
-
                     model.eq_solimp[:] = np.array([0.99, 0.99, 0.001, 1, 2])
                     model.eq_solref[:] = np.array([0.001, 1])
 
@@ -878,7 +928,7 @@ def test_grasps_for_scene(
 
                     if has_collision:
                         log.warning(
-                            f"Skipping grasp {i+1}/{num_to_test} for {asset_id} - robot in collision after placement: {', '.join(collision_details)}"
+                            f"Skipping grasp {i + 1}/{num_to_test} for {asset_id} - robot in collision after placement: {', '.join(collision_details)}"
                         )
                         # Track skipped grasps due to collision (don't count as tested)
                         object_metrics["skipped_collision"] += 1
@@ -898,6 +948,7 @@ def test_grasps_for_scene(
 
                     # Create task directly
                     from molmo_spaces.tasks.pick_task import PickTask
+
                     task = PickTask(task_sampler.env, datagen_cfg)
                     policy = datagen_cfg.policy_config.policy_cls(datagen_cfg, task)
 
@@ -911,11 +962,13 @@ def test_grasps_for_scene(
                         grasp_pose_world = grasp_pose.copy()
 
                         # Visualize the grasp pose being tested
-                        if hasattr(self, '_show_poses') and self.task.viewer is not None:
-                            self._show_poses(np.array([grasp_pose_world]), style="tcp", color=(1, 0, 0, 1))  # Red for grasp
+                        if hasattr(self, "_show_poses") and self.task.viewer is not None:
+                            self._show_poses(
+                                np.array([grasp_pose_world]), style="tcp", color=(1, 0, 0, 1)
+                            )  # Red for grasp
                             self.task.viewer.sync()
 
-                        log.info(f"Testing grasp {i+1}/{num_to_test} for {asset_id}")
+                        log.info(f"Testing grasp {i + 1}/{num_to_test} for {asset_id}")
 
                         # Compute pregrasp and lift poses using planner policy logic
                         # (matching PickPlannerPolicy._compute_target_poses)
@@ -936,9 +989,10 @@ def test_grasps_for_scene(
                         pregrasp_pose = grasp_pose_world.copy()
                         # Pregrasp pose - above the pickup object
                         grasp_z_axis = grasp_pose_world[:3, 2]
-                        pregrasp_offset = self.policy_config.pregrasp_z_offset + pregrasp_height_offset
+                        pregrasp_offset = (
+                            self.policy_config.pregrasp_z_offset + pregrasp_height_offset
+                        )
                         pregrasp_pose[:3, 3] -= pregrasp_offset * grasp_z_axis
-
 
                         target_poses["pregrasp"] = pregrasp_pose
 
@@ -950,7 +1004,6 @@ def test_grasps_for_scene(
                             [0, 0, self.policy_config.postgrasp_z_offset + postgrasp_height_offset]
                         )
 
-
                         target_poses["lift"] = lift_pose
 
                         log.info(f"Planning completed. w/ {len(target_poses)} steps\n")
@@ -958,7 +1011,10 @@ def test_grasps_for_scene(
 
                     # Bind the method to the policy instance
                     import types
-                    policy._compute_target_poses = types.MethodType(compute_target_poses_with_grasp, policy)
+
+                    policy._compute_target_poses = types.MethodType(
+                        compute_target_poses_with_grasp, policy
+                    )
 
                     # Set viewer on task if we have a shared viewer
                     if shared_viewer is not None:
@@ -988,14 +1044,16 @@ def test_grasps_for_scene(
                             # Store failure modes for this grasp
                             if "grasp_failure_modes" not in object_metrics:
                                 object_metrics["grasp_failure_modes"] = []
-                            object_metrics["grasp_failure_modes"].append({
-                                "grasp_idx": i,
-                                "failure_modes": failure_modes,
-                            })
+                            object_metrics["grasp_failure_modes"].append(
+                                {
+                                    "grasp_idx": i,
+                                    "failure_modes": failure_modes,
+                                }
+                            )
                     finally:
                         # Clean up task and policy objects after each rollout to free memory
                         try:
-                            if 'task' in locals():
+                            if "task" in locals():
                                 try:
                                     if hasattr(task, "close"):
                                         task.close()
@@ -1005,7 +1063,7 @@ def test_grasps_for_scene(
                         except NameError:
                             pass
                         try:
-                            if 'policy' in locals():
+                            if "policy" in locals():
                                 try:
                                     if hasattr(policy, "close"):
                                         policy.close()
@@ -1025,12 +1083,19 @@ def test_grasps_for_scene(
 
                     # Suppress Pydantic serialization warnings when logging errors
                     with warnings.catch_warnings():
-                        warnings.filterwarnings("ignore", category=UserWarning, message=".*Pydantic.*")
-                        warnings.filterwarnings("ignore", message=".*serialized value may not be as expected.*")
+                        warnings.filterwarnings(
+                            "ignore", category=UserWarning, message=".*Pydantic.*"
+                        )
+                        warnings.filterwarnings(
+                            "ignore", message=".*serialized value may not be as expected.*"
+                        )
 
                         # Handle Pydantic serialization errors specifically
                         error_type_name = type(e).__name__
-                        if "PydanticSerialization" in error_type_name or "Pydantic" in error_type_name:
+                        if (
+                            "PydanticSerialization" in error_type_name
+                            or "Pydantic" in error_type_name
+                        ):
                             error_msg = f"{error_type_name}: Config serialization error (type mismatch in camera_config)"
                         else:
                             error_msg = str(e) if str(e) else repr(e)
@@ -1047,10 +1112,14 @@ def test_grasps_for_scene(
 
         # Get profiling results
         if object_profiler.get_n(profile_key) > 0:
-            total_time = object_profiler.get_avg_time(profile_key) * object_profiler.get_n(profile_key)
+            total_time = object_profiler.get_avg_time(profile_key) * object_profiler.get_n(
+                profile_key
+            )
             object_metrics["total_time_seconds"] = total_time
             if object_metrics["grasps_tested"] > 0:
-                object_metrics["avg_time_per_grasp_seconds"] = total_time / object_metrics["grasps_tested"]
+                object_metrics["avg_time_per_grasp_seconds"] = (
+                    total_time / object_metrics["grasps_tested"]
+                )
 
         # Calculate success rate (always calculate, not just when profiling)
         object_metrics["success_rate"] = (
@@ -1071,7 +1140,7 @@ def test_grasps_for_scene(
 
         log.info(
             f"Object {asset_id}: {object_metrics['successful_grasps']}/{object_metrics['grasps_tested']} successful "
-            f"({object_metrics['success_rate']*100:.1f}%) | "
+            f"({object_metrics['success_rate'] * 100:.1f}%) | "
             f"Total time: {object_metrics['total_time_seconds']:.2f}s | "
             f"Avg per grasp: {object_metrics['avg_time_per_grasp_seconds']:.2f}s"
         )
@@ -1142,9 +1211,13 @@ def test_grasps_for_scene(
             if object_body_id >= 0:
                 is_within_site, site_id = is_body_within_any_site(model, data, object_body_id)
                 if is_within_site:
-                    in_free_space, _, _ = is_body_within_site_in_freespace(site_id, object_body_id, model, data)
+                    in_free_space, _, _ = is_body_within_site_in_freespace(
+                        site_id, object_body_id, model, data
+                    )
                     if not in_free_space:
-                        log.info(f"Skipping {asset_id}/{joint_name} (body: {object_name}) - object is inside an enclosed site")
+                        log.info(
+                            f"Skipping {asset_id}/{joint_name} (body: {object_name}) - object is inside an enclosed site"
+                        )
                         continue
 
             joint_body_pos = data.xpos[joint_body_id]
@@ -1233,7 +1306,9 @@ def test_grasps_for_scene(
             task_sampler.update_scene(scene_path)
 
             # Check initial openness using MlSpacesArticulationObject
-            pickup_obj = MlSpacesArticulationObject(object_name=object_name, data=task_sampler.env.current_data)
+            pickup_obj = MlSpacesArticulationObject(
+                object_name=object_name, data=task_sampler.env.current_data
+            )
             if not isinstance(pickup_obj, MlSpacesArticulationObject):
                 log.warning(f"Object {object_name} is not an articulation object")
                 task_sampler.close()
@@ -1260,7 +1335,9 @@ def test_grasps_for_scene(
             else:
                 datagen_cfg.task_sampler_config.target_initial_state_open_percentage = 0.5
 
-            log.info(f"Object {asset_id} joint {joint_name} is {openness*100:.1f}% open, using {task_type} task")
+            log.info(
+                f"Object {asset_id} joint {joint_name} is {openness * 100:.1f}% open, using {task_type} task"
+            )
 
             model = task_sampler.env.current_model
             data = task_sampler.env.current_data
@@ -1280,7 +1357,6 @@ def test_grasps_for_scene(
                 # Test each grasp
                 for i, grasp_pose in enumerate(test_grasps):
                     try:
-
                         model.eq_solimp[:] = np.array([0.8, 0.8, 0.05, 1, 2])
                         model.eq_solref[:] = np.array([0.01, 1])
 
@@ -1288,7 +1364,9 @@ def test_grasps_for_scene(
                         mujoco.mj_resetData(model, data)
 
                         # Ensure forward kinematics are computed before accessing robot transformations
-                        mujoco.mj_forward(task_sampler.env.current_model, task_sampler.env.current_data)
+                        mujoco.mj_forward(
+                            task_sampler.env.current_model, task_sampler.env.current_data
+                        )
 
                         ### CHECK ROBOT COLLISION AT PREGRASP POSE and GRASP POSE  ####
 
@@ -1297,7 +1375,9 @@ def test_grasps_for_scene(
                         place_robot_near_grasp(robot_view, grasp_pose, offset_distance)
 
                         # Forward kinematics again after placing robot
-                        mujoco.mj_forward(task_sampler.env.current_model, task_sampler.env.current_data)
+                        mujoco.mj_forward(
+                            task_sampler.env.current_model, task_sampler.env.current_data
+                        )
 
                         # Check for collisions after robot placement (at pre-grasp pose)
                         model = task_sampler.env.current_model
@@ -1309,7 +1389,7 @@ def test_grasps_for_scene(
 
                         if has_collision:
                             log.warning(
-                                f"Skipping grasp {i+1}/{num_to_test} for {asset_id}/{joint_name} - robot in collision at pre-grasp pose: {', '.join(collision_details)}"
+                                f"Skipping grasp {i + 1}/{num_to_test} for {asset_id}/{joint_name} - robot in collision at pre-grasp pose: {', '.join(collision_details)}"
                             )
                             # Track skipped grasps due to collision (don't count as tested)
                             object_metrics["skipped_collision"] += 1
@@ -1337,10 +1417,7 @@ def test_grasps_for_scene(
 
                             # Check for collisions at grasp pose
                             has_collision_grasp, collision_details_grasp = check_robot_collision(
-                                model,
-                                data,
-                                robot_view,
-                                target_object_name=task_cfg.pickup_obj_name
+                                model, data, robot_view, target_object_name=task_cfg.pickup_obj_name
                             )
 
                             # Restore original joint positions
@@ -1349,7 +1426,7 @@ def test_grasps_for_scene(
 
                             if has_collision_grasp:
                                 log.warning(
-                                    f"Skipping grasp {i+1}/{num_to_test} for {asset_id}/{joint_name} - robot in collision at grasp pose: {', '.join(collision_details_grasp)}"
+                                    f"Skipping grasp {i + 1}/{num_to_test} for {asset_id}/{joint_name} - robot in collision at grasp pose: {', '.join(collision_details_grasp)}"
                                 )
                                 # Track skipped grasps due to collision (don't count as tested)
                                 object_metrics["skipped_collision"] += 1
@@ -1357,7 +1434,7 @@ def test_grasps_for_scene(
                         else:
                             # IK failed for grasp pose, skip this grasp
                             log.warning(
-                                f"Skipping grasp {i+1}/{num_to_test} for {asset_id}/{joint_name} - IK failed for grasp pose"
+                                f"Skipping grasp {i + 1}/{num_to_test} for {asset_id}/{joint_name} - IK failed for grasp pose"
                             )
                             object_metrics["skipped_collision"] += 1
                             continue
@@ -1376,6 +1453,7 @@ def test_grasps_for_scene(
 
                         # Create task directly
                         from molmo_spaces.tasks.opening_tasks import OpeningTask
+
                         task = OpeningTask(task_sampler.env, datagen_cfg)
                         policy = datagen_cfg.policy_config.policy_cls(datagen_cfg, task)
 
@@ -1391,32 +1469,52 @@ def test_grasps_for_scene(
                                 step_circular_path,
                                 step_linear_path,
                             )
+
                             robot_view = self.task.env.current_robot.robot_view
                             gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
-                            start_ee_pose = robot_view.get_move_group(gripper_mg_id).leaf_frame_to_world
+                            start_ee_pose = robot_view.get_move_group(
+                                gripper_mg_id
+                            ).leaf_frame_to_world
 
                             # Use the specific grasp pose we're testing
                             grasp_pose_world = grasp_pose.copy()
                             # Visualize the grasp pose being tested
-                            if hasattr(self, '_show_poses') and self.task.viewer is not None:
-                                self._show_poses(np.array([grasp_pose_world]), style="tcp", color=(1, 0, 0, 1))  # Red for grasp
+                            if hasattr(self, "_show_poses") and self.task.viewer is not None:
+                                self._show_poses(
+                                    np.array([grasp_pose_world]), style="tcp", color=(1, 0, 0, 1)
+                                )  # Red for grasp
                                 self.task.viewer.sync()
 
-
-                            log.info(f"Testing grasp {i+1}/{num_to_test} for {asset_id}/{joint_name}")
+                            log.info(
+                                f"Testing grasp {i + 1}/{num_to_test} for {asset_id}/{joint_name}"
+                            )
 
                             # Compute pregrasp pose
                             pregrasp_pose = grasp_pose_world.copy()
                             grasp_pos = grasp_pose_world[:3, 3]
                             rotation = R.from_matrix(grasp_pose_world[:3, :3])
                             distance = self.policy_config.pregrasp_z_offset
-                            pregrasp_pose[:3, 3] = grasp_pos + rotation.apply(np.array([0, 0, -distance]))
-
+                            pregrasp_pose[:3, 3] = grasp_pos + rotation.apply(
+                                np.array([0, 0, -distance])
+                            )
 
                             # Deferred arc move sequence - computes arc from actual TCP position after grasping
                             class DeferredArcMoveSequence(TCPMoveSequence):
-                                def __init__(self, policy_ref, robot_view, tcp_to_jp_fn, settle_time, **kwargs):
-                                    super().__init__(robot_view, tcp_to_jp_fn, settle_time, move_segments=[], **kwargs)
+                                def __init__(
+                                    self,
+                                    policy_ref,
+                                    robot_view,
+                                    tcp_to_jp_fn,
+                                    settle_time,
+                                    **kwargs,
+                                ):
+                                    super().__init__(
+                                        robot_view,
+                                        tcp_to_jp_fn,
+                                        settle_time,
+                                        move_segments=[],
+                                        **kwargs,
+                                    )
                                     self._policy_ref = policy_ref
                                     self._arc_computed = False
                                     self._settle_wait_time = 0.5
@@ -1429,8 +1527,12 @@ def test_grasps_for_scene(
 
                                 def get_current_action(self):
                                     if not self._arc_computed or len(self._move_segments) == 0:
-                                        gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[0]
-                                        current_pose = self.robot_view.get_move_group(gripper_mg_id).leaf_frame_to_world
+                                        gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[
+                                            0
+                                        ]
+                                        current_pose = self.robot_view.get_move_group(
+                                            gripper_mg_id
+                                        ).leaf_frame_to_world
                                         return self.tcp_to_jp_fn(gripper_mg_id, current_pose)
                                     return super().get_current_action()
 
@@ -1438,20 +1540,26 @@ def test_grasps_for_scene(
                                     if not self._arc_computed:
                                         if self.start_time is None:
                                             self.start_time = self.robot_view.mj_data.time
-                                            log.info("Waiting for gripper to settle before computing arc...")
+                                            log.info(
+                                                "Waiting for gripper to settle before computing arc..."
+                                            )
                                             return False
 
                                         elapsed = self.robot_view.mj_data.time - self.start_time
                                         if elapsed < self._settle_wait_time:
                                             return False
 
-                                        gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[0]
-                                        actual_grasp_pose = self.robot_view.get_move_group(gripper_mg_id).leaf_frame_to_world
+                                        gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[
+                                            0
+                                        ]
+                                        actual_grasp_pose = self.robot_view.get_move_group(
+                                            gripper_mg_id
+                                        ).leaf_frame_to_world
 
                                         task_cfg = self._policy_ref.config.task_config
                                         pickup_obj = MlSpacesArticulationObject(
                                             object_name=task_cfg.pickup_obj_name,
-                                            data=self._policy_ref.task.env.current_data
+                                            data=self._policy_ref.task.env.current_data,
                                         )
                                         joint_idx = task_cfg.joint_index
                                         joint_info = gather_joint_info(
@@ -1461,7 +1569,9 @@ def test_grasps_for_scene(
                                         )
 
                                         actual_pos = actual_grasp_pose[:3, 3]
-                                        actual_quat = R.from_matrix(actual_grasp_pose[:3, :3]).as_quat(scalar_first=True)
+                                        actual_quat = R.from_matrix(
+                                            actual_grasp_pose[:3, :3]
+                                        ).as_quat(scalar_first=True)
 
                                         if joint_info["joint_type"] == mujoco.mjtJoint.mjJNT_HINGE:
                                             joint_range = joint_info["joint_range"]
@@ -1473,12 +1583,23 @@ def test_grasps_for_scene(
                                                 max_joint_angle = 0
 
                                             path_dict = step_circular_path(
-                                                actual_pos, actual_quat, joint_info, max_joint_angle, n_waypoints=500
+                                                actual_pos,
+                                                actual_quat,
+                                                joint_info,
+                                                max_joint_angle,
+                                                n_waypoints=500,
                                             )
-                                        elif joint_info["joint_type"] == mujoco.mjtJoint.mjJNT_SLIDE:
-                                            joint_axis_world = joint_info["joint_body_orientation"] @ joint_info["joint_axis"]
+                                        elif (
+                                            joint_info["joint_type"] == mujoco.mjtJoint.mjJNT_SLIDE
+                                        ):
+                                            joint_axis_world = (
+                                                joint_info["joint_body_orientation"]
+                                                @ joint_info["joint_axis"]
+                                            )
                                             joint_direction = -joint_axis_world
-                                            normalize_dir_axis = joint_direction / np.linalg.norm(joint_direction)
+                                            normalize_dir_axis = joint_direction / np.linalg.norm(
+                                                joint_direction
+                                            )
                                             current_joint_pos = joint_info["joint_pos"]
 
                                             task_type = self._policy_ref.config.task_type
@@ -1488,14 +1609,17 @@ def test_grasps_for_scene(
                                                 max_joint_angle = 0
 
                                             path_dict = step_linear_path(
-                                                to_handle_dist=normalize_dir_axis * (max_joint_angle - current_joint_pos),
+                                                to_handle_dist=normalize_dir_axis
+                                                * (max_joint_angle - current_joint_pos),
                                                 current_pos=actual_pos,
                                                 current_quat=actual_quat,
                                                 step_size=0.005,
                                                 is_reverse=True,
                                             )
                                         else:
-                                            raise ValueError(f"Unknown joint type: {joint_info['joint_type']}")
+                                            raise ValueError(
+                                                f"Unknown joint type: {joint_info['joint_type']}"
+                                            )
                                         all_lift_poses = []
                                         for c in range(len(path_dict["mocap_pos"])):
                                             lift_pose = np.eye(4)
@@ -1523,7 +1647,9 @@ def test_grasps_for_scene(
                                                         speed=self._policy_ref.policy_config.speed_slow,
                                                     )
                                                 )
-                                            self.duration = sum(seg.duration for seg in self._move_segments)
+                                            self.duration = sum(
+                                                seg.duration for seg in self._move_segments
+                                            )
                                         else:
                                             # todo(omar)
                                             self._move_segments = [
@@ -1540,7 +1666,9 @@ def test_grasps_for_scene(
                                         self.start_time = None
                                         self.move_seg_idx = None
                                         self.move_seg_start_time = None
-                                        log.info(f"Arc computed with {len(self._move_segments)} segments")
+                                        log.info(
+                                            f"Arc computed with {len(self._move_segments)} segments"
+                                        )
 
                                     return super().execute()
 
@@ -1570,7 +1698,9 @@ def test_grasps_for_scene(
                                         ),
                                     ],
                                 ),
-                                GripperAction(robot_view, False, self.policy_config.gripper_close_duration),
+                                GripperAction(
+                                    robot_view, False, self.policy_config.gripper_close_duration
+                                ),
                                 DeferredArcMoveSequence(
                                     self,
                                     robot_view,
@@ -1585,7 +1715,10 @@ def test_grasps_for_scene(
 
                         # Bind the method to the policy instance
                         import types
-                        policy._compute_trajectory = types.MethodType(compute_trajectory_with_deferred_arc, policy)
+
+                        policy._compute_trajectory = types.MethodType(
+                            compute_trajectory_with_deferred_arc, policy
+                        )
 
                         # Set viewer on task if we have a shared viewer
                         if shared_viewer is not None:
@@ -1615,14 +1748,16 @@ def test_grasps_for_scene(
                                 # Store failure modes for this grasp
                                 if "grasp_failure_modes" not in object_metrics:
                                     object_metrics["grasp_failure_modes"] = []
-                                object_metrics["grasp_failure_modes"].append({
-                                    "grasp_idx": i,
-                                    "failure_modes": failure_modes,
-                                })
+                                object_metrics["grasp_failure_modes"].append(
+                                    {
+                                        "grasp_idx": i,
+                                        "failure_modes": failure_modes,
+                                    }
+                                )
                         finally:
                             # Clean up task and policy objects after each rollout to free memory
                             try:
-                                if 'task' in locals():
+                                if "task" in locals():
                                     try:
                                         if hasattr(task, "close"):
                                             task.close()
@@ -1632,7 +1767,7 @@ def test_grasps_for_scene(
                             except NameError:
                                 pass
                             try:
-                                if 'policy' in locals():
+                                if "policy" in locals():
                                     try:
                                         if hasattr(policy, "close"):
                                             policy.close()
@@ -1653,7 +1788,9 @@ def test_grasps_for_scene(
                         error_type = type(e).__name__
                         traceback_str = traceback.format_exc()
 
-                        log.error(f"Error testing grasp {i} for {asset_id}/{joint_name}: {error_type}: {error_msg}")
+                        log.error(
+                            f"Error testing grasp {i} for {asset_id}/{joint_name}: {error_type}: {error_msg}"
+                        )
                         log.error(f"Traceback for grasp {i}:\n{traceback_str}")
                         continue
 
@@ -1663,10 +1800,14 @@ def test_grasps_for_scene(
 
             # Get profiling results
             if object_profiler.get_n(joint_profile_key) > 0:
-                total_time = object_profiler.get_avg_time(joint_profile_key) * object_profiler.get_n(joint_profile_key)
+                total_time = object_profiler.get_avg_time(
+                    joint_profile_key
+                ) * object_profiler.get_n(joint_profile_key)
                 object_metrics["total_time_seconds"] = total_time
                 if object_metrics["grasps_tested"] > 0:
-                    object_metrics["avg_time_per_grasp_seconds"] = total_time / object_metrics["grasps_tested"]
+                    object_metrics["avg_time_per_grasp_seconds"] = (
+                        total_time / object_metrics["grasps_tested"]
+                    )
 
             # Calculate success rate (always calculate, not just when profiling)
             object_metrics["success_rate"] = (
@@ -1687,7 +1828,7 @@ def test_grasps_for_scene(
 
             log.info(
                 f"Object {asset_id} joint {joint_name}: {object_metrics['successful_grasps']}/{object_metrics['grasps_tested']} successful "
-                f"({object_metrics['success_rate']*100:.1f}%) | "
+                f"({object_metrics['success_rate'] * 100:.1f}%) | "
                 f"Total time: {object_metrics['total_time_seconds']:.2f}s | "
                 f"Avg per grasp: {object_metrics['avg_time_per_grasp_seconds']:.2f}s"
             )
@@ -1739,7 +1880,11 @@ def main(args: argparse.ArgumentParser) -> None:
     use_passive_viewer = args.use_passive_viewer
 
     # Get scene path and metadata
-    from molmo_spaces.molmo_spaces_constants import get_scenes, get_scenes_root, get_resource_manager
+    from molmo_spaces.molmo_spaces_constants import (
+        get_scenes,
+        get_scenes_root,
+        get_resource_manager,
+    )
 
     scenes_root = get_scenes_root()
     log.info(f"SCENES_ROOT: {scenes_root}")
@@ -1793,11 +1938,17 @@ def main(args: argparse.ArgumentParser) -> None:
     validated_scene_path = None  # Only used for single-house mode
     if house_ind is None:
         # Run entire dataset - filter out None values
-        print(f"Running entire dataset: {len(scene_mapping[data_split])} houses in {data_split} split", flush=True)
-        house_indices = sorted([
-            idx for idx in scene_mapping[data_split].keys()
-            if scene_mapping[data_split][idx] is not None
-        ])
+        print(
+            f"Running entire dataset: {len(scene_mapping[data_split])} houses in {data_split} split",
+            flush=True,
+        )
+        house_indices = sorted(
+            [
+                idx
+                for idx in scene_mapping[data_split].keys()
+                if scene_mapping[data_split][idx] is not None
+            ]
+        )
         skipped_count = len(scene_mapping[data_split]) - len(house_indices)
         log.info(f"Running entire dataset: {len(house_indices)} houses in {data_split} split")
         if skipped_count > 0:
@@ -1830,7 +1981,9 @@ def main(args: argparse.ArgumentParser) -> None:
 
         if full_scene_path is None:
             log.warning(f"House index {house_ind} not found. Could not determine scene path.")
-            log.info(f"Checked path: {scenes_root / scene_dataset / f'FloorPlan{house_ind}_physics.xml' if scene_dataset == 'ithor' else 'various'}")
+            log.info(
+                f"Checked path: {scenes_root / scene_dataset / f'FloorPlan{house_ind}_physics.xml' if scene_dataset == 'ithor' else 'various'}"
+            )
             log.info("No houses to process after skipping missing house")
             return 1
 
@@ -1846,8 +1999,11 @@ def main(args: argparse.ArgumentParser) -> None:
         except Exception as e:
             log.error(f"Failed to install scene assets for {full_scene_path}: {e}")
             import traceback
+
             log.error(traceback.format_exc())
-            log.warning(f"Failed to install scene assets for house {house_ind}, but continuing anyway...")
+            log.warning(
+                f"Failed to install scene assets for house {house_ind}, but continuing anyway..."
+            )
 
         house_indices = [house_ind]
         # Store validated scene path for reuse in loop (avoid redundant extraction/resolution)
@@ -1874,7 +2030,9 @@ def main(args: argparse.ArgumentParser) -> None:
             # Custom path provided
             base_save_failed_videos_dir = Path(args.save_failed_videos_dir)
             base_save_failed_videos_dir.mkdir(parents=True, exist_ok=True)
-            log.info(f"🎥 Failed videos directory (custom): {base_save_failed_videos_dir.absolute()}")
+            log.info(
+                f"🎥 Failed videos directory (custom): {base_save_failed_videos_dir.absolute()}"
+            )
     else:
         # Empty string or None - disable video saving
         log.info("🎥 Video saving disabled (save_failed_videos_dir is empty)")
@@ -1888,10 +2046,20 @@ def main(args: argparse.ArgumentParser) -> None:
                 # For full dataset, save both per-house metrics (in loop) and aggregated metrics (at end)
                 # Per-house metrics will be saved in the loop with auto-generated paths
                 # Aggregated metrics will be saved at the end
-                base_save_metrics_json_path = ASSETS_DIR / "datagen" / "grasp_test_v1" / timestamp / f"{scene_dataset}_{data_split}_all_metrics.json"
+                base_save_metrics_json_path = (
+                    ASSETS_DIR
+                    / "datagen"
+                    / "grasp_test_v1"
+                    / timestamp
+                    / f"{scene_dataset}_{data_split}_all_metrics.json"
+                )
                 base_save_metrics_json_path.parent.mkdir(parents=True, exist_ok=True)
-                log.info(f"💾 Aggregated metrics JSON (auto): {base_save_metrics_json_path.absolute()}")
-                log.info(f"💾 Per-house metrics directory: {base_save_metrics_json_path.parent.absolute()}/")
+                log.info(
+                    f"💾 Aggregated metrics JSON (auto): {base_save_metrics_json_path.absolute()}"
+                )
+                log.info(
+                    f"💾 Per-house metrics directory: {base_save_metrics_json_path.parent.absolute()}/"
+                )
             # Note: Per-house metrics are always saved when args.save_metrics_json is set (handled in loop)
         else:
             # Custom path provided
@@ -1900,7 +2068,9 @@ def main(args: argparse.ArgumentParser) -> None:
                 # Per-house metrics will use auto-generated paths based on scene names
                 base_save_metrics_json_path = Path(args.save_metrics_json)
                 base_save_metrics_json_path.parent.mkdir(parents=True, exist_ok=True)
-                log.info(f"💾 Aggregated metrics JSON (custom): {base_save_metrics_json_path.absolute()}")
+                log.info(
+                    f"💾 Aggregated metrics JSON (custom): {base_save_metrics_json_path.absolute()}"
+                )
                 log.info(f"💾 Per-house metrics will be saved with scene-specific names")
             # Note: Per-house metrics are always saved when args.save_metrics_json is set (handled in loop)
     else:
@@ -1930,14 +2100,16 @@ def main(args: argparse.ArgumentParser) -> None:
 
     # Refresh scene mapping before processing to ensure we have the latest state
     scene_mapping = get_scenes(scene_dataset, data_split)
-    log.info(f"Refreshed scene mapping: {len(scene_mapping[data_split])} houses in {data_split} split")
+    log.info(
+        f"Refreshed scene mapping: {len(scene_mapping[data_split])} houses in {data_split} split"
+    )
     log.info(f"House indices to process: {house_indices}")
 
     # Process each house
     for idx, current_house_ind in enumerate(house_indices):
-        log.info(f"\n{'='*80}")
-        log.info(f"Processing house {current_house_ind} ({idx+1}/{len(house_indices)})")
-        log.info(f"{'='*80}")
+        log.info(f"\n{'=' * 80}")
+        log.info(f"Processing house {current_house_ind} ({idx + 1}/{len(house_indices)})")
+        log.info(f"{'=' * 80}")
 
         # For single house mode, we already validated everything upfront, so skip redundant checks
         # For multi-house mode, validate each house in the loop
@@ -1964,29 +2136,40 @@ def main(args: argparse.ArgumentParser) -> None:
         # Note: For single house mode, this was already installed earlier, so skip here
         if house_ind is None:
             # Multi-house mode: install here for each house
-            log.info(f"Installing scene assets (objects and grasps) for house {current_house_ind}...")
+            log.info(
+                f"Installing scene assets (objects and grasps) for house {current_house_ind}..."
+            )
             try:
                 install_scene_with_objects_and_grasps_from_path(scene_path)
                 log.info(f"Successfully installed scene assets for house {current_house_ind}")
             except Exception as e:
                 log.error(f"Failed to install scene assets for {scene_path}: {e}")
                 import traceback
+
                 log.error(traceback.format_exc())
-                log.warning(f"Failed to install scene assets for house {current_house_ind}, but continuing anyway...")
+                log.warning(
+                    f"Failed to install scene assets for house {current_house_ind}, but continuing anyway..."
+                )
         else:
             # Single house mode: already installed earlier, skip redundant installation
-            log.info(f"Scene assets already installed earlier for house {current_house_ind}, skipping...")
+            log.info(
+                f"Scene assets already installed earlier for house {current_house_ind}, skipping..."
+            )
 
         # Load scene metadata using the utility function which handles naming patterns
         from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 
         scene_metadata = get_scene_metadata(str(scene_path))
         if scene_metadata is None:
-            log.warning(f"Metadata file not found for {scene_path}. Tried standard and _physics_metadata.json patterns. Skipping.")
+            log.warning(
+                f"Metadata file not found for {scene_path}. Tried standard and _physics_metadata.json patterns. Skipping."
+            )
             # For single house mode, mark as failed if we skip the house
             if house_ind is not None:
                 house_success = False
-                log.error(f"House {current_house_ind} skipped - metadata not found. Marking as failed.")
+                log.error(
+                    f"House {current_house_ind} skipped - metadata not found. Marking as failed."
+                )
             continue
 
         log.info(f"Testing grasps for scene: {scene_path}")
@@ -1996,7 +2179,9 @@ def main(args: argparse.ArgumentParser) -> None:
         if base_save_failed_videos_dir is not None:
             # Create subdirectory for this house
             scene_name = scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
-            save_failed_videos_dir = base_save_failed_videos_dir / f"house_{current_house_ind}_{scene_name}"
+            save_failed_videos_dir = (
+                base_save_failed_videos_dir / f"house_{current_house_ind}_{scene_name}"
+            )
             save_failed_videos_dir.mkdir(parents=True, exist_ok=True)
 
         # Set up per-house metrics path - saves metrics after each object within this house
@@ -2006,21 +2191,35 @@ def main(args: argparse.ArgumentParser) -> None:
             # Per-house metrics path - always save per house when metrics saving is enabled
             # Metrics will be saved incrementally after each object via save_metrics_to_json()
             if args.save_metrics_json == "auto":
-                scene_name = scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
-                save_metrics_json_path = ASSETS_DIR / "datagen" / "grasp_test_v1" / timestamp / f"{scene_name}_metrics.json"
+                scene_name = (
+                    scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
+                )
+                save_metrics_json_path = (
+                    ASSETS_DIR
+                    / "datagen"
+                    / "grasp_test_v1"
+                    / timestamp
+                    / f"{scene_name}_metrics.json"
+                )
             else:
                 # For custom path, append house/scene identifier to avoid overwriting when processing multiple houses
-                scene_name = scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
+                scene_name = (
+                    scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
+                )
                 custom_path = Path(args.save_metrics_json)
                 # If it's a directory, create file inside it; otherwise use as base filename
                 if custom_path.suffix == ".json":
                     # It's a file path, append scene name before extension
-                    save_metrics_json_path = custom_path.parent / f"{custom_path.stem}_{scene_name}{custom_path.suffix}"
+                    save_metrics_json_path = (
+                        custom_path.parent / f"{custom_path.stem}_{scene_name}{custom_path.suffix}"
+                    )
                 else:
                     # It's a directory, create file inside it
                     save_metrics_json_path = custom_path / f"{scene_name}_metrics.json"
             save_metrics_json_path.parent.mkdir(parents=True, exist_ok=True)
-            log.info(f"💾 Per-house metrics JSON for house {current_house_ind}: {save_metrics_json_path.absolute()}")
+            log.info(
+                f"💾 Per-house metrics JSON for house {current_house_ind}: {save_metrics_json_path.absolute()}"
+            )
             log.info(f"   (Updates after each object)")
 
         # Run grasp tests for this house
@@ -2039,7 +2238,9 @@ def main(args: argparse.ArgumentParser) -> None:
 
             # Add house index to metrics
             house_metrics["house_ind"] = current_house_ind
-            house_metrics["scene_name"] = scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
+            house_metrics["scene_name"] = (
+                scene_path.stem if isinstance(scene_path, Path) else Path(scene_path).stem
+            )
 
             # Verify metrics were saved (critical for SQS worker)
             metrics_saved = False
@@ -2051,15 +2252,25 @@ def main(args: argparse.ArgumentParser) -> None:
                 single_house_metrics_path = save_metrics_json_path  # Store for final summary
                 file_size = save_metrics_json_path.stat().st_size
                 # Print to stdout so it shows up in subprocess output
-                print(f"SUCCESS: METRICS_SAVED: {save_metrics_json_path.absolute()} (size: {file_size} bytes)", flush=True)
-                log.info(f"SUCCESS: METRICS_SAVED: {save_metrics_json_path.absolute()} (size: {file_size} bytes)")
+                print(
+                    f"SUCCESS: METRICS_SAVED: {save_metrics_json_path.absolute()} (size: {file_size} bytes)",
+                    flush=True,
+                )
+                log.info(
+                    f"SUCCESS: METRICS_SAVED: {save_metrics_json_path.absolute()} (size: {file_size} bytes)"
+                )
                 log.info(f"✅ Verified metrics file exists: {save_metrics_json_path.absolute()}")
                 log.info(f"💾 Metrics JSON saved to: {save_metrics_json_path.absolute()}")
                 if file_size > 0:
                     log.info(f"   File size: {file_size} bytes")
             else:
-                print(f"ERROR: METRICS_NOT_FOUND: Expected path: {save_metrics_json_path.absolute()}", flush=True)
-                log.info(f"ERROR: METRICS_NOT_FOUND: Expected path: {save_metrics_json_path.absolute()}")
+                print(
+                    f"ERROR: METRICS_NOT_FOUND: Expected path: {save_metrics_json_path.absolute()}",
+                    flush=True,
+                )
+                log.info(
+                    f"ERROR: METRICS_NOT_FOUND: Expected path: {save_metrics_json_path.absolute()}"
+                )
                 log.warning(f"Metrics file not found at expected path: {save_metrics_json_path}")
 
             # For single house mode, track success
@@ -2070,21 +2281,42 @@ def main(args: argparse.ArgumentParser) -> None:
 
                 # Check all failure conditions - if any fail, house_success stays False
                 if grasps_tested == 0:
-                    print(f"ERROR: HOUSE_FAILED: House {current_house_ind} processed but no grasps were tested", flush=True)
-                    log.info(f"ERROR: HOUSE_FAILED: House {current_house_ind} processed but no grasps were tested")
+                    print(
+                        f"ERROR: HOUSE_FAILED: House {current_house_ind} processed but no grasps were tested",
+                        flush=True,
+                    )
+                    log.info(
+                        f"ERROR: HOUSE_FAILED: House {current_house_ind} processed but no grasps were tested"
+                    )
                     house_success = False
                 elif metrics_required and not metrics_saved:
-                    print(f"ERROR: HOUSE_FAILED: Metrics file was not saved for house {current_house_ind}", flush=True)
-                    log.info(f"ERROR: HOUSE_FAILED: Metrics file was not saved for house {current_house_ind}")
-                    log.info(f"  Expected path: {save_metrics_json_path.absolute() if save_metrics_json_path else 'None'}")
-                    log.info(f"  Metrics required: {metrics_required}, Metrics saved: {metrics_saved}")
+                    print(
+                        f"ERROR: HOUSE_FAILED: Metrics file was not saved for house {current_house_ind}",
+                        flush=True,
+                    )
+                    log.info(
+                        f"ERROR: HOUSE_FAILED: Metrics file was not saved for house {current_house_ind}"
+                    )
+                    log.info(
+                        f"  Expected path: {save_metrics_json_path.absolute() if save_metrics_json_path else 'None'}"
+                    )
+                    log.info(
+                        f"  Metrics required: {metrics_required}, Metrics saved: {metrics_saved}"
+                    )
                     house_success = False
                 else:
                     # Success: grasps were tested AND (metrics not required OR metrics were saved)
                     house_success = True
-                    print(f"SUCCESS: HOUSE_SUCCESS: House {current_house_ind} - {grasps_tested} grasps tested, metrics saved: {metrics_saved}", flush=True)
-                    log.info(f"SUCCESS: HOUSE_SUCCESS: House {current_house_ind} - {grasps_tested} grasps tested, metrics saved: {metrics_saved}")
-                    log.info(f"House {current_house_ind} successfully processed: {grasps_tested} grasps tested")
+                    print(
+                        f"SUCCESS: HOUSE_SUCCESS: House {current_house_ind} - {grasps_tested} grasps tested, metrics saved: {metrics_saved}",
+                        flush=True,
+                    )
+                    log.info(
+                        f"SUCCESS: HOUSE_SUCCESS: House {current_house_ind} - {grasps_tested} grasps tested, metrics saved: {metrics_saved}"
+                    )
+                    log.info(
+                        f"House {current_house_ind} successfully processed: {grasps_tested} grasps tested"
+                    )
 
             # Aggregate metrics
             all_metrics["total_objects"] += house_metrics["total_objects"]
@@ -2095,12 +2327,13 @@ def main(args: argparse.ArgumentParser) -> None:
 
             log.info(
                 f"House {current_house_ind}: {house_metrics['total_successful_grasps']}/{house_metrics['total_grasps_tested']} successful "
-                f"({house_metrics['success_rate']*100:.1f}%)"
+                f"({house_metrics['success_rate'] * 100:.1f}%)"
             )
 
         except Exception as e:
             log.error(f"Error processing house {current_house_ind}: {e}")
             import traceback
+
             log.debug(f"Traceback:\n{traceback.format_exc()}")
 
             # For single house mode, mark as failed and return immediately
@@ -2133,7 +2366,7 @@ def main(args: argparse.ArgumentParser) -> None:
         log.info(f"   File size: {base_save_metrics_json_path.stat().st_size} bytes")
 
     # Print final summary with output locations
-    log.info(f"\n{'='*80}")
+    log.info(f"\n{'=' * 80}")
     log.info("📊 OUTPUT FILES SUMMARY")
     log.info("=" * 80)
     if base_save_failed_videos_dir:
@@ -2144,29 +2377,41 @@ def main(args: argparse.ArgumentParser) -> None:
     if base_save_metrics_json_path:
         log.info(f"💾 Aggregated metrics: {base_save_metrics_json_path.absolute()}")
     if args.save_metrics_json and args.save_metrics_json.strip():
-        metrics_dir = base_save_metrics_json_path.parent if base_save_metrics_json_path else (ASSETS_DIR / "datagen" / "grasp_test_v1" / timestamp)
+        metrics_dir = (
+            base_save_metrics_json_path.parent
+            if base_save_metrics_json_path
+            else (ASSETS_DIR / "datagen" / "grasp_test_v1" / timestamp)
+        )
         json_count = sum(1 for _ in metrics_dir.glob("*_metrics.json"))
         if json_count > 0:
             log.info(f"💾 Per-house metrics files: {json_count} files in {metrics_dir.absolute()}")
         # For single house mode, also show the specific file path
-        if house_ind is not None and single_house_metrics_path and single_house_metrics_path.exists():
-            log.info(f"💾 Metrics JSON for house {house_ind}: {single_house_metrics_path.absolute()}")
+        if (
+            house_ind is not None
+            and single_house_metrics_path
+            and single_house_metrics_path.exists()
+        ):
+            log.info(
+                f"💾 Metrics JSON for house {house_ind}: {single_house_metrics_path.absolute()}"
+            )
             log.info(f"   File size: {single_house_metrics_path.stat().st_size} bytes")
     log.info("=" * 80)
-    log.info(f"\n{'='*80}")
+    log.info(f"\n{'=' * 80}")
     log.info("FINAL SUMMARY")
-    log.info(f"{'='*80}")
+    log.info(f"{'=' * 80}")
     log.info(
         f"Overall: {all_metrics['total_successful_grasps']}/{all_metrics['total_grasps_tested']} successful "
-        f"({all_metrics['success_rate']*100:.1f}%)"
+        f"({all_metrics['success_rate'] * 100:.1f}%)"
     )
     if all_metrics["total_noncolliding_grasps"] > 0:
         log.info(
             f"Non-colliding grasps: {all_metrics['total_noncolliding_grasps']}, "
             f"Success rate: {all_metrics['total_successful_grasps']}/{all_metrics['total_noncolliding_grasps']} "
-            f"({all_metrics['total_successful_grasps']/all_metrics['total_noncolliding_grasps']*100:.1f}% if all tested)"
+            f"({all_metrics['total_successful_grasps'] / all_metrics['total_noncolliding_grasps'] * 100:.1f}% if all tested)"
         )
-    log.info(f"Total houses processed: {len(all_metrics['per_house_metrics'])}/{all_metrics['total_houses']}")
+    log.info(
+        f"Total houses processed: {len(all_metrics['per_house_metrics'])}/{all_metrics['total_houses']}"
+    )
     log.info(f"Total objects tested: {all_metrics['total_objects']}")
 
     # Determine exit code based on success
@@ -2174,35 +2419,59 @@ def main(args: argparse.ArgumentParser) -> None:
     # For multiple houses: return 0 if at least one house succeeded, 1 if all failed
     if house_ind is not None:
         # Single house mode - check if it succeeded
-        print(f"DEBUG: Final check - house_success={house_success}, house_indices={len(house_indices)}, metrics_count={len(all_metrics['per_house_metrics'])}", flush=True)
-        log.info(f"DEBUG: Final check - house_success={house_success}, house_indices={len(house_indices)}, metrics_count={len(all_metrics['per_house_metrics'])}")
+        print(
+            f"DEBUG: Final check - house_success={house_success}, house_indices={len(house_indices)}, metrics_count={len(all_metrics['per_house_metrics'])}",
+            flush=True,
+        )
+        log.info(
+            f"DEBUG: Final check - house_success={house_success}, house_indices={len(house_indices)}, metrics_count={len(all_metrics['per_house_metrics'])}"
+        )
 
         if len(house_indices) == 0:
-            print(f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no houses in house_indices", flush=True)
-            log.info(f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no houses in house_indices")
+            print(
+                f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no houses in house_indices",
+                flush=True,
+            )
+            log.info(
+                f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no houses in house_indices"
+            )
             return 1
-        elif len(all_metrics['per_house_metrics']) == 0:
-            print(f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no metrics collected", flush=True)
-            log.info(f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no metrics collected")
+        elif len(all_metrics["per_house_metrics"]) == 0:
+            print(
+                f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no metrics collected",
+                flush=True,
+            )
+            log.info(
+                f"ERROR: EXIT_CODE_1: House {house_ind} was not processed - no metrics collected"
+            )
             return 1
         elif house_success:
             print(f"SUCCESS: EXIT_CODE_0: House {house_ind} processed successfully", flush=True)
             if single_house_metrics_path:
-                print(f"SUCCESS: METRICS_LOCATION: {single_house_metrics_path.absolute()}", flush=True)
+                print(
+                    f"SUCCESS: METRICS_LOCATION: {single_house_metrics_path.absolute()}", flush=True
+                )
                 log.info(f"SUCCESS: METRICS_LOCATION: {single_house_metrics_path.absolute()}")
             else:
-                print(f"WARNING: METRICS_LOCATION_NONE: single_house_metrics_path is None", flush=True)
+                print(
+                    f"WARNING: METRICS_LOCATION_NONE: single_house_metrics_path is None", flush=True
+                )
                 log.info(f"WARNING: METRICS_LOCATION_NONE: single_house_metrics_path is None")
             log.info(f"SUCCESS: EXIT_CODE_0: House {house_ind} processed successfully")
             log.info(f"House {house_ind} processed successfully")
             return 0
         else:
-            print(f"ERROR: EXIT_CODE_1: House {house_ind} processing failed (house_success=False)", flush=True)
-            log.info(f"ERROR: EXIT_CODE_1: House {house_ind} processing failed (house_success=False)")
+            print(
+                f"ERROR: EXIT_CODE_1: House {house_ind} processing failed (house_success=False)",
+                flush=True,
+            )
+            log.info(
+                f"ERROR: EXIT_CODE_1: House {house_ind} processing failed (house_success=False)"
+            )
             return 1
     else:
         # Multiple houses mode - success if at least one house was processed
-        if len(all_metrics['per_house_metrics']) > 0:
+        if len(all_metrics["per_house_metrics"]) > 0:
             log.info("At least one house processed successfully")
             return 0
         else:
@@ -2272,7 +2541,6 @@ if __name__ == "__main__":
         default="auto",
         help="Path to save metrics JSON file. Use 'auto' to auto-generate path in assets/datagen/grasp_test_v1/ (default: auto). Set to empty string to disable.",
     )
-
 
     args = parser.parse_args()
     exit_code = main(args)

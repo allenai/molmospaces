@@ -37,46 +37,8 @@ import logging
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 from pydantic import BaseModel, Field
-
-# Default task horizons (max steps) per task class.
-# These are sensible defaults for evaluation - override via command line if needed.
-# Keys are task class names (short form, e.g. "PickTask") or fully qualified names.
-# TODO (everyone): make sure these are reasonable defaults/refine them.
-DEFAULT_TASK_HORIZONS: dict[str, int] = {
-    "PickTask": 500,
-    "PickAndPlaceTask": 500,
-    "PickAndPlaceNextToTask": 500,
-    "OpeningTask": 500,
-    "DoorOpeningTask": 500,
-    "NavToObjTask": 500,
-    "StretchPickupTask": 1000,
-    "StretchObjectNavTask": 1000,
-    "Xarm7RangerPickupTask": 1000,
-    "Xarm7RangerObjectNavTask": 1000,
-}
-
-
-def get_default_task_horizon(task_cls: str) -> int:
-    """Get default task horizon for a task class.
-
-    Args:
-        task_cls: Task class name, either short form (e.g. "PickTask") or
-            fully qualified (e.g. "molmo_spaces.tasks.pick_task.PickTask")
-
-    Returns:
-        Default task horizon for this task class
-    """
-    # Try exact match first
-    if task_cls in DEFAULT_TASK_HORIZONS:
-        return DEFAULT_TASK_HORIZONS[task_cls]
-
-    # Try short class name (last part after the dot)
-    short_name = task_cls.split(".")[-1]
-    if short_name in DEFAULT_TASK_HORIZONS:
-        return DEFAULT_TASK_HORIZONS[short_name]
-
-    raise ValueError(f"No default task horizon found for task class {task_cls}")
 
 
 class RobotSpec(BaseModel):
@@ -181,8 +143,23 @@ class PickAndPlaceTaskSpec(PickTaskSpec):
 
     # Success criteria
     receptacle_supported_weight_frac: float = 0.5
-    max_place_receptacle_pos_displacement: float = 0.1
-    max_place_receptacle_rot_displacement: float = 0.785  # ~45 degrees in radians
+    max_place_receptacle_pos_displacement: float = 0.15
+    max_place_receptacle_rot_displacement: float = np.deg2rad(60)
+
+
+class PickAndPlaceNextToTaskSpec(PickAndPlaceTaskSpec):
+    """Task-specific parameters for pick and place next-to tasks."""
+
+    min_surface_to_surface_gap: float | None = None
+    max_surface_to_surface_gap: float | None = None
+
+
+class PickAndPlaceColorTaskSpec(PickAndPlaceTaskSpec):
+    """Task-specific parameters for pick and place color tasks."""
+
+    object_colors: dict[str, list[float]] | None = None  # object name -> rgba
+    other_receptacle_names: list[str] | None = None
+    other_receptacle_start_poses: dict[str, list[float]] | None = None
 
 
 class OpenCloseTaskSpec(BaseTaskSpec):
@@ -213,14 +190,36 @@ class NavToObjTaskSpec(BaseTaskSpec):
     succ_pos_threshold: float = 1.5  # meters
 
 
-TaskSpec = PickTaskSpec | PickAndPlaceTaskSpec | OpenCloseTaskSpec | NavToObjTaskSpec
+class DoorOpeningTaskSpec(BaseTaskSpec):
+    """Task-specific parameters for door opening tasks."""
+
+    door_body_name: str  # e.g., "door|2|8_Doorway_Double_7_doorway_door_7"
+    articulated_joint_range: list[float] | None = None
+    articulated_joint_reset_state: list[float] | None = None
+
+    # Success criteria
+    door_openness_threshold: float = 0.67  # percentage of door opening
+
+
+TaskSpec = (
+    PickTaskSpec
+    | PickAndPlaceTaskSpec
+    | PickAndPlaceColorTaskSpec
+    | PickAndPlaceNextToTaskSpec
+    | OpenCloseTaskSpec
+    | NavToObjTaskSpec
+    | DoorOpeningTaskSpec
+)
 
 # All TaskSpec subclasses for introspection
 ALL_TASK_SPEC_CLASSES: list[type[BaseTaskSpec]] = [
     PickTaskSpec,
     PickAndPlaceTaskSpec,
+    PickAndPlaceNextToTaskSpec,
+    PickAndPlaceColorTaskSpec,
     OpenCloseTaskSpec,
     NavToObjTaskSpec,
+    DoorOpeningTaskSpec,
 ]
 
 # Fields that are metadata about the task, not configuration to copy
@@ -282,7 +281,7 @@ class EpisodeSpec(BaseModel):
 
     NOTE: Timing/execution parameters (policy_dt_ms, ctrl_dt_ms, sim_dt_ms,
     task_horizon) are NOT stored per-episode. They come from the evaluation
-    config or command line. Use get_default_task_horizon() for defaults.
+    config or command line.
 
     A benchmark is simply a list of EpisodeSpec objects in a single JSON file.
     """
@@ -311,11 +310,15 @@ class EpisodeSpec(BaseModel):
     # Contains task_type, task_cls, robot_base_pose, and task-specific fields
     task: dict  # Flexible dict; can be validated against TaskSpec subtypes
 
+    # === Task-relevant objects ===
+    # Object body names that must be visible for camera placement (e.g. pickup object,
+    # receptacles). Used by the eval camera system for visibility checks and workspace
+    # center computation. Computed at benchmark creation time from task config fields.
+    # Empty list for legacy benchmarks or tasks without visibility requirements.
+    task_relevant_objects: list[str] = Field(default_factory=list)
+
     # === Language specification ===
     language: LanguageSpec
-
-    # NOTE: task_horizon is NOT stored per-episode. It's an evaluation parameter.
-    # Use get_default_task_horizon() or command line override instead.
 
     class Config:
         # Allow extra fields for forward compatibility
@@ -349,6 +352,10 @@ class EpisodeSpec(BaseModel):
         task_cls = self.task.get("task_cls")
         if not task_cls:
             raise ValueError("task dict missing required 'task_cls' field")
+        # TODO(max): XXX remove this
+        # if "molmo_spaces" in task_cls:  # TODO(rose): forking breanch
+        #    print("XXX patching config molmo_spaces->mujoco_thor")
+        #    task_cls = task_cls.replace("molmo_spaces", "mujoco_thor")
         return task_cls
 
 

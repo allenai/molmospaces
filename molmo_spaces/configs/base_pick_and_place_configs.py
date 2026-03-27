@@ -7,7 +7,6 @@ from molmo_spaces.configs.task_configs import PickAndPlaceTaskConfig
 from molmo_spaces.configs.task_sampler_configs import PickAndPlaceTaskSamplerConfig
 from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 from molmo_spaces.tasks.pick_and_place_task_sampler import PickAndPlaceTaskSampler
-from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 
 
 class PickAndPlaceDataGenConfig(PickBaseConfig):
@@ -15,7 +14,7 @@ class PickAndPlaceDataGenConfig(PickBaseConfig):
     num_workers: int = 1
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
-        pickup_types=PICK_AND_PLACE_OBJECTS,
+        pickup_types=[],
         samples_per_house=20,
     )
     task_config: PickAndPlaceTaskConfig = PickAndPlaceTaskConfig(task_cls=PickAndPlaceTask)

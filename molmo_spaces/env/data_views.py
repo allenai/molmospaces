@@ -286,7 +286,7 @@ class MlSpacesObject(MlSpacesBody):
         """Get all geom IDs belonging to this object (lazy, cached)."""
         geom_ids = []
         for geom_id in range(0, self.mj_model.ngeom):
-            body_id = self.mj_model.geom(geom_id).bodyid
+            body_id = self.mj_model.geom(geom_id).bodyid.item()
             root_id = self.mj_model.body(body_id).rootid
             if root_id == self.object_root_id:
                 geom_ids.append(int(geom_id))
@@ -571,6 +571,8 @@ class MlSpacesArticulationObject(MlSpacesObject):
         return [self.mj_model.joint(joint_id).armature for joint_id in self.joint_ids]
 
     def set_joint_position(self, i: int, position: float) -> None:
+        if isinstance(position, np.ndarray):
+            position = position.item()
         self.mj_data.qpos[self.get_joint_qpos_adr(i)] = position
 
     def _set_joint_frictionloss(self, frictionloss: float) -> None:

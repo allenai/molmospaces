@@ -1,16 +1,8 @@
 # MolmoSpaces-Isaac
 
 This package provides functionality to load objects and scenes from the `MolmoSpaces`
-ecosystem into [`IsaacSim`][0] and [`IsaacLab`][1].
-
----
-
-<p align="center">
-  <b> 🚧 REPOSITORY UNDER DEVELOPMENT 🚧 </b>
-  <br>This package is still experimental and under active development. Breaking changes might occur during updates.
-</p>
-
----
+ecosystem into [`IsaacSim`][0] and [`IsaacLab`][1], as well as the converters used to
+generate the assets and houses from MuJoCo to USD format.
 
 ---
 **Updates 🤖**
@@ -56,8 +48,7 @@ and then symlinked the correct version into the provided folder (in this case, a
 You can then open an asset in `IsaacSim` by just dragging and dropping the `usd` file
 into the editor. For example, below we show the `Fridge_1_mesh.usda` asset:
 
-<video src="https://github.com/user-attachments/assets/c5c2b35c-ea1b-48a8-8e41-35d3ca4ba91f">
-</video>
+![gif-fridge-isaacsim][2]
 
 - To get the scenes for a specific dataset (e.g. `ithor`, `procthor-10k-train`, etc.):
 
@@ -74,8 +65,27 @@ You can then open a scene in `IsaacSim` by just dragging and dropping the `usd` 
 into the editor. For example, below we show the `scene.usda` associated with the `FloorPlan1`
 scene from the `ithor` dataset:
 
-<video src="https://github.com/user-attachments/assets/77fa8123-ec19-4ebf-95a8-5448c14ae826">
-</video>
+## Finding assets
+
+To search assets of a specific type, we can just do
+
+```python
+from molmo_spaces.utils.object_retriever import ObjectRetriever
+from molmo_spaces.utils.object_metadata import ObjectMeta
+
+r = ObjectRetriever()
+uids, sims = r.query("cellphone")
+for it, (uid, sim) in enumerate(zip(uids, sims)):
+  anno = ObjectMeta.annotation(uid)
+  print(
+      f"{it} {sim=} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
+      f" {anno['description_short']['five_words']}"
+  )
+```
+
+![gif-fridge-isaacsim][3]
 
 [0]: <https://docs.isaacsim.omniverse.nvidia.com/5.1.0/index.html> (isaacsim-website)
 [1]: <https://isaac-sim.github.io/IsaacLab/main/index.html> (isaaclab-website)
+[2]: <https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDlzdGJnZmM3amowaXh4ejZ0Z3hsb3Boc3BxenU3OTgzYWY2aTFtdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/uff0R6JFMYz4BnvD35/giphy.gif> (asset-isaacsim)
+[3]: <https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExeG5zaXFsc3F2Zm9pY2h3aG16c3E3Z21ucHZrdThuZjJmcHd2aGU1MiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LNmIRbG16EpiyVRsfN/giphy.gif> (scene-isaacsim)

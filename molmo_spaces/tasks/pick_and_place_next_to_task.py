@@ -1,14 +1,37 @@
+import logging
 from typing import Any
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.configs.task_configs import PickAndPlaceTaskConfig
+from molmo_spaces.configs.task_configs import PickAndPlaceNextToTaskConfig, PickAndPlaceTaskConfig
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb
 from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
+
+log = logging.getLogger(__name__)
+
+
+def _get_surface_gap(config, attr: str, sampler_default: float) -> float:
+    """Get surface gap from task_config, falling back to task_sampler_config."""
+    task_config = config.task_config
+    if isinstance(task_config, PickAndPlaceNextToTaskConfig):
+        val = getattr(task_config, attr, None)
+        if val is not None:
+            return val
+    sampler_config = getattr(config, "task_sampler_config", None)
+    if sampler_config is not None:
+        val = getattr(sampler_config, attr, None)
+        if val is not None:
+            log.warning(
+                "%s not set in task_config, falling back to task_sampler_config (%s)",
+                attr,
+                val,
+            )
+            return val
+    return sampler_default
 
 
 class PickAndPlaceNextToTask(PickAndPlaceTask):
@@ -75,9 +98,16 @@ class PickAndPlaceNextToTask(PickAndPlaceTask):
             # L2 norm gives shortest distance between the two boxes in XY plane
             xy_distance = np.sqrt(surface_dist_x**2 + surface_dist_y**2)
 
-            task_sampler_config = self.config.task_sampler_config
-            min_surface_gap = task_sampler_config.min_surface_to_surface_gap
-            max_surface_gap = task_sampler_config.max_surface_to_surface_gap
+            min_surface_gap = _get_surface_gap(
+                self.config,
+                "min_surface_to_surface_gap",
+                sampler_default=0.0,
+            )
+            max_surface_gap = _get_surface_gap(
+                self.config,
+                "max_surface_to_surface_gap",
+                sampler_default=0.05,
+            )
 
             # Success check for "next to" placement:
             # 1. Object is within surface-to-surface gap range (min_surface_gap to max_surface_gap) from receptacle

@@ -45,7 +45,7 @@ class BaseMujocoTaskSamplerConfig(Config):
 
     robot_placement_exclusion_threshold: float = 0.15
 
-    robot_placement_rotation_range_rad: float = 0.25  # +/- approx 15 degrees
+    robot_placement_rotation_range_rad: float = math.radians(45)
 
     # Scene configuration
     enable_texture_randomization: bool = False
@@ -53,6 +53,9 @@ class BaseMujocoTaskSamplerConfig(Config):
 
 class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     # Note: Abhay's request.
+
+    # Dataset configuration
+    dataset_name: str = "procthor-10k"
 
     # Object names in the scene (will be set dynamically during sampling)
     pickup_obj_name: str | None = None  # Will be selected from existing small objects in scene
@@ -107,15 +110,58 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     robot_safety_radius: float = 0.15  # Radius around robot to avoid collisions
     robot_object_z_offset: float = -0.75
     robot_object_z_offset_random_min: float = (
-        0  # Minimum offset to place robot base relative to object height.
+        -0.30  # Minimum offset to place robot base relative to object height.
     )
     robot_object_z_offset_random_max: float = (
-        0  # Maximum offset to place robot base relative to object height.
+        0.25  # Maximum offset to place robot base relative to object height.
     )
     base_pose_sampling_radius_range: tuple[float, float] = (
         0.0,
         0.7,
     )  # Radius to sample robot base pose around receptacle
+
+    # -- Added pickup objects (pick-from-set mode) --
+    # When not None, external objects matching these synsets/categories/UIDs are added to the
+    # scene and used as pickup targets instead of the scene's own objects (which serve only as
+    # reference positions for placement on cluttered surfaces).
+    added_pickup_objects: list[str] | None = None
+    # 1-indexed rank(s) from _pickupable_class_ranking(); overrides added_pickup_objects
+    # in model_post_init with the UIDs for those ranked classes.
+    added_pickup_class_rank: int | list[int] | None = None
+    added_pickup_class_max_uids: int | None = None  # cap UIDs per ranked class (None = all)
+    added_pickup_namespace: str = "pickup/"
+    num_added_pickups: int = 30  # max no. of added pickupables in the scene
+    episodes_per_added_pickup: int = 1
+    min_reference_to_added_pickup_dist: float = 0.15
+    max_reference_to_added_pickup_dist: float = 0.5
+    max_added_pickup_placement_attempts: int = 100
+    max_robot_to_added_pickup_dist: float = 0.7
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        if self.added_pickup_class_rank is not None:
+            from molmo_spaces.utils.synset_utils import _pickupable_class_ranking
+
+            ranking = _pickupable_class_ranking()
+            ranks = (
+                self.added_pickup_class_rank
+                if isinstance(self.added_pickup_class_rank, list)
+                else [self.added_pickup_class_rank]
+            )
+            all_uids: list[str] = []
+            for rank in ranks:
+                idx = rank - 1
+                if idx < 0 or idx >= len(ranking):
+                    raise ValueError(
+                        f"added_pickup_class_rank={rank} out of range [1, {len(ranking)}]"
+                    )
+                uids = ranking[idx][1]
+                if self.added_pickup_class_max_uids is not None:
+                    uids = uids[: self.added_pickup_class_max_uids]
+                all_uids.extend(uids)
+            self.added_pickup_objects = all_uids
+        if self.added_pickup_objects:
+            self.objaverse_oversampling_factor = 1
 
 
 class OpenTaskSamplerConfig(PickTaskSamplerConfig):
@@ -124,6 +170,8 @@ class OpenTaskSamplerConfig(PickTaskSamplerConfig):
 
     # samples_per_house: int = 3
     # pickup_types: list[str] | None = ["drawer"]
+
+    robot_placement_rotation_range_rad: float = 0.25  # +/- approx 15 degrees
 
     robot_object_z_offset_random_min: float = (
         0  # Minimum offset to place robot base relative to object height.
@@ -155,7 +203,7 @@ class PickAndPlaceTaskSamplerConfig(PickTaskSamplerConfig):
     min_object_to_receptacle_dist: float = 0.15
     max_object_to_receptacle_dist: float = 0.5
     max_place_receptacle_sampling_attempts: int = 100
-    robot_placement_rotation_range_rad: float = 0.785  # ~45deg
+    robot_placement_rotation_range_rad: float = math.radians(45)
     # Number of receptacles to preload in the scene for fallback when IK fails
     num_place_receptacles: int = 3
     # Auto-advance to next receptacle after this many episodes (0 = disabled)
@@ -164,23 +212,20 @@ class PickAndPlaceTaskSamplerConfig(PickTaskSamplerConfig):
 
 class PickAndPlaceNextToTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
     place_receptacle_types: list[str] = []  # Empty = any object on bench
-    max_robot_to_place_receptacle_dist: float = (
-        0.6  # making the robot a little closer to the recep to gain range to pickup
-    )
-    min_object_to_receptacle_dist: float = 0.5  # avoid insta-success by keeping this large
-    max_object_to_receptacle_dist: float = 0.8  # don't overdo (hard to reach, maybe)
+    min_object_to_receptacle_dist: float = 0.3  # avoid insta-success by keeping this large
+    max_object_to_receptacle_dist: float = 0.5  # don't overdo (hard to reach, maybe)
     max_place_receptacle_sampling_attempts: int = 100
     episodes_per_receptacle: int = 0  # we're not using added receptacles!
-
-    # actually task success
-    min_surface_to_surface_gap: float = 0
-    max_surface_to_surface_gap: float = 0.25
 
 
 class PickAndPlaceColorTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
     """Configuration for pick and place color task sampler."""
 
     pass
+
+
+class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
+    box_uids: list[str] | None = None  # If None, uses Box_1..Box_30
 
 
 class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
@@ -206,6 +251,8 @@ class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     load_robot_from_file: bool = (
         True  # Whether to load the robot from its xml file. RBY1 scenes need robot added.
     )
+
+    robot_placement_rotation_range_rad: float = 0.25  # +/- approx 15 degrees
 
     # Door opening specific task sampling parameters
     # Door joint randomization

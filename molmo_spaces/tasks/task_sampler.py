@@ -14,6 +14,7 @@ import random
 from abc import abstractmethod
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Any
 
 import mujoco
 import numpy as np
@@ -35,6 +36,9 @@ from molmo_spaces.molmo_spaces_constants import (
     get_scenes,
 )
 
+MJC_VERSION = tuple(map(int, mujoco.__version__.split(".")))
+FILAMENT_ATTR_ENV_LIGHT_INTENSITY = "filament.fallback.environment_light_intensity"
+
 
 # Asset blacklist for data generation - assets that cause consistent failures
 # Use environment variable if set (for distributed jobs with read-only code mounts)
@@ -43,10 +47,10 @@ from molmo_spaces.molmo_spaces_constants import (
 def get_asset_blacklist_path() -> Path:
     """Get the asset blacklist path, preferring environment variable.
 
-    Checks MJTHOR_ASSET_BLACKLIST_PATH env var on each call, since the env var
+    Checks MLSPACES_ASSET_BLACKLIST_PATH env var on each call, since the env var
     may be set after module import (e.g., by Beaker job configuration).
     """
-    env_path = os.environ.get("MJTHOR_ASSET_BLACKLIST_PATH")
+    env_path = os.environ.get("MLSPACES_ASSET_BLACKLIST_PATH")
     if env_path:
         return Path(env_path)
     return (
@@ -69,15 +73,15 @@ def load_asset_blacklist() -> set[str]:
 
     Raises:
         FileNotFoundError: If an explicit blacklist path was specified via
-            MJTHOR_ASSET_BLACKLIST_PATH but does not exist.
+            MLSPACES_ASSET_BLACKLIST_PATH but does not exist.
     """
     blacklist_path = get_asset_blacklist_path()
     blacklist = set()
     if not blacklist_path.exists():
         # If an explicit path was specified via env var, it must exist
-        if os.environ.get("MJTHOR_ASSET_BLACKLIST_PATH"):
+        if os.environ.get("MLSPACES_ASSET_BLACKLIST_PATH"):
             raise FileNotFoundError(
-                f"Asset blacklist path specified via MJTHOR_ASSET_BLACKLIST_PATH "
+                f"Asset blacklist path specified via MLSPACES_ASSET_BLACKLIST_PATH "
                 f"does not exist: {blacklist_path}"
             )
         return blacklist
@@ -114,7 +118,7 @@ def add_to_static_blacklist(asset_uid: str, reason: str = "") -> bool:
     """Add an asset UID to the static blacklist file with file locking.
 
     This is safe to call from multiple workers concurrently.
-    The blacklist path can be configured via MJTHOR_ASSET_BLACKLIST_PATH env var.
+    The blacklist path can be configured via MLSPACES_ASSET_BLACKLIST_PATH env var.
 
     Args:
         asset_uid: The asset UID to add to the blacklist
@@ -205,6 +209,47 @@ from molmo_spaces.utils.mujoco_scene_utils import randomize_door_joints
 log = logging.getLogger(__name__)
 
 
+class MetadataAdder:
+    def __init__(self):
+        import threading
+
+        self.semaphore = threading.Semaphore()
+        self.pending = True
+        self.name_to_meta: dict[str, dict[str, Any]] = {}
+
+    def reset(self):
+        """Reset for a new scene. Must be called before add_auxiliary_objects populates new entries."""
+        self.semaphore.acquire()
+        try:
+            self.pending = True
+            self.name_to_meta.clear()
+        finally:
+            self.semaphore.release()
+
+    def update(self, name_to_meta):
+        self.semaphore.acquire()
+        try:
+            assert self.pending, (
+                "Attempt to call MetadataAdder.update() with additional metadata already flushed"
+            )
+            self.name_to_meta.update(name_to_meta)
+        finally:
+            self.semaphore.release()
+
+    def add_meta(self, metadata):
+        if self.pending:
+            self.semaphore.acquire()
+            try:
+                if self.pending:
+                    for name, meta in self.name_to_meta.items():
+                        if name not in metadata["objects"]:
+                            metadata["objects"][name] = meta
+
+                    self.pending = False
+            finally:
+                self.semaphore.release()
+
+
 class BaseMujocoTaskSampler:
     """
     Base task sampler that provides common scene loading and randomization functionality.
@@ -226,6 +271,9 @@ class BaseMujocoTaskSampler:
         # Environment will be created lazily when first accessed
         self._env = None
         self.current_seed = None
+
+        # Shared metadata adder for all dynamically-added objects
+        self._metadata_adder = MetadataAdder()
 
         # Optional profiler for sub-timing within task sampling (set via set_datagen_profiler)
         self._datagen_profiler = None
@@ -485,6 +533,7 @@ class BaseMujocoTaskSampler:
         robot_config,
         scene_file_path,
         randomize_textures=False,
+        environment_light_intensity: float = 15000.0,
     ):
         """
         Complete function to set up a scene with robot and objects.
@@ -509,6 +558,16 @@ class BaseMujocoTaskSampler:
             )
         else:
             spec = MjSpec.from_file(str(scene_file_path))
+
+        # Hack(wilbert): only run on 3.5.1 onwards for now (custom mujoco wheel)
+        if MJC_VERSION >= (3, 5, 1):
+            # This custom arg is used by the filament renderer to set the default intensity of the environment light
+            spec.add_numeric(
+                FILAMENT_ATTR_ENV_LIGHT_INTENSITY,
+                [environment_light_intensity],
+                1,
+                "Filament default env light intensity",
+            )
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_xml_load")
@@ -698,6 +757,7 @@ class BaseMujocoTaskSampler:
                 scene_file_path=scene_path,
                 randomize_textures=self.config.task_sampler_config.randomize_textures
                 or enable_door_randomization,  # Enable door joint randomization
+                environment_light_intensity=self.config.environment_light_intensity,
             )
         except HouseInvalidForTask:
             if self._datagen_profiler is not None:
@@ -727,6 +787,7 @@ class BaseMujocoTaskSampler:
             robot_factory=self._create_robot,
             mj_model=model,
             mj_base_scene_path=scene_path,
+            use_filament=self.config.use_filament,
         )
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("scene_env_create")
@@ -927,7 +988,7 @@ class BaseMujocoTaskSampler:
                 self._datagen_profiler.end("randomize_lighting")
             log.info("Lighting randomization completed.\n")
 
-        if self.texture_randomizer is not None:
+        if self.texture_randomizer is not None and random.random() >= 0.02:
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("randomize_texture")
             if self.config.task_sampler_config.randomize_textures_all:
@@ -1001,6 +1062,10 @@ class BaseMujocoTaskSampler:
             # for which we will sample, otherwise valid values stay un-changed
             self.config.task_config = self.config.task_config_preset_exp.model_copy(deep=True)
 
+            # Reset metadata adder so add_auxiliary_objects can register new objects.
+            # On scene reuse the old metadata is already in current_scene_metadata.
+            self._metadata_adder.reset()
+
             log.debug(
                 f"[HOUSE] Loading scene for house index {self.current_house_index} (prev loaded: {self._last_loaded_house_index})"
             )
@@ -1051,6 +1116,9 @@ class BaseMujocoTaskSampler:
         # Budget decrement if bounded
         if not math.isinf(self._current_tasks_left):
             self._current_tasks_left -= 1
+
+        # Flush accumulated metadata from add_auxiliary_objects into scene metadata
+        self._metadata_adder.add_meta(self.env.current_scene_metadata)
 
         # Time task-specific sampling (object selection, robot placement, camera setup, etc.)
         if self._datagen_profiler is not None:

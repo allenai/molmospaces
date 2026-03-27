@@ -21,6 +21,9 @@ class PromptSampler:
         "pick_and_place": [
             "pick up the {} and place it on the {}.",
         ],
+        "packing": [
+            "pack container.",
+        ],
         "close": [
             "close the {}.",
         ],
@@ -55,6 +58,16 @@ class PromptSampler:
         self.prompt_object_word_num = prompt_object_word_num
         self._cached_prompt = None
         self._disambiguate_distractors_by_pos = disambiguate_distractors_by_pos
+
+    def get_state(self):
+        return {
+            "current_index": self.current_index,
+            "cached_prompt": self._cached_prompt,
+        }
+
+    def set_state(self, state):
+        self.current_index = state["current_index"]
+        self._cached_prompt = state["cached_prompt"]
 
     def next(self) -> None:
         self.current_index = (self.current_index + 1) % len(self.prompt_templates)
@@ -96,7 +109,7 @@ class PromptSampler:
             else:
                 object_name = short_descriptions[self.prompt_object_word_num - 1].lower()
 
-        if self.task_type in ["pick", "pick_and_place"] and self._disambiguate_distractors_by_pos:
+        if self._disambiguate_distractors_by_pos and self.task_type in ["pick", "pick_and_place"]:
             # TODO: this should pull from metadata or something, since object_poses is not guaranteed to be set
             target_pose = task.env.config.task_config.object_poses[target_name]
             robot_pose = task.env.config.task_config.robot_base_pose

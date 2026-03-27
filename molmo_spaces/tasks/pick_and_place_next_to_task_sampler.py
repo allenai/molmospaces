@@ -2,15 +2,14 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
-from mujoco import MjSpec
 
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.env.object_manager import Context
 from molmo_spaces.tasks.pick_and_place_next_to_task import PickAndPlaceNextToTask
-from molmo_spaces.tasks.pick_and_place_task_sampler import (
-    MAX_BOTTOM_Z_DIFFERENCE,
-    PickAndPlaceTaskSampler,
+from molmo_spaces.tasks.pick_and_place_object_target_task_sampler import (
+    AbstractPickAndPlaceObjectTargetTaskSampler,
 )
+from molmo_spaces.tasks.pick_and_place_task_sampler import MAX_BOTTOM_Z_DIFFERENCE
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb
 
 if TYPE_CHECKING:
@@ -21,18 +20,11 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class PickAndPlaceNextToTaskSampler(PickAndPlaceTaskSampler):
+class PickAndPlaceNextToTaskSampler(AbstractPickAndPlaceObjectTargetTaskSampler):
     def __init__(self, config: "PickAndPlaceNextToDataGenConfig") -> None:
         super().__init__(config)
         self.config: PickAndPlaceNextToDataGenConfig
-
-    # Note: Commenting out all this to keep default behavior
-    # with added receptacles (this didn't work, but not sure if we want
-    # to try something along these lines in the future)
-
-    def _add_receptacles_to_scene(self, spec: MjSpec) -> None:
-        """No-op: we use existing scene objects as place targets."""
-        pass
+        self._place_candidates: list[str] = []
 
     def _get_place_target_candidates(
         self,
@@ -51,21 +43,18 @@ class PickAndPlaceNextToTaskSampler(PickAndPlaceTaskSampler):
         om = env.object_managers[env.current_batch_index]
         data = env.current_data
 
-        # Get objects on the same bench/supporting surface
         context_objects = om.get_context_objects(
             pickup_obj_name, Context.BENCH, bench_geom_ids=[supporting_geom_id]
         )
 
         if not context_objects:
-            self._receptacle_names = []
-            return self._receptacle_names
+            self._place_candidates = []
+            return self._place_candidates
 
-        # Get pickup object's bottom Z
         pickup_obj = om.get_object_by_name(pickup_obj_name)
         pickup_center, pickup_size = body_aabb(data.model, data, pickup_obj.body_id)
         pickup_bottom_z = pickup_center[2] - pickup_size[2] / 2
 
-        # Filter to objects on the same surface (similar bottom Z)
         same_surface_objects = []
         for obj in context_objects:
             obj_center, obj_size = body_aabb(data.model, data, obj.body_id)
@@ -75,10 +64,9 @@ class PickAndPlaceNextToTaskSampler(PickAndPlaceTaskSampler):
         context_objects = same_surface_objects
 
         if not context_objects:
-            self._receptacle_names = []
-            return self._receptacle_names
+            self._place_candidates = []
+            return self._place_candidates
 
-        # Filter to objects matching place_receptacle_types
         place_receptacle_types = self.config.task_sampler_config.place_receptacle_types
         if place_receptacle_types:
             place_types_set = set(t.lower() for t in place_receptacle_types)
@@ -90,13 +78,11 @@ class PickAndPlaceNextToTaskSampler(PickAndPlaceTaskSampler):
             context_objects = filtered_context_objects
 
         if not context_objects:
-            self._receptacle_names = []
-            return self._receptacle_names
+            self._place_candidates = []
+            return self._place_candidates
 
-        # Get context synsets for all bench objects (handles hypernym/hyponym relationships)
         context_synsets = om.get_context_synsets(context_objects)
 
-        # Get pickup object's required hypernyms within the bench context
         pickup_hypernyms = set(om.get_object_hypernyms(pickup_obj_name, context_synsets))
         pickup_synset = om.most_concrete_synset(pickup_hypernyms)
 
@@ -104,38 +90,31 @@ class PickAndPlaceNextToTaskSampler(PickAndPlaceTaskSampler):
         same_synset = []
 
         for obj in context_objects:
-            # Skip the pickup object itself
             if obj.name == pickup_obj_name:
                 continue
 
-            # Get this object's hypernyms within the bench context
             obj_hypernyms = set(om.get_object_hypernyms(obj.name, context_synsets))
             if obj_hypernyms:
                 obj_synset = om.most_concrete_synset(obj_hypernyms)
             else:
                 continue
 
-            # If synsets match, objects could be referred to by the same name
             if pickup_synset == obj_synset:
                 same_synset.append(obj.name)
             else:
                 different_synset.append(obj.name)
 
-        # Shuffle each group for variety
         np.random.shuffle(different_synset)
         np.random.shuffle(same_synset)
 
-        # Combine candidates, preferring different synset (unambiguous)
         all_candidates = different_synset + same_synset
 
-        # Rotate the list based on task counter to vary which candidate is tried first
-        # This ensures different pairs are tried across episodes
         if all_candidates and self._task_counter is not None:
             rotation = self._task_counter % len(all_candidates)
             all_candidates = all_candidates[rotation:] + all_candidates[:rotation]
 
-        self._receptacle_names = all_candidates
-        return self._receptacle_names
+        self._place_candidates = all_candidates
+        return self._place_candidates
 
     def _prepare_place_target(
         self,
@@ -160,51 +139,33 @@ class PickAndPlaceNextToTaskSampler(PickAndPlaceTaskSampler):
         max_dist = task_sampler_config.max_object_to_receptacle_dist
         min_dist = task_sampler_config.min_object_to_receptacle_dist
 
-        # Try each candidate place target
-        place_target_found = False
-        for place_target_name in self._receptacle_names:
-            place_target = om.get_object_by_name(place_target_name)
+        for candidate_name in self._place_candidates:
+            place_target = om.get_object_by_name(candidate_name)
 
-            # Get AABBs for distance calculation
             pickup_center, pickup_size = body_aabb(data.model, data, pickup_obj.body_id)
             target_center, target_size = body_aabb(data.model, data, place_target.body_id)
 
-            # Compute center-to-center distance in XY plane
             center_to_center_dist = np.linalg.norm(target_center[:2] - pickup_center[:2])
 
-            # Reject if too far (beyond max_object_to_receptacle_dist)
             if center_to_center_dist > max_dist:
                 log.info(
-                    f"Rejecting {place_target_name}: too far from pickup object "
+                    f"Rejecting {candidate_name}: too far from pickup object "
                     f"(center distance={center_to_center_dist:.3f}m > max={max_dist:.3f}m)"
                 )
                 continue
 
-            # Reject if too close (use min_object_to_receptacle_dist from config)
             if center_to_center_dist < min_dist:
                 log.info(
-                    f"Rejecting {place_target_name}: too close to pickup object "
+                    f"Rejecting {candidate_name}: too close to pickup object "
                     f"(center distance={center_to_center_dist:.3f}m < min={min_dist:.3f}m)"
                 )
                 continue
 
-            self.place_receptacle_name = place_target_name
-            place_target_found = True
-            break
+            self.place_receptacle_name = candidate_name
+            return True
 
-        return place_target_found
-
-    def _filter_place_target(
-        self,
-        env: CPUMujocoEnv,
-        pickup_obj_name: str,
-        place_target_name: str,
-    ) -> bool:
-        """No size constraint for 'next to' placement."""
-        return True
+        return False
 
     def _sample_task(self, env: CPUMujocoEnv) -> PickAndPlaceNextToTask:
-        """Sample task and return PickAndPlaceNextToTask."""
-        # Reuse all parent logic, just return different task type
-        super()._sample_task(env)
+        self._configure_pick_and_place(env)
         return PickAndPlaceNextToTask(env, self.config)

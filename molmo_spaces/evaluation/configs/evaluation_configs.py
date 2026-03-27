@@ -1,7 +1,6 @@
 """
-Eval configuration classes for SynthVLA learned policy evaluation.
 
-IMPORTANT: These configs are EXAMPLES of how to set up evaluation configs for use
+These configs are EXAMPLES of how to set up evaluation configs for use
 with JSON benchmarks via molmo_spaces.evaluation.run_evaluation(). The anticipated
 pattern is that users will create their own eval configs in their own repositories,
 import run_evaluation from molmo_spaces.evaluation, and pass their config to it.
@@ -32,16 +31,39 @@ import datetime
 from pathlib import Path
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+from molmo_spaces.configs.policy_configs import BrownianMotionPolicyConfig, DummyPolicyConfig
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
     DreamZeroPolicyConfig,
     PiPolicyConfig,
     TeleopPolicyConfig,
 )
-from molmo_spaces.configs.robot_configs import FrankaCAPRobotConfig, FrankaRobotConfig
-from molmo_spaces.configs.task_configs import BaseMujocoTaskConfig
+from molmo_spaces.configs.robot_configs import (
+    ActionNoiseConfig,
+    FrankaCAPRobotConfig,
+    FrankaRobotConfig,
+)
+from molmo_spaces.configs.task_configs import (
+    BaseMujocoTaskConfig,
+    PickAndPlaceColorTaskConfig,
+    PickAndPlaceTaskConfig,
+)
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
+    PickAndPlaceColorTaskSamplerConfig,
+    PickAndPlaceTaskSamplerConfig,
+)
+from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
+    FrankaPickAndPlaceDataGenConfig,
+)
+from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy, DummyPolicy
+from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
+from molmo_spaces.tasks.pick_and_place_color_task_sampler import (
+    PickAndPlaceColorTaskSampler,
+)
+from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
+from molmo_spaces.tasks.pick_and_place_task_sampler import (
+    PickAndPlaceTaskSampler,
 )
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 
@@ -77,7 +99,7 @@ class JsonBenchmarkEvalConfig(MlSpacesExpConfig):
     # Timing parameters - can be overridden per-policy as needed
     num_envs: int = 1
     num_workers: int = 1
-    policy_dt_ms: float = 200.0
+    policy_dt_ms: float = 66.0
     ctrl_dt_ms: float = 2.0
     sim_dt_ms: float = 2.0
     task_horizon: int = 500
@@ -119,15 +141,56 @@ class JsonBenchmarkEvalConfig(MlSpacesExpConfig):
     wandb_project: str = "mlspaces-benchmark-eval"
     filter_for_successful_trajectories: bool = False
 
+    # Episode termination
+    terminate_upon_success: bool = False
+
     @property
     def tag(self) -> str:
         return "json_benchmark_eval"
 
 
+class DummyBenchmarkEvalConfig(JsonBenchmarkEvalConfig):
+    """
+    Test config that inherits from JsonBenchmarkEvalConfig.
+
+    This tests the recommended pattern from evaluation/README.md:
+    external repos should inherit from JsonBenchmarkEvalConfig and provide
+    their robot_config and policy_config. The benchmark JSON provides all
+    episode-specific data (cameras, poses, task params).
+
+    Note: Prefixed with underscore to avoid pytest collection warning since
+    this inherits from a class with __init__.
+    """
+
+    # Timing - short horizon for testing
+    task_horizon: int = 10
+    seed: int = 42
+    policy_dt_ms: float = 200.0
+
+    # Robot config - standard Franka
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+
+    # Policy config - DummyPolicy returns empty dict (no-op)
+    policy_config: DummyPolicyConfig = DummyPolicyConfig()
+
+    use_filament: bool = False
+
+    @property
+    def tag(self) -> str:
+        return "dummy_json_benchmark"
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        # Disable action noise for deterministic testing
+        self.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)
+
+
 class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: PiPolicyConfig = PiPolicyConfig()
-    policy_dt_ms: float = 66.0  # Match your model's expected control rate
+    # policy_dt_ms: float = 200.0  # Match your model's expected control rate
+    policy_dt_ms: float = 66.0  # ~15hz
+    end_on_success: bool = True  # End episode immediately upon success, ignoring task_horizon
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
@@ -152,6 +215,83 @@ class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):
     def model_post_init(self, __context):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
+
+
+# @register_config("DummyPickPlaceEvalConfig")
+class DummyPickPlaceEvalConfig(FrankaPickAndPlaceDataGenConfig):
+    """Evaluation config for Dummy pick and place."""
+
+    wandb_project: str = "dummy-eval"
+    use_wandb: bool = False
+    use_passive_viewer: bool = False
+    wandb_name: str = f"dummy_pick_place_eval_{TIMESTAMP}"
+    filter_for_successful_trajectories: bool = False
+    task_type: str = "pick_and_place"
+    task_horizon: int = 600
+    output_dir: Path = Path("eval_output") / f"dummy_{TIMESTAMP}"
+
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+        task_sampler_class=PickAndPlaceTaskSampler,
+        house_inds=[5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145],
+        samples_per_house=3,
+    )
+    task_config: PickAndPlaceTaskConfig = PickAndPlaceTaskConfig(task_cls=PickAndPlaceTask)
+
+    policy_config: DummyPolicyConfig = DummyPolicyConfig()
+
+    def _init_policy_config(self) -> DummyPolicyConfig:
+        self.policy_config.policy_cls = DummyPolicy
+        return self.policy_config
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+# @register_config("BrownianMotionPickPlaceEvalConfig")
+class BrownianMotionPickPlaceEvalConfig(FrankaPickAndPlaceDataGenConfig):
+    """Evaluation config for Dummy pick and place."""
+
+    wandb_project: str = "brownian-motion-eval"
+    use_wandb: bool = False
+    use_passive_viewer: bool = False
+    wandb_name: str = f"brownian_motion_pick_place_eval_{TIMESTAMP}"
+    filter_for_successful_trajectories: bool = False
+    task_type: str = "pick_and_place"
+    task_horizon: int = 600
+    output_dir: Path = Path("eval_output") / f"brownian_motion_{TIMESTAMP}"
+
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+        task_sampler_class=PickAndPlaceTaskSampler,
+        house_inds=[5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145],
+        samples_per_house=3,
+    )
+    task_config: PickAndPlaceTaskConfig = PickAndPlaceTaskConfig(task_cls=PickAndPlaceTask)
+
+    policy_config: BrownianMotionPolicyConfig = BrownianMotionPolicyConfig()
+
+    def _init_policy_config(self) -> BrownianMotionPolicyConfig:
+        self.policy_config.policy_cls = BrownianMotionPolicy
+        return self.policy_config
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+# @register_config("BrownianMotionPickPlaceColorEvalConfig")
+class BrownianMotionPickPlaceColorEvalConfig(BrownianMotionPickPlaceEvalConfig):
+    wandb_name: str = f"brownian_motion_pick_place_color_eval_{TIMESTAMP}"
+    task_type: str = "pick_and_place_color"
+
+    task_sampler_config: PickAndPlaceColorTaskSamplerConfig = PickAndPlaceColorTaskSamplerConfig(
+        task_sampler_class=PickAndPlaceColorTaskSampler,
+        house_inds=[5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145],
+        samples_per_house=3,
+    )
+    task_config: PickAndPlaceColorTaskConfig = PickAndPlaceColorTaskConfig(
+        task_cls=PickAndPlaceColorTask
+    )
 
 
 class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):

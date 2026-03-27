@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-from molmo_spaces.configs.camera_configs import RBY1MjcfCameraSystem
+from molmo_spaces.configs.camera_configs import RBY1GoProD455CameraSystem
 from molmo_spaces.configs.policy_configs import (
     DoorOpeningPolicyConfig,
 )
@@ -13,9 +13,6 @@ from molmo_spaces.configs.task_sampler_configs import (
     DoorOpeningTaskSamplerConfig,
 )
 from molmo_spaces.data_generation.config_registry import register_config
-from molmo_spaces.data_generation.distributed.distributed_config import (
-    DistributedDataGenConfig,
-)
 from molmo_spaces.molmo_spaces_constants import (
     ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR,
     get_robot_paths,
@@ -33,7 +30,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
     All-ProcTHOR variant for RBY1 door opening dataset generation.
 
     Iterates through multiple houses from the ProcTHOR dataset for large-scale data generation.
-    This is the main config - use DoorOpeningFixedSceneConfig for single-scene testing.
+    This is the main config - use DoorOpeningDebugConfig for single-scene testing.
     """
 
     num_envs: int = 1  # Number of environments to run in each thread
@@ -45,15 +42,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
     policy_dt_ms: float = 100.0  # Default policy time step
     ctrl_dt_ms: float = 20.0  # Default control time step
     sim_dt_ms: float = 4.0  # Default simulation time step
-    task_horizon: int = 1000  # Maximum number of steps per episode
-
-    # Distributed config with memory estimation for worker scaling
-    # Door opening uses CuRobo which requires significant GPU memory
-    distributed_config: DistributedDataGenConfig = DistributedDataGenConfig(
-        estimated_system_mem_per_worker=6.0,  # System RAM per worker (GB)
-        estimated_gpu_mem_per_worker=4.5,  # GPU memory per worker for CuRobo (GB)
-        episodes_per_batch=2,  # trying to get the throughput up
-    )
+    task_horizon: int = 400  # Maximum number of steps per episode
 
     # --- Data generation settings ---
     num_workers: int = 1  # Number of parallel worker processes for data generation
@@ -73,7 +62,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
     robot_config: RBY1MConfig = RBY1MConfig()
 
     # Camera configuration (imported from camera_configs.py)
-    camera_config: RBY1MjcfCameraSystem = RBY1MjcfCameraSystem()
+    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
 
     # Task sampler configuration (imported from task_sampler_configs.py)
     task_sampler_config: DoorOpeningTaskSamplerConfig = DoorOpeningTaskSamplerConfig(

@@ -1,0 +1,48 @@
+name: Check for Notebook Content
+
+on:
+  push:
+    branches:
+      - main # Or your desired branch(es)
+  pull_request:
+    branches:
+      - main # Or your desired branch(es)
+
+jobs:
+  no_notebook_content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install nbstripout
+        run: |
+          python -m pip install --upgrade pip
+          pip install nbstripout
+
+      - name: Check for .ipynb files
+        id: check_ipynb
+        run: |
+          has_outputs=0
+          while IFS= read -r nb; do
+            echo "Checking: $nb"
+            if nbstripout --verify "$nb"; then
+              echo "  ✔ clean — no outputs."
+            else
+              echo "  ⚠ outputs detected!"
+              has_outputs=1
+            fi
+          done < <(find . -type f -name "*.ipynb")
+
+          if [[ $has_outputs -eq 1 ]]; then
+            echo "One or more notebooks contain outputs."
+            exit 1
+          else
+            echo "All notebooks are clean (or no .ipynb files found)."
+            exit 0
+          fi

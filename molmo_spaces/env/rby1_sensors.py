@@ -1,6 +1,7 @@
 import json
 
 import gymnasium.spaces as gyms
+import mujoco
 import numpy as np
 
 from molmo_spaces.env.abstract_sensors import Sensor
@@ -12,11 +13,13 @@ from molmo_spaces.env.sensors import (
     LastCommandedEETwistSensor,
     LastCommandedJointPosSensor,
     LastCommandedRelativeJointPosSensor,
+    ObjectImagePointsSensor,
     ObjectPoseSensor,
     PolicyPhaseSensor,
     RobotBasePoseSensor,
     RobotJointPositionSensor,
     RobotJointVelocitySensor,
+    TaskInfoSensor,
 )
 from molmo_spaces.env.sensors_cameras import (
     CameraParameterSensor,
@@ -119,6 +122,54 @@ class RBY1TCPPoseSensor(Sensor):
             return np.zeros(7, dtype=np.float32)
 
 
+class RBY1GraspStateSensor(Sensor):
+    def __init__(self, uuid: str = "rby1_grasp_state", arm_side: str = "left") -> None:
+        self.arm_side = arm_side
+        self.finger1_name = f"robot_0/ee_finger_{self.arm_side[0]}1"  # e.g., robot_0/ee_finger_l1
+        self.finger2_name = f"robot_0/ee_finger_{self.arm_side[0]}2"  # e.g., robot_0/ee_finger_l2
+        self.obj_name = None  # TODO: if pick, pick and place, or open task then object name is self.get_task_objects()["pickup_obj"] if it is door opening it is self.get_task_objects()["door_handle"]
+        observation_space = gyms.Box(low=0, high=1, shape=(1,), dtype=np.uint8)
+        super().__init__(uuid=uuid, observation_space=observation_space)
+
+    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
+        # Lazy init
+        if self.obj_name is None and task is not None:
+            task_objects = task.get_task_objects(batch_index)
+            if "door_handle" in task_objects:
+                self.obj_name = task_objects["door_handle"]
+            elif "pickup_obj" in task_objects:
+                self.obj_name = task_objects["pickup_obj"]
+
+        mj_model = env.mj_model
+        mj_data = env.mj_datas[batch_index]
+
+        finger1_contact = False
+        finger2_contact = False
+
+        # Check all contacts
+        for i in range(mj_data.ncon):
+            contact = mj_data.contact[i]
+            body1_id = mj_model.geom_bodyid[contact.geom1]
+            body2_id = mj_model.geom_bodyid[contact.geom2]
+            body1_name = mujoco.mj_id2name(mj_model, mujoco.mjtObj.mjOBJ_BODY, body1_id)
+            body2_name = mujoco.mj_id2name(mj_model, mujoco.mjtObj.mjOBJ_BODY, body2_id)
+
+            # Check if finger1 is in contact with object
+            if (body1_name == self.finger1_name and body2_name == self.obj_name) or (
+                body2_name == self.finger1_name and body1_name == self.obj_name
+            ):
+                finger1_contact = True
+
+            # Check if finger2 is in contact with object
+            if (body1_name == self.finger2_name and body2_name == self.obj_name) or (
+                body2_name == self.finger2_name and body1_name == self.obj_name
+            ):
+                finger2_contact = True
+
+        grasping_object = finger1_contact and finger2_contact
+        return np.array([int(grasping_object)], dtype=np.uint8)
+
+
 class RBY1GraspPoseSensor(Sensor):
     """Sensor for RBY1 grasp pose in 7D format (can be current TCP or planned grasp pose)."""
 
@@ -206,8 +257,13 @@ def get_rby1_door_opening_sensors(exp_config):
     sensors.append(RBY1TCPPoseSensor(uuid="right_tcp_pose", arm_side="right"))
     sensors.append(RobotBasePoseSensor(uuid="robot_base_pose"))
 
+    # Grasp state for both arms
+    sensors.append(RBY1GraspStateSensor(uuid="rby1_left_grasp_state", arm_side="left"))
+    sensors.append(RBY1GraspStateSensor(uuid="rby1_right_grasp_state", arm_side="right"))
+
     # Environment state sensors
     sensors.append(EnvStateSensor(uuid="env_states"))
+    sensors.append(TaskInfoSensor(uuid="task_info"))
 
     # sensors.append(RBY1RobotStateSensor(uuid="robot_state"))
     # TODO: just make sure the door and handle are in the tracked objects and have this take care of it
@@ -217,5 +273,8 @@ def get_rby1_door_opening_sensors(exp_config):
             uuid="object_poses",
         )
     )
+
+    # Object tracking sensor for image points (door handle, etc.)
+    sensors.append(ObjectImagePointsSensor(exp_config=exp_config))
 
     return sensors

@@ -32,7 +32,7 @@ if __name__ == "__main__":
         model_xml = """
         <mujoco>
             <asset>
-                <model name="franka" file="assets/robots/franka_fr3/model.xml"/>
+                <model name="franka" file="assets/robots/franka_fr3/fr3.xml"/>
             </asset>
             <worldbody>
                 <body name="base" mocap="true">

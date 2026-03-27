@@ -1,0 +1,35 @@
+{
+    "description": "JSON benchmark from val",
+    "created_at": "2026-01-22T07:04:12.923407",
+    "source_datagen_path": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val",
+    "num_episodes": 10,
+    "num_houses": 10,
+    "task_cls_counts": {
+        "molmo_spaces.tasks.pick_task.PickTask": 10
+    },
+    "object_category_counts": {
+        "cup": 1,
+        "fabric": 1,
+        "knife": 1,
+        "printed_circuit.n.01": 1,
+        "candle": 1,
+        "statue": 1,
+        "spray bottle": 1,
+        "bowl": 1,
+        "vase": 1,
+        "cigar_lighter.n.01": 1
+    },
+    "robot_counts": {
+        "franka_droid": 10
+    },
+    "episode_length_stats": {
+        "min": 38.0,
+        "max": 78.0,
+        "mean": 52.3,
+        "median": 50.0
+    },
+    "house_counts": null,
+    "camera_system_class": "FrankaRandomizedDroidCameraSystem",
+    "source_data_date": "2026-01-13",
+    "benchmark_created_date": "2026-01-22"
+}

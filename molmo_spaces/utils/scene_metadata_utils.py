@@ -87,7 +87,7 @@ def ensure_all_scenes_installed():
     if not _ALL_SCENES_INSTALLED:
         print("Installing all scenes")
 
-        get_resource_manager().install_all_scenes(skip_linking=True)
+        get_resource_manager().install_all_for_data_type("scenes", skip_linking=True)
 
         _ALL_SCENES_INSTALLED = True
 
@@ -99,15 +99,13 @@ class SceneMeta:
 
     @staticmethod
     def scene_datasets() -> list[str]:
-        return sorted(
-            set(get_resource_manager().data_type_to_source_to_version["scenes"].keys()) - {"refs"}
-        )
+        return sorted(set(get_resource_manager().versions["scenes"].keys()) - {"refs"})
 
     @staticmethod
     def extraction_dir(data_source: str) -> Path:
         ensure_all_scenes_installed()
         cache_dir = get_resource_manager().cache_dir
-        version = get_resource_manager().data_type_to_source_to_version["scenes"][data_source]
+        version = get_resource_manager().versions["scenes"][data_source]
         scene_dir = cache_dir / "scenes" / data_source / version
         assert scene_dir.is_dir()
         return scene_dir

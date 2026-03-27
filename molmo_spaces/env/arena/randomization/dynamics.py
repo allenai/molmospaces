@@ -89,7 +89,7 @@ class DynamicsRandomizer:
         # Get all geoms belonging to this object
         geom_frictions = {}
         for geom_id in range(model.ngeom):
-            geom_body_id = model.geom(geom_id).bodyid
+            geom_body_id = model.geom(geom_id).bodyid.item()
             geom_root_id = model.body(geom_body_id).rootid[0]
             if geom_root_id == object_root_id:
                 geom_frictions[geom_id] = np.array(model.geom_friction[geom_id])
@@ -199,7 +199,7 @@ class DynamicsRandomizer:
                         object_root_id = model.body(object_id).rootid[0]
                         obj._geom_ids = []
                         for geom_id in range(model.ngeom):
-                            geom_body_id = model.geom(geom_id).bodyid
+                            geom_body_id = model.geom(geom_id).bodyid.item()
                             geom_root_id = model.body(geom_body_id).rootid[0]
                             if geom_root_id == object_root_id:
                                 obj._geom_ids.append(geom_id)
@@ -282,7 +282,7 @@ class DynamicsRandomizer:
                     object_root_id = model.body(object_id).rootid[0]
                     obj._geom_ids = []
                     for geom_id in range(model.ngeom):
-                        geom_body_id = model.geom(geom_id).bodyid
+                        geom_body_id = model.geom(geom_id).bodyid.item()
                         geom_root_id = model.body(geom_body_id).rootid[0]
                         if geom_root_id == object_root_id:
                             obj._geom_ids.append(geom_id)

@@ -46,7 +46,7 @@ class OpenTaskSampler(PickTaskSampler):
 
         return False
 
-    def _sample_task(self, env: CPUMujocoEnv) -> OpeningTask:
+    def _sample_task(self, env: CPUMujocoEnv, skip_robot_placement: bool = False) -> OpeningTask:
         """Sample an opening or closing task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
@@ -83,7 +83,10 @@ class OpenTaskSampler(PickTaskSampler):
         # Note: choosing a referral expression via sampling
         om = env.object_managers[env.current_batch_index]
         context_objects = om.get_context_objects(pickup_obj_name, Context.OBJECT)
-        expression_priority = om.referral_expression_priority(pickup_obj_name, context_objects)
+        try:
+            expression_priority = om.referral_expression_priority(pickup_obj_name, context_objects)
+        except ValueError:
+            expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
         self.config.task_config.referral_expressions["pickup_obj_name"] = om.sample_expression(
             expression_priority
         )
@@ -92,10 +95,11 @@ class OpenTaskSampler(PickTaskSampler):
         )
 
         #  supporting receptacle, and place robot accordingly
-        self._sample_and_place_robot(env)
+        if not skip_robot_placement:
+            self._sample_and_place_robot(env)
 
-        # Ensure robot is in final position before camera setup
-        mujoco.mj_forward(env.current_model, env.current_data)
+            # Ensure robot is in final position before camera setup
+            mujoco.mj_forward(env.current_model, env.current_data)
 
         # Setup cameras after pickup object and robot placement
         # This allows cameras to use task-specific info (pickup object, workspace center)
@@ -382,6 +386,19 @@ class DoorOpeningTaskSampler(BaseMujocoTaskSampler):
             )
         else:
             log.info("[RBY1 SCENE RANDOMIZATION] Door joint randomization: DISABLED")
+
+        # Set robot joints
+        for group_name, qpos in self.config.robot_config.init_qpos.items():
+            qpos = np.array(qpos)
+            if (
+                self.config.robot_config.init_qpos_noise_range is not None
+                and group_name in self.config.robot_config.init_qpos_noise_range
+            ):
+                noise_mag = np.array(self.config.robot_config.init_qpos_noise_range[group_name])
+                perturb = np.random.uniform(-noise_mag, noise_mag)
+            else:
+                perturb = np.zeros_like(qpos)
+            robot_view.get_move_group(group_name).joint_pos = qpos + perturb
 
         # TODO: add additional runtime randomization logic here if needed
         # e.g., object positions, lighting, etc.

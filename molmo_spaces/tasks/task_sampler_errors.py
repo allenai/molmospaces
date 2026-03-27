@@ -16,6 +16,12 @@ class RobotPlacementError(RetriableError):
     pass
 
 
+class CameraPlacementError(RetriableError):
+    """Error when placing a camera with visibility constraints in the current scene"""
+
+    pass
+
+
 class HouseInvalidForTask(Exception):
     """
     Exception raised when a house cannot be used for tasks due to physics constraints.

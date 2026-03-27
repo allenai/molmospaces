@@ -234,7 +234,9 @@ def save_visual_observations(obs_dict, output_dir, prefix="obs"):
                 img.save(img_path)
 
 
-def assert_observations_match(actual_obs, expected_obs, sensor_name, atol=0, rtol=1e-7):
+def assert_observations_match(
+    actual_obs, expected_obs, sensor_name, atol=0, rtol=1e-7, ssim_threshold=0.9
+):
     """
     Compare actual and expected observations using Structural Similarity Index (SSIM).
 
@@ -273,7 +275,7 @@ def assert_observations_match(actual_obs, expected_obs, sensor_name, atol=0, rto
     # SSIM > 0.90 is considered very similar
     # SSIM > 0.95 is nearly identical (which these images should be since they are generated from the same policy)
     # high GPU variance is killing me
-    MIN_SSIM_THRESHOLD = 0.9
+    MIN_SSIM_THRESHOLD = ssim_threshold
 
     if ssim_score < MIN_SSIM_THRESHOLD:
         # Print detailed statistics
@@ -306,6 +308,7 @@ def verify_and_compare_camera_observations(
     rtol=0.0,
     ignore_cameras=None,
     skip_depth_exact_match=True,
+    ssim_threshold=0.9,
 ):
     """
     Verify observation structure and compare camera observations against saved test data.
@@ -458,7 +461,7 @@ def verify_and_compare_camera_observations(
 
                         # Depth should have high structural similarity, same as RGB
                         # SSIM is designed to be robust to small numerical differences
-                        MIN_DEPTH_SSIM_THRESHOLD = 0.90
+                        MIN_DEPTH_SSIM_THRESHOLD = ssim_threshold
 
                         if ssim_score < MIN_DEPTH_SSIM_THRESHOLD:
                             # Calculate basic pixel stats for debugging
@@ -527,7 +530,12 @@ def verify_and_compare_camera_observations(
                 else:
                     # Compare RGB observations using SSIM
                     assert_observations_match(
-                        sensor_obs, expected_obs, sensor_name, atol=atol, rtol=rtol
+                        sensor_obs,
+                        expected_obs,
+                        sensor_name,
+                        atol=atol,
+                        rtol=rtol,
+                        ssim_threshold=ssim_threshold,
                     )
 
         # Verify we found all expected camera sensors
@@ -573,6 +581,7 @@ def verify_and_compare_camera_observations_after_steps(
     rtol=0.0,
     ignore_cameras=None,
     skip_depth_exact_match=True,
+    ssim_threshold=0.9,
 ):
     """
     Verify and compare camera observations after running policy steps against saved test data.
@@ -707,7 +716,7 @@ def verify_and_compare_camera_observations_after_steps(
 
                         # Depth should have high structural similarity, same as RGB
                         # SSIM is designed to be robust to small numerical differences
-                        MIN_DEPTH_SSIM_THRESHOLD = 0.90
+                        MIN_DEPTH_SSIM_THRESHOLD = ssim_threshold
 
                         if ssim_score < MIN_DEPTH_SSIM_THRESHOLD:
                             # Calculate basic pixel stats for debugging
@@ -776,7 +785,12 @@ def verify_and_compare_camera_observations_after_steps(
                 else:
                     # Compare RGB observations using SSIM
                     assert_observations_match(
-                        sensor_obs, expected_obs, sensor_name, atol=atol, rtol=rtol
+                        sensor_obs,
+                        expected_obs,
+                        sensor_name,
+                        atol=atol,
+                        rtol=rtol,
+                        ssim_threshold=ssim_threshold,
                     )
 
         # Verify we found all expected camera sensors
@@ -903,10 +917,24 @@ def save_observation_comparison(obs_dict, expected_dict, output_dir, prefix="com
                         )
 
 
-def compare_h5_groups(g1, g2, path="/", atol=1e-6):
-    """Recursively compare two HDF5 groups and check for differences."""
+def compare_h5_groups(g1, g2, path="/", atol=1e-6, ignore_paths=None):
+    """Recursively compare two HDF5 groups and check for differences.
+
+    Args:
+        g1: First HDF5 group
+        g2: Second HDF5 group
+        path: Current path in the HDF5 structure (for error messages)
+        atol: Absolute tolerance for numerical comparisons
+        ignore_paths: Optional set/list of path suffixes to skip (e.g., {"object_image_points"})
+    """
+    ignore_paths = ignore_paths or set()
     for name in g1:
         item_path = path + name
+
+        # Skip paths that match any ignore pattern
+        if any(item_path.endswith(ignore_suffix) for ignore_suffix in ignore_paths):
+            continue
+
         assert name in g2, f"Missing in second file: {item_path}"
 
         obj1 = g1[name]
@@ -918,7 +946,9 @@ def compare_h5_groups(g1, g2, path="/", atol=1e-6):
 
         # Both are groups → recurse
         if isinstance(obj1, h5py.Group) and isinstance(obj2, h5py.Group):
-            compare_h5_groups(obj1, obj2, path=item_path + "/", atol=atol)
+            compare_h5_groups(
+                obj1, obj2, path=item_path + "/", atol=atol, ignore_paths=ignore_paths
+            )
 
         # Both are datasets → compare
         elif isinstance(obj1, h5py.Dataset) and isinstance(obj2, h5py.Dataset):

@@ -40,3 +40,19 @@ class DummyPolicy(BasePolicy):
         Returns:
         """
         return dict()
+
+
+class BrownianMotionPolicy(DummyPolicy):
+    """Policy that applies Gaussian noise increments over noop control, resulting in Brownian motion."""
+
+    def __init__(self, config: "MlSpacesExpConfig", task: BaseMujocoTask | None = None) -> None:
+        super().__init__(config, task)
+        self.task = task
+        self.std = config.policy_config.std
+
+    def get_action(self, observation) -> dict:
+        robot_view = self.task.env.current_robot.robot_view
+        action = robot_view.get_noop_ctrl_dict()
+        for mg_id, ctrl in action.items():
+            action[mg_id] = ctrl + np.random.normal(loc=0.0, scale=self.std, size=ctrl.shape)
+        return action

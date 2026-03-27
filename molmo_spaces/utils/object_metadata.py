@@ -12,12 +12,13 @@ try:
 except ImportError:
     print("Try `pip install open-clip-torch` for open_clip")
 
+from molmospaces_resources import PickleLMDBMap
+
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
     DATA_TYPE_TO_SOURCE_TO_VERSION,
     get_resource_manager,
 )
-from molmo_spaces.utils.lmdb_data import PickleLMDBMap
 
 
 def get_metadata_lmdb_dir():
@@ -176,20 +177,9 @@ class ObjectMeta:
 
     @staticmethod
     def get_target_object_uid(task) -> str:
-        pickup_obj_name = task.config.task_config.pickup_obj_name
-
-        # Handle custom objects that aren't in scene_metadata
-        # Custom objects are added via added_objects and have names like "custom_object/..."
-        if pickup_obj_name.startswith("custom_object/"):
-            # Check if a custom object name was provided via config
-            eval_params = task.config.eval_runtime_params
-            if eval_params and eval_params.custom_object_name:
-                # Return the provided name as the UID (will be used for description lookup)
-                return eval_params.custom_object_name
-            raise ValueError(f"No custom object name provided for {pickup_obj_name}")
-
-        # Standard objects from scene metadata
+        # TODO ported from PromptSampler late at night, might need clean-up
         scene_metadata = task.env.current_scene_metadata["objects"]
+        pickup_obj_name = task.config.task_config.pickup_obj_name
         object_metadata = scene_metadata[pickup_obj_name]
         asset_uid = object_metadata["asset_id"]
         return asset_uid

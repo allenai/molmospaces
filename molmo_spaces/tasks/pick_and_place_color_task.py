@@ -25,14 +25,17 @@ class PickAndPlaceColorTask(PickAndPlaceTask):
         task_config = self.config.task_config
         assert isinstance(task_config, PickAndPlaceColorTaskConfig)
 
-        pickup_name = task_config.pickup_obj_name
-        place_name = task_config.place_receptacle_name.lower().split("/")[-1].split("_")[0]
+        pickup_name = self.config.task_config.referral_expressions["pickup_name"]
+        place_name = self.env.object_managers[self.env.current_batch_index].fallback_expression(
+            task_config.place_receptacle_name
+        )
 
         # Include the target receptacle color in the description
         target_receptacle_name = task_config.place_receptacle_name
         target_receptacle_color = self.rgba_to_color_name(
             task_config.object_colors[target_receptacle_name]
-        )
+        ).replace("_", " ")
+
         print("TARGET RECEPTACLE COLOR:", target_receptacle_color)
         print(
             "DESCRIPTIONS:",

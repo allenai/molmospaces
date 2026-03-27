@@ -25,29 +25,43 @@ from molmo_spaces.configs.camera_configs import (
     FrankaOmniPurposeCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
     FrankaRandomizedDroidCameraSystem,
+    RBY1GoProD455CameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
+    CuroboOpenClosePlannerPolicyConfig,
+    CuroboPickAndPlacePlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickPlannerPolicyConfig,
 )
-from molmo_spaces.configs.robot_configs import FloatingRUMRobotConfig, FrankaRobotConfig
+from molmo_spaces.configs.robot_configs import (
+    FloatingRUMRobotConfig,
+    FrankaRobotConfig,
+    RBY1MConfig,
+    RBY1MOpenCloseConfig,
+)
 from molmo_spaces.configs.task_sampler_configs import (
     OpenTaskSamplerConfig,
+    PickAndPlaceColorTaskSamplerConfig,
     PickAndPlaceNextToTaskSamplerConfig,
     PickAndPlaceTaskSamplerConfig,
     PickTaskSamplerConfig,
     RUMPickTaskSamplerConfig,
 )
-from molmo_spaces.data_generation.config_registry import register_config
-from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
-from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
-from molmo_spaces.tasks.pick_and_place_next_to_task_sampler import PickAndPlaceNextToTaskSampler
-from molmo_spaces.tasks.pick_and_place_task_sampler import PickAndPlaceTaskSampler
-from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
-from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 
 # Oder of configs should be order the code is executed in
 # scenes, robots, camera, task_sampler, policy, output
+from molmo_spaces.data_generation.config_registry import register_config
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_paths
+from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
+from molmo_spaces.tasks.pick_and_place_color_task_sampler import PickAndPlaceColorTaskSampler
+from molmo_spaces.tasks.pick_and_place_next_to_task_sampler import PickAndPlaceNextToTaskSampler
+from molmo_spaces.tasks.pick_and_place_task_sampler import (
+    PickAndPlaceMultiTaskSampler,
+    PickAndPlaceTaskSampler,
+)
+from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
+from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
+from molmo_spaces.utils.synset_utils import get_valid_pickupable_obja_uids
 
 
 @register_config("FrankaPickDroidDataGenConfig")
@@ -234,6 +248,224 @@ class FrankaOpenDataGenConfig(OpeningBaseConfig):
         return "franka_open_datagen"
 
 
+@register_config("RBY1OpenDataGenConfig")
+class RBY1OpenDataGenConfig(OpeningBaseConfig):
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "rby1_open_v1"
+    wandb_project: str = "mujoco-thor-data-generation"
+    robot_config: RBY1MOpenCloseConfig = RBY1MOpenCloseConfig()
+    policy_config: BasePolicyConfig = CuroboOpenClosePlannerPolicyConfig()
+    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+        task_sampler_class=OpenTaskSampler,
+        target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
+        robot_safety_radius=0.2,
+        base_pose_sampling_radius_range=(0.3, 1.0),
+    )
+    scene_dataset: str = "ithor"  # Name of the scene dataset to load
+    task_horizon: int | None = 200  # Maximum number of steps per episode (if None, no time limit)
+    use_passive_viewer: bool = False
+    seed: int = None
+    filter_for_successful_trajectories: bool = True
+    policy_dt_ms: float = 100.0  # Default policy time step
+    ctrl_dt_ms: float = 20.0  # Default control time step
+    sim_dt_ms: float = 4.0  # Default simulation time step
+
+    @property
+    def tag(self) -> str:
+        return "rby1_open_datagen"
+
+    def _init_policy_config(self) -> CuroboPickAndPlacePlannerPolicyConfig:
+        from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
+        from molmo_spaces.policy.solvers.object_manipulation.curobo_open_close_planner_policy import (
+            CuroboOpenClosePlannerPolicy,
+        )
+
+        rby1_path = get_robot_paths().get("rby1m")
+        assert rby1_path is not None, "RBY1 robot path not found"
+
+        left_curobo_planner_config = CuroboPlannerConfig(
+            curobo_robot_config_path=str(
+                rby1_path / "curobo_config" / "rby1m_left_arm_holobase.yml"
+            ),
+            collision_activation_distance=0.01,
+            num_trajopt_seeds=12,
+            max_attempts=15,
+            num_ik_seeds=128,
+            trajopt_tsteps=48,
+            interpolation_dt=self.ctrl_dt_ms / 1000.0,  # 1x control dt
+            check_start_validity=False,
+            enable_finetune_trajopt=True,
+        )
+        right_curobo_planner_config = left_curobo_planner_config.model_copy(deep=True)
+        right_curobo_planner_config.curobo_robot_config_path = str(
+            rby1_path / "curobo_config" / "rby1m_right_arm_holobase.yml"
+        )
+        return CuroboOpenClosePlannerPolicyConfig(
+            policy_cls=CuroboOpenClosePlannerPolicy,
+            left_curobo_planner_config=left_curobo_planner_config,
+            right_curobo_planner_config=right_curobo_planner_config,
+        )
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        self.policy_config = self._init_policy_config()
+        self.task_config.task_success_threshold = 0.67
+        self.task_sampler_config.randomize_textures = True
+
+
+@register_config("RBY1PickAndPlaceDataGenConfig")
+class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
+    seed: int | None = None  # 75133535  # 4821697
+    viewer_cam_dict: dict = {"camera": "robot_0/camera_follower"}
+    use_passive_viewer: bool = False
+    task_horizon: int | None = 400  # Maximum number of steps per episode (if None, no time limit)
+    filter_for_successful_trajectories: bool = True
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "rby1_pick_and_place_v1"
+    wandb_project: str = "mujoco-thor-data-generation"
+    policy_dt_ms: float = 100.0  # Default policy time step
+    ctrl_dt_ms: float = 20.0  # Default control time step
+    sim_dt_ms: float = 4.0  # Default simulation time step
+
+    robot_config: RBY1MConfig = RBY1MConfig()
+    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    policy_config: CuroboPickAndPlacePlannerPolicyConfig | None = None
+
+    def _init_policy_config(self) -> CuroboPickAndPlacePlannerPolicyConfig:
+        from molmo_spaces.policy.solvers.object_manipulation.curobo_pick_and_place_planner_policy import (
+            CuroboPickAndPlacePlannerPolicy,
+        )
+
+        rby1_path = get_robot_paths().get("rby1m")
+        assert rby1_path is not None, "RBY1 robot path not found"
+        from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
+
+        left_curobo_planner_config = CuroboPlannerConfig(
+            curobo_robot_config_path=str(
+                rby1_path / "curobo_config" / "rby1m_left_arm_holobase.yml"
+            ),
+            collision_activation_distance=0.01,
+            num_trajopt_seeds=12,
+            max_attempts=15,
+            num_ik_seeds=128,
+            trajopt_tsteps=48,
+            interpolation_dt=self.ctrl_dt_ms / 1000.0,  # 1x control dt
+            check_start_validity=False,
+            enable_finetune_trajopt=True,
+        )
+        right_curobo_planner_config = left_curobo_planner_config.model_copy(deep=True)
+        right_curobo_planner_config.curobo_robot_config_path = str(
+            rby1_path / "curobo_config" / "rby1m_right_arm_holobase.yml"
+        )
+        return CuroboPickAndPlacePlannerPolicyConfig(
+            policy_cls=CuroboPickAndPlacePlannerPolicy,
+            left_curobo_planner_config=left_curobo_planner_config,
+            right_curobo_planner_config=right_curobo_planner_config,
+            enable_collision_avoidance=True,
+        )
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        try:
+            self.policy_config = self._init_policy_config()
+        except RuntimeError as e:
+            # Check if this is a CUDA/GPU-related error
+            error_msg = str(e)
+            if "NVIDIA" in error_msg or "CUDA" in error_msg or "GPU" in error_msg:
+                # No GPU available - this is expected on manager nodes that just coordinate jobs
+                # Policy config will be initialized later on worker nodes that have GPUs
+                print(
+                    f"Warning: Skipping policy config initialization due to missing GPU: {error_msg}"
+                )
+                self.policy_config = None
+            else:
+                raise
+        self.robot_config.init_qpos["head"][1] = 0.6
+        self.task_sampler_config.robot_safety_radius = 0.35
+        self.task_sampler_config.max_robot_to_obj_dist = 0.5
+        self.task_sampler_config.object_placement_radius_range = (0.1, 0.5)
+        self.task_sampler_config.min_object_to_receptacle_dist = 0.05
+        self.task_sampler_config.max_robot_to_place_receptacle_dist = 0.5
+
+    @property
+    def tag(self) -> str:
+        return "rby1_pick_and_place_datagen"
+
+
+@register_config("RBY1PickDataGenConfig")
+class RBY1PickDataGenConfig(PickBaseConfig):
+    seed: int | None = None
+    viewer_cam_dict: dict = {"camera": "robot_0/camera_follower"}
+    use_passive_viewer: bool = False
+    task_horizon: int | None = 400  # Maximum number of steps per episode (if None, no time limit)
+    filter_for_successful_trajectories: bool = True
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "rby1_pick_v1"
+    policy_dt_ms: float = 100.0  # Default policy time step
+    ctrl_dt_ms: float = 20.0  # Default control time step
+    sim_dt_ms: float = 4.0  # Default simulation time step
+
+    robot_config: RBY1MConfig = RBY1MConfig()
+    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    policy_config: CuroboPickAndPlacePlannerPolicyConfig | None = None
+
+    def _init_policy_config(self) -> CuroboPickAndPlacePlannerPolicyConfig:
+        from molmo_spaces.policy.solvers.object_manipulation.curobo_pick_and_place_planner_policy import (
+            CuroboPickAndPlacePlannerPolicy,
+        )
+
+        rby1_path = get_robot_paths().get("rby1m")
+        assert rby1_path is not None, "RBY1 robot path not found"
+        from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
+
+        left_curobo_planner_config = CuroboPlannerConfig(
+            curobo_robot_config_path=str(
+                rby1_path / "curobo_config" / "rby1m_left_arm_holobase.yml"
+            ),
+            collision_activation_distance=0.01,
+            num_trajopt_seeds=12,
+            max_attempts=15,
+            num_ik_seeds=128,
+            trajopt_tsteps=48,
+            interpolation_dt=self.ctrl_dt_ms / 1000.0,  # 1x control dt
+            check_start_validity=True,
+            enable_finetune_trajopt=True,
+        )
+        right_curobo_planner_config = left_curobo_planner_config.model_copy(deep=True)
+        right_curobo_planner_config.curobo_robot_config_path = str(
+            rby1_path / "curobo_config" / "rby1m_right_arm_holobase.yml"
+        )
+        return CuroboPickAndPlacePlannerPolicyConfig(
+            policy_cls=CuroboPickAndPlacePlannerPolicy,
+            left_curobo_planner_config=left_curobo_planner_config,
+            right_curobo_planner_config=right_curobo_planner_config,
+            enable_collision_avoidance=True,
+        )
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        try:
+            self.policy_config = self._init_policy_config()
+        except RuntimeError as e:
+            # Check if this is a CUDA/GPU-related error
+            error_msg = str(e)
+            if "NVIDIA" in error_msg or "CUDA" in error_msg or "GPU" in error_msg:
+                # No GPU available - this is expected on manager nodes that just coordinate jobs
+                # Policy config will be initialized later on worker nodes that have GPUs
+                print(
+                    f"Warning: Skipping policy config initialization due to missing GPU: {error_msg}"
+                )
+                self.policy_config = None
+            else:
+                raise
+        self.robot_config.init_qpos["head"][1] = 0.6
+        self.task_sampler_config.robot_safety_radius = 0.35
+        self.task_sampler_config.max_robot_to_obj_dist = 0.5
+        self.task_sampler_config.object_placement_radius_range = (0.1, 0.5)
+
+    @property
+    def tag(self) -> str:
+        return "rby1_pick_datagen"
+
+
 @register_config("FrankaCloseDataGenConfig")
 class FrankaCloseDataGenConfig(ClosingBaseConfig):
     """Data generation config for Franka open task."""
@@ -292,6 +524,26 @@ class FrankaPickOmniCamConfig(PickBaseConfig):
     @property
     def tag(self) -> str:
         return "franka_pick_omni_datagen"
+
+
+@register_config("FrankaPickOmniCamAblationConfig")
+class FrankaPickOmniCamAblationConfig(FrankaPickOmniCamConfig):
+    """Data generation config for Franka pick task with Omni-directional cameras."""
+
+    robot_config: BaseRobotConfig = FrankaRobotConfig()
+    camera_config: FrankaDroidCameraSystem = FrankaOmniPurposeCameraSystem()
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_omni_v1_cam_ablation"
+
+    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+        task_sampler_class=PickTaskSampler,
+        added_pickup_objects=get_valid_pickupable_obja_uids(),
+        # num_added_pickups=30, these are defaults
+        # episodes_per_added_pickup=1,
+    )
+
+    @property
+    def tag(self) -> str:
+        return "franka_pick_omni_v1_cam_ablation"
 
 
 @register_config("FrankaPickAndPlaceOmniCamConfig")
@@ -546,7 +798,6 @@ class FrankaPickandPlaceNextToHardBench(PickAndPlaceNextToDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig(
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
-
     camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceNextToTaskSamplerConfig(
         task_sampler_class=PickAndPlaceNextToTaskSampler,
@@ -559,3 +810,50 @@ class FrankaPickandPlaceNextToHardBench(PickAndPlaceNextToDataGenConfig):
     @property
     def tag(self) -> str:
         return "franka_pick_and_place_next_to_hard_bench"
+
+
+@register_config("FrankaPickandPlaceColorHardBench")
+class FrankaPickandPlaceColorHardBench(PickAndPlaceColorDataGenConfig):
+    scene_dataset: str = "procthor-objaverse"
+    data_split: str = "val"
+    robot_config: BaseRobotConfig = FrankaRobotConfig(
+        init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
+    )
+
+    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    task_sampler_config: PickAndPlaceColorTaskSamplerConfig = PickAndPlaceColorTaskSamplerConfig(
+        task_sampler_class=PickAndPlaceColorTaskSampler,
+        robot_object_z_offset_random_min=-0.25,
+        robot_object_z_offset_random_max=0.25,
+        robot_placement_rotation_range_rad=0.52,  # ±30 degrees
+    )
+    output_dir: Path = ASSETS_DIR / "benchmark" / "pick_and_place_color_hard_v1"
+
+    @property
+    def tag(self) -> str:
+        return "franka_pick_and_place_color_hard_bench"
+
+
+@register_config("MultiPnPTask")
+class RUMPickAndPlaceMultiDataGenConfig(PickAndPlaceDataGenConfig):
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pnpmulti_V1"
+    wandb_project: str = "mujoco-thor-data-generation"
+    robot_config: FloatingRUMRobotConfig = FloatingRUMRobotConfig()
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+        task_sampler_class=PickAndPlaceMultiTaskSampler,
+        pickup_types=None,
+        samples_per_house=20,
+        house_inds=[7],  # TODO(Omar): choose one you like.
+        robot_object_z_offset=0.2,
+        check_robot_placement_visibility=False,
+    )
+
+    camera_config: FrankaDroidCameraSystem = FrankaRandomizedD405D455CameraSystem(
+        img_resolution=(960, 720),
+        visibility_constraints=None,
+        allow_relaxed_constraints=True,
+    )
+
+    @property
+    def tag(self) -> str:
+        return "pnpmulti_bench"

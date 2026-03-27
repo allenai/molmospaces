@@ -307,7 +307,7 @@ def add_visuals_to_sapien_link(
                 mesh_spec = mj_spec.mesh(vis_spec.meshname)
                 if mesh_spec is not None:
                     mesh_path = mj_model_dir / mj_spec.meshdir / mesh_spec.file
-                    material = materials.get(vis_spec.material, None)
+                    material = materials.get(vis_spec.material)
                     link.add_visual_from_file(
                         pose=local_pose,
                         filename=mesh_path.as_posix(),
@@ -376,7 +376,7 @@ def add_visuals_to_actor_builder(
                 mesh_spec = mj_spec.mesh(vis_spec.meshname)
                 if mesh_spec is not None:
                     mesh_path = mj_model_dir / mj_spec.meshdir / mesh_spec.file
-                    material = materials.get(vis_spec.material, None)
+                    material = materials.get(vis_spec.material)
                     builder.add_visual_from_file(
                         pose=rel_pose_to_parent * tf_geom_to_body,
                         filename=mesh_path.as_posix(),

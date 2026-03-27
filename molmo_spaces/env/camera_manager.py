@@ -325,6 +325,59 @@ class CameraManager:
 
         log.info(f"[CAMERA SETUP] Successfully set up {len(self.registry.cameras)} cameras")
 
+    @staticmethod
+    def apply_mjcf_camera_noise(
+        camera_pos: np.ndarray,
+        camera_quat: np.ndarray,
+        camera_fov: float,
+        camera_config: MjcfCameraConfig,
+        rng=np.random,
+    ) -> tuple[np.ndarray, np.ndarray, float]:
+        """Apply position, orientation, and FOV noise to MJCF camera parameters.
+
+        Args:
+            camera_pos: Camera position (body-frame offset), modified in place.
+            camera_quat: Camera quaternion [w,x,y,z] (body-frame), modified in place.
+            camera_fov: Base FOV in degrees.
+            camera_config: Config carrying noise ranges.
+            rng: Random generator (np.random module or np.random.RandomState).
+
+        Returns:
+            Tuple of (noised_pos, noised_quat, noised_fov).
+        """
+        if camera_config.fov_noise_degrees is not None:
+            noise = rng.uniform(
+                camera_config.fov_noise_degrees[0], camera_config.fov_noise_degrees[1]
+            )
+            camera_fov += noise
+            log.debug(
+                f"[CAMERA SETUP] Applied FOV noise to '{camera_config.name}': {noise} degrees"
+            )
+
+        if camera_config.pos_noise_range is not None:
+            noise = rng.uniform(
+                camera_config.pos_noise_range[0], camera_config.pos_noise_range[1], size=3
+            )
+            original_rot = R.from_quat(camera_quat, scalar_first=True)
+            camera_pos = camera_pos + original_rot.apply(noise)
+            log.debug(f"[CAMERA SETUP] Applied position noise to '{camera_config.name}': {noise}")
+
+        if camera_config.orientation_noise_degrees is not None:
+            noise_euler = rng.uniform(
+                -np.array(camera_config.orientation_noise_degrees),
+                np.array(camera_config.orientation_noise_degrees),
+                size=3,
+            )
+            noise_rotation = R.from_euler("xyz", noise_euler, degrees=True)
+            original_rotation = R.from_quat(camera_quat, scalar_first=True)
+            noisy_rotation = original_rotation * noise_rotation
+            camera_quat = noisy_rotation.as_quat(scalar_first=True)
+            log.debug(
+                f"[CAMERA SETUP] Applied orientation noise to '{camera_config.name}': {noise_euler} degrees"
+            )
+
+        return camera_pos, camera_quat, camera_fov
+
     def _setup_mjcf_camera(self, env, camera_config: MjcfCameraConfig) -> None:
         """Set up a camera defined in MJCF file."""
         # Build full camera name with namespace if provided
@@ -357,47 +410,17 @@ class CameraManager:
         camera_fov = (
             camera_config.fov if camera_config.fov is not None else camera_obj.fovy[0]
         )  # this will raise an error if the fov is not set - desired behavior
-        if camera_config.fov_noise_degrees is not None:
-            noise = np.random.uniform(
-                camera_config.fov_noise_degrees[0], camera_config.fov_noise_degrees[1]
-            )
-            camera_fov += noise
-            log.debug(
-                f"[CAMERA SETUP] Applied FOV noise to '{camera_config.name}': {noise} degrees"
-            )
 
-        # Apply position noise if configured
-        if camera_config.pos_noise_range is not None:
-            noise = np.random.uniform(
-                camera_config.pos_noise_range[0], camera_config.pos_noise_range[1], size=3
-            )
-            original_rot = R.from_quat(camera_quat, scalar_first=True)
-            camera_pos += original_rot.apply(noise)
-            log.debug(f"[CAMERA SETUP] Applied position noise to '{camera_config.name}': {noise}")
-
-        # Apply orientation noise if configured
-        if camera_config.orientation_noise_degrees is not None:
-            noise_euler = np.random.uniform(
-                -np.array(camera_config.orientation_noise_degrees),
-                np.array(camera_config.orientation_noise_degrees),
-                size=3,
-            )
-            noise_rotation = R.from_euler("xyz", noise_euler, degrees=True)
-
-            # Compose noise with original quaternion, in camera-frame
-            original_rotation = R.from_quat(camera_quat, scalar_first=True)
-            noisy_rotation = original_rotation * noise_rotation
-            camera_quat = noisy_rotation.as_quat(scalar_first=True)
-
-            log.debug(
-                f"[CAMERA SETUP] Applied orientation noise to '{camera_config.name}': {noise_euler} degrees"
-            )
+        camera_pos, camera_quat, camera_fov = self.apply_mjcf_camera_noise(
+            camera_pos, camera_quat, camera_fov, camera_config
+        )
 
         # Set up as robot-mounted camera (will track the body it's attached to)
+        camera_obj_bodyid = camera_obj.bodyid.item()
         self.add_robot_mounted_camera_with_quaternion(
             env,
             camera_name=camera_config.name,
-            reference_body_names=[env.current_model.body(camera_obj.bodyid).name],
+            reference_body_names=[env.current_model.body(camera_obj_bodyid).name],
             camera_offset=camera_pos,
             camera_quaternion=camera_quat,
             camera_fov=camera_fov,
@@ -789,47 +812,17 @@ class CameraManager:
         Returns:
             Tuple of (camera_pos_world, forward_vector, up_vector), each of shape (3,)
         """
-        from molmo_spaces.env.data_views import create_mlspaces_body
+        from molmo_spaces.utils.pose import compute_lookat_forward_up
 
-        data = env.current_data
+        if lookat_target is None:
+            if lookat_body_name is not None:
+                from molmo_spaces.env.data_views import create_mlspaces_body
 
-        # Determine what to look at
-        if lookat_target is not None:
-            # Look at the provided 3D point
-            lookat_pos_world = lookat_target
-        elif lookat_body_name is not None:
-            # Look at the specified body
-            lookat_reference_body = create_mlspaces_body(data, lookat_body_name)
-            lookat_pos_world = lookat_reference_body.position
-        else:
-            raise ValueError("Either lookat_target or lookat_body_name must be provided")
+                lookat_target = create_mlspaces_body(env.current_data, lookat_body_name).position
+            else:
+                raise ValueError("Either lookat_target or lookat_body_name must be provided")
 
-        # Calculate forward direction (from camera to target)
-        forward = lookat_pos_world - camera_pos_world
-        forward = forward / np.linalg.norm(forward)
-
-        # Calculate right and up vectors using the desired up direction
-        if camera_up is None:
-            camera_up = np.array([0.0, 0.0, 1.0])  # Default world Z-up
-
-        # Calculate right vector (perpendicular to both forward and desired up)
-        right = np.cross(forward, camera_up)
-        right_norm = np.linalg.norm(right)
-
-        # Handle case where forward is parallel to desired up
-        if right_norm < 1e-6:
-            # Use a fallback reference direction
-            fallback_ref = np.array([1.0, 0.0, 0.0])
-            if np.abs(np.dot(forward, fallback_ref)) > 0.9:
-                fallback_ref = np.array([0.0, 1.0, 0.0])
-            right = np.cross(forward, fallback_ref)
-            right = right / np.linalg.norm(right)
-        else:
-            right = right / right_norm
-
-        # Calculate actual up vector (perpendicular to forward and right)
-        up = np.cross(right, forward)
-
+        forward, up = compute_lookat_forward_up(camera_pos_world, lookat_target, camera_up)
         return camera_pos_world, forward, up
 
     def create_lookat_pose(

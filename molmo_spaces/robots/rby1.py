@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 from molmo_spaces.controllers.base_pose import DiffDriveBasePoseController
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
+from molmo_spaces.controllers.torso_height import TorsoHeightJointPosController
 from molmo_spaces.kinematics.rby1_kinematics import RBY1Kinematics
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
 
@@ -161,9 +162,25 @@ class RBY1(Robot):
             "Do not set command_mode['head'] to a non-None value."
         )
 
+        # Torso command modes
+        self.torso_command_modes = ["joint_position", "height"]
+        self.torso_command_mode = (
+            self.exp_config.robot_config.command_mode.get("torso", "joint_position")
+            or "joint_position"
+        )
+        assert self.torso_command_mode in self.torso_command_modes, (
+            f"Torso command mode {self.torso_command_mode} not in {self.torso_command_modes}"
+        )
+        if self.torso_command_mode == "height":
+            torso_controller = TorsoHeightJointPosController(
+                self.robot_view.get_move_group("torso")
+            )
+        else:
+            torso_controller = JointPosController(self.robot_view.get_move_group("torso"))
+
         self._controllers = {
             "base": base_controller,
-            "torso": JointPosController(self.robot_view.get_move_group("torso")),
+            "torso": torso_controller,
             "left_arm": left_arm_controller,
             "right_arm": right_arm_controller,
             "left_gripper": left_gripper_controller,
@@ -215,7 +232,10 @@ class RBY1(Robot):
                     "base"
                 ).n_actuators  # wheel velocities
         if "torso" in move_group_ids:
-            action_dim += self._robot_view.get_move_group("torso").n_actuators
+            if self.torso_command_mode == "height":
+                action_dim += 1
+            else:
+                action_dim += self._robot_view.get_move_group("torso").n_actuators
         if "left_arm" in move_group_ids:
             if "joint" in self.arm_command_mode:
                 action_dim += self._robot_view.get_move_group("left_arm").n_actuators

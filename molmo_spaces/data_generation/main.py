@@ -17,8 +17,8 @@ To run:
   - export MUJOCO_GL=egl
   - export PYOPENGL_PLATFORM=egl
 - Example commands:
-  - python -m molmo_spaces.data_generation.main DoorOpeningFixedSceneConfig
-  - python -m molmo_spaces.data_generation.main DoorOpeningVariantsConfig
+  - python -m molmo_spaces.data_generation.main DoorOpeningDebugConfig
+  - python -m molmo_spaces.data_generation.main DoorOpeningDataGenConfig
 - You may also pass additional experiment config arguments for your experiment config class as command line arguments.
 - You can also set JAX_COMPILATION_CACHE_DIR to cache compiled jax functions between runs, which could speed up initialization.
 
@@ -105,11 +105,13 @@ def main() -> None:
     exp_config_name = exp_config_cls  # Use the class name directly
 
     # Determine output directory structure
-    # For local debugging (non-weka paths), add timestamp to avoid collisions
-    # For production (weka paths), use simple structure
-    is_weka_path = "weka" in str(exp_config.output_dir)
+    # For local debugging (non-shared paths), add timestamp to avoid collisions
+    # For production (datagen output targets shared filesystem paths), use simple structure
+    is_shared_fs_path = "/mnt/shared" in str(
+        exp_config.output_dir
+    )  # or whatever your mount point is
 
-    if is_weka_path:
+    if is_shared_fs_path:
         # Production: simple structure without timestamp
         exp_config.output_dir = exp_config.output_dir / exp_config_name
     else:

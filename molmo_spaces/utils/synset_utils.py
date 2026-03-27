@@ -1179,3 +1179,190 @@ def get_valid_receptacle_uids() -> dict[str, dict]:
                 valid_uids[uid] = anno
 
     return valid_uids
+
+
+# ---------------------------------------------------------------------------
+# Pickupable asset category exclusions
+#
+# Two mechanisms filter non-everyday-object categories from the pickupable
+# asset pool:
+#
+#   1. Hypernym-based: any synset that is a descendant (hyponym) of an
+#      excluded hypernym is removed, along with the hypernym itself.
+#      Covers broad categories like sculptures, scale replicas, signs.
+#
+#   2. Exact synset: specific synsets whose lemma is too generic or
+#      non-physical are removed, but their hyponyms are kept.
+# ---------------------------------------------------------------------------
+
+PICKUPABLE_EXCLUDED_CATEGORY_HYPERNYMS: dict[str, str] = {
+    "sculpture.n.01": "sculpture/art object",
+    "model.n.04": "scale model/replica",
+    "miniature.n.02": "miniature/replica",
+    "sign.n.02": "sign/placard",
+    "eolith.n.01": "primitive stone implement",
+    "paleolith.n.01": "primitive stone implement",
+}
+
+PICKUPABLE_EXCLUDED_EXACT_SYNSETS: dict[str, str] = {
+    "plaything.n.01": "generic plaything",
+    "toy.n.02": "generic toy (non-plaything sense)",
+    "popgun.n.01": "toy gun",
+    "arrowhead.n.01": "primitive implement",
+    "stone.n.02": "building material",
+    "emblem.n.01": "visual symbol",
+    "logo.n.01": "visual symbol",
+}
+
+
+def canonical_lemma(synset_name: str) -> str:
+    """Return the first (most canonical) lemma for a WordNet synset name."""
+    return wn.synset(synset_name).lemma_names()[0].replace("_", " ")
+
+
+def _build_pickupable_category_exclusion_set() -> dict[str, str]:
+    """Map every hypernym-excluded synset (including its descendants) to its
+    exclusion reason string."""
+    excluded: dict[str, str] = {}
+    for hypernym, reason in PICKUPABLE_EXCLUDED_CATEGORY_HYPERNYMS.items():
+        for s in get_hyponyms_of_synset(hypernym, return_strings=True):
+            excluded.setdefault(s, reason)
+    return excluded
+
+
+@cache
+def _pickupable_synset_to_uids() -> dict[str, list[str]]:
+    """Cached mapping of synset -> UIDs for all valid pickupable assets
+    (before category exclusions)."""
+    uids = get_valid_pickupable_obja_uids_excluding_benchmark()
+    annotations = ObjectMeta.annotation()
+
+    synset_to_uids: dict[str, list[str]] = defaultdict(list)
+    for uid in uids:
+        anno = annotations.get(uid)
+        if anno is None:
+            continue
+        synset = anno.get("synset")
+        if synset is None:
+            continue
+        synset_to_uids[synset].append(uid)
+
+    return dict(synset_to_uids)
+
+
+@cache
+def _pickupable_class_ranking() -> list[tuple[str, list[str]]]:
+    """Ranked list of kept pickupable asset classes (cached).
+
+    Returns ``(synset, uids)`` tuples sorted descending by asset count,
+    after applying both hypernym-based and exact-synset exclusions.
+    """
+    synset_to_uids = _pickupable_synset_to_uids()
+    hypernym_excluded = _build_pickupable_category_exclusion_set()
+
+    kept_synsets = [
+        s
+        for s in synset_to_uids
+        if s not in hypernym_excluded and s not in PICKUPABLE_EXCLUDED_EXACT_SYNSETS
+    ]
+    kept_synsets.sort(key=lambda s: len(synset_to_uids[s]), reverse=True)
+    return [(s, synset_to_uids[s]) for s in kept_synsets]
+
+
+VALID_PICKUPABLE_OBJA_UIDS_PATH = (
+    "/weka/prior/datasets/robomolmo/asset_utility_refs/valid_pickupable_obja_uids.txt"
+)
+
+BENCHMARK_BLACKLIST_UIDS_PATH = (
+    "/weka/prior/datasets/robomolmo/asset_utility_refs/benchmark_blacklist_uids.txt"
+)
+
+
+def _load_uid_list(path: str) -> list[str]:
+    with open(path) as f:
+        return [line.strip() for line in f if line.strip()]
+
+
+def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
+    """
+    Get all objaverse asset UIDs that are pickable (have valid grasp files).
+
+    Checks for cached file at VALID_PICKUPABLE_OBJA_UIDS_PATH first to avoid
+    expensive computation. If not found, computes and returns the list.
+
+    Args:
+        debug: If True, prints 20 random samples with their short descriptions.
+
+    Returns:
+        List of UIDs for valid pickupable assets.
+    """
+    import os
+
+    if os.path.exists(VALID_PICKUPABLE_OBJA_UIDS_PATH):
+        with open(VALID_PICKUPABLE_OBJA_UIDS_PATH) as f:
+            uid_list = [line.strip() for line in f if line.strip()]
+        if debug:
+            print(f"\n=== Loaded {len(uid_list)} pickupable UIDs from cache ===\n")
+        return uid_list
+
+    from molmo_spaces.utils.grasp_sample import has_valid_grasp_file
+    from molmo_spaces.utils.object_metadata import ObjectMeta
+
+    valid_uids = {}
+
+    for uid, anno in ObjectMeta.annotation().items():
+        if has_valid_grasp_file(uid):
+            valid_uids[uid] = anno
+
+    if debug:
+        import random
+
+        sample_size = min(20, len(valid_uids))
+        sample_uids = random.sample(list(valid_uids.keys()), sample_size)
+
+        print(f"\n=== Pickable Objaverse Assets ({len(valid_uids)} total) ===")
+        print(f"Random sample of {sample_size}:\n")
+
+        for uid in sample_uids:
+            anno = valid_uids[uid]
+            short_descs = list(anno.get("description_short", {}).values())
+            desc_str = short_descs[0] if short_descs else anno.get("category", "N/A")
+            print(f"  {uid}: {desc_str}")
+
+        print()
+
+    return list(valid_uids.keys())
+
+
+def get_valid_pickupable_obja_uids_excluding_benchmark(debug: bool = False) -> list[str]:
+    """Get pickupable objaverse UIDs with benchmark assets excluded.
+
+    Loads the benchmark blacklist from BENCHMARK_BLACKLIST_UIDS_PATH
+    (generated by scripts/roseh/extract_benchmark_assets.py) and removes
+    any UIDs that appear in any bench_v3 benchmark as a pickup or placement
+    asset.
+
+    Args:
+        debug: If True, prints how many assets were filtered and samples
+            of what was removed.
+
+    Returns:
+        List of UIDs for valid pickupable assets not used in any benchmark.
+    """
+    all_uids = get_valid_pickupable_obja_uids(debug=False)
+    blacklist = set(_load_uid_list(BENCHMARK_BLACKLIST_UIDS_PATH))
+
+    original_count = len(all_uids)
+    filtered = [uid for uid in all_uids if uid not in blacklist]
+    removed_count = original_count - len(filtered)
+
+    if debug:
+        print(
+            f"\n=== Benchmark blacklist filtering ===\n"
+            f"  {original_count} pickupable UIDs total\n"
+            f"  {len(blacklist)} UIDs in benchmark blacklist\n"
+            f"  {removed_count} removed (appeared in both)\n"
+            f"  {len(filtered)} remaining after filtering\n"
+        )
+
+    return filtered

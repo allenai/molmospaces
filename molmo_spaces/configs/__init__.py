@@ -20,6 +20,7 @@ from molmo_spaces.configs.camera_configs import (
     FrankaRandomizedD405D455CameraSystem,
     MjcfCameraConfig,
     RandomizedExocentricCameraConfig,
+    RBY1GoProD455CameraSystem,
     RBY1MjcfCameraSystem,
     RobotMountedCameraConfig,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "FixedExocentricCameraConfig",
     "RandomizedExocentricCameraConfig",
     "RBY1MjcfCameraSystem",
+    "RBY1GoProD455CameraSystem",
     "FrankaRandomizedD405D455CameraSystem",
     "FrankaDroidCameraSystem",
     # Robot configs

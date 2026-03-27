@@ -22,12 +22,6 @@ from molmo_spaces.tasks.nav_task_sampler import NavToObjTaskSampler
 class NavToObjDataGenConfig(NavToObjBaseConfig):
     """Data generation config for RBY1 navigation to object tasks."""
 
-    # Distributed config with memory estimation for worker scaling
-    # distributed_config: DistributedDataGenConfig = DistributedDataGenConfig(
-    #     estimated_system_mem_per_worker=4.0,  # System RAM per worker (GB)
-    #     estimated_gpu_mem_per_worker=2.0,  # GPU memory per worker (GB) - nav tasks use less GPU
-    #     episodes_per_batch=4,
-    # )
     task_type: str = "nav_to_obj"
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "nav_to_obj_v1"
     wandb_project: str = "molmo-spaces-data-generation"

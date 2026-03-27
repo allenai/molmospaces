@@ -1,0 +1,16 @@
+# Asset blacklist for data generation
+# Add asset UIDs (one per line) that cause consistent failures during data generation.
+# Lines starting with # are comments.
+#
+# Common failure reasons:
+# - "mass and inertia of moving bodies must be larger than mjMINVAL" (physics errors)
+# - Consistent IK failures due to asset geometry
+# - Scene compilation errors
+#
+# Format: asset_uid  # optional comment explaining why
+
+# Ceiling panels with invalid mass/inertia
+a3d6f7df9ff94ed59f95d5086d5f3fdd  # objaceilingpanel - mass/inertia too small
+87bb73dea4a341e5b5ead7543881f47d  # mass/inertia error from objaceilingtile_87bb73dea4a341e5b5ead7543881f47d_1_0_7
+8bde878be8dd4fb7b6914db9c4dd31bb  # objaceilingpanel_8bde878be8dd4fb7b6914db9c4dd31bb_1_0_2
+bf8ace08150545fb92f037f887658c37  # objaceilingtile_bf8ace08150545fb92f037f887658c37_1_0_5

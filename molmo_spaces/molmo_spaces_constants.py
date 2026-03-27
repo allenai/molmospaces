@@ -7,13 +7,19 @@ Overwrite in the environment with e.g.:
 
 import itertools
 import json
+import logging
 import os
 from collections import defaultdict
 from pathlib import Path
 
 import compress_json
-
-from molmo_spaces.utils.resource_manager_setup_utils import setup_resource_manager, str2bool
+from molmospaces_resources import (
+    HFRemoteStorage,
+    R2RemoteStorage,
+    ResourceManager,
+    setup_resource_manager,
+    str2bool,
+)
 
 
 def single_thread_environment():
@@ -32,6 +38,13 @@ def single_thread_environment():
             os.environ["MKL_NUM_THREADS"] = "1"
     except Exception:
         pass
+
+
+def resource_manager_log_level(log_level=logging.DEBUG):
+    logger = logging.getLogger("molmospaces_resources")
+    logger.setLevel(log_level)
+    if not logger.handlers:
+        logger.addHandler(logging.StreamHandler())
 
 
 if str2bool(os.environ.get("MLSPACES_SINGLE_THREAD_PROCS", "False")):
@@ -55,6 +68,8 @@ PINNED_ASSETS_FILE = (
     if "MLSPACES_PINNED_ASSETS_FILE" in os.environ
     else None
 )
+
+USE_HUGGING_FACE = False  # If True, HF_TOKEN needs to exist in the environment
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     robots={
@@ -87,30 +102,66 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "droid_objaverse": "20251218",
     },
     test_data={
-        "franka_pick": "20260202",
-        "franka_pick_and_place": "20260202",
-        "rby1_door_opening": "20250107",
-        "rum_open_close": "20260202",
-        "rum_pick": "20260202",
+        "franka_pick": "20260209",
+        "franka_pick_and_place": "20260305",
+        "rby1_door_opening": "20260228",
+        "rby1_pnp": "20260305",
+        "rum_open_close": "20260305",
+        "rum_pick": "20260209",
         "test_randomized_data": "20251209",
         "thormap": "20251209",
     },
     benchmarks={
-        "molmospaces-bench-v1": "20260210",
+        "molmospaces-bench-v2": "20260325_1",
     },
 )
 
 _RESOURCE_MANAGER = None
 
 
-def get_resource_manager():
+def get_resource_manager(force_post_setup: bool = False):
     global _RESOURCE_MANAGER
     if _RESOURCE_MANAGER is None:
+
+        def post_setup(manager: ResourceManager):
+            if not os.environ.get("_IN_MULTIPROCESSING_CHILD") and str2bool(
+                os.environ.get("MLSPACES_DOWNLOAD_EXTRACT_ALL_SCENES_OBJECTS_GRASPS", "False")
+            ):
+                # extract to cache only; link on demand (per-file for scenes)
+                manager.install_all_for_data_type("scenes", skip_linking=True)
+                manager.install_all_for_data_type("objects")
+                manager.install_all_for_data_type("grasps")
+            else:
+                to_install = {}
+                for scene_source in DATA_TYPE_TO_SOURCE_TO_VERSION["scenes"]:
+                    source_packages = manager.find_all_packages_for_source("scenes", scene_source)
+                    if len(source_packages) < 10:
+                        # Fully install small scene datasets
+                        packages = source_packages
+                    else:
+                        # Install unindexed scene archives
+                        packages = manager.unindexed_archives("scenes", scene_source)
+
+                    if packages:
+                        to_install[scene_source] = packages
+
+                if to_install:
+                    manager.install_packages("scenes", to_install)
+
+        # resource_manager_log_level()
+
         _RESOURCE_MANAGER = setup_resource_manager(
-            "mujoco-thor-resources",
-            ASSETS_DIR,
-            DATA_TYPE_TO_SOURCE_TO_VERSION,
-            DATA_CACHE_DIR,
+            HFRemoteStorage(
+                "allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN")
+            )
+            if USE_HUGGING_FACE
+            else R2RemoteStorage("mujoco-thor-resources"),
+            symlink_dir=ASSETS_DIR,
+            versions=DATA_TYPE_TO_SOURCE_TO_VERSION,
+            cache_dir=DATA_CACHE_DIR,
+            env_prefix="MLSPACES",
+            post_setup=post_setup,
+            force_post_setup=force_post_setup,
         )
     return _RESOURCE_MANAGER
 
@@ -228,7 +279,9 @@ def _build_scene_index_map_procthor(dataset_root: Path, split: str) -> dict:
         entries = itertools.chain.from_iterable(
             iter(
                 get_resource_manager()
-                .scene_root_and_archive_paths(dataset_root.name)["archive_to_relative_paths"]
+                .source_info("scenes", dataset_root.name, recursive=False)[
+                    "archive_to_relative_paths"
+                ]
                 .values()
             )
         )
@@ -300,7 +353,9 @@ def _build_scene_index_map_ithor(dataset_root: Path) -> dict:
         entries = itertools.chain.from_iterable(
             iter(
                 get_resource_manager()
-                .scene_root_and_archive_paths(dataset_root.name)["archive_to_relative_paths"]
+                .source_info("scenes", dataset_root.name, recursive=False)[
+                    "archive_to_relative_paths"
+                ]
                 .values()
             )
         )
@@ -503,9 +558,11 @@ def print_license_info(data_type, data_source, asset_or_tar_id):
     from molmo_spaces.utils.license_utils import resolve_license
 
     def get_identifiers():
-        archives = get_resource_manager().tries(data_source, data_type).keys()
         return [
-            archive.replace(f"{data_source}_", "").replace(".tar.zst", "") for archive in archives
+            archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
+            for archive in get_resource_manager().find_all_packages_for_source(
+                data_type, data_source
+            )
         ]
 
     if asset_or_tar_id == "--list_all":
@@ -525,11 +582,7 @@ def print_license_info(data_type, data_source, asset_or_tar_id):
 
 
 if __name__ == "__main__":
-
-    def setup_assets():
-        print("Setting up assets for MuJoCo...")
-        get_resource_manager()
-
-        print("DONE")
-
-    setup_assets()
+    resource_manager_log_level(logging.DEBUG)
+    print("Setting up resources...")
+    get_resource_manager(force_post_setup=True)
+    print("DONE")

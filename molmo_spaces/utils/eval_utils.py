@@ -20,7 +20,7 @@ class EpisodeResult:
     Attributes:
         episode_idx: Index of the episode within its house.
         house_id: House identifier (int or str like "house_5").
-        success: Whether the episode was successful.
+        success: Whether the episode was successful (at end of episode).
         num_steps: Number of steps taken in the episode.
         task_description: Natural language task description.
         object_name: Name of the target object (if applicable).
@@ -28,6 +28,7 @@ class EpisodeResult:
         data_file_path: Path to the HDF5 file containing this episode's data.
             Use this together with episode_idx to uniquely identify an episode,
             especially when there are multiple batches per house.
+        oracle_done: Whether success was achieved at ANY point during the episode.
         metadata: Additional metadata about the episode.
     """
 
@@ -39,6 +40,7 @@ class EpisodeResult:
     object_name: str | None = None
     seed: int | None = None
     data_file_path: Path | None = None
+    oracle_done: bool | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -72,14 +74,16 @@ def load_video_frames(video_path: Path) -> tuple[list[np.ndarray], float]:
 def compose_videos_side_by_side(
     video_paths: list[Path],
     output_path: Path,
-    target_height: int | None = None,
+    target_height: int = 368,
+    target_width: int = 1280,
 ) -> Path | None:
     """Compose multiple videos side-by-side into a single video.
 
     Args:
         video_paths: List of paths to input videos
         output_path: Path for the output composed video
-        target_height: Target height for all videos (will resize proportionally)
+        target_height: Target height for the output video
+        target_width: Target width for the output video
 
     Returns:
         Path to the composed video, or None if failed
@@ -112,22 +116,31 @@ def compose_videos_side_by_side(
     # Truncate all videos to the same length
     all_frames = [frames[:min_frames] for frames in all_frames]
 
-    # Resize all videos to the same height if needed
-    if target_height is not None:
-        resized_frames = []
-        for frames in all_frames:
-            h, w = frames[0].shape[:2]
-            scale = target_height / h
-            new_w = int(w * scale)
-            resized = [cv2.resize(f, (new_w, target_height)) for f in frames]
-            resized_frames.append(resized)
-        all_frames = resized_frames
+    # Resize each video to fit within the target dimensions split equally
+    n_videos = len(all_frames)
+    per_video_width = target_width // n_videos
+    resized_frames = []
+    for frames in all_frames:
+        h, w = frames[0].shape[:2]
+        # Scale to fit target_height, then clamp width to per_video_width
+        scale = min(target_height / h, per_video_width / w)
+        new_h = int(h * scale)
+        new_w = int(w * scale)
+        resized = [cv2.resize(f, (new_w, new_h)) for f in frames]
+        resized_frames.append(resized)
+    all_frames = resized_frames
 
-    # Compose frames side-by-side
+    # Compose frames side-by-side, padding to exact target dimensions
     composed_frames = []
     for frame_idx in range(min_frames):
         row_frames = [frames[frame_idx] for frames in all_frames]
         composed = np.concatenate(row_frames, axis=1)
+        # Pad to exact target size if needed
+        ch, cw = composed.shape[:2]
+        if ch != target_height or cw != target_width:
+            padded = np.zeros((target_height, target_width, 3), dtype=composed.dtype)
+            padded[:ch, :cw] = composed
+            composed = padded
         composed_frames.append(composed)
 
     # Save composed video using save_frames_to_mp4 (same as rest of codebase)
@@ -215,6 +228,7 @@ def compute_eval_stats(results: list[EpisodeResult]) -> dict[str, Any]:
         return {}
 
     successes = [r.success for r in results]
+    oracle_dones = [r.oracle_done for r in results if r.oracle_done is not None]
     num_steps = [r.num_steps for r in results]
 
     # Per-house stats
@@ -236,12 +250,79 @@ def compute_eval_stats(results: list[EpisodeResult]) -> dict[str, Any]:
         "house_success_rates": house_success_rates,
     }
 
+    # Oracle done stats (success at any point during episode)
+    if oracle_dones:
+        stats["oracle_done_count"] = sum(oracle_dones)
+        stats["oracle_done_rate"] = sum(oracle_dones) / len(oracle_dones)
+
     # Successful episode stats
     successful_steps = [r.num_steps for r in results if r.success]
     if successful_steps:
         stats["avg_successful_episode_length"] = sum(successful_steps) / len(successful_steps)
 
     return stats
+
+
+def create_video_results_table(
+    episode_data: list[dict],
+    table_name: str = "eval/video_results",
+) -> None:
+    """Create and log a WandB table with videos and episode metadata.
+
+    This is a shared utility for both distributed and non-distributed evaluation.
+    Each dict in episode_data should contain:
+        - video_path: Path to the video file (required)
+        - task_description: Natural language task description
+        - object_name: Target object name
+        - house_id: House identifier
+        - episode_idx: Episode index
+        - num_steps: Number of steps taken
+        - success: Boolean success status (at end of episode)
+        - oracle_done: Boolean, success at ANY point during episode (optional)
+        - source_episode_path: Original episode path (optional, for provenance)
+
+    Args:
+        episode_data: List of dicts with video paths and metadata
+        table_name: Name for the WandB table (default: "eval/video_results")
+    """
+    import wandb
+
+    table_data = []
+    for ep in episode_data:
+        video_path = ep.get("video_path")
+        if video_path is None or not Path(video_path).exists():
+            continue
+
+        row = [
+            wandb.Video(str(video_path), format="mp4"),
+            ep.get("task_description", ""),
+            ep.get("object_name", ""),
+            str(ep.get("house_id", "")),
+            ep.get("episode_idx", 0),
+            ep.get("num_steps", 0),
+            "Success" if ep.get("success") else "Failed",
+            "Yes" if ep.get("oracle_done") else "No",
+            ep.get("source_episode_path", ""),
+        ]
+        table_data.append(row)
+
+    if table_data:
+        video_table = wandb.Table(
+            data=table_data,
+            columns=[
+                "video",
+                "task_description",
+                "object_name",
+                "house_id",
+                "episode_idx",
+                "num_steps",
+                "result",
+                "oracle_done",
+                "source_episode_path",
+            ],
+        )
+        wandb.log({table_name: video_table})
+        log.info(f"Uploaded {table_name} with {len(table_data)} episodes")
 
 
 def log_eval_results_to_wandb(
@@ -273,6 +354,10 @@ def log_eval_results_to_wandb(
     wandb.summary["eval/max_episode_length"] = stats.get("max_episode_length", 0)
     wandb.summary["eval/num_houses"] = stats.get("num_houses", 0)
 
+    if stats.get("oracle_done_count") is not None:
+        wandb.summary["eval/oracle_done_count"] = stats["oracle_done_count"]
+        wandb.summary["eval/oracle_done_rate"] = stats["oracle_done_rate"]
+
     if stats.get("avg_successful_episode_length"):
         wandb.summary["eval/avg_successful_episode_length"] = stats["avg_successful_episode_length"]
 
@@ -285,44 +370,31 @@ def log_eval_results_to_wandb(
     # Build result lookup by episode key
     result_by_key = {f"{r.house_id}/episode_{r.episode_idx:08d}": r for r in results}
 
-    # Create video table with composed videos and metadata (log all videos)
+    # Create video table with composed videos and metadata
     if composed_videos:
-        # Build table rows with video + metadata for all videos
-        table_data = []
+        # Convert EpisodeResult objects to dicts for the shared utility
+        episode_data = []
         for episode_key in sorted(composed_videos.keys()):
             video_path = composed_videos[episode_key]
-            if not video_path.exists():
-                continue
-
             result = result_by_key.get(episode_key)
             if result is None:
                 continue
 
-            row = [
-                wandb.Video(str(video_path), format="mp4"),
-                result.task_description or "",
-                result.object_name or "",
-                str(result.house_id),
-                result.episode_idx,
-                result.num_steps,
-                "Success" if result.success else "Failed",
-            ]
-            table_data.append(row)
-
-        if table_data:
-            video_table = wandb.Table(
-                data=table_data,
-                columns=[
-                    "video",
-                    "task_description",
-                    "object_name",
-                    "house_id",
-                    "episode_idx",
-                    "num_steps",
-                    "result",
-                ],
+            episode_data.append(
+                {
+                    "video_path": video_path,
+                    "task_description": result.task_description or "",
+                    "object_name": result.object_name or "",
+                    "house_id": result.house_id,
+                    "episode_idx": result.episode_idx,
+                    "num_steps": result.num_steps,
+                    "success": result.success,
+                    "oracle_done": result.oracle_done,
+                    "source_episode_path": result.metadata.get("source_h5_file", ""),
+                }
             )
-            wandb.log({"eval/video_results": video_table})
+
+        create_video_results_table(episode_data)
 
 
 def log_eval_videos_to_wandb(eval_dir: Path, camera_names: list[str], epoch: int):
@@ -417,11 +489,14 @@ def collect_episode_results(output_dir: Path) -> list[EpisodeResult]:
                     traj_group = f[traj_key]
                     episode_idx = int(traj_key.split("_")[1])
 
-                    # Extract success
+                    # Extract success (at end) and oracle_done (at any point)
                     success = False
+                    oracle_done = False
                     if "success" in traj_group:
                         success_array = np.array(traj_group["success"])
-                        success = bool(success_array[-1]) if len(success_array) > 0 else False
+                        if len(success_array) > 0:
+                            success = bool(success_array[-1])
+                            oracle_done = bool(np.any(success_array))
 
                     # Extract episode length from first action sub-dataset
                     num_steps = 0
@@ -450,6 +525,7 @@ def collect_episode_results(output_dir: Path) -> list[EpisodeResult]:
                             task_description=task_description,
                             object_name=object_name,
                             data_file_path=hdf5_path,
+                            oracle_done=oracle_done,
                         )
                     )
 

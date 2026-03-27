@@ -26,6 +26,11 @@ __pycache__/
 # Exclude generated typings from pybind11-stubgen
 /typings
 
+# Exclude generated folder for procthor editor build
+/debug
+
+# We don't need this for now (couldn't find where they used it)
+/ros_ws
 
 # Exclude some generated files
 /assets/scenes/*
@@ -42,9 +47,13 @@ __pycache__/
 /*.TXT
 
 # Exclude log files from procthor generation
+procthor-10k-cant-generate
 /*.json
 
 *.zip
 *.gz
 
 *.lock
+
+# Include the bin/ directory at the root (contains custom mujoco wheels with filament support)
+!/bin

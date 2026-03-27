@@ -5,7 +5,9 @@ import mujoco
 import numpy as np
 
 from molmo_spaces.env.env import CPUMujocoEnv
-from molmo_spaces.tasks.pick_and_place_task_sampler import PickAndPlaceTaskSampler
+from molmo_spaces.tasks.pick_and_place_task_sampler import (
+    PickAndPlaceReceptacleTaskSampler,
+)
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms
 from molmo_spaces.utils.pose import pose_mat_to_7d
 
@@ -33,7 +35,7 @@ COLORS = [
 ]
 
 
-class PickAndPlaceColorTaskSampler(PickAndPlaceTaskSampler):
+class PickAndPlaceColorTaskSampler(PickAndPlaceReceptacleTaskSampler):
     def __init__(self, config: "PickAndPlaceColorDataGenConfig") -> None:
         super().__init__(config)
         self.config: PickAndPlaceColorDataGenConfig
@@ -44,7 +46,28 @@ class PickAndPlaceColorTaskSampler(PickAndPlaceTaskSampler):
             f"Only {len(COLORS)} receptacles allowed (using {self._receptacle_multiplier})"
         )
 
-    def _material_callback(self, object_spec: mujoco.MjsBody):
+    def _on_candidate_selected(
+        self,
+        env: CPUMujocoEnv,
+        reference_obj_name: str,
+        reference_obj_id: int,
+        supporting_geom_id: int,
+    ) -> bool:
+        if not super()._on_candidate_selected(
+            env, reference_obj_name, reference_obj_id, supporting_geom_id
+        ):
+            return False
+
+        # Write distractor receptacle names to the config early so that
+        # get_task_relevant_objects can find them during camera setup
+        # (before _sample_task populates these).
+        self.config.task_config.other_receptacle_names = [
+            n for n in self.active_receptacle_names if n != self.place_receptacle_name
+        ]
+        return True
+
+    @staticmethod
+    def receptacle_material_callback(object_spec: mujoco.MjsBody) -> None:
         for geom in object_spec.geoms:
             if "_visual" in geom.name:
                 geom.material = ""
@@ -110,19 +133,14 @@ class PickAndPlaceColorTaskSampler(PickAndPlaceTaskSampler):
                 model.geom_rgba[geom_id] = color_rgba
 
             self._color_assignments[receptacle_name] = (color_name, color_rgba)
-            self.config.task_config.object_colors[receptacle_name] = color_rgba
+            self.config.task_config.object_colors[receptacle_name] = color_rgba.tolist()
             log.info(f"Colored receptacle {receptacle_name} -> {color_name}")
 
         return target_color_name, target_color_rgba
 
     def _sample_task(self, env: CPUMujocoEnv):
-        """Sample task with color assignment."""
         from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
 
-        # Use parent's sampling logic (handles pickup object, place target, robot, etc.)
-        super()._sample_task(env)
-
-        # Assign colors to receptacles after they've been positioned - only valid for single thread
+        self._configure_pick_and_place(env)
         self._assign_colors_to_receptacles(env)
-
         return PickAndPlaceColorTask(env, self.config)

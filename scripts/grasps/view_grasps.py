@@ -1,13 +1,11 @@
 """
 View grasps for objects in a given scene.
 
-example im MacOS:
+example:
 mjpython scripts/grasps/view_grasps.py --scene_index 2 --dataset_name ithor --split train --number_of_grasp_per_object 100 --check_collision
 
-example in Linux:
-python scripts/grasps/view_grasps.py --scene_index 2 --dataset_name ithor --split train --number_of_grasp_per_object 100 --check_collision
-
 """
+
 import mujoco
 import mujoco.viewer
 import numpy as np
@@ -25,7 +23,10 @@ from molmo_spaces.utils.grasp_sample import (
     get_noncolliding_grasp_mask,
 )
 from molmo_spaces.configs.policy_configs import ObjectManipulationPlannerPolicyConfig
-from molmo_spaces.utils.constants.object_constants import ALL_PICKUP_TYPES_THOR, EXTENDED_ARTICULATION_TYPES_THOR
+from molmo_spaces.utils.constants.object_constants import (
+    ALL_PICKUP_TYPES_THOR,
+    EXTENDED_ARTICULATION_TYPES_THOR,
+)
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 from molmo_spaces.utils.sampler_utils import furthest_point_sampling as fps_generic
@@ -54,7 +55,13 @@ def furthest_point_sampling(poses, num_samples):
 
 
 def _show_grasp_poses(
-    viewer, poses, grasp_width: float, grasp_length: float, grasp_height: float, grasp_base_pos: np.ndarray, color=(0, 0, 1, 1)
+    viewer,
+    poses,
+    grasp_width: float,
+    grasp_length: float,
+    grasp_height: float,
+    grasp_base_pos: np.ndarray,
+    color=(0, 0, 1, 1),
 ):
     """Show grasp poses in the viewer using mjv_initGeom (similar to _show_poses).
 
@@ -79,9 +86,19 @@ def _show_grasp_poses(
     cylinder_radius = grasp_height / 2
 
     gripper_parts = [
-        ("sphere", mujoco.mjtGeom.mjGEOM_SPHERE, [cylinder_radius, 0., 0.], grasp_base_pos),
-        ("cylinder_left", mujoco.mjtGeom.mjGEOM_CYLINDER, [cylinder_radius, half_length, 0.], np.array([0., half_width, half_length]) + grasp_base_pos),
-        ("cylinder_right", mujoco.mjtGeom.mjGEOM_CYLINDER, [cylinder_radius, half_length, 0.], np.array([0., -half_width, half_length]) + grasp_base_pos),
+        ("sphere", mujoco.mjtGeom.mjGEOM_SPHERE, [cylinder_radius, 0.0, 0.0], grasp_base_pos),
+        (
+            "cylinder_left",
+            mujoco.mjtGeom.mjGEOM_CYLINDER,
+            [cylinder_radius, half_length, 0.0],
+            np.array([0.0, half_width, half_length]) + grasp_base_pos,
+        ),
+        (
+            "cylinder_right",
+            mujoco.mjtGeom.mjGEOM_CYLINDER,
+            [cylinder_radius, half_length, 0.0],
+            np.array([0.0, -half_width, half_length]) + grasp_base_pos,
+        ),
         ("connecting_bar", mujoco.mjtGeom.mjGEOM_BOX, [0.002, 0.044, 0.002], grasp_base_pos),
     ]
 
@@ -160,12 +177,16 @@ def extract_objects_from_metadata(model, scene_metadata):
         # Handle pickup objects
         if category in pickup_categories and has_grasp_folder(asset_id):
             pickup_objects[asset_id] = body_name
-            print(f"Found pickup object: {object_name} -> asset_id={asset_id}, body={body_name}, category={category}")
+            print(
+                f"Found pickup object: {object_name} -> asset_id={asset_id}, body={body_name}, category={category}"
+            )
 
         # Handle Objaverse pickup objects
         if "obja" in category and has_grasp_folder(asset_id):
             pickup_objects[asset_id] = body_name
-            print(f"Found Objaverse pickup object: {object_name} -> asset_id={asset_id}, body={body_name}, category={category}")
+            print(
+                f"Found Objaverse pickup object: {object_name} -> asset_id={asset_id}, body={body_name}, category={category}"
+            )
 
         # Handle articulated objects with joints
         if category in articulation_categories and joints_map:
@@ -177,10 +198,14 @@ def extract_objects_from_metadata(model, scene_metadata):
                     joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, model_joint_name)
                     if joint_id >= 0:
                         joint_body_id = model.joint(joint_id).bodyid[0]
-                        joint_body_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, joint_body_id)
+                        joint_body_name = mujoco.mj_id2name(
+                            model, mujoco.mjtObj.mjOBJ_BODY, joint_body_id
+                        )
                         if joint_body_name:
                             joint_info[metadata_joint_name] = (model_joint_name, joint_body_name)
-                            print(f"Found joint: {object_name} -> asset_id={asset_id}, joint={metadata_joint_name} (model: {model_joint_name}), joint_body={joint_body_name}")
+                            print(
+                                f"Found joint: {object_name} -> asset_id={asset_id}, joint={metadata_joint_name} (model: {model_joint_name}), joint_body={joint_body_name}"
+                            )
 
             if joint_info:
                 jointed_objects[asset_id] = joint_info
@@ -215,7 +240,9 @@ def load_grasps_for_visualization(object_name, num_grasps=50, load_all_for_colli
         return []
 
 
-def load_grasps_for_joint_visualization(object_name, joint_name, num_grasps=50, load_all_for_collision=False):
+def load_grasps_for_joint_visualization(
+    object_name, joint_name, num_grasps=50, load_all_for_collision=False
+):
     """Load grasps for a joint, keeping as 4x4 transform matrices.
 
     Args:
@@ -247,8 +274,16 @@ def load_grasps_for_joint_visualization(object_name, joint_name, num_grasps=50, 
 
 
 def visualize_all_objects_grasps(
-    viewer, model, data, pickup_grasps, jointed_grasps, pickup_body_map, jointed_body_map,
-    check_collision=False, collision_batch_size=10, num_grasps_per_object=50
+    viewer,
+    model,
+    data,
+    pickup_grasps,
+    jointed_grasps,
+    pickup_body_map,
+    jointed_body_map,
+    check_collision=False,
+    collision_batch_size=10,
+    num_grasps_per_object=50,
 ):
     """Visualize grasps for both pickup objects (blue) and jointed objects (green) using viewer overlay.
 
@@ -332,12 +367,16 @@ def visualize_all_objects_grasps(
                     noncolliding_grasps = object_grasp_poses[noncolliding_mask]
                     # Sample N from non-colliding grasps for this object using FPS
                     if len(noncolliding_grasps) > num_grasps_per_object:
-                        indices = furthest_point_sampling(noncolliding_grasps, num_grasps_per_object)
+                        indices = furthest_point_sampling(
+                            noncolliding_grasps, num_grasps_per_object
+                        )
                         selected_grasps = noncolliding_grasps[indices]
                     else:
                         selected_grasps = noncolliding_grasps
                     all_grasp_poses_blue.extend(selected_grasps)
-                    print(f"Object {asset_id}: {len(selected_grasps)}/{len(object_grasp_poses)} non-colliding pickup grasps (requested {num_grasps_per_object})")
+                    print(
+                        f"Object {asset_id}: {len(selected_grasps)}/{len(object_grasp_poses)} non-colliding pickup grasps (requested {num_grasps_per_object})"
+                    )
                 except Exception as e:
                     print(f"Error in collision checking for pickup object {asset_id}: {e}")
                     # Fall back to showing N if collision check fails
@@ -358,17 +397,25 @@ def visualize_all_objects_grasps(
                         noncolliding_grasps = joint_grasp_poses[noncolliding_mask]
                         # Sample N from non-colliding grasps for this joint using FPS
                         if len(noncolliding_grasps) > num_grasps_per_object:
-                            indices = furthest_point_sampling(noncolliding_grasps, num_grasps_per_object)
+                            indices = furthest_point_sampling(
+                                noncolliding_grasps, num_grasps_per_object
+                            )
                             selected_grasps = noncolliding_grasps[indices]
                         else:
                             selected_grasps = noncolliding_grasps
                         all_grasp_poses_green.extend(selected_grasps)
-                        print(f"Joint {joint_name} on {asset_id}: {len(selected_grasps)}/{len(joint_grasp_poses)} non-colliding grasps (requested {num_grasps_per_object})")
+                        print(
+                            f"Joint {joint_name} on {asset_id}: {len(selected_grasps)}/{len(joint_grasp_poses)} non-colliding grasps (requested {num_grasps_per_object})"
+                        )
                     except Exception as e:
-                        print(f"Error in collision checking for joint {joint_name} on {asset_id}: {e}")
+                        print(
+                            f"Error in collision checking for joint {joint_name} on {asset_id}: {e}"
+                        )
                         # Fall back to showing N if collision check fails
                         if len(joint_grasp_poses) > num_grasps_per_object:
-                            indices = furthest_point_sampling(joint_grasp_poses, num_grasps_per_object)
+                            indices = furthest_point_sampling(
+                                joint_grasp_poses, num_grasps_per_object
+                            )
                             all_grasp_poses_green.extend(joint_grasp_poses[indices])
                         else:
                             all_grasp_poses_green.extend(joint_grasp_poses)
@@ -393,12 +440,28 @@ def visualize_all_objects_grasps(
     if len(all_grasp_poses_blue) > 0:
         if isinstance(all_grasp_poses_blue, list):
             all_grasp_poses_blue = np.array(all_grasp_poses_blue)
-        _show_grasp_poses(viewer, all_grasp_poses_blue, grasp_width, grasp_length, grasp_height, grasp_base_pos, color=(0, 0, 1, 1))  # Blue
+        _show_grasp_poses(
+            viewer,
+            all_grasp_poses_blue,
+            grasp_width,
+            grasp_length,
+            grasp_height,
+            grasp_base_pos,
+            color=(0, 0, 1, 1),
+        )  # Blue
 
     if len(all_grasp_poses_green) > 0:
         if isinstance(all_grasp_poses_green, list):
             all_grasp_poses_green = np.array(all_grasp_poses_green)
-        _show_grasp_poses(viewer, all_grasp_poses_green, grasp_width, grasp_length, grasp_height, grasp_base_pos, color=(0, 1, 0, 1))  # Green
+        _show_grasp_poses(
+            viewer,
+            all_grasp_poses_green,
+            grasp_width,
+            grasp_length,
+            grasp_height,
+            grasp_base_pos,
+            color=(0, 1, 0, 1),
+        )  # Green
 
 
 def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") -> str:
@@ -411,7 +474,9 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
 
     # Check if index exists in the map
     if scene_index not in scenes[split]:
-        print(f"Scene index {scene_index} not in index map for {dataset_name} (split: {split}), attempting to install...")
+        print(
+            f"Scene index {scene_index} not in index map for {dataset_name} (split: {split}), attempting to install..."
+        )
 
         # Determine scene source based on dataset
         if dataset_name == "ithor":
@@ -430,7 +495,9 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
         # Try to find archive containing this scene index number
         try:
             resource_manager = get_resource_manager()
-            archives = resource_manager.archives_with_number(scene_source, str(scene_index), data_type="scenes")
+            archives = resource_manager.archives_with_number(
+                scene_source, str(scene_index), data_type="scenes"
+            )
             if archives:
                 print(f"Found archive(s) containing scene {scene_index}: {archives}")
                 print(f"Installing scene archive(s): {archives}")
@@ -438,6 +505,7 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
 
                 # Clear cache and refresh the scene index map after installation
                 from molmo_spaces.molmo_spaces_constants import _DATASET_INDEX_CACHE
+
                 cache_key = dataset_name
                 if cache_key in _DATASET_INDEX_CACHE:
                     del _DATASET_INDEX_CACHE[cache_key]
@@ -451,6 +519,7 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
         except Exception as e:
             print(f"Error: Failed to install scene by index: {e}")
             import traceback
+
             traceback.print_exc()
             raise
 
@@ -496,9 +565,7 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Visualize object grasps in MiJoCo scene."
-    )
+    parser = argparse.ArgumentParser(description="Visualize object grasps in MiJoCo scene.")
     parser.add_argument(
         "--scene_index",
         type=int,
@@ -509,13 +576,13 @@ if __name__ == "__main__":
         "--dataset_name",
         type=str,
         required=True,
-        help="Name of the dataset (e.g., 'ithor', 'procthor-10k', 'procthor-objaverse')",
+        help="Name of the dataset (e.g., 'ithor', 'procthor-10k')",
     )
     parser.add_argument(
         "--split",
         type=str,
         default="train",
-        choices=["train", "val", "test"],
+        choices=["train", "val", "test", "debug"],
         help="Dataset split to use (default: train)",
     )
     parser.add_argument(
@@ -526,8 +593,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--check_collision",
-        type=bool,
-        default=True,
+        action="store_true",
         help="Filter out colliding grasps before visualization",
     )
     parser.add_argument(
@@ -624,9 +690,7 @@ if __name__ == "__main__":
         if grasps is not None and len(grasps) > 0:
             pickup_grasps[asset_id] = grasps
             available_pickup_objects.append(asset_id)
-            print(
-                f"Loaded {len(grasps)} grasps for pickup object {asset_id} (body: {body_name})"
-            )
+            print(f"Loaded {len(grasps)} grasps for pickup object {asset_id} (body: {body_name})")
 
     # Load grasps for jointed objects
     # If collision checking is enabled, load all available grasps for filtering
@@ -635,7 +699,10 @@ if __name__ == "__main__":
         joint_grasps_dict = {}
         for joint_name, (model_joint_name, joint_body_name) in joint_info.items():
             grasps = load_grasps_for_joint_visualization(
-                asset_id, joint_name, number_of_grasp_per_object, load_all_for_collision=args.check_collision
+                asset_id,
+                joint_name,
+                number_of_grasp_per_object,
+                load_all_for_collision=args.check_collision,
             )
             if grasps is not None and len(grasps) > 0:
                 joint_grasps_dict[joint_name] = grasps
@@ -659,11 +726,16 @@ if __name__ == "__main__":
             mujoco.mj_step(model, data)
 
             visualize_all_objects_grasps(
-                viewer, model, data, pickup_grasps, jointed_grasps,
-                pickup_objects, jointed_objects,
+                viewer,
+                model,
+                data,
+                pickup_grasps,
+                jointed_grasps,
+                pickup_objects,
+                jointed_objects,
                 check_collision=args.check_collision,
                 collision_batch_size=args.collision_batch_size,
-                num_grasps_per_object=number_of_grasp_per_object
+                num_grasps_per_object=number_of_grasp_per_object,
             )
 
             viewer.sync()

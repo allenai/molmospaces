@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import mujoco as mj
-import mujoco.viewer as mjviewer
 import numpy as np
 
 DISTANCE_RAYCAST_THRESHOLD = 0.5
@@ -92,6 +91,8 @@ def is_body_within_site_in_freespace(
 
 
 if __name__ == "__main__":
+    import mujoco.viewer as mjviewer
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--house",

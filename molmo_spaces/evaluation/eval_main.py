@@ -23,10 +23,6 @@ Programmatic usage (from external repo):
     )
     print(f"Success rate: {results.success_count}/{results.total_count}")
 
-Command-line usage:
-    python -m molmo_spaces.evaluation.eval_main SynthVLAPickPlaceEvalConfig \\
-        --benchmark_dir /path/to/json_benchmark \\
-        --checkpoint_path /path/to/checkpoint
 
 Environment setup (MacOS):
     export PYTHONPATH="${PYTHONPATH}:."
@@ -41,17 +37,16 @@ import datetime
 import importlib
 import logging
 import os
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
-import warnings
+from typing import TYPE_CHECKING, Any
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.robot_configs import ActionNoiseConfig
 from molmo_spaces.data_generation.config_registry import get_config_class
 from molmo_spaces.evaluation.benchmark_schema import (
     EpisodeSpec,
-    get_default_task_horizon,
     load_all_episodes,
 )
 from molmo_spaces.evaluation.json_eval_runner import JsonEvalRunner
@@ -100,6 +95,7 @@ _EXPECTED_DATA_VERSIONS = {
 
 def _assert_data_versions_match():
     """Assert that current data versions match expected versions for evaluation."""
+
     for data_type, expected_sources in _EXPECTED_DATA_VERSIONS.items():
         actual_sources = DATA_TYPE_TO_SOURCE_TO_VERSION.get(data_type, {})
         for source, expected_version in expected_sources.items():
@@ -121,8 +117,8 @@ def _assert_data_versions_match():
             # Warn about newer objaverse version that may have different assets
             if data_type == "objects" and source == "objaverse" and actual_version == "20260131":
                 warnings.warn(
-                    "Using objaverse data version 20260131. This is a newer version that may"
-                    " contain different assets than the original benchmark version (20251016_from_20250610).",
+                    "Using objaverse data version 20260131. This is a newer version that may "
+                    "contain different assets than the original benchmark version (20251016_from_20250610).",
                     UserWarning,
                     stacklevel=2,
                 )
@@ -170,8 +166,7 @@ def get_args():
     parser.add_argument(
         "exp_config_cls",
         type=str,
-        help="Name of the eval config class (e.g., SynthVLAPickPlaceEvalConfig). "
-        "Can include module path with colon (e.g. molmo_spaces.configs.synthvla_eval_configs:SynthVLAPickPlaceEvalConfig).",
+        help="Name of the eval config class. Can include module path with colon.",
     )
     parser.add_argument(
         "--benchmark_dir",
@@ -222,6 +217,29 @@ def get_args():
         help="Disable wandb logging.",
     )
     parser.add_argument(
+        "--use-filament",
+        action="store_true",
+        help="Whether or not to use the filament renderer instead of the legacy opengl one (requires installing custom wheel for now)",
+    )
+    parser.add_argument(
+        "--environment-light-intensity",
+        type=float,
+        default=None,
+        help="The default value for the intensity of the default environmental light (when using filament)",
+    )
+    parser.add_argument(
+        "--max_episodes",
+        type=int,
+        default=None,
+        help="Maximum number of episodes to evaluate from benchmark. If None, evaluates all episodes.",
+    )
+
+    # Eval camera randomization flags (shared across all JSON eval entry points)
+    from molmo_spaces.utils.eval_camera_randomization_utils import add_eval_camera_args
+
+    add_eval_camera_args(parser)
+
+    parser.add_argument(
         "--idx",
         type=int,
         default=None,
@@ -263,38 +281,68 @@ def build_success_status_map(results: list[EpisodeResult]) -> dict[str, bool]:
 def determine_task_horizon(
     episodes: list[EpisodeSpec],
     task_horizon_override: int | None,
+    policy_dt_ms: float | None = None,
 ) -> int:
-    """Determine task horizon from command line override or defaults.
+    """Determine task horizon from command line override or benchmark.
 
-    If task_horizon_override is provided, use it. Otherwise, look up the default
-    for the first episode's task class. Warn if mixed task types are present.
+    Priority:
+    1. Explicit override (from CLI --task_horizon_steps or --task_horizon_sec)
+    2. Benchmark's per-episode task_horizon_sec (converted to steps via policy_dt_ms)
+
+    Fails loudly if the benchmark does not contain task_horizon_sec and no
+    explicit override was provided.
 
     Args:
         episodes: List of episode specs from the benchmark
         task_horizon_override: Optional override from command line
+        policy_dt_ms: Policy timestep in milliseconds, required when reading
+            task_horizon_sec from the benchmark.
 
     Returns:
-        Task horizon to use for all episodes
+        Task horizon (in steps) to use for all episodes
     """
     if task_horizon_override is not None:
-        log.info(f"Using command line task_horizon: {task_horizon_override}")
+        log.info(f"Using explicit task_horizon override: {task_horizon_override} steps")
         return task_horizon_override
 
-    # Get unique task classes in the benchmark
-    task_classes = set(ep.get_task_cls() for ep in episodes)
+    # Read task_horizon_sec from the benchmark episodes
+    horizon_sec_values = {ep.task.get("task_horizon_sec") for ep in episodes}
 
-    if len(task_classes) > 1:
-        log.warning(
-            f"Benchmark has mixed task types: {task_classes}. "
-            f"Using default horizon for first episode's task class. "
-            f"Consider using --task_horizon_steps or --task_horizon_sec to override."
+    if None in horizon_sec_values:
+        missing_count = sum(1 for ep in episodes if ep.task.get("task_horizon_sec") is None)
+        raise ValueError(
+            f"No explicit task_horizon override provided and {missing_count}/{len(episodes)} "
+            f"benchmark episodes are missing 'task_horizon_sec' in their task dict. "
+            f"Either add task_horizon_sec to the benchmark JSON or pass "
+            f"--task_horizon_steps / --task_horizon_sec explicitly."
         )
 
-    # Use first episode's task class to determine default
-    first_task_cls = episodes[0].get_task_cls()
-    default_horizon = get_default_task_horizon(first_task_cls)
-    log.info(f"Using default task_horizon for {first_task_cls}: {default_horizon}")
-    return default_horizon
+    if len(horizon_sec_values) > 1:
+        raise ValueError(
+            f"Benchmark has inconsistent task_horizon_sec values: {horizon_sec_values}. "
+            f"All episodes must have the same task_horizon_sec, or pass an explicit override."
+        )
+
+    task_horizon_sec = horizon_sec_values.pop()
+
+    if policy_dt_ms is None:
+        raise ValueError(
+            "policy_dt_ms is required to convert benchmark task_horizon_sec to steps. "
+            "This is a bug in the caller."
+        )
+
+    task_horizon_steps = round(task_horizon_sec * 1000.0 / policy_dt_ms)
+
+    log.info("=" * 70)
+    log.info("TASK HORIZON RESOLVED FROM BENCHMARK")
+    log.info(f"  task_horizon_sec (from benchmark JSON): {task_horizon_sec}")
+    log.info(f"  policy_dt_ms (from eval config): {policy_dt_ms}")
+    log.info(
+        f"  task_horizon_steps = {task_horizon_sec} * 1000 / {policy_dt_ms} = {task_horizon_steps}"
+    )
+    log.info("=" * 70)
+
+    return task_horizon_steps
 
 
 @dataclass
@@ -318,6 +366,7 @@ def create_eval_config(
     checkpoint_path: str | None,
     task_horizon: int,
     num_workers: int,
+    camera_config_override: Any | None = None,
 ) -> MlSpacesExpConfig:
     """Create an MlSpacesExpConfig experiment config from a JSON benchmark for evaluation.
 
@@ -369,6 +418,9 @@ def create_eval_config(
     # Set task_horizon (already determined from defaults or override)
     exp_config.task_horizon = task_horizon
 
+    # Apply eval camera config override if provided
+    if camera_config_override is not None:
+        exp_config.camera_config = camera_config_override
     # Initialize eval_runtime_params with defaults so it always exists
     # This is now a proper field in MlSpacesExpConfig, so normal assignment works
     if exp_config.eval_runtime_params is None:
@@ -389,6 +441,9 @@ def run_evaluation(
     wandb_project: str = "mlspaces-online-eval",
     preloaded_policy: BasePolicy | None = None,
     max_episodes: int | None = None,
+    camera_config_override: Any | None = None,
+    use_filament: bool = False,
+    environment_light_intensity: float | None = None,
     episode_idx: int | None = None,
     add_custom_object: bool = False,
     custom_object_path: str | Path | None = None,
@@ -413,6 +468,8 @@ def run_evaluation(
         preloaded_policy: Optional pre-initialized policy instance. If provided, skips
             policy creation from config.
         max_episodes: Maximum number of episodes to evaluate from benchmark. If None, evaluates all episodes.
+        camera_config_override: Optional camera system config (e.g. FrankaEvalCameraSystem) to
+            replace the default camera_config on the experiment config.
         episode_idx: Index of a specific episode to evaluate. If None, evaluates all episodes.
         add_custom_object: Whether to replace the target object with a custom object.
         custom_object_path: Path to the custom object XML file. Required if add_custom_object is True.
@@ -503,7 +560,15 @@ def run_evaluation(
     # Use the original string if eval_config_cls was passed as a string, otherwise use __name__.
     # This handles cases where the registry name differs from the class name.
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    config_name = config_name_from_str if config_name_from_str else eval_config_cls.__name__
+    if config_name_from_str:
+        # If "module:ClassName" format, use just the class name for the output dir
+        config_name = (
+            config_name_from_str.split(":")[-1]
+            if ":" in config_name_from_str
+            else config_name_from_str
+        )
+    else:
+        config_name = eval_config_cls.__name__
 
     if output_dir is not None:
         resolved_output_dir = Path(output_dir) / config_name / timestamp
@@ -524,7 +589,10 @@ def run_evaluation(
             f"policy_dt_ms must be a float or int, got {type(policy_dt_ms)}"
         )
         task_horizon = round(task_horizon_sec * 1000.0 / policy_dt_ms)
-    resolved_task_horizon = determine_task_horizon(episodes, task_horizon)
+    config_policy_dt_ms = eval_config_cls.model_fields["policy_dt_ms"].get_default()
+    resolved_task_horizon = determine_task_horizon(
+        episodes, task_horizon, policy_dt_ms=config_policy_dt_ms
+    )
 
     # Create experiment config
     exp_config = create_eval_config(
@@ -534,6 +602,13 @@ def run_evaluation(
         checkpoint_path=checkpoint_path,
         task_horizon=resolved_task_horizon,
         num_workers=num_workers,
+        camera_config_override=camera_config_override,
+    )
+
+    # Custom filmanet settings to overwrite by the user
+    exp_config.use_filament |= use_filament
+    exp_config.environment_light_intensity = (
+        environment_light_intensity or exp_config.environment_light_intensity
     )
 
     # Patch config with evaluation-specific runtime parameters
@@ -629,6 +704,13 @@ def main() -> None:
     """Command-line entry point for evaluation."""
     args = get_args()
 
+    # Build eval camera config from CLI flags (None if --use_eval_cameras not passed)
+    from molmo_spaces.utils.eval_camera_randomization_utils import (
+        build_eval_camera_config_from_args,
+    )
+
+    eval_camera_config = build_eval_camera_config_from_args(args)
+
     # Load benchmark to log summary info
     benchmark_dir = Path(args.benchmark_dir).resolve()
     episodes = load_all_episodes(benchmark_dir)
@@ -649,6 +731,9 @@ def main() -> None:
         num_workers=args.num_workers,
         use_wandb=not args.no_wandb,
         wandb_project=args.wandb_project,
+        use_filament=args.use_filament,
+        environment_light_intensity=args.environment_light_intensity,
+        camera_config_override=eval_camera_config,
         episode_idx=args.idx,
         add_custom_object=args.add_custom_object,
         custom_object_path=args.custom_object_path,

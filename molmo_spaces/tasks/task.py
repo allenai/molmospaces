@@ -26,6 +26,7 @@ from molmo_spaces.env.env import BaseMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
 
 if TYPE_CHECKING:
+    from molmo_spaces.configs import BaseMujocoTaskConfig
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.policy.base_policy import BasePolicy
 
@@ -101,6 +102,64 @@ class BaseMujocoTask(ABC):
     def get_task_description(self) -> str:
         """Get the task description for this task."""
         raise NotImplementedError
+
+    @staticmethod
+    def deduplicate_task_objects_name(
+        task_config: "BaseMujocoTaskConfig",
+        input_key: str,
+        task_objects: dict[str, str],
+        output_key: str,
+    ) -> None:
+        task_object_name = getattr(task_config, input_key, None)
+        if task_object_name is None:
+            return
+
+        to_pop = [key for key, name in task_objects.items() if name == task_object_name]
+
+        for key in to_pop:
+            del task_objects[key]
+
+        task_objects[output_key] = task_object_name
+
+    def get_task_objects(self, batch_index: int = 0) -> dict[str, str]:
+        """Return a dict mapping object keys to body names for sensor tracking.
+
+        By default, includes robot gripper bodies (handles both single-gripper robots
+        like Franka and dual-gripper robots like RBY1) and all dynamically added
+        objects from ``task_config.added_objects``.  Task samplers are expected
+        to trim ``added_objects`` to only the episode-relevant subset before
+        creating the task, so everything present is task-relevant by construction.
+        Override in subclasses to add further task-specific objects by calling
+        ``super().get_task_objects()`` and updating the dict.
+
+        Keys should be descriptive (e.g., 'pickup_obj', 'door_handle', 'gripper').
+        Values should be valid MuJoCo body names.
+
+        Args:
+            batch_index: Batch index for the environment (default 0).
+
+        Returns:
+            Dict mapping object role to body name.
+        """
+        objects = {}
+
+        # Add robot gripper bodies (handles Franka's single gripper and RBY1's left/right grippers)
+        robot_view = self._env.robots[batch_index].robot_view
+        for gripper_mg_id in robot_view.get_gripper_movegroup_ids():
+            gripper_mg = robot_view.get_move_group(gripper_mg_id)
+            root_body_id = gripper_mg.root_body_id
+            # Handle both int IDs and body view objects (some robot views store the view directly)
+            if hasattr(root_body_id, "name"):
+                gripper_body_name = root_body_id.name
+            else:
+                gripper_body_name = robot_view.mj_model.body(root_body_id).name
+            objects[gripper_mg_id] = gripper_body_name
+
+        added = getattr(self.config.task_config, "added_objects", {})
+        for it, (name, _path) in enumerate(added.items()):
+            objects[f"added_{it}"] = name
+
+        return objects
 
     def _create_sensor_suite_from_config(self, exp_config) -> SensorSuite:
         # TODO(rose): probably have this api and then move the usage out of the class - do it later though
@@ -317,14 +376,22 @@ class BaseMujocoTask(ABC):
         return np.array([self.episode_step_count >= self._task_horizon])
 
     def is_terminal(self) -> np.ndarray:
-        """Check if task is terminal for each environment."""
+        """Check if task is terminal for each environment.
+
+        Terminal if a done action was received, or — when ``terminate_upon_success``
+        is enabled in the experiment config — the success criterion is met.
+        """
+        assert self._env.n_batch == 1, (
+            f"Only single-task batches supported. Got env.n_batch={self._env.n_batch}"
+        )
+
         terminal = np.zeros(self._env.n_batch, dtype=bool)
 
-        # Terminal ONLY if done action was received
-        done_action_received = self._done_action_received
+        is_success = False
+        if hasattr(self.config, "terminate_upon_success") and self.config.terminate_upon_success:
+            is_success = self.judge_success()
 
-        for i in range(self._env.n_batch):
-            terminal[i] = done_action_received
+        terminal[0] = is_success or self._done_action_received
 
         return terminal
 

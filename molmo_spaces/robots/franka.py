@@ -1,10 +1,13 @@
 import logging
 import random
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import mujoco
-from mujoco import MjData, MjSpec, mjtGeom
+import numpy as np
+from mujoco import MjData, MjsBody, MjSpec, mjtGeom
+from PIL import Image, ImageDraw
 
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
@@ -22,6 +25,41 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+def _speckle_texture(
+    base_color,
+    size=256,
+    noise_strength=0.1,
+    num_blobs=80,
+    blob_size_range=(5, 25),
+    blob_variation=0.1,
+):
+    img = np.ones((size, size, 3)) * np.array(base_color)
+    noise = np.random.normal(0, noise_strength, (size, size, 1))
+    img += noise
+    img = np.clip(img, 0, 1)
+    img = (img * 255).astype(np.uint8)
+
+    pil_img = Image.fromarray(img)
+    draw = ImageDraw.Draw(pil_img)
+
+    # Draw chunky rectangular or elliptical blobs
+    for _ in range(num_blobs):
+        x = np.random.randint(0, size)
+        y = np.random.randint(0, size)
+        w = np.random.randint(*blob_size_range)
+        h = np.random.randint(*blob_size_range)
+
+        variation = np.random.uniform(-blob_variation, blob_variation)
+        blob_color = tuple(int(np.clip((c + variation) * 255, 0, 255)) for c in base_color)
+
+        if np.random.random() > 0.5:
+            draw.ellipse((x, y, x + w, y + h), fill=blob_color)
+        else:
+            draw.rectangle((x, y, x + w, y + h), fill=blob_color)
+
+    return pil_img
 
 
 class FrankaRobot(Robot):
@@ -151,6 +189,57 @@ class FrankaRobot(Robot):
         return material_name
 
     @classmethod
+    def randomize_robot_textures(
+        cls,
+        robot_config: "FrankaRobotConfig",
+        spec: MjSpec,
+        prefix: str,
+        robot_spec: MjSpec,
+    ):
+        if random.random() > robot_config.perturb_texture_probability:
+            log.info(f"Skipping texture randomization for robot '{robot_config.name}'")
+            return
+
+        perturbed_materials: dict[str, str] = {}
+        for material in robot_spec.materials:
+            material: mujoco.MjsMaterial
+            is_rgb_mat = all(
+                material.textures[i] == "" for i in range(mujoco.mjtTextureRole.mjNTEXROLE)
+            )
+            if not is_rgb_mat:
+                continue
+
+            speckle_img = _speckle_texture(material.rgba[:3])
+            buffer = BytesIO()
+            speckle_img.save(buffer, format="PNG")
+            buffer.seek(0)
+
+            tex_name = f"{material.name}_perturbed_tex"
+            mat_name = f"{material.name}_perturbed"
+            fn = f"{prefix}{tex_name}.png".replace("/", "__")
+            spec.assets[fn] = buffer.getvalue()
+            robot_spec.add_texture(name=tex_name, type=mujoco.mjtTexture.mjTEXTURE_2D, file=fn)
+            perturbed_mat = robot_spec.add_material(name=mat_name)
+            perturbed_mat.textures[mujoco.mjtTextureRole.mjTEXROLE_RGB] = tex_name
+            perturbed_materials[material.name] = mat_name
+
+        def set_material(body: MjsBody):
+            for geom in body.geoms:
+                geom: mujoco.MjsGeom
+                if geom.material in perturbed_materials:
+                    log.debug(
+                        f"Setting material {geom.material} to {perturbed_materials[geom.material]} "
+                        f"for geom '{geom.name}' in body '{body.name}'"
+                    )
+                    geom.material = perturbed_materials[geom.material]
+            for child in body.bodies:
+                set_material(child)
+
+        robot_body = robot_spec.body(cls.robot_model_root_name())
+        set_material(robot_body)
+        log.info(f"Successfully randomized robot textures for robot '{robot_config.name}'")
+
+    @classmethod
     def add_robot_to_scene(
         cls,
         robot_config: "FrankaRobotConfig",
@@ -189,6 +278,9 @@ class FrankaRobot(Robot):
             attach_frame = robot_body.add_frame(pos=[0, 0, base_height])
         else:
             attach_frame = robot_body.add_frame()
+
+        if randomize_textures:
+            cls.randomize_robot_textures(robot_config, spec, prefix, robot_spec)
 
         # Attach the robot to the base via the frame
         robot_root_name = cls.robot_model_root_name()

@@ -31,9 +31,7 @@ def cap_robot_eval_override(
     camera_config.cameras[1].record_depth = True
     camera_config.cameras[1].fov = 71
 
-    rot_base = R.from_quat(
-        episode_spec.task["robot_base_pose"][3:7], scalar_first=True
-    ).as_matrix()
+    rot_base = R.from_quat(episode_spec.task["robot_base_pose"][3:7], scalar_first=True).as_matrix()
     episode_spec.task["robot_base_pose"][:3] += 0.05 * rot_base[0:3, 0]
     episode_spec.task["robot_base_pose"][2] -= 0.2
 

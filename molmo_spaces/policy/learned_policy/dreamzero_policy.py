@@ -2,17 +2,16 @@ import logging
 import os
 import time
 import uuid
-from typing import Dict, Tuple
 
 import cv2
 import numpy as np
 import websockets.exceptions
 import websockets.sync.client
-from openpi_client import msgpack_numpy
+import msgpack_numpy
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
-from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_pad
+from molmo_spaces.policy.learned_policy.utils import resize_with_pad
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +30,7 @@ class DreamZeroWebsocketClient:
         # store the URI that actually worked so reconnects reuse it
         self._connected_uri = self._uri
 
-    def _connect_once(self, uri: str) -> Tuple[websockets.sync.client.ClientConnection, Dict]:
+    def _connect_once(self, uri: str) -> tuple[websockets.sync.client.ClientConnection, dict]:
         conn = websockets.sync.client.connect(
             uri,
             compression=None,
@@ -42,7 +41,7 @@ class DreamZeroWebsocketClient:
         metadata = msgpack_numpy.unpackb(conn.recv())
         return conn, metadata
 
-    def _wait_for_server(self) -> Tuple[websockets.sync.client.ClientConnection, Dict]:
+    def _wait_for_server(self) -> tuple[websockets.sync.client.ClientConnection, dict]:
         logging.info(f"Waiting for server at {self._uri}...")
         try:
             conn, metadata = self._connect_once(self._uri)
@@ -58,7 +57,9 @@ class DreamZeroWebsocketClient:
     def _reconnect(self) -> None:
         retry_delay = 2
         while True:
-            logging.warning(f"WebSocket connection closed. Reconnecting to {self._connected_uri}...")
+            logging.warning(
+                f"WebSocket connection closed. Reconnecting to {self._connected_uri}..."
+            )
             try:
                 self._ws, self._server_metadata = self._connect_once(self._connected_uri)
                 logging.info("Reconnected to server.")
@@ -67,7 +68,7 @@ class DreamZeroWebsocketClient:
                 logging.warning(f"Reconnect failed: {e}. Retrying in {retry_delay}s...")
                 time.sleep(retry_delay)
 
-    def infer(self, obs: Dict) -> Dict:
+    def infer(self, obs: dict) -> dict:
         obs["endpoint"] = "infer"
         data = self._packer.pack(obs)
         try:
@@ -82,7 +83,7 @@ class DreamZeroWebsocketClient:
             raise RuntimeError(f"Error in inference server:\n{response}")
         return msgpack_numpy.unpackb(response)
 
-    def reset(self, reset_info: Dict = None) -> None:
+    def reset(self, reset_info: dict = None) -> None:
         if reset_info is None:
             reset_info = {}
         reset_info["endpoint"] = "reset"
@@ -97,6 +98,7 @@ class DreamZeroWebsocketClient:
             response = self._ws.recv()
         return response
 
+
 class DreamZero_Policy(InferencePolicy):
     def __init__(
         self,
@@ -105,11 +107,6 @@ class DreamZero_Policy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config, exp_config.task_type)
         self.remote_config = exp_config.policy_config.remote_config
-        self.prompt_sampler = PromptSampler(
-            task_type=exp_config.task_type,
-            prompt_templates=exp_config.policy_config.prompt_templates,
-            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
-        )
         self.checkpoint_path = exp_config.policy_config.checkpoint_path
         self.grasping_type = exp_config.policy_config.grasping_type
         self.chunk_size = exp_config.policy_config.chunk_size
@@ -120,12 +117,13 @@ class DreamZero_Policy(InferencePolicy):
     def reset(self):
         self.actions_buffer = None
         self.current_buffer_index = 0
-        self.prompt_sampler.next()
         self.starting_time = None
         self.session_id = str(uuid.uuid4())
 
     def prepare_model(self):
-        self.model_name = os.path.basename(self.checkpoint_path) if self.checkpoint_path else "dreamzero"
+        self.model_name = (
+            os.path.basename(self.checkpoint_path) if self.checkpoint_path else "dreamzero"
+        )
         if self.remote_config is not None:
             self._prepare_remote_model()
         else:
@@ -159,20 +157,32 @@ class DreamZero_Policy(InferencePolicy):
 
     def obs_to_model_input(self, obs):
         # self.render(obs)
-        prompt = self.prompt_sampler.get_prompt(self.task)
+        prompt = self.task.get_task_description()
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         if grip < 0.1:
             grip = 0.00
-        exo_camera_key = "droid_shoulder_light_randomization" if "droid_shoulder_light_randomization" in obs else "exo_camera_1"
-        wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
-        
+        exo_camera_key = (
+            "droid_shoulder_light_randomization"
+            if "droid_shoulder_light_randomization" in obs
+            else "exo_camera_1"
+        )
+        wrist_camera_key = (
+            "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
+        )
+
         model_input = {
             "observation/exterior_image_0_left": resize_with_pad(obs[exo_camera_key], 180, 320),
             "observation/exterior_image_1_left": resize_with_pad(obs[exo_camera_key], 180, 320),
             "observation/wrist_image_left": resize_with_pad(obs[wrist_camera_key], 180, 320),
-            "observation/joint_position": np.array(obs["qpos"]["arm"][:7], dtype=np.float64).reshape(7,),
+            "observation/joint_position": np.array(
+                obs["qpos"]["arm"][:7], dtype=np.float64
+            ).reshape(
+                7,
+            ),
             "observation/cartesian_position": np.zeros((6,), dtype=np.float64),
-            "observation/gripper_position": np.array(grip, dtype=np.float64).reshape(1,),
+            "observation/gripper_position": np.array(grip, dtype=np.float64).reshape(
+                1,
+            ),
             "prompt": prompt,
             "session_id": self.session_id,
         }
@@ -200,14 +210,18 @@ class DreamZero_Policy(InferencePolicy):
             )
         elif self.grasping_type == "semi_binary":
             gripper_pos = (
-                gripper_pos * np.array([255.0]) if gripper_pos <= self.grasping_threshold else np.array([255.0])
+                gripper_pos * np.array([255.0])
+                if gripper_pos <= self.grasping_threshold
+                else np.array([255.0])
             )
         elif self.grasping_type == "continuous":
             gripper_pos = gripper_pos * np.array([255.0])
         else:
             raise ValueError(f"Invalid grasping type: {self.grasping_type}")
 
-        arm_output = model_output[:7].reshape(7,)
+        arm_output = model_output[:7].reshape(
+            7,
+        )
         action = {
             "arm": arm_output,
             "gripper": gripper_pos,
@@ -221,7 +235,7 @@ class DreamZero_Policy(InferencePolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        info["prompt"] = self.task.get_task_description()
         info["session_id"] = self.session_id
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()

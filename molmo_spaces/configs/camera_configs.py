@@ -1,9 +1,12 @@
 """Camera configuration classes for MolmoSpaces experiments."""
 
+import logging
 from abc import ABC
-from typing import TypeAlias, TypeVar
+from typing import ClassVar, TypeAlias, TypeVar
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 from molmo_spaces.configs.abstract_config import Config
 
@@ -22,6 +25,9 @@ class CameraConfig(Config, ABC):
     fov: float | None = None  # Field of view in degrees
     is_warped: bool = False  # Whether camera has lens distortion (e.g., GoPro fisheye)
     record_depth: bool = False  # Whether to record depth images for this camera
+    skip_erosion: bool = (
+        False  # Skip erosion for object point sampling (useful for wide FOV cameras)
+    )
 
     # Visibility constraints for robot placement validation (optional)
     # Maps body names to minimum visibility thresholds (0.0 to 1.0)
@@ -126,11 +132,54 @@ class RandomizedExocentricCameraConfig(CameraConfig):
     allow_relaxed_constraints: bool = False  # Use best attempt if constraints not met
 
 
+class EvalRobotMountedCameraConfig(RobotMountedCameraConfig):
+    """Robot-mounted camera with additional intrinsics perturbation for eval."""
+
+    fov_noise_degrees: tuple[float, float] | None = None
+
+
+class EvalExocentricCameraConfig(FixedExocentricCameraConfig):
+    """Eval exocentric camera whose level-0 pose is derived from a shoulder mount.
+
+    At runtime the reference body pose is resolved into world-frame
+    pos/forward/up, decomposed into spherical coordinates relative to the
+    workspace center, perturbed according to the spherical noise params, and
+    then placed via the normal fixed-exocentric path.
+
+    ``pos``, ``forward``, ``up`` default to ``None`` here (overriding the
+    required parent fields) because they are computed at runtime.
+    """
+
+    # Override parent required fields with None defaults (resolved at runtime)
+    pos: list[float] | None = None
+    forward: list[float] | None = None
+    up: list[float] | None = None
+
+    # Spherical perturbation ranges (around the reference shoulder-mount pose)
+    azimuth_range: tuple[float, float] | None = None  # radians, symmetric around ref azimuth
+    distance_range: tuple[float, float] | None = None  # meters, offset from ref distance
+    height_range: tuple[float, float] | None = None  # meters, offset from ref height
+    workspace_center_weight: float | None = (
+        None  # [0,1] blend from calibrated target → workspace center
+    )
+    lookat_noise_range: tuple[float, float] | None = None  # meters, per-axis noise on lookat target
+    fov_range: tuple[float, float] | None = None  # degrees, FOV sampling range
+
+    max_placement_attempts: int = 50
+
+    # Reference shoulder-mounted pose (used to compute level-0 pos/forward/up)
+    reference_body_names: list[str] = ["robot_0/fr3_link0"]
+    camera_offset: list[float] = [0.1, 0.57, 0.66]
+    camera_quaternion: list[float] = [-0.3633, -0.1241, 0.4263, 0.8191]
+
+
 AllCameraTypes: TypeAlias = (
     MjcfCameraConfig
     | RobotMountedCameraConfig
     | FixedExocentricCameraConfig
     | RandomizedExocentricCameraConfig
+    | EvalRobotMountedCameraConfig
+    | EvalExocentricCameraConfig
 )
 
 
@@ -159,11 +208,6 @@ class CameraSystemConfig(Config):
         return None
 
 
-# ==============================================================================
-# Pre-configured camera systems for common use cases
-# ==============================================================================
-
-
 class RBY1MjcfCameraSystem(CameraSystemConfig):
     """Camera system using RBY1's built-in MJCF cameras."""
 
@@ -174,6 +218,7 @@ class RBY1MjcfCameraSystem(CameraSystemConfig):
             mjcf_name="head_camera",
             robot_namespace="robot_0/",
             fov=139.0,
+            skip_erosion=True,
         ),
         MjcfCameraConfig(
             name="wrist_camera_l",
@@ -202,6 +247,55 @@ class RBY1MjcfCameraSystem(CameraSystemConfig):
         #     mjcf_name="camera_thirdview_follower_2",
         #     robot_namespace="robot_0/",
         # ),
+    ]
+
+
+class RBY1GoProD455CameraSystem(CameraSystemConfig):
+    """Camera system for RBY1 with GoPro head camera and D455 wrist cameras.
+
+    Renders at 1024x576 (16:9) to accommodate both:
+    - Head camera: GoPro analogue (4:3, crop to 768x576 in post-processing)
+    - Wrist cameras: D455 analogue (16:9, use full frame)
+
+    All cameras include randomization for sim-to-real transfer.
+    """
+
+    img_resolution: tuple[int, int] = (1024, 576)
+    cameras: list[AllCameraTypes] = [
+        # Head camera - GoPro analogue (4:3, VFOV ~94deg for wide mode)
+        # Crop to 768x576 in post-processing to get 4:3 aspect ratio
+        MjcfCameraConfig(
+            name="head_camera",
+            mjcf_name="head_camera",
+            robot_namespace="robot_0/",
+            fov=139.0,  # GoPro wide mode VFOV
+            fov_noise_degrees=(-3.0, 3.0),
+            pos_noise_range=((-0.01, -0.01, -0.01), (0.01, 0.01, 0.01)),
+            orientation_noise_degrees=(4.0, 4.0, 4.0),
+            skip_erosion=True,
+        ),
+        # Left wrist camera - D455 analogue (16:9, VFOV ~58deg)
+        MjcfCameraConfig(
+            name="wrist_camera_l",
+            mjcf_name="wrist_camera_l",
+            robot_namespace="robot_0/",
+            fov=58.0,  # D455 depth VFOV
+            fov_noise_degrees=(-4.0, 4.0),
+            pos_noise_range=((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+            orientation_noise_degrees=(8.0, 4.0, 4.0),
+            record_depth=True,
+        ),
+        # Right wrist camera - D455 analogue (16:9, VFOV ~58deg)
+        MjcfCameraConfig(
+            name="wrist_camera_r",
+            mjcf_name="wrist_camera_r",
+            robot_namespace="robot_0/",
+            fov=58.0,  # D455 depth VFOV
+            fov_noise_degrees=(-4.0, 4.0),
+            pos_noise_range=((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+            orientation_noise_degrees=(8.0, 4.0, 4.0),
+            record_depth=True,
+        ),
     ]
 
 
@@ -359,7 +453,7 @@ class FrankaOmniPurposeCameraSystem(CameraSystemConfig):
             robot_namespace="robot_0/",
             fov=52.0,
             fov_noise_degrees=(-4.0, 4.0),
-            pos_noise_range=((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+            pos_noise_range=((-0.015, -0.005, -0.02), (0.015, 0.005, 0.02)),
             orientation_noise_degrees=(8.0, 4.0, 4.0),
             record_depth=True,
         ),
@@ -633,13 +727,233 @@ class FrankaRobotiq2f85CameraSystem(CameraSystemConfig):
     ]
 
 
+class I2rtYamCameraSystem(CameraSystemConfig):
+    """Camera system for i2rt YAM robot.
+
+    Uses robot-mounted exo camera since YAM doesn't have built-in MJCF cameras.
+    The exo camera is mounted relative to the robot base (mocap body at ground level).
+
+    Note: Camera offset z must account for the base platform height (0.7m).
+    To achieve similar viewing angle as Franka DROID (camera at ~1.24m total height),
+    we use z offset = 0.7 (platform) + 0.5 (above platform) = 1.2m
+    """
+
+    img_resolution: tuple[int, int] = (640, 480)
+    cameras: list[AllCameraTypes] = [
+        # Robotiq 2f85-style wrist camera with noise
+        MjcfCameraConfig(
+            name="wrist_camera",
+            mjcf_name="wrist_camera",
+            robot_namespace="robot_0/",
+        ),
+        # Exocentric camera mounted relative to robot base (mocap body at ground level)
+        RobotMountedCameraConfig(
+            name="exo_camera_1",
+            reference_body_names=["robot_0/base", "robot_0/arm"],  # Try base first (mocap body)
+            camera_offset=[0.1, 0.5, 1.2],  # z=1.2 to account for 0.7m platform + 0.5m above
+            camera_quaternion=[-0.3633, -0.1241, 0.4263, 0.8191],  # Similar angle to Franka DROID
+            fov=71.0,
+            visibility_constraints={
+                "__task_objects__": 0.001,
+            },
+        ),
+    ]
+
+
+class BimanualYamCameraSystem(CameraSystemConfig):
+    """Camera system for bimanual YAM robot.
+
+    Includes wrist cameras on both arms (defined in yam.xml MJCF) and a robot-mounted
+    exo camera positioned to see both arms and the workspace between them.
+
+    Note: Camera offset z must account for the base platform height (0.7m).
+    The exo camera is positioned slightly back and higher to capture both arms.
+    """
+
+    img_resolution: tuple[int, int] = (640, 360)
+    cameras: list[AllCameraTypes] = [
+        # Left wrist camera (defined in yam.xml, attached to left_link_6)
+        MjcfCameraConfig(
+            name="left_wrist_camera",
+            mjcf_name="wrist_camera",
+            robot_namespace="robot_0/left_",
+            fov=58.0,
+        ),
+        # Right wrist camera (defined in yam.xml, attached to right_link_6)
+        MjcfCameraConfig(
+            name="right_wrist_camera",
+            mjcf_name="wrist_camera",
+            robot_namespace="robot_0/right_",
+            fov=58.0,
+        ),
+        # Exocentric camera mounted relative to robot base (mocap body at ground level)
+        RobotMountedCameraConfig(
+            name="exo_camera",  # Name matches policy camera_mapping expectation
+            reference_body_names=[
+                "robot_0/base",
+                "robot_0/left_arm",
+            ],  # Try base first (mocap body)
+            camera_offset=[0.0, 0.0, 1.56],  # Centered between both arms, 86cm above platform
+            camera_quaternion=[
+                0.6870,
+                0.1675,
+                -0.1675,
+                -0.6870,
+            ],  # 90° CW roll + 46.5° pitch down, arms left/right
+            fov=58.0,
+            visibility_constraints={
+                "__task_objects__": 0.001,
+            },
+        ),
+    ]
+
+
+class FrankaEvalCameraSystem(CameraSystemConfig):
+    """Unified Franka eval camera system with progressive perturbation (0-100 level).
+
+    Cameras:
+    - 1 wrist camera (FrankaDroid-like)
+    - 1 ZED2-like exocentric cameras (stored pose from episode + perturbation)
+
+    The cameras list holds only calibrated (level 0) specs with no randomization ranges.
+    All randomization ranges are in per-reference level, per-camera dicts.
+    Level scaling is applied by apply_eval_camera_randomization_level() in eval_camera_randomization_utils.py
+    using an N-piece linear curve (e.g. 0→low→high→100 for N=3).
+
+    Exo camera pos/forward/up are placeholders; the runtime loads stored poses from episode specs.
+    """
+
+    img_resolution: tuple[int, int] = (624, 352)
+
+    ref_level_ranges: ClassVar[
+        list[tuple[float, dict[str, dict[str, float | tuple[float, ...]]]]]
+    ] = [
+        (
+            0.0,
+            {
+                "wrist_camera": {
+                    "pos_noise_range": ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+                    "orientation_noise_degrees": (0.0, 0.0, 0.0),
+                    "fov_noise_degrees": (0.0, 0.0),
+                },
+                "exo_camera_1": {
+                    "azimuth_range": (0.0, 0.0),
+                    "distance_range": (0.0, 0.0),
+                    "height_range": (0.0, 0.0),
+                    "workspace_center_weight": 0.0,  # keep calibrated orientation
+                    "lookat_noise_range": (0.0, 0.0),
+                    "fov_range": (71.0, 71.0),
+                },
+            },
+        ),
+        (
+            10.0,
+            {
+                "wrist_camera": {
+                    "pos_noise_range": ((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+                    "orientation_noise_degrees": (8.0, 4.0, 4.0),
+                    "fov_noise_degrees": (-4.0, 4.0),
+                },
+                "exo_camera_1": {
+                    "azimuth_range": (-np.pi / 4, np.pi / 4),
+                    "distance_range": (-0.05, 0.05),
+                    "height_range": (-0.05, 0.05),
+                    "workspace_center_weight": 1.0,  # look at workspace center
+                    "lookat_noise_range": (-0.01, 0.01),
+                    "fov_range": (71.0, 71.0),
+                },
+            },
+        ),
+        (
+            40.0,
+            {
+                "wrist_camera": {
+                    "pos_noise_range": ((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+                    "orientation_noise_degrees": (8.0, 4.0, 4.0),
+                    "fov_noise_degrees": (-4.0, 4.0),
+                },
+                "exo_camera_1": {
+                    "azimuth_range": (-np.pi / 2, np.pi / 2),
+                    "distance_range": (-0.5, 0.5),
+                    "height_range": (-0.1, 0.5),
+                    "workspace_center_weight": 1.0,  # look at workspace center
+                    "lookat_noise_range": (-0.05, 0.05),
+                    "fov_range": (64.0, 72.0),
+                },
+            },
+        ),
+        (
+            75.0,
+            {
+                "wrist_camera": {
+                    "pos_noise_range": ((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+                    "orientation_noise_degrees": (8.0, 4.0, 4.0),
+                    "fov_noise_degrees": (-4.0, 4.0),
+                },
+                "exo_camera_1": dict(
+                    azimuth_range=(-np.pi, np.pi),
+                    distance_range=(-0.5, 1.0),
+                    height_range=(-0.2, 0.7),
+                    workspace_center_weight=1.0,  # look at workspace center
+                    lookat_noise_range=(-0.1, 0.1),
+                    fov_range=(64.0, 72.0),
+                ),
+            },
+        ),
+        (
+            100.0,
+            {
+                "wrist_camera": {
+                    "pos_noise_range": ((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
+                    "orientation_noise_degrees": (8.0, 4.0, 4.0),
+                    "fov_noise_degrees": (-4.0, 4.0),
+                },
+                "exo_camera_1": dict(
+                    azimuth_range=(-np.pi, np.pi),
+                    distance_range=(-0.5, 1.5),
+                    height_range=(-0.3, 0.8),
+                    workspace_center_weight=1.0,  # look at workspace center
+                    lookat_noise_range=(-0.15, 0.15),
+                    fov_range=(64.0, 78.0),
+                ),
+            },
+        ),
+    ]
+
+    # Calibrated (level 0) camera specs only; no randomization params.
+    cameras: list[AllCameraTypes] = [
+        # Wrist camera
+        MjcfCameraConfig(
+            name="wrist_camera",
+            mjcf_name="gripper/wrist_camera",
+            robot_namespace="robot_0/",
+            fov=52.00,
+        ),
+        # Shoulder camera
+        EvalExocentricCameraConfig(
+            name="exo_camera_1",
+            fov=71.0,
+            visibility_constraints={
+                "__task_objects__": 0.0001,
+                "__gripper__": 0.0001,
+            },
+        ),
+    ]
+
+
 AllCameraSystems: TypeAlias = (
     RBY1MjcfCameraSystem
+    | RBY1GoProD455CameraSystem
     | FrankaRandomizedD405D455CameraSystem
     | FrankaEasyRandomizedDroidCameraSystem
     | FrankaDroidCameraSystem
+    | FrankaOmniPurposeCameraSystem
     | FrankaRandomizedDroidCameraSystem
     | FrankaGoProD405D455CameraSystem
     | FrankaGoProD405RandomizedCameraSystem
     | FrankaRobotiq2f85CameraSystem
+    | FrankaEvalCameraSystem
+    | I2rtYamCameraSystem
+    | BimanualYamCameraSystem
+    | FrankaEvalCameraSystem
 )

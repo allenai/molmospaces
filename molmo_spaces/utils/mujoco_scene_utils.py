@@ -282,7 +282,7 @@ def place_object_near(
 
 
 def get_supporting_geom(
-    data: MjData, object_id: int, angle_threshold: float = np.radians(30)
+    data: MjData, object_id: int, angle_threshold: float = np.radians(80)
 ) -> int | None:
     """
     Finds the supporting geometry for an object, using a heuristic.

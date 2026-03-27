@@ -257,7 +257,7 @@ def test(
                     # Get friction for all geoms
                     geom_frictions = {}
                     for geom_id in range(model.ngeom):
-                        geom_body_id = model.geom(geom_id).bodyid
+                        geom_body_id = model.geom(geom_id).bodyid.item()
                         geom_root_id = model.body(geom_body_id).rootid[0]
                         if geom_root_id == object_root_id:
                             geom_frictions[geom_id] = np.array(model.geom_friction[geom_id])
@@ -361,7 +361,7 @@ def test(
                         object_root_id = model.body(object_id).rootid[0]
                         friction_diffs = []
                         for geom_id in range(model.ngeom):
-                            geom_body_id = model.geom(geom_id).bodyid
+                            geom_body_id = model.geom(geom_id).bodyid.item()
                             geom_root_id = model.body(geom_body_id).rootid[0]
                             if geom_root_id == object_root_id:
                                 if geom_id in before["geom_frictions"]:

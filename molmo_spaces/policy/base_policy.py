@@ -109,32 +109,50 @@ class InferencePolicy(BasePolicy):
         self.current_phase = NONE_PHASE
 
     def get_action(self, observation):
-        if observation is None:
-            return self.default_action
-        model_input = self.obs_to_model_input(observation[0])
+        model_input = self.obs_to_model_input(observation)
         model_output = self.inference_model(model_input)
-        return self.model_output_to_action(model_output)
+        action = self.model_output_to_action(model_output)
+        return action
 
+    @abstractmethod
     def prepare_model(self, model_name: str):
-        raise NotImplementedError("Subclasses must implement prepare_model()")
+        raise NotImplementedError
 
+    @abstractmethod
     def obs_to_model_input(self, obs):
-        raise NotImplementedError("Subclasses must implement obs_to_model_input()")
+        raise NotImplementedError
 
+    @abstractmethod
     def model_output_to_action(self, model_output):
-        raise NotImplementedError("Subclasses must implement model_output_to_action()")
+        raise NotImplementedError
 
+    @abstractmethod
     def inference_model(self, model_input):
-        raise NotImplementedError("Subclasses must implement inference_model()")
+        raise NotImplementedError
 
+    @abstractmethod
     def reset(self):
-        raise NotImplementedError("Subclasses must implement reset()")
+        raise NotImplementedError
 
     def render(self, obs):
-        raise NotImplementedError("Subclasses must implement render()")
+        """
+        Not required to be implemented by subclasses.
+        Defaults to noop.
+        """
+        pass
 
     def get_info(self) -> dict:
         info = super().get_info()
         info["task_type"] = self.task_type
         info["timestamp"] = time.time()
         return info
+
+
+class StatefulPolicy(BasePolicy):
+    @abstractmethod
+    def get_state(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_state(self, state):
+        raise NotImplementedError

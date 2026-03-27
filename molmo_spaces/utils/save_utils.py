@@ -753,6 +753,9 @@ def _save_extra_data_from_batched(obs_group, episode_data) -> None:
         # RBY1 dual-arm TCP sensors
         "left_tcp_pose": "left_tcp_pose",
         "right_tcp_pose": "right_tcp_pose",
+        # RBY1 grasp state sensors
+        "rby1_left_grasp_state": "rby1_left_grasp_state",
+        "rby1_right_grasp_state": "rby1_right_grasp_state",
         # Base pose sensor
         "robot_base_pose": "robot_base_pose",
         # Policy sensors

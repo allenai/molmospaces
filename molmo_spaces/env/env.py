@@ -3,6 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Collection, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import mujoco
@@ -17,6 +18,8 @@ from molmo_spaces.env.data_views import (
     MlSpacesObject,
     create_mlspaces_body,
 )
+from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
+from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
@@ -27,6 +30,7 @@ if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 class BaseMujocoEnv(ABC):
@@ -144,6 +148,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         mj_model: MjModel,
         mj_base_scene_path: str,
         parallelize: bool = True,
+        use_filament: bool = False,
     ) -> None:
         super().__init__(exp_config, mj_model)
 
@@ -160,7 +165,8 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self._scene_metadata = None
 
         self.camera_manager = CameraManager()
-        self._renderer: MjOpenGLRenderer | None = None
+        self._renderer: MjAbstractRenderer | None = None
+        self._use_filament = use_filament
 
         self.object_managers = []
 
@@ -203,7 +209,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
             width, height = self.config.camera_config.img_resolution
         else:
             width, height = (640, 480)  # Default resolution
-        self._renderer = MjOpenGLRenderer(model=self.mj_model, width=width, height=height)
+        if self._use_filament:
+            self._renderer = MjFilamentRenderer(model=self.mj_model, width=width, height=height)
+        else:
+            self._renderer = MjOpenGLRenderer(model=self.mj_model, width=width, height=height)
 
         if self._parallelize and self._n_batch > 1:
             self._executor = ThreadPoolExecutor(max_workers=self._n_batch)
@@ -488,6 +497,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
     def check_camera_visibility_constraints(
         self,
         visibility_resolver: Callable[[str], list[str]] | None = None,
+        save_frames_dir: Path | str | None = None,
     ) -> tuple[bool, dict[str, dict[str, float]]]:
         """
         Check if all cameras with visibility constraints can see their target objects.
@@ -498,6 +508,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         Args:
             visibility_resolver: Optional callable that resolves special visibility keys
                                like "__gripper__" to (possibly multiple) actual body names
+            save_frames_dir: Optional directory to save RGB frames from each camera for debugging
 
         Returns:
             Tuple of (all_satisfied, detailed_results)
@@ -506,6 +517,12 @@ class CPUMujocoEnv(BaseMujocoEnv):
         """
         all_satisfied = True
         detailed_results = {}
+
+        # Prepare save directory if specified
+        if save_frames_dir is not None:
+            save_frames_dir = Path(save_frames_dir)
+            visibility_frames_dir = save_frames_dir / "visibility_check_frames"
+            visibility_frames_dir.mkdir(parents=True, exist_ok=True)
 
         # Iterate through all cameras in the registry
         for camera in self.camera_manager.registry:
@@ -556,6 +573,28 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     visibility_results = {list(resolved_constraints.keys())[0]: visibility_results}
 
                 detailed_results[camera_name] = visibility_results
+
+                # Save frame if directory specified
+                if save_frames_dir is not None:
+                    try:
+                        import time
+
+                        from PIL import Image
+
+                        rgb_frame = self.render_rgb_frame(camera_name)
+                        # Convert from float [0,1] to uint8 if needed
+                        if rgb_frame.dtype == np.float32 or rgb_frame.dtype == np.float64:
+                            rgb_frame = (rgb_frame * 255).astype(np.uint8)
+                        img = Image.fromarray(rgb_frame)
+                        # Add timestamp to filename to avoid overwriting
+                        timestamp = int(time.time() * 1000)
+                        frame_path = visibility_frames_dir / f"{camera_name}_{timestamp}.png"
+                        img.save(frame_path)
+                        log.debug(f"[VISIBILITY CHECK] Saved frame to {frame_path}")
+                    except Exception as e:
+                        log.warning(
+                            f"[VISIBILITY CHECK] Failed to save frame for camera '{camera_name}': {e}"
+                        )
 
                 # Check if all constraints are satisfied for this camera
                 for obj_name, threshold in resolved_constraints.items():
@@ -633,6 +672,12 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     body2_name if body1_name.startswith(robot_namespace) else body1_name
                 )
 
+                actual_body1_name = model.body(body1_id).name
+                actual_body2_name = model.body(body2_id).name
+                log.debug(
+                    f"Collision is between {actual_body1_name} and {actual_body2_name} (roots: {body1_name}, {body2_name})"
+                )
+
                 # Allow floor contacts but reject walls/obstacles
                 if "floor" not in other_body_name.lower() and body1_name != body2_name:
                     collision_found = True
@@ -706,6 +751,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         visibility_resolver=None,
         excluded_positions: list[np.ndarray] | None = None,
         exclusion_threshold: float | None = None,
+        save_visibility_frames_dir: Path | str | None = None,
     ) -> bool:
         """
         Place robot near a target point or object with collision checking.
@@ -722,6 +768,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
             visibility_resolver: Optional callable(key: str) -> str for resolving special visibility keys
             excluded_positions: List of positions to avoid (e.g. previously used positions)
             exclusion_threshold: Minimum distance from any excluded position
+            save_visibility_frames_dir: Optional directory to save camera frames during visibility check
         Returns:
             bool: True if placement was successful, False otherwise
         """
@@ -764,7 +811,6 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
         # Get robot Z height to preserve
         initial_robot_z = preserve_z if preserve_z is not None else robot_view.base.pose[2, 3]
-
         log.debug(f"[PLACE_ROBOT_NEAR] Robot Z height to preserve: {initial_robot_z:.6f}m")
         log.debug(
             f"[PLACE_ROBOT_NEAR] Sampling radius range: {sampling_radius_range[0]:.3f}m - {sampling_radius_range[1]:.3f}m"

@@ -1,9 +1,11 @@
 import logging
+from collections.abc import Collection
 from typing import TYPE_CHECKING
 
 import mujoco
 import numpy as np
 from mujoco import MjSpec, mjtGeom
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.arena.arena_utils import modify_mjmodel_thor_articulated
 from molmo_spaces.env.data_views import (
@@ -12,21 +14,32 @@ from molmo_spaces.env.data_views import (
     create_mlspaces_body,
 )
 from molmo_spaces.env.env import CPUMujocoEnv
-from molmo_spaces.env.object_manager import Context
+from molmo_spaces.env.object_manager import Context, ObjectManager
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.pick_task import PickTask
-from molmo_spaces.tasks.task_sampler import (
-    BaseMujocoTaskSampler,
+from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
+from molmo_spaces.tasks.task_sampler_errors import (
+    HouseInvalidForTask,
+    ObjectPlacementError,
+    RobotPlacementError,
 )
-from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask, RobotPlacementError
 from molmo_spaces.utils.asset_names import get_thor_name
+from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
 from molmo_spaces.utils.grasp_sample import (
     get_noncolliding_grasp_mask,
     has_grasp_folder,
     has_valid_grasp_file,
     load_grasps_for_object,
 )
-from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom
+from molmo_spaces.utils.lazy_loading_utils import install_uid
+from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
+from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom, place_object_near
+from molmo_spaces.utils.object_metadata import ObjectMeta
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat, pose_mat_to_7d
+from molmo_spaces.utils.task_relevant_objects_and_workspace_utils import (
+    compute_workspace_center,
+    get_task_relevant_objects,
+)
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.base_pick_config import PickBaseConfig
@@ -34,11 +47,89 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+MAX_BOTTOM_Z_DIFFERENCE = 0.05  # 5cm
 
-class RolloutFailure(Exception):
-    """Exception for when scene setup fails."""
+_VALID_PICKUPABLE_CACHE: dict[str, dict] | None = None
 
-    pass
+
+def get_valid_pickupable_uids(
+    pickupable_synsets_categories_or_uids: Collection[str], split: str
+) -> dict[str, dict]:
+    """Get all asset UIDs that are valid pickupables from synsets, categories, or direct UIDs."""
+    valid_uids = {}
+
+    asset_ids = set(pickupable_synsets_categories_or_uids) & set(ObjectMeta.annotation().keys())
+    for uid in asset_ids:
+        valid_uids[uid] = ObjectMeta.annotation(uid)
+
+    categories_and_synsets = {
+        reference.lower().replace("_", " ").strip()
+        for reference in set(pickupable_synsets_categories_or_uids) - asset_ids
+    }
+
+    if categories_and_synsets:
+        import hashlib
+
+        from tqdm import tqdm
+
+        class DummyEnv:
+            mj_datas = [None]
+
+        om = ObjectManager(DummyEnv(), -1)  # type:ignore
+        om.scene_metadata = {"objects": {}}
+
+        for uid, anno in tqdm(ObjectMeta.annotation().items(), "caching pickupables"):
+            if uid in valid_uids:
+                continue
+
+            if split == "test" and anno["split"] not in ["test", None]:
+                continue
+            elif split == "train" and anno["split"] != split:
+                continue
+            elif split == "val" and anno["split"] not in ["val", "train"]:
+                continue
+
+            category = anno["category"]
+            name = f"{category.lower()}_{hashlib.md5(uid.encode()).hexdigest()}_0_0_0"
+
+            om.scene_metadata["objects"][name] = {
+                "asset_id": uid,
+                "category": category,
+                "object_enum": "temp_object",
+            }
+
+            possible_types = om.get_possible_object_types(name)
+            possible_types = {
+                reference.lower().replace("_", " ").strip() for reference in possible_types
+            }
+
+            added = False
+            for cat_or_synset in categories_and_synsets:
+                for possible_type in possible_types:
+                    if cat_or_synset in possible_type:
+                        valid_uids[uid] = anno
+                        added = True
+                        break
+                if added:
+                    break
+
+            om.scene_metadata["objects"].pop(name)
+            om._object_name_to_possible_type_names = {}
+            om._object_name_and_context_to_source_to_natural_names = {}
+
+    return valid_uids
+
+
+def _get_cached_valid_pickupables(
+    pickupable_synsets_categories_or_uids: Collection[str], split: str
+) -> dict[str, dict]:
+    """Get cached valid pickupable UIDs filtered by synset rules."""
+    global _VALID_PICKUPABLE_CACHE
+    if _VALID_PICKUPABLE_CACHE is None:
+        _VALID_PICKUPABLE_CACHE = get_valid_pickupable_uids(
+            pickupable_synsets_categories_or_uids, split=split
+        )
+    return _VALID_PICKUPABLE_CACHE
 
 
 class PickTaskSampler(BaseMujocoTaskSampler):
@@ -57,6 +148,18 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         # Objects are then filtered by grasp file availability in _get_scene_objects().
         if config.task_sampler_config.pickup_types is None:
             config.task_sampler_config.pickup_types = []
+
+        # Added pickup objects state (pick-from-set mode)
+        self._added_pickup_obj_name: str | None = None
+        self._added_pickup_cache: dict = {}
+        self._added_pickup_names: list[str] = []
+        self._added_pickup_uids: list[str] = []
+        self._current_added_pickup_index: int = 0
+        self._episodes_with_current_added_pickup: int = 0
+        self._added_pickup_multiplier: int = 1
+        self._added_pickup_staging_poses: dict = {}
+        self.added_objects: dict = {}
+        self._valid_candidate_uids: list[str] | None = None
 
     def _remove_candidate_object(self, obj_name: str) -> None:
         """Remove an object from candidate_objects list."""
@@ -84,6 +187,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
         """Use this function to put task specific assets into the scene."""
         self.config.policy_config.policy_cls.add_auxiliary_objects(self.config, spec)
+        if self.config.task_sampler_config.added_pickup_objects is not None:
+            self._add_pickupables_to_scene(spec)
 
     def init_scene(self, env) -> None:
         # initialize randomizers here
@@ -130,6 +235,17 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 perturb = np.zeros_like(qpos)
             robot_view.get_move_group(group_name).joint_pos = qpos + perturb
 
+        # Reset controllers and sync head ctrl with qpos.
+        # mj_resetData zeros all ctrl values. For move groups with controllers, reset() re-syncs
+        # the ctrl targets. For the head (which has actuators but no controller), we must
+        # manually set ctrl = noop_ctrl to prevent the head from snapping to position 0.
+        for robot in env.robots:
+            for controller in robot.controllers.values():
+                controller.reset()
+            if "head" in robot.robot_view.move_group_ids():
+                head_mg = robot.robot_view.get_move_group("head")
+                head_mg.ctrl = head_mg.noop_ctrl
+
         # robot_color = None
         # robot_color = [.941, .322, .612,1.]  # example: red
         # if robot_color:
@@ -144,45 +260,42 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         log.info("Scene setup completed.\n")
 
     def get_workspace_center(self, env: CPUMujocoEnv) -> np.ndarray:
-        """Get workspace center for camera placement.
+        """Workspace center as centroid of task-relevant objects and gripper.
 
-        For move-to-pose tasks, computes the average of:
-        - Pickup object position
-        - Place target position (or goal pose)
-        - Robot gripper position
+        Collects positions for every object returned by
+        :func:`get_task_relevant_objects` that can be found in the environment,
+        plus the robot gripper. Falls back to the base implementation (gripper
+        only) when the pickup object is not yet set.
         """
-        # Need current task config to get pickup object name
         if (
             not hasattr(self.config.task_config, "pickup_obj_name")
             or not self.config.task_config.pickup_obj_name
         ):
-            # Fall back to default implementation
             return super().get_workspace_center(env)
 
         try:
-            data = env.current_data
             om = env.object_managers[env.current_batch_index]
-            pickup_obj = om.get_object_by_name(self.config.task_config.pickup_obj_name)
+            positions: dict[str, np.ndarray] = {}
 
-            # Get place target position
-            if self.config.task_sampler_config.place_target_name is not None:
-                place_target = create_mlspaces_body(
-                    data, self.config.task_sampler_config.place_target_name
-                )
-                place_target_position = place_target.position
-            else:
-                place_target_position = self.config.task_config.pickup_obj_goal_pose[:3]
+            for name in get_task_relevant_objects(self.config.task_config):
+                obj = om.get_object_by_name(name)
+                if obj is not None:
+                    positions[name] = obj.position
 
-            # Get gripper position
+            # For pure pick tasks the goal pose acts as implicit place target
+            if len(positions) == 1 and hasattr(self.config.task_config, "pickup_obj_goal_pose"):
+                goal = self.config.task_config.pickup_obj_goal_pose
+                if goal is not None:
+                    positions["goal_pose"] = np.asarray(goal[:3])
+
             robot_view = env.current_robot.robot_view
             gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
-            ee_pose_rel_to_base = robot_view.get_move_group(gripper_mg_id).leaf_frame_to_robot
-            gripper_world_pose = robot_view.base.pose @ ee_pose_rel_to_base
-            gripper_pos = gripper_world_pose[:3, 3]
+            ee_pose = (
+                robot_view.base.pose @ robot_view.get_move_group(gripper_mg_id).leaf_frame_to_robot
+            )
+            positions["gripper"] = ee_pose[:3, 3]
 
-            # Compute workspace center
-            workspace_center = (pickup_obj.position + place_target_position + gripper_pos) / 3.0
-            return workspace_center
+            return compute_workspace_center(positions)
         except Exception as e:
             log.debug(f"[CAMERA SETUP] Could not compute workspace center: {e}, using default")
             return super().get_workspace_center(env)
@@ -191,41 +304,307 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         """Resolve special visibility object keys.
 
         Handles:
-        - __task_objects__: Current pickup object
+        - __task_objects__: Task-relevant objects via shared utility
         - __gripper__: Robot gripper (via base class)
         """
         if key == "__task_objects__":
-            if (
-                hasattr(self.config.task_config, "pickup_obj_name")
-                and self.config.task_config.pickup_obj_name
-            ):
-                return [self.config.task_config.pickup_obj_name]
-            return []
+            return get_task_relevant_objects(self.config.task_config)
 
-        # Delegate to base class for other keys (e.g., __gripper__)
         return super().resolve_visibility_object(env, key)
 
-    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
-        """Sample a pick-and-place task configuration and create the task."""
-        # Set current batch index to 0 (most common case for single-batch environments)
-        # TODO(rose) at some point: handle multi-batch environments properly
-        assert env.current_batch_index == 0
-        assert self.candidate_objects is not None and len(self.candidate_objects) > 0
+    # ── Added pickup objects (pick-from-set) ──────────────────────────────
+
+    def _add_pickupables_to_scene(self, spec: MjSpec) -> None:
+        """Add external pickupable objects to the scene for pick-from-set mode."""
+        task_sampler_config = self.config.task_sampler_config
+
+        max_size = np.array([0.25, 0.25, -1])
+
+        def valid_pickupable(anno):
+            xyz = [anno["boundingBox"][x] for x in "xyz"]
+            return (
+                anno["primaryProperty"] == "CanPickup"
+                and max_size[0] >= xyz[0]
+                and max_size[1] >= xyz[1]
+            ) or (anno["assetId"] in task_sampler_config.added_pickup_objects)
+
+        cache_key = "valid_pickupables"
+        added_objects = list(task_sampler_config.added_pickup_objects)
+        num_pickupables_target = task_sampler_config.num_added_pickups
+
+        # if len(added_objects) > 1000:
+        # Random pre-selection before metadata load; skip CLIP for large lists
+        # HARD ASSUMPTION: inputs are UIDs. Need to santize this better.
+        num_pre_select = min(num_pickupables_target * 3, len(added_objects))
+        pre_selected = list(np.random.choice(added_objects, size=num_pre_select, replace=False))
+        all_valid = {}
+        for uid in pre_selected:
+            anno = ObjectMeta.annotation(uid)
+            if anno is not None:
+                all_valid[uid] = anno
+        valid_uids = sorted([uid for uid, anno in all_valid.items() if valid_pickupable(anno)])
+        self._added_pickup_cache[cache_key] = {uid: all_valid[uid] for uid in valid_uids}
+        # elif cache_key not in self._added_pickup_cache:
+        #     all_valid = _get_cached_valid_pickupables(task_sampler_config.added_pickup_objects, split=self.config.data_split)
+        #     valid_uids = sorted([uid for uid, anno in all_valid.items() if valid_pickupable(anno)])
+        #     valid_uids = ObjectManager.prefilter_with_clip(
+        #         list(task_sampler_config.added_pickup_objects), valid_uids
+        #     )
+        #     valid_uids = sorted(
+        #         set(valid_uids)
+        #         | (
+        #             set(task_sampler_config.added_pickup_objects)
+        #             & set(ObjectMeta.annotation().keys())
+        #         )
+        #     )
+        #     self._added_pickup_cache[cache_key] = {uid: all_valid[uid] for uid in valid_uids}
+        valid_uids = sorted(self._added_pickup_cache[cache_key].keys())
+
+        if len(valid_uids) == 0:
+            raise ValueError("No valid pickupable assets found")
+
+        num_pickupables = min(task_sampler_config.num_added_pickups, len(valid_uids))
+        selected_uids = list(np.random.choice(valid_uids, size=num_pickupables, replace=False))
+
+        multiplier = self._added_pickup_multiplier
+
+        self._added_pickup_names = []
+        self._added_pickup_uids = []
+        self._current_added_pickup_index = 0
+        name_to_meta = {}
+
+        staging_size = np.array([num_pickupables, multiplier, 1]) / 2
+        staging_center = np.array([5, 5, 25])
+        staging_start = staging_center + np.array(
+            [0.5 - staging_size[0], 0.5 - staging_size[1], staging_size[2]]
+        )
+
+        mocap_body = spec.worldbody.add_body(
+            name="pickupable_staging_floor",
+            mocap=True,
+            pos=staging_center,
+        )
+        mocap_body.add_geom(
+            type=mujoco.mjtGeom.mjGEOM_BOX,
+            size=staging_size,
+            contype=8,
+            conaffinity=15,
+            group=4,
+        )
+
+        self._added_pickup_staging_poses = {}
+
+        for i, uid in enumerate(selected_uids):
+            pickupable_xml = install_uid(uid)
+            for j in range(multiplier):
+                pickupable_spec = MjSpec.from_file(str(pickupable_xml))
+                if len(pickupable_spec.worldbody.bodies) != 1:
+                    log.warning(
+                        f"{pickupable_xml} has {len(pickupable_spec.worldbody.bodies)} bodies, expected 1."
+                    )
+                pickupable_obj: mujoco.MjsBody = pickupable_spec.worldbody.bodies[0]
+
+                if not pickupable_obj.first_joint():
+                    pickupable_obj.add_joint(
+                        name=f"{uid}_copy{j}_jntfree",
+                        type=mujoco.mjtJoint.mjJNT_FREE,
+                        damping=OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING,
+                    )
+
+                z_shift = self._added_pickup_cache[cache_key][uid]["boundingBox"]["z"] / 2 + 0.01
+                position = staging_start + np.array([i, j, z_shift])
+                quat = R.from_euler("x", 90, degrees=True).as_quat(scalar_first=True)
+
+                attach_frame = spec.worldbody.add_frame(pos=position, quat=quat)
+                namespace = f"{task_sampler_config.added_pickup_namespace}{i}_{j}/"
+                original_body_name = pickupable_obj.name
+                attach_frame.attach_body(pickupable_obj, namespace, "")
+
+                full_name = namespace + original_body_name
+                self._added_pickup_names.append(full_name)
+                self._added_pickup_uids.append(uid)
+                self._added_pickup_staging_poses[full_name] = np.concatenate((position, quat))
+
+                xml_path_rel = pickupable_xml.relative_to(ASSETS_DIR)
+                self.added_objects[full_name] = xml_path_rel
+
+                uid_anno = self._added_pickup_cache[cache_key][uid]
+                name_to_meta[full_name] = {
+                    "asset_id": uid,
+                    "category": uid_anno["category"],
+                    "object_enum": "temp_object",
+                    "is_static": False,
+                    "boundingBox": uid_anno.get("boundingBox", {}),
+                }
+
+        self._added_pickup_obj_name = self._added_pickup_names[0]
+        log.info(
+            f"Added {num_pickupables} (x {multiplier}) pickupables to scene: "
+            f"{self._added_pickup_uids}"
+        )
+
+        self._metadata_adder.update(name_to_meta)
+
+    def _advance_to_next_added_pickupable(self, env: CPUMujocoEnv) -> bool:
+        """Advance to the next added pickupable (loops around)."""
+        multiplier = self._added_pickup_multiplier
+
+        if len(self._added_pickup_names) == 0:
+            log.info("No added pickupables available to try")
+            return False
+
+        self._current_added_pickup_index = (self._current_added_pickup_index + multiplier) % len(
+            self._added_pickup_names
+        )
+        self._added_pickup_obj_name = self._added_pickup_names[self._current_added_pickup_index]
+        self._episodes_with_current_added_pickup = 1
+        log.info(
+            f"Advanced to pickupable "
+            f"{self._current_added_pickup_index // multiplier + 1}/"
+            f"{len(self._added_pickup_names) // multiplier}: "
+            f"{self._added_pickup_uids[self._current_added_pickup_index]}"
+        )
+        return True
+
+    @property
+    def current_added_pickup_uid(self) -> str | None:
+        """Get the UID of the currently active added pickupable."""
+        if self._added_pickup_uids and self._current_added_pickup_index < len(
+            self._added_pickup_uids
+        ):
+            return self._added_pickup_uids[self._current_added_pickup_index]
+        return None
+
+    @property
+    def active_added_pickup_names(self) -> list[str]:
+        multiplier = self._added_pickup_multiplier
+        return self._added_pickup_names[
+            self._current_added_pickup_index : self._current_added_pickup_index + multiplier
+        ]
+
+    def _prepare_added_pickupable(
+        self,
+        env: CPUMujocoEnv,
+        reference_obj_name: str,
+        reference_obj_pos: np.ndarray,
+        supporting_geom_id: int,
+    ) -> bool:
+        """Position the added pickupable near the reference scene object."""
+        task_sampler_config = self.config.task_sampler_config
+        om = env.object_managers[env.current_batch_index]
+
+        for pickupable_name in self.active_added_pickup_names:
+            pickupable_id = om.get_object_body_id(pickupable_name)
+
+            try:
+                place_object_near(
+                    data=env.current_data,
+                    object_id=pickupable_id,
+                    placement_point=reference_obj_pos,
+                    min_dist=task_sampler_config.min_reference_to_added_pickup_dist,
+                    max_dist=task_sampler_config.max_reference_to_added_pickup_dist,
+                    max_tries=task_sampler_config.max_added_pickup_placement_attempts,
+                    max_dist_to_reference=task_sampler_config.max_robot_to_added_pickup_dist,
+                    supporting_geom_id=supporting_geom_id,
+                    z_eps=0.003,
+                )
+            except ObjectPlacementError:
+                log.info(f"Failed to place pickupable {pickupable_name} near {reference_obj_name}")
+                return False
+
+            r_obj = om.get_object(pickupable_name)
+            r_base_pos = body_base_pos(env.current_data, r_obj.body_id)
+
+            if abs(r_base_pos[2] - reference_obj_pos[2]) > MAX_BOTTOM_Z_DIFFERENCE:
+                raise ValueError(
+                    f"Failed to place pickupable {pickupable_name} at same height as "
+                    f"reference object {reference_obj_name}"
+                )
+
+        return True
+
+    def _on_candidate_selected(
+        self,
+        env: CPUMujocoEnv,
+        reference_obj_name: str,
+        reference_obj_id: int,
+        supporting_geom_id: int,
+    ) -> bool:
+        """Hook called after a valid candidate scene object is found.
+
+        Override in subclasses to inject task-specific preparation (e.g.,
+        positioning a place target).  The base implementation handles from-set
+        mode (positioning an added pickupable near the reference object).
+
+        Returns True to proceed with robot placement, False to skip this
+        candidate.  Raise ``ValueError`` to skip *and* permanently remove
+        the candidate from the list.
+        """
+        from_set_mode = self.config.task_sampler_config.added_pickup_objects is not None
+        if not from_set_mode:
+            return True
 
         om = env.object_managers[env.current_batch_index]
+        reference_obj_pos = body_base_pos(env.current_data, reference_obj_id)
+
+        if not self._prepare_added_pickupable(
+            env, reference_obj_name, reference_obj_pos, supporting_geom_id
+        ):
+            log.info(
+                f"No valid placement for {self._added_pickup_obj_name} near {reference_obj_name}"
+            )
+            return False
+
+        self.config.task_config.pickup_obj_name = self._added_pickup_obj_name
+        pickupable_obj = om.get_object_by_name(self._added_pickup_obj_name)
+        self.config.task_config.object_poses = {}
+        self.config.task_config.object_poses[self._added_pickup_obj_name] = pose_mat_to_7d(
+            pickupable_obj.pose
+        ).tolist()
+        return True
+
+    def _select_pickup_object(self, env: CPUMujocoEnv) -> int:
+        """Run the pickup object selection retry loop.
+
+        Iterates candidate scene objects and for each one:
+        1. Finds a supporting surface.
+        2. Calls :meth:`_on_candidate_selected` (hook for subclass logic).
+        3. Sets up initial cameras, places the robot, checks grasp feasibility.
+        4. Sets up final cameras.
+
+        On success, ``self.config.task_config.pickup_obj_name`` holds the
+        selected pickup object (which may differ from the scene candidate
+        when from-set mode is active or a subclass swaps it).
+
+        Returns:
+            The ``supporting_geom_id`` of the surface the reference object
+            sits on.
+
+        Raises:
+            HouseInvalidForTask: If no valid candidate is found.
+        """
+        om = env.object_managers[env.current_batch_index]
+
+        from_set_mode = self.config.task_sampler_config.added_pickup_objects is not None
+        if from_set_mode:
+            self._episodes_with_current_added_pickup += 1
+            if (
+                self._episodes_with_current_added_pickup
+                > self.config.task_sampler_config.episodes_per_added_pickup
+            ):
+                self._advance_to_next_added_pickupable(env)
 
         keep_task_cfg = self.config.task_config.pickup_obj_name is not None
 
-        sample_success = False
         max_attempts = len(self.candidate_objects)
         attempts = 0
-        while not sample_success and len(self.candidate_objects) > 0 and attempts < max_attempts:
+        while len(self.candidate_objects) > 0 and attempts < max_attempts:
             attempts += 1
 
             if not keep_task_cfg:
                 self.config.task_config.pickup_obj_name = None
 
-            # Sample pickup object
+            # Select candidate scene object
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_select_object")
 
@@ -233,63 +612,68 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 object_index = self._task_counter % len(self.candidate_objects)
                 self.config.task_config.pickup_obj_name = self.candidate_objects[object_index].name
                 log.info(
-                    f"Attempting object {self.config.task_config.pickup_obj_name} {object_index}/{len(self.candidate_objects)}"
+                    f"Attempting object {self.config.task_config.pickup_obj_name} "
+                    f"{object_index}/{len(self.candidate_objects)}"
                 )
             else:
                 log.info(
-                    f"Attempting object {self.config.task_config.pickup_obj_name} of {len(self.candidate_objects)}"
+                    f"Attempting object {self.config.task_config.pickup_obj_name} "
+                    f"of {len(self.candidate_objects)}"
                 )
 
-            self._task_counter += 1  # update counter, so we don't re-try same object
+            self._task_counter += 1
 
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_select_object")
 
-            # Setup cameras initially so they are available for visibility checks during placement
-            # We will run setup_cameras again after placement to correct for final robot position
+            reference_obj_name = self.config.task_config.pickup_obj_name
+            reference_obj_id = om.get_object_body_id(reference_obj_name)
+
+            supporting_geom_id = get_supporting_geom(env.current_data, reference_obj_id)
+            if supporting_geom_id is None or supporting_geom_id < 1:
+                log.info(f"Failed to get a valid supporting geom_id for {reference_obj_name}")
+                self._remove_candidate_object(reference_obj_name)
+                continue
+
+            # Hook: subclass-specific preparation (place target, from-set swap, etc.)
+            try:
+                if not self._on_candidate_selected(
+                    env, reference_obj_name, reference_obj_id, supporting_geom_id
+                ):
+                    continue
+            except ValueError:
+                log.exception(f"Removing {reference_obj_name}.")
+                self._remove_candidate_object(reference_obj_name)
+                continue
+
+            pickup_obj_name = self.config.task_config.pickup_obj_name
+
+            # Initial camera setup (for visibility checks during placement)
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_cameras_initial")
-
             self.setup_cameras(env, deterministic_only=True)
-
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_cameras_initial")
 
-            # Assuming a bench context is meaningful for the task type,
-            # so we need to find the supporting bench for the context
-            pickup_obj_name = self.config.task_config.pickup_obj_name
-            pickup_obj_id = om.get_object_body_id(pickup_obj_name)
-
-            supporting_geom_id = get_supporting_geom(env.current_data, pickup_obj_id)
-            if supporting_geom_id is None or supporting_geom_id < 1:
-                log.info(f"Failed to get a valid supporting geom_id for {pickup_obj_name}")
-                # Remove this object - no supporting surface won't change on retry
-                self._remove_candidate_object(pickup_obj_name)
-                continue
-
-            #  place robot accordingly
+            # Place robot
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_place_robot")
-
             try:
                 self._sample_and_place_robot(env)
             except RobotPlacementError as e:
                 log.info(f"Robot placement failed for {pickup_obj_name}: {e}")
-                # Report failure for this asset (may lead to dynamic blacklisting)
-                asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
-                if asset_uid:
-                    self.report_asset_failure(asset_uid, f"robot placement failed: {e}")
-                # Remove this object from candidates - don't retry failed placements
-                self._remove_candidate_object(pickup_obj_name)
+                if reference_obj_name == pickup_obj_name:
+                    asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
+                    if asset_uid:
+                        self.report_asset_failure(asset_uid, f"robot placement failed: {e}")
+                self._remove_candidate_object(reference_obj_name)
                 continue
-
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_place_robot")
 
-            # Ensure robot is in final position before camera setup
             mujoco.mj_forward(env.current_model, env.current_data)
 
-            # Check grasp feasibility before proceeding
+            # Check grasp feasibility
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_check_grasps")
 
@@ -314,67 +698,107 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                                 self._datagen_profiler.end("sample_check_grasps")
                             self.report_grasp_failure(pickup_obj_name)
                             continue
+                except KeyError:
+                    # Grasp collision bodies not in scene (e.g. learned policy instead of planner)
+                    log.debug(
+                        f"Skipping grasp collision check for {pickup_obj_name} — no collision bodies in scene"
+                    )
                 except ValueError:
                     log.info(f"No grasps found for {pickup_obj_name} (uid={asset_uid})")
                     if self._datagen_profiler is not None:
                         self._datagen_profiler.end("sample_check_grasps")
                     self.report_grasp_failure(pickup_obj_name)
+                    if from_set_mode:
+                        self._advance_to_next_added_pickupable(env)
                     continue
 
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_check_grasps")
 
-            # Setup cameras after pickup object and robot placement
-            # This allows cameras to use task-specific info (pickup object, workspace center)
+            # Final camera setup
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_cameras_final")
-
             self.setup_cameras(env)
-
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_cameras_final")
 
-            # Note: generating referral expressions for sampling
-            if self._datagen_profiler is not None:
-                self._datagen_profiler.start("generate_context_expressions")
+            if from_set_mode:
+                self.config.task_config.added_objects = {
+                    self._added_pickup_obj_name: self.added_objects[self._added_pickup_obj_name]
+                }
 
-            bench_geom_body_id = env.mj_model.geom_bodyid[supporting_geom_id]
-            context_objects = om.get_context_objects(
-                pickup_obj_name, Context.BENCH, bench_geom_ids=[bench_geom_body_id]
-            )
+            return supporting_geom_id
 
-            context_names = {obj.name for obj in context_objects}
-            if pickup_obj_name not in context_names:
-                context_objects.append(om.get_object(pickup_obj_name))
+        raise HouseInvalidForTask(
+            f"Unable to sample a valid task after {attempts} attempts, "
+            f"{len(self.candidate_objects)} candidates remaining"
+        )
 
-            try:
-                expression_priority = om.referral_expression_priority(
-                    pickup_obj_name, context_objects
+    def _generate_referral_expressions(
+        self, env: CPUMujocoEnv, pickup_obj_name: str, context_objects: list
+    ) -> tuple[list, list]:
+        """Generate referral expressions for the pickup object.
+
+        Args:
+            env: The environment.
+            pickup_obj_name: Name of the object to generate expressions for.
+            context_objects: Objects to consider for disambiguation. The caller
+                is responsible for including all relevant objects (pickup object
+                itself, place targets, bench neighbours, etc.).
+
+        Returns:
+            (expression_priority, filtered_expression_priority)
+        """
+        om = env.object_managers[env.current_batch_index]
+
+        if self._datagen_profiler is not None:
+            self._datagen_profiler.start("generate_context_expressions")
+
+        try:
+            expression_priority = om.referral_expression_priority(pickup_obj_name, context_objects)
+            filtered_expression_priority = om.thresholded_expression_priority(expression_priority)
+            if len(filtered_expression_priority) == 0:
+                log.info(
+                    f"No filtered expression priorities for {pickup_obj_name}, "
+                    f"using unfiltered ({len(expression_priority)} expressions)"
                 )
-                filtered_expression_priority = om.thresholded_expression_priority(
-                    expression_priority
-                )
-            except NameError:
-                pass
+                filtered_expression_priority = expression_priority
+        except NameError:
+            expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
+            filtered_expression_priority = expression_priority
 
-            if self._datagen_profiler is not None:
-                self._datagen_profiler.end("generate_context_expressions")
+        if len(filtered_expression_priority) == 0:
+            log.info(f"No expression priorities for {pickup_obj_name}, using fallback")
+            expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
+            filtered_expression_priority = expression_priority
 
-            # if len(filtered_expression_priority) == 0:
-            #     log.info(
-            #         f"Skipped {pickup_obj_name} with no filtered expression priorities out of {expression_priority}"
-            #     )
-            #     # Remove this object - expression priority won't change on retry
-            #     self._remove_candidate_object(pickup_obj_name)
-            #     continue
+        if self._datagen_profiler is not None:
+            self._datagen_profiler.end("generate_context_expressions")
 
-            sample_success = True
-            break
+        return expression_priority, filtered_expression_priority
 
-        if not sample_success:
-            raise HouseInvalidForTask(
-                f"Unable to sample a valid task after {attempts} attempts, {len(self.candidate_objects)} candidates remaining"
-            )
+    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
+        """Sample a pick task configuration and create the task."""
+        assert env.current_batch_index == 0
+        assert self.candidate_objects is not None and len(self.candidate_objects) > 0
+
+        supporting_geom_id = self._select_pickup_object(env)
+        pickup_obj_name = self.config.task_config.pickup_obj_name
+
+        om = env.object_managers[env.current_batch_index]
+
+        # Build context and generate referral expressions
+        bench_geom_body_id = env.mj_model.geom_bodyid[supporting_geom_id]
+        context_objects = om.get_context_objects(
+            pickup_obj_name, Context.BENCH, bench_geom_ids=[bench_geom_body_id]
+        )
+        context_names = {obj.name for obj in context_objects}
+        if pickup_obj_name not in context_names:
+            context_objects.append(om.get_object(pickup_obj_name))
+
+        expression_priority, filtered_expression_priority = self._generate_referral_expressions(
+            env, pickup_obj_name, context_objects
+        )
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("sample_context_expressions")
@@ -450,6 +874,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         candidate_objects = []
         blacklisted_count = 0
         for pickup_obj in candidates:
+            # Rule for added objects
+            parts = pickup_obj.name.split("/")
+            if len(parts) == 3 and len(parts[1].split("_")) == 2:
+                log.info(f"Skipping possibly added object {pickup_obj.name}")
+                continue
+
             # Check if grasp files exist for this object
             asset_uid = None
 
@@ -554,6 +984,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             check_camera_visibility=self.config.task_sampler_config.check_robot_placement_visibility,
             visibility_resolver=self.get_visibility_resolver(env),
             excluded_positions=self.used_robot_positions[pickup_obj.name],
+            save_visibility_frames_dir=self.config.output_dir,
         )
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("robot_place_near")

@@ -4,7 +4,8 @@ from collections.abc import Collection
 from pathlib import Path
 from typing import Any
 
-from molmo_spaces.resources.manager import SourceInfo
+from molmospaces_resources import SourceInfo
+
 from molmo_spaces.molmo_spaces_constants import get_resource_manager
 from molmo_spaces.utils.lazy_loading_utils import find_object_paths, install_scene_from_source_index
 from molmo_spaces.utils.object_metadata import ObjectMeta
@@ -38,7 +39,7 @@ def resolve_license(data_type, data_source, identifier):
 
 
 def validate_identifier(data_type, source, identifier):
-    archives = get_resource_manager().tries(source, data_type=data_type).keys()
+    archives = get_resource_manager().tries(data_type, source).keys()
     for archive in archives:
         if identifier in archive:
             break
@@ -195,7 +196,7 @@ def scene_path_resolve(
         raise NotImplementedError(f"Missing implementation for {source}")
 
     archive = list(source_to_archives[source])[0]
-    scene_info = get_resource_manager().scene_root_and_archive_paths(source)
+    scene_info = get_resource_manager().source_info("scenes", source, recursive=False)
     modalities = scene_info["archive_to_relative_paths"][archive]
     return fn(source, idx, scene_info, modalities)
 
@@ -219,9 +220,7 @@ def procthor_resolver(
 
 def scene_includes(scene_path):
     def identifier_and_asset_part(rel_asset):
-        archives = get_resource_manager().archives_for_paths(
-            source, [rel_asset], data_type="objects"
-        )
+        archives = get_resource_manager().find_archives("objects", source, [rel_asset])
 
         assert len(archives) == 1, (
             f"Expected exactly one archive for {rel_asset}, got {len(archives)}"
@@ -273,7 +272,7 @@ def resolve_scene_license(data_source, identifier):
         includes = scene_includes(scene_path)
 
     else:
-        archives = get_resource_manager().tries(data_source, "scenes").keys()
+        archives = get_resource_manager().tries("scenes", data_source).keys()
         archive = [archive for archive in archives if identifier in archive]
 
         if len(archive) == 0:
@@ -283,7 +282,7 @@ def resolve_scene_license(data_source, identifier):
             f"Error: multiple archives for `scenes` {data_source} {identifier}"
         )
 
-        get_resource_manager().install_scenes({data_source: archive})
+        get_resource_manager().install_packages_bulk("scenes", {data_source: archive})
 
         includes = []
 
@@ -306,7 +305,7 @@ def resolve_scene_license(data_source, identifier):
 
 
 def grasp_targets(data_source, identifier):
-    info = get_resource_manager().grasp_root_and_archive_paths_recursive(data_source)
+    info = get_resource_manager().source_info("grasps", data_source, recursive=True)
     archives = info["archive_to_relative_paths"].keys()
     archive = [archive for archive in archives if identifier in archive]
 
@@ -315,7 +314,7 @@ def grasp_targets(data_source, identifier):
 
     assert len(archive) == 1, f"Error: multiple archives for `grasps` {data_source} {identifier}"
 
-    get_resource_manager().install_grasps({data_source: archive})
+    get_resource_manager().install_packages_bulk("grasps", {data_source: archive})
 
     targets = [
         str(path).split("/")[-1].split("_grasps_")[0]

@@ -11,7 +11,6 @@ def gather_joint_info(model, data, joint_name_or_index):
     body_joint_qpos = model.joint(joint_name_or_index).qposadr[0]
     joint_range = model.joint(joint_name_or_index).range
     max_range = joint_range[1] if joint_range[1] != 0 else joint_range[0]
-    print(f"Max range: {max_range}")
 
     joint_info = {
         "joint_axis": model.joint(joint_name_or_index).axis,

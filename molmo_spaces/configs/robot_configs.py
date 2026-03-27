@@ -16,11 +16,14 @@ from mujoco import MjData
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.robots.abstract import Robot
+from molmo_spaces.robots.bimanual_yam import BimanualYamRobot
 from molmo_spaces.robots.floating_robotiq import FloatingRobotiqRobot
 from molmo_spaces.robots.floating_rum import FloatingRUMRobot
 from molmo_spaces.robots.franka import FrankaRobot
+from molmo_spaces.robots.i2rt_yam import I2rtYamRobot
 from molmo_spaces.robots.rby1 import RBY1
 from molmo_spaces.robots.robot_views.abstract import RobotViewFactory
+from molmo_spaces.robots.robot_views.bimanual_yam_view import BimanualYamRobotView
 from molmo_spaces.robots.robot_views.franka_cap_view import (
     FrankaCAPRobotView,
 )
@@ -28,6 +31,7 @@ from molmo_spaces.robots.robot_views.franka_droid_view import (
     FloatingRobotiq2f85RobotView,
     FrankaDroidRobotView,
 )
+from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
 from molmo_spaces.robots.robot_views.rum_gripper_view import FloatingRUMRobotView
 
@@ -139,6 +143,8 @@ class FrankaRobotConfig(BaseRobotConfig):
         "gripper": "joint_position",
     }
     gravcomp: bool = True
+    # texture randomization parameters, ignored if texture randomization is disabled
+    perturb_texture_probability: float = 0.7
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
@@ -184,6 +190,45 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
 
 
+# class FrankaFloatingRobotConfig(BaseRobotConfig):
+#     """Configuration for Franka FR3 robot."""
+
+#     robot_cls: type[FrankaRobot] | None = FrankaRobot
+#     robot_factory: Callable[[MjData, Any], Robot] | None = FrankaRobot
+#     robot_namespace: str = "robot_0/"
+#     robot_view_factory: RobotViewFactory | None = FrankaDroidRobotView
+#     default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
+#     name: str = "franka_droid"
+#     robot_xml_path: Path = Path("model.xml")
+#     base_size: list[float] | None = [0.5, 0.5, 0.58]
+#     init_qpos: dict[str, list[float]] = {
+#         "base": np.array([0.0, 0.0, 0.0]),  # x, y, theta
+#         "arm": [0, -0.7853, 0, -2.35619, 0, 1.57079, 0.0],
+#         "gripper": [0.00296, 0.00296],
+#     }
+#     init_qpos_noise_range: dict[str, list[float]] | None = {
+#         # selected to allow for more displacement in later joints and keep TCP displacement <=10cm
+#         # joint_weights = [1, ..., 7] (allow more movement in later joints)
+#         # J_p is 3x7 Jacobian of TCP position wrt arm joints
+#         # dq = joint_weights * 0.1 / ||J_p @ joint_weights||
+#         "arm": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175],
+#         "base": np.array([0.0, 0.0, 0.0]),
+#     }
+#     command_mode: dict[str, str | None] = {
+#         "arm": "joint_position",  # e.g., "joint_position", "joint_velocity", "ee_position", "ee_velocity"
+#         "gripper": "joint_position",
+#         "base": "holo_joint_planar_position",  # e.g., "planar_position", "planar_velocity", "wheel_velocity"
+#     }
+#     gravcomp: bool = True
+
+#     def model_post_init(self, __context):
+#         super().model_post_init(__context)
+#         if "gripper" in self.command_mode:
+#             assert self.command_mode["gripper"] == "joint_position"
+#         if "arm" in self.command_mode:
+#             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
+
+
 class RBY1Config(BaseRobotConfig):
     """Configuration for RBY1 robot."""
 
@@ -194,8 +239,8 @@ class RBY1Config(BaseRobotConfig):
     init_qpos: dict[str, np.ndarray] = {
         "base": np.array([0.0, 0.0, 0.0]),  # x, y, theta
         "head": np.array(
-            [0.0, 0.4]
-        ),  # (pan, tilt) - 0 pan = forward, ~0.4 rad tilt = looking down ~23 degrees
+            [0.0, 0.6]
+        ),  # (pan, tilt) - 0 pan = forward, ~0.4 rad tilt = looking down ~34 degrees
         "left_arm": np.array([0.5, 0.0, 0.0, -2.3, 0.0, -0.5, 0.0]),
         "left_gripper": np.array([-0.05]),  # Open position - coupling handled in RBY1GripperGroup
         "right_arm": np.array([0.5, 0.0, 0.0, -2.3, 0.0, -0.5, 0.0]),
@@ -207,10 +252,14 @@ class RBY1Config(BaseRobotConfig):
         "base": np.array([0.0, 0.0, 0.0]),
         # "head": np.array([0.15, 0.1]),  # (pan, tilt) noise in radians (~8.5 deg, ~5.7 deg)
         "head": np.array([0.2, 0.2]),  # (pan, tilt) noise in radians (~11.4 deg, ~11.4 deg)
-        "left_arm": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-        "left_gripper": np.array([0.0]),
-        "right_arm": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-        "right_gripper": np.array([0.0]),
+        "left_arm": np.array(
+            [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175]
+        ),  # Graduated noise: more distal = more variation
+        "left_gripper": np.array([0.01]),
+        "right_arm": np.array(
+            [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175]
+        ),  # Graduated noise: more distal = more variation
+        "right_gripper": np.array([0.01]),
         "torso": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     }
 
@@ -238,6 +287,22 @@ class RBY1MConfig(RBY1Config):
     name: str = "rby1m"
     robot_xml_path: Path = Path("rby1_v1.2_site_control.xml")
     # NOTE: No wheel control for now so we can re-use this config for both the robot types
+
+
+class RBY1MOpenCloseConfig(RBY1MConfig):
+    """RBY1M config for open/close tasks.
+
+    Uses single-scalar torso height control (torso_1 = torso_3 = h, torso_2 = -2*h)
+    instead of commanding all 6 torso joints independently.
+    """
+
+    command_mode: dict[str, str | None] = {
+        "arm": "joint_rel_position",
+        "gripper": "joint_position",
+        "base": "holo_joint_rel_planar_position",
+        "head": None,
+        "torso": "height",
+    }
 
 
 class FloatingRUMRobotConfig(BaseRobotConfig):
@@ -271,3 +336,77 @@ class FloatingRobotiq2f85RobotConfig(BaseRobotConfig):
         "gripper": [0.00296, 0.00296],
     }
     init_qpos_noise_range: dict[str, list] = {}
+
+
+class I2rtYamRobotConfig(BaseRobotConfig):
+    """Configuration for i2rt YAM 6-DOF robot."""
+
+    robot_cls: type[I2rtYamRobot] | None = I2rtYamRobot
+    robot_factory: Callable[[MjData, Any], Robot] | None = I2rtYamRobot
+    robot_view_factory: RobotViewFactory | None = I2rtYamRobotView
+    robot_namespace: str = "robot_0/"
+    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
+    name: str = "i2rt_yam"
+    robot_xml_path: Path = Path("yam.xml")
+    # Base platform size [width, depth, height] - raises robot above ground
+    base_size: list[float] | None = [0.3, 0.3, 0.7]
+    # Initial joint positions - modified from XML keyframe "home" to avoid wrist singularity
+    # Original: "0 1.047 1.047 0 0 0" but joints 4,5,6 at 0 causes wrist singularity
+    # Adding small offsets to wrist joints (4,5) to move away from singular configuration
+    init_qpos: dict[str, list[float]] = {
+        "arm": [0.0, 1.047, 1.047, 0.1, -0.1, 0.0],  # Offset joints 4,5 to avoid singularity
+        "gripper": [0.0, 0.0],  # left_finger, right_finger (coupled)
+    }
+    init_qpos_noise_range: dict[str, list[float]] | None = None
+    command_mode: dict[str, str] = {
+        "arm": "joint_position",
+        "gripper": "joint_position",
+    }
+    gravcomp: bool = True
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        if "gripper" in self.command_mode:
+            assert self.command_mode["gripper"] == "joint_position"
+        if "arm" in self.command_mode:
+            assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
+
+
+class BimanualYamRobotConfig(BaseRobotConfig):
+    """Configuration for bimanual YAM robot (two 6-DOF arms with parallel grippers).
+
+    The bimanual YAM consists of two YAM arms positioned 44cm apart,
+    both facing forward.
+    """
+
+    robot_cls: type[BimanualYamRobot] | None = BimanualYamRobot
+    robot_factory: Callable[[MjData, Any], Robot] | None = BimanualYamRobot
+    robot_view_factory: RobotViewFactory | None = BimanualYamRobotView
+    robot_namespace: str = "robot_0/"
+    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
+    name: str = "i2rt_yam"  # Use same directory as single-arm YAM
+    robot_xml_path: Path = Path("bimanual_yam.xml")
+    # Base platform size [x, y, z] - raises robot above ground
+    # Wider in Y to accommodate both arms (44cm apart along Y axis)
+    base_size: list[float] | None = [0.3, 0.8, 0.7]
+    # Initial joint positions for both arms
+    # These initializations are taken from observation values that I saw in the dataset
+    init_qpos: dict[str, list[float]] = {
+        "left_arm": [0.0624, 0.0109, 0.1707, -0.5938, 0.411, 0.3401],
+        "right_arm": [0.0006, 0.0147, 0.1669, -0.6407, 0.0746, 0.1516],
+        "left_gripper": [0.03914, 0.0],
+        "right_gripper": [0.04068, 0.0],
+    }
+    init_qpos_noise_range: dict[str, list[float]] | None = None
+    command_mode: dict[str, str] = {
+        "arm": "joint_position",
+        "gripper": "joint_position",
+    }
+    gravcomp: bool = True
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        if "gripper" in self.command_mode:
+            assert self.command_mode["gripper"] == "joint_position"
+        if "arm" in self.command_mode:
+            assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]

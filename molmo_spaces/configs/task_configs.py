@@ -24,7 +24,7 @@ class BaseMujocoTaskConfig(Config):
     # dict of object names to xml locations
     added_objects: dict[str, Path] = {}
 
-    # Object positions positions of obejcts (for internal use by eval_task_sampler)
+    # Object positions (for internal use by eval_task_sampler)
     # dict of object names to world poses
     object_poses: dict[str, list[float]] | None = None
 
@@ -80,19 +80,28 @@ class PickAndPlaceTaskConfig(PickTaskConfig):
     max_place_receptacle_rot_displacement: float = np.radians(
         45
     )  # maximum rotation the receptacle can be rotated
+    carry_forward_rel_pos_threshold: float = 0.005  # meters
+    carry_forward_rel_rot_threshold: float = np.radians(10)  # radians
 
 
 class PickAndPlaceNextToTaskConfig(PickAndPlaceTaskConfig):
     max_place_receptacle_pos_displacement: float = (
-        0.15  # maximum distance the receptacle can be moved
+        0.05  # maximum distance the receptacle can be moved
     )
-    max_place_receptacle_rot_displacement: float = np.radians(90)
+    max_place_receptacle_rot_displacement: float = np.radians(45)
+    # actually task success
+    min_surface_to_surface_gap: float = 0
+    max_surface_to_surface_gap: float = 0.05
 
 
 class PickAndPlaceColorTaskConfig(PickAndPlaceTaskConfig):
-    object_colors: list | None = []  # color of the [target_receptacle, other_receptacle]
-    other_receptacle_names: list[str] | None = []
-    other_receptacle_start_poses: dict[str, list[float]] | None = {}
+    object_colors: dict[str, list[float]] | None = None  # object name -> rgba
+    other_receptacle_names: list[str] | None = None
+    other_receptacle_start_poses: dict[str, list[float]] | None = None
+
+
+class PackingTaskConfig(PickAndPlaceTaskConfig):
+    pass
 
 
 class OpeningTaskConfig(PickTaskConfig):
@@ -185,6 +194,7 @@ AllTaskConfigs: TypeAlias = (
     | PickAndPlaceTaskConfig
     | PickAndPlaceColorTaskConfig
     | PickAndPlaceNextToTaskConfig
+    | PackingTaskConfig
     | OpeningTaskConfig
     | DoorOpeningTaskConfig
     | NavToObjTaskConfig

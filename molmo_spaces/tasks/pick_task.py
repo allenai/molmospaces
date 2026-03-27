@@ -21,6 +21,16 @@ class PickTask(BaseMujocoTask):
         pickup_obj_name = self.config.task_config.referral_expressions["pickup_obj_name"]
         return f"Pick up the {pickup_obj_name}"
 
+    def get_task_objects(self, batch_index: int = 0) -> dict[str, str]:
+        """Return task objects for pick task."""
+        task_objects = super().get_task_objects(batch_index)
+        task_config = self.config.task_config
+
+        self.deduplicate_task_objects_name(
+            task_config, "pickup_obj_name", task_objects, "pickup_obj"
+        )
+        return task_objects
+
     def _create_sensor_suite_from_config(self, config: MlSpacesExpConfig) -> SensorSuite:
         """Create a sensor suite from configuration using the centralized get_core_sensors function."""
         from molmo_spaces.env.sensors import get_core_sensors
@@ -87,17 +97,41 @@ class PickTask(BaseMujocoTask):
 
             # Would like to cache this, but no easy way atm
             lift_height = pickup_obj.position[2] - self.config.task_config.pickup_obj_start_pose[2]
-            pickup_obj_supporting_geom = get_supporting_geom(data, pickup_obj.body_id)
-            robot_geoms = descendant_geoms(
-                self.env._mj_model, self.env.current_robot.robot_view.base.root_body_id
-            )
-            object_lifted = (
-                pickup_obj_supporting_geom is None or pickup_obj_supporting_geom in robot_geoms
-            )
+
+            # Option 1: go via descendant geoms and check if all contacts are with robot geoms (didn't work)
+            # obj_geoms = get_supporting_geom(data, pickup_obj.body_id)
+            # robot_geoms = descendant_geoms(self.env._mj_model, self.env.current_robot.robot_view.base.root_body_id)
+            # gripper_root_body_id = self.env.current_robot.robot_view.get_gripper("gripper").root_body_id
+            # gripper_geoms = descendant_geoms(self.env._mj_model, gripper_root_body_id)
+            # for c in data.contact:
+            #     if (c.geom[0] in obj_geoms) ^ (c.geom[1] in obj_geoms):
+            #         other_geom_id = c.geom[1] if c.geom[0] in obj_geoms else c.geom[0]
+            #         if other_geom_id in robot_geoms:
+            #             only_robot_collision = True
+            #         else:
+            #             only_robot_collision = False
+            #             break
+
+            # Option 2: go via root body and check if all contacts are with robot geoms
+            # Check if object collides only with robot geoms
+            robot_collision = False
+            non_robot_collision = False
+            for c in data.contact:
+                root_body1 = data.model.body_rootid[data.model.geom_bodyid[c.geom1]]
+                root_body2 = data.model.body_rootid[data.model.geom_bodyid[c.geom2]]
+                if (root_body1 == pickup_obj.body_id) ^ (root_body2 == pickup_obj.body_id):
+                    other_root_body = root_body1 if root_body1 != pickup_obj.body_id else root_body2
+                    if other_root_body == self.env.current_robot.robot_view.base.root_body_id:
+                        robot_collision = True
+                    else:
+                        non_robot_collision = True
+                        break  # no need to keep checking if we already know there's a non-robot collision
+
+            only_robot_collision = robot_collision and not non_robot_collision
 
             # Success check
             success = (
-                object_lifted and lift_height >= self.config.task_config.succ_pos_threshold
+                only_robot_collision and lift_height >= self.config.task_config.succ_pos_threshold
                 # and rot_error < self.config.task_config.succ_rot_threshold
             )
 

@@ -14,7 +14,6 @@ See run_evaluation() for full documentation.
 """
 
 from molmo_spaces.evaluation.benchmark_schema import (
-    DEFAULT_TASK_HORIZONS,
     BaseTaskSpec,
     BenchmarkMetadata,
     CameraSpec,
@@ -30,7 +29,6 @@ from molmo_spaces.evaluation.benchmark_schema import (
     SceneModificationsSpec,
     SourceSpec,
     TaskSpec,
-    get_default_task_horizon,
     load_all_episodes,
     load_benchmark,
 )
@@ -44,7 +42,6 @@ __all__ = [
     # Runner
     "JsonEvalRunner",
     # Benchmark schema types
-    "DEFAULT_TASK_HORIZONS",
     "BaseTaskSpec",
     "BenchmarkMetadata",
     "CameraSpec",
@@ -61,7 +58,6 @@ __all__ = [
     "SourceSpec",
     "TaskSpec",
     # Utility functions
-    "get_default_task_horizon",
     "load_all_episodes",
     "load_benchmark",
 ]

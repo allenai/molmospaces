@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from molmospaces_resources import split_query_tokens
+
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
     DATA_TYPE_TO_SOURCE_TO_VERSION,
@@ -10,12 +12,12 @@ from molmo_spaces.molmo_spaces_constants import (
 
 
 def install_scene_from_source_index(source, idx):
-    archives = get_resource_manager().archives_with_number(source, str(idx), "scenes")
+    archives = get_resource_manager().index_lookup("scenes", source, str(idx))
     if len(archives) == 0:
         raise ValueError(f"{source=} {idx=} returned {len(archives)} archives (expected 1)")
     assert len(archives) == 1, f"{source=} {idx=} returned {len(archives)} archives (expected 1)"
     source_to_paths = {source: archives}
-    get_resource_manager().install_scenes(source_to_paths)
+    get_resource_manager().install_packages("scenes", source_to_paths)
     return source_to_paths
 
 
@@ -23,7 +25,7 @@ def install_scene_from_path(xml_path):
     scene_source = Path(xml_path).relative_to(get_scenes_root()).parts[0]
 
     rel_path = Path(xml_path).relative_to(get_scenes_root() / scene_source)
-    archives = get_resource_manager().archives_for_paths(scene_source, [rel_path])
+    archives = get_resource_manager().find_archives("scenes", scene_source, [rel_path])
 
     if not archives:
         raise RuntimeError(
@@ -32,7 +34,7 @@ def install_scene_from_path(xml_path):
 
     source_to_paths = {scene_source: archives}
 
-    get_resource_manager().install_scenes(source_to_paths)
+    get_resource_manager().install_packages("scenes", source_to_paths)
 
     return source_to_paths
 
@@ -55,7 +57,9 @@ def find_object_paths(xml_path, exclude_thor=True):
                     source = (
                         full_path.relative_to(get_resource_manager().cache_dir / "objects")
                     ).parts[0]
-                    rel_asset = full_path.relative_to(get_resource_manager().object_dirs[source])
+                    rel_asset = full_path.relative_to(
+                        get_resource_manager().source_dir("objects", source)
+                    )
                     yield source, rel_asset
 
 
@@ -66,9 +70,7 @@ def install_objects_for_scene(xml_path, exclude_thor=True):
     source_to_archives = {}
 
     for source, rel_asset in find_object_paths(xml_path, exclude_thor=exclude_thor):
-        archives = get_resource_manager().archives_for_paths(
-            source, [rel_asset], data_type="objects"
-        )
+        archives = get_resource_manager().find_archives("objects", source, [rel_asset])
         if source not in source_to_archives:
             source_to_archives[source] = archives
         else:
@@ -78,7 +80,7 @@ def install_objects_for_scene(xml_path, exclude_thor=True):
         source: list(set(archives)) for source, archives in source_to_archives.items()
     }
 
-    get_resource_manager().install_objects(source_to_archives)
+    get_resource_manager().install_packages("objects", source_to_archives)
 
     return source_to_archives
 
@@ -95,12 +97,12 @@ def install_grasps_for_scene(xml_path, grasp_source="droid_objaverse", exclude_t
     source_to_archives = {grasp_source: set()}
 
     for _source, rel_asset in find_object_paths(xml_path, exclude_thor=exclude_thor):
-        for substr in get_resource_manager().extract_substrings(rel_asset.name):
+        for substr in split_query_tokens(rel_asset.name):
             source_to_archives[grasp_source].update(
-                get_resource_manager().archives_with_substring(grasp_source, substr, "grasps")
+                get_resource_manager().index_lookup("grasps", grasp_source, substr)
             )
 
-    get_resource_manager().install_grasps(source_to_archives)
+    get_resource_manager().install_packages("grasps", source_to_archives)
 
     return source_to_archives
 
@@ -130,16 +132,16 @@ def locate_uid_package(uid, extension="xml"):
         if object_source in ["thor"]:
             continue
 
-        substrings = get_resource_manager().extract_substrings(uid)
+        substrings = split_query_tokens(uid)
         for substring in substrings:
-            possible_archives = get_resource_manager().archives_with_substring(
-                object_source, substring, data_type="objects"
+            possible_archives = get_resource_manager().index_lookup(
+                "objects", object_source, substring
             )
             if not possible_archives:
                 continue
 
             # TODO pass archives to avoid full trie initialization? it's kind of fast, but...
-            tries = get_resource_manager().tries(object_source, data_type="objects")
+            tries = get_resource_manager().tries("objects", object_source)
             for possible_archive in possible_archives:
                 for path in tries.get(possible_archive, {}).leaf_paths():
                     if path.endswith(file_name):
@@ -152,7 +154,7 @@ def locate_uid_package(uid, extension="xml"):
     return None, None, None
 
 
-def install_uid(uid, exclude_thor=True):
+def install_uid(uid, grasp_source="droid_objaverse", exclude_thor=True):
     source, package, xml_path = locate_uid_package(uid)
 
     if source is None:
@@ -161,7 +163,15 @@ def install_uid(uid, exclude_thor=True):
         )
 
     if source != "thor" or not exclude_thor:
-        get_resource_manager().install_objects({source: [package]})
+        get_resource_manager().install_packages("objects", {source: [package]})
+
+        # Install grasps (on-demand for objaverse)
+        source_to_archives = {grasp_source: set()}
+        for substr in split_query_tokens(Path(xml_path.name).stem):
+            source_to_archives[grasp_source].update(
+                get_resource_manager().index_lookup("grasps", grasp_source, substr)
+            )
+        get_resource_manager().install_packages("grasps", source_to_archives)
 
     return xml_path
 

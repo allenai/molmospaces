@@ -290,6 +290,89 @@ def get_noncolliding_grasp_mask(
         mujoco.mj_fwdPosition(mj_model, mj_data)
 
 
+def get_all_grasp_poses(
+    policy,
+    pickup_obj: MlSpacesObject,
+) -> tuple[np.ndarray, str, np.ndarray]:
+    """Get all available grasp poses for the pickup object without sampling or filtering.
+
+    Args:
+        policy: The policy object containing task and environment information
+        pickup_obj: The object to grasp
+
+    Returns:
+        tuple: (all_grasp_poses, gripper_type, object_pose) where:
+            - all_grasp_poses: Array of all grasp poses in world frame with shape (N, 4, 4)
+            - gripper_type: String indicating gripper type ("rum" or "droid")
+            - object_pose: 4x4 transformation matrix of the object pose
+    """
+    model = policy.task.env.current_model
+    data = policy.task.env.current_data
+    scene_metadata = policy.task.env.current_scene_metadata
+
+    # Load grasps based on task type
+    if policy.config.task_type in [
+        "pick",
+        "pick_and_place",
+        "pick_and_place_next_to",
+        "pick_and_place_color",
+    ]:
+        thor_dict = scene_metadata["objects"].get(pickup_obj.name, None) if scene_metadata else None
+        thor_name = thor_dict["asset_id"] if thor_dict else get_thor_name(model, pickup_obj)
+
+        gripper, cached_grasps = load_grasps_for_object(thor_name, num_grasps=int(1e6))
+        if len(cached_grasps) == 0:
+            raise ValueError(f"No grasps found for {thor_name}")
+
+        object_pose = pos_quat_to_pose_mat(pickup_obj.position, pickup_obj.quat)
+
+    elif policy.config.task_type in ["open", "close"]:
+        _joint_name = pickup_obj.joint_names[policy.config.task_config.joint_index]
+        joint_name = scene_metadata["objects"][pickup_obj.name]["name_map"]["joints"][_joint_name]
+        category_base_name = scene_metadata["objects"][pickup_obj.name]["asset_id"]
+
+        gripper, cached_grasps = load_grasps_for_object_per_joint(
+            category_base_name, joint_name, num_grasps=int(1e6)
+        )
+        if len(cached_grasps) == 0:
+            raise ValueError(f"No grasps found for {pickup_obj.name}")
+
+        # Get joint body pose
+        joint_body_id = model.joint(_joint_name).bodyid[0]
+        object_position = data.xpos[joint_body_id]
+        object_quat = data.xquat[joint_body_id]
+        object_pose = pos_quat_to_pose_mat(object_position, object_quat)
+    else:
+        raise ValueError(f"Invalid task type {policy.config.task_type}")
+
+    # Transform grasps to gripper TCP
+    if gripper == "rum":
+        ROT_Z_90 = pos_quat_to_pose_mat(
+            [0, 0, 0], R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True)
+        )
+        RUM_BASE_TCP = pos_quat_to_pose_mat(np.array([0.0, 0, 0.12]), [1, 0, 0, 0])
+        GRIP_BASE_TCP = RUM_BASE_TCP @ ROT_Z_90
+    elif gripper == "droid":
+        GRIP_BASE_TCP = np.eye(4)
+
+    # Convert all cached grasps to world frame
+    grasp_poses_world = object_pose @ cached_grasps @ GRIP_BASE_TCP
+
+    # Add flipped grasp poses (symmetric around 180 degree rotation around Z)
+    flipped_grasp_poses_world = grasp_poses_world.copy()
+    flipped_grasp_poses_world[..., :3, :3] = (
+        flipped_grasp_poses_world[..., :3, :3]
+        @ R.from_euler("z", 180, degrees=True).as_matrix()[None]
+    )
+
+    # Concatenate original and flipped grasps
+    all_grasp_poses = np.concatenate([grasp_poses_world, flipped_grasp_poses_world])
+
+    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses (including flipped versions)")
+
+    return all_grasp_poses, gripper, object_pose
+
+
 def compute_grasp_pose(
     policy,
     pickup_obj: MlSpacesObject,
@@ -308,42 +391,11 @@ def compute_grasp_pose(
 ) -> np.ndarray:
     model = policy.task.env.current_model
     data = policy.task.env.current_data
-    scene_metadata = policy.task.env.current_scene_metadata
 
-    if policy.config.task_type in [
-        "pick",
-        "pick_and_place",
-        "pick_and_place_next_to",
-        "pick_and_place_color",
-    ]:
-        thor_dict = scene_metadata["objects"].get(pickup_obj.name, None) if scene_metadata else None
-        thor_name = thor_dict["asset_id"] if thor_dict else get_thor_name(model, pickup_obj)
+    # Get all grasp poses
+    grasp_poses_world, gripper, object_pose = get_all_grasp_poses(policy, pickup_obj)
 
-        gripper, cached_grasps = load_grasps_for_object(thor_name, 1e6)
-        if len(cached_grasps) == 0:
-            raise ValueError(f"No grasps found for {thor_name}")
-
-        object_pose = pos_quat_to_pose_mat(pickup_obj.position, pickup_obj.quat)  # shape (4,4)
-
-    elif policy.config.task_type in ["open", "close"]:
-        _joint_name = pickup_obj.joint_names[policy.config.task_config.joint_index]
-        joint_name = scene_metadata["objects"][pickup_obj.name]["name_map"]["joints"][_joint_name]
-        category_base_name = scene_metadata["objects"][pickup_obj.name]["asset_id"]
-
-        gripper, cached_grasps = load_grasps_for_object_per_joint(
-            category_base_name, joint_name, 1e6
-        )
-        if len(cached_grasps) == 0:
-            raise ValueError(f"No grasps found for {pickup_obj.name}")
-
-        # get joint body pose
-        joint_body_id = model.joint(_joint_name).bodyid[0]
-        object_position = data.xpos[joint_body_id]  # TODO(yejin): change this to joint_body_id
-        object_quat = data.xquat[joint_body_id]  # TODO(yejin): change this to joint_body_id
-        object_pose = pos_quat_to_pose_mat(object_position, object_quat)
-    else:
-        raise ValueError(f"Invalid task type {policy.config.task_type}")
-
+    # Get gripper TCP transform for visualization
     if gripper == "rum":
         ROT_Z_90 = pos_quat_to_pose_mat(
             [0, 0, 0], R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True)
@@ -359,17 +411,7 @@ def compute_grasp_pose(
     )
     tcp_pose = pos_quat_to_pose_mat(tcp_pose_arr[0:3], tcp_pose_arr[3:7])
     tcp_pose_world = policy.task._env.current_robot.robot_view.base.pose @ tcp_pose
-    tcp_pose_inv = np.linalg.inv(tcp_pose_world)  # sha
-
-    # Find closest grasp to current TCP
-    grasp_poses_world = object_pose @ cached_grasps @ GRIP_BASE_TCP  # shape (N,4,4)
-    flipped_grasp_poses_world = grasp_poses_world.copy()
-    flipped_grasp_poses_world[..., :3, :3] = (
-        flipped_grasp_poses_world[..., :3, :3]
-        @ R.from_euler("z", 180, degrees=True).as_matrix()[None]
-    )
-    # add flipped grasp poses, since grasps are symmetric around a 180 degree rotation around Z
-    grasp_poses_world = np.concatenate([grasp_poses_world, flipped_grasp_poses_world])
+    tcp_pose_inv = np.linalg.inv(tcp_pose_world)
 
     dist_tcp = tcp_pose_inv @ grasp_poses_world  # shape (N,4,4)
     dists_tcp_p = np.linalg.norm(dist_tcp[:, :3, 3], axis=1)

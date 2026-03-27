@@ -20,6 +20,7 @@ class FloatingRobotiqRobot(FloatingRUMRobot):
         prefix: str,
         pos: list[float],
         quat: list[float],
+        randomize_textures: bool = False,
     ) -> None:
         pos = pos + [0.0] if len(pos) == 2 else pos
         # call grandparent class method (Robot) directly, skipping FloatingRUMRobot

@@ -89,6 +89,8 @@ class OpeningTask(PickTask):
         """
         rewards_envs = np.zeros(self._env.n_batch)
 
+        self.config.task_type = "open"
+
         if self.config.task_type == "open":
             for n in range(self._env.n_batch):
                 reward_cand = []
@@ -131,8 +133,9 @@ class OpeningTask(PickTask):
             # negate the quanity
             rewards_envs = 1 - rewards_envs
         else:
-            raise ValueError(f"Invalid task type: {self.config.task_type}")
-        
+            raise ValueError(
+                f"Unknown task type: {self.config.task_type}. Must be 'open' or 'close'."
+            )
         return rewards_envs
 
     def get_info(self) -> list[dict[str, Any]]:
@@ -184,10 +187,19 @@ class DoorOpeningTask(BaseMujocoTask):
             self.door_object.get_hinge_joint_index(), float(self.current_door_joint_state[0])
         )
 
-        # Reset robot and set to base pose
+        # Set robot to base pose and reset controllers
+        # Note: Joint positions are already randomized by task_sampler.randomize_scene()
+        # so we don't call robot.reset() which would overwrite the randomization
         for robot in self.env.robots:
-            robot.reset()
             robot.set_world_pose(self.exp_config.task_config.robot_base_pose)
+            # Reset controllers (from robot.reset() logic)
+            for _, controller in robot._controllers.items():
+                controller.reset()
+            # Set head ctrl to noop to prevent jerking (from robot.reset() logic)
+            # Only do this if robot has a head move group
+            if "head" in robot.robot_view.move_group_ids():
+                head_mg = robot.robot_view.get_move_group("head")
+                head_mg.ctrl = head_mg.noop_ctrl
 
         # Run a mujoco forward to update the environment
         mujoco.mj_forward(self.env.mj_model, self.env.mj_datas[0])
@@ -203,6 +215,25 @@ class DoorOpeningTask(BaseMujocoTask):
 
     def get_task_description(self) -> str:
         return "Push the door open" if self._is_pushing_door else "Pull the door open"
+
+    def get_task_objects(self, batch_index: int = 0) -> dict[str, str]:
+        """Return the door handle as the primary task object.
+
+        Uses the correct handle based on robot position (determined at task init).
+        Doors typically have two handles (one on each side), and this returns
+        the one the robot will interact with.
+        """
+        task_objects = super().get_task_objects(batch_index)
+
+        # Determine which handle index based on _use_other_side_handle
+        if self._use_other_side_handle:
+            handle_idx = 1 if self.door_object.num_handles > 1 else 0
+        else:
+            handle_idx = 0
+
+        handle_body_name = self.door_object.handle_name(handle_idx)
+        task_objects["door_handle"] = handle_body_name
+        return task_objects
 
     def _create_sensor_suite_from_config(self, exp_config: MlSpacesExpConfig) -> SensorSuite:
         """Create a sensor suite from configuration using the RBY1-specific sensor function."""
@@ -227,6 +258,67 @@ class DoorOpeningTask(BaseMujocoTask):
 
         return rewards
 
+    def handle_grasped(self) -> bool:
+        """Check if the door handle is grasped by checking for MuJoCo contacts.
+
+        Returns True only if both finger1 and finger2 of either gripper are in contact
+        with the handle body.
+        """
+        mj_model = self.env.mj_model
+        mj_data = self.env.mj_datas[0]
+
+        # Get handle body name
+        handle_body_name = self.get_task_objects()["door_handle"]
+
+        # Check both arms
+        for arm_side in ["left", "right"]:
+            finger1_name = f"robot_0/ee_finger_{arm_side[0]}1"  # e.g., robot_0/ee_finger_l1
+            finger2_name = f"robot_0/ee_finger_{arm_side[0]}2"  # e.g., robot_0/ee_finger_l2
+
+            finger1_contact = False
+            finger2_contact = False
+
+            # Check all contacts
+            for i in range(mj_data.ncon):
+                contact = mj_data.contact[i]
+                body1_id = mj_model.geom_bodyid[contact.geom1]
+                body2_id = mj_model.geom_bodyid[contact.geom2]
+                body1_name = mujoco.mj_id2name(mj_model, mujoco.mjtObj.mjOBJ_BODY, body1_id)
+                body2_name = mujoco.mj_id2name(mj_model, mujoco.mjtObj.mjOBJ_BODY, body2_id)
+
+                # Check if finger1 is in contact with handle
+                if (body1_name == finger1_name and body2_name == handle_body_name) or (
+                    body2_name == finger1_name and body1_name == handle_body_name
+                ):
+                    finger1_contact = True
+
+                # Check if finger2 is in contact with handle
+                if (body1_name == finger2_name and body2_name == handle_body_name) or (
+                    body2_name == finger2_name and body1_name == handle_body_name
+                ):
+                    finger2_contact = True
+
+            # Return True if both fingers are in contact with handle
+            if finger1_contact and finger2_contact:
+                return True
+
+        return False
+
+    def get_info(self) -> list[dict[str, Any]]:
+        """Get additional metrics for each environment."""
+        metrics = []
+
+        for _ in range(self._env.n_batch):
+            metrics.append(
+                {
+                    "handle_grasped": self.handle_grasped(),
+                    "joint_position": self.get_door_open_percentage(),
+                    "success": self.judge_success(),
+                }
+            )
+
+        return metrics
+
     def step(
         self, actions: Sequence[dict[str, Any]]
     ) -> tuple[list[dict[str, Any]], np.ndarray, np.ndarray, np.ndarray, list[dict[str, Any]]]:
@@ -240,16 +332,6 @@ class DoorOpeningTask(BaseMujocoTask):
         log.debug(f"Step {self.episode_step_count}: Door open percentage: {percent_open:.2%} ")
 
         return observation, reward, terminated, truncated, info
-
-    def is_terminal(self) -> np.ndarray:
-        """Check if the task has reached a terminal state."""
-        terminal = np.zeros(self.env.n_batch, dtype=bool)
-
-        # Task is terminal if successful OR if done action was received
-        # (Note: difference between terminal and timed_out)
-        terminal[0] = self.judge_success() or self._done_action_received
-
-        return terminal
 
     def get_door_open_percentage(self) -> float:
         """

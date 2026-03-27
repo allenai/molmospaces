@@ -1,10 +1,16 @@
+import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
 import tyro
+from molmospaces_resources import HFRemoteStorage, R2RemoteStorage, ResourceManager
 
-from .manager import KNOWN_URLS, ResourceManager
+logger = logging.getLogger("molmospaces_resources")
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    logger.addHandler(logging.StreamHandler())
 
 DEFAULT_CACHE_DIR = Path.home() / ".molmospaces"
 
@@ -12,7 +18,7 @@ SOURCE_TO_VERSION = {
     "objects": {
         "mjcf": {
             "thor": "20251117",
-            "objaverse": "20251016_from_20250610",
+            "objaverse": "20260131",
         },
         "usd": {
             "thor": "20260128",
@@ -43,15 +49,19 @@ SOURCE_TO_VERSION = {
     },
 }
 
-TYPE_TO_URL: dict[str, str] = {
-    "mjcf": KNOWN_URLS["mujoco-thor-resources"],
-    "usd": KNOWN_URLS["isaac-thor-resources"],
+TYPE_TO_PREFIX: dict[str, str] = {
+    "mjcf": "mujoco",
+    "usd": "isaac",
 }
 
 
 @dataclass
 class DownloadArgs:
+    # `mjcf` for MuJoCo or ManiSkill, `usd` for Isaac
     type: Literal["mjcf", "usd"]
+
+    # Path to symlink extracted data from the cache_dir
+    install_dir: Path
 
     assets: list[Literal["thor", "objaverse"]] = field(default_factory=lambda: ["thor"])
 
@@ -68,31 +78,27 @@ class DownloadArgs:
         ]
     ] = field(default_factory=list)
 
-    install_dir: Path | None = None
-
+    # Path to extract (versioned) downloaded data
     cache_dir: Path = DEFAULT_CACHE_DIR
 
-    house_index: int = -1
+    # If not provided, uses HF_TOKEN from environment
+    hf_token: str | None = None
 
-    clean: bool = False
+    # Use R2 remote storage (HuggingFace by default)
+    use_r2: bool = False
 
 
 def main() -> int:
     args = tyro.cli(DownloadArgs)
 
-    if args.install_dir is None:
-        print("Must provide an installation directory via --install-dir")
-        return 1
+    args.install_dir.mkdir(parents=True, exist_ok=True)
 
-    if not args.install_dir.is_dir():
-        args.install_dir.mkdir(parents=True, exist_ok=True)
-
-    assert args.type in TYPE_TO_URL, (
-        f"Something went wrong, must only use 'mjcf' or 'usd', but got '{args.type}'"
+    assert args.type in TYPE_TO_PREFIX, (
+        f"Something went wrong, must only use {set(TYPE_TO_PREFIX.keys())}, but got '{args.type}'"
     )
 
-    print(f"[INFO]: saving to directory '{args.install_dir}'")
-    print(f"[INFO]: downloading '{args.type}' version of the assets")
+    logger.info(f"Symlinking from directory '{args.install_dir}'")
+    logger.info(f"Downloading '{args.type}' version of the assets")
 
     sources_to_version = dict(objects=dict(), scenes=dict())
     sources_to_version["objects"]["thor"] = SOURCE_TO_VERSION["objects"][args.type]["thor"]
@@ -106,30 +112,30 @@ def main() -> int:
             dataset_id
         ]
 
-    cache_dir = args.cache_dir / args.type
-    cache_lock_file = cache_dir / ".lock"
-    if cache_lock_file.is_file():
-        cache_lock_file.unlink()
-
-    install_lock_file = args.install_dir / ".lock"
-    if install_lock_file.is_file():
-        install_lock_file.unlink()
-
     manager = ResourceManager(
-        base_url=TYPE_TO_URL[args.type],
+        remote_storage=R2RemoteStorage(f"{TYPE_TO_PREFIX[args.type]}-thor-resources")
+        if args.use_r2
+        else HFRemoteStorage(
+            repo_id="allenai/molmospaces",
+            repo_prefix=TYPE_TO_PREFIX[args.type],
+            token=args.hf_token or os.getenv("HF_TOKEN"),
+        ),
         data_type_to_source_to_version=sources_to_version,
         symlink_dir=args.install_dir,
         cache_dir=args.cache_dir / args.type,
         force_install=True,
     )
+    manager.setup()
     enforce_scenes = len(args.scenes) > 0
     enforce_objects = len(args.assets) > 1
 
-    manager.install_sources(
-        enforce_all_objects=enforce_objects,
-        enforce_all_scenes=enforce_scenes,
-        extract_only_scenes=False,
-    )
+    if enforce_scenes:
+        logger.info("Installing scenes...")
+        manager.install_all_for_data_type("scenes", skip_linking=False)
+
+    if enforce_objects:
+        logger.info("Installing objects...")
+        manager.install_all_for_data_type("objects", skip_linking=False)
 
     return 0
 

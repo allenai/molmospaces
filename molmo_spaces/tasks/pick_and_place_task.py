@@ -16,10 +16,28 @@ from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 class PickAndPlaceTask(BaseMujocoTask):
     """Franka pick-and-place task implementation."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._supported_rel_poses: dict[int, list[np.ndarray]] = {}
+
     def get_task_description(self) -> str:
         pickup_name = self.config.task_config.referral_expressions["pickup_name"]
         place_name = self.config.task_config.referral_expressions["place_name"]
         return f"Pick up the {pickup_name} and place it in or on the {place_name}"
+
+    def get_task_objects(self, batch_index: int = 0) -> dict[str, str]:
+        """Return task objects for pick-and-place task."""
+        task_objects = super().get_task_objects(batch_index)
+        task_config = self.config.task_config
+
+        self.deduplicate_task_objects_name(
+            task_config, "pickup_obj_name", task_objects, "pickup_obj"
+        )
+        self.deduplicate_task_objects_name(
+            task_config, "place_receptacle_name", task_objects, "place_receptacle"
+        )
+
+        return task_objects
 
     def _create_sensor_suite_from_config(self, config: MlSpacesExpConfig) -> SensorSuite:
         """Create a sensor suite from configuration using the centralized get_core_sensors function."""
@@ -27,6 +45,11 @@ class PickAndPlaceTask(BaseMujocoTask):
 
         sensors = get_core_sensors(config)
         return SensorSuite(sensors)
+
+    def reset(self):
+        result = super().reset()
+        self._supported_rel_poses.clear()
+        return result
 
     def judge_success(self) -> bool:
         """Judge if the task was successful (for data generation)."""
@@ -94,6 +117,46 @@ class PickAndPlaceTask(BaseMujocoTask):
                 names_on_receptacle = {obj.name for obj in objects_on_receptacle}
                 supported_by_receptacle = task_config.pickup_obj_name in names_on_receptacle
 
+            # Relative-pose carry-forward: track the object's pose in the
+            # receptacle's frame. When contact-based checks detect support,
+            # snapshot this relative pose. When they fail (e.g. lightweight
+            # objects at equilibrium losing contact forces), compare against
+            # the snapshot — if the relative pose hasn't drifted, the object
+            # is still where it was when support was last confirmed.
+            rel_pose = np.linalg.solve(place_receptacle.pose, pickup_obj.pose)
+
+            carried_forward = False
+            carry_forward_pos_diff = float("inf")
+            carry_forward_rot_diff = float("inf")
+            if supported_by_receptacle:
+                self._supported_rel_poses.setdefault(i, []).append(rel_pose.copy())
+                carry_forward_pos_diff = 0.0
+                carry_forward_rot_diff = 0.0
+            if i in self._supported_rel_poses:
+                # Track nearest-by-position for diagnostics, and separately
+                # check if any cached pose satisfies both thresholds jointly
+                # (greedy nearest-by-position can miss a slightly farther pose
+                # that satisfies rotation while the nearest one doesn't).
+                best_pos_diff = float("inf")
+                best_rot_diff = float("inf")
+                match_found = False
+                for stored in self._supported_rel_poses[i]:
+                    pd = float(np.linalg.norm(rel_pose[:3, 3] - stored[:3, 3]))
+                    rd = float(R.from_matrix(rel_pose[:3, :3] @ stored[:3, :3].T).magnitude())
+                    if pd < best_pos_diff:
+                        best_pos_diff = pd
+                        best_rot_diff = rd
+                    if (
+                        pd <= task_config.carry_forward_rel_pos_threshold
+                        and rd <= task_config.carry_forward_rel_rot_threshold
+                    ):
+                        match_found = True
+                carry_forward_pos_diff = best_pos_diff
+                carry_forward_rot_diff = best_rot_diff
+                if not supported_by_receptacle and match_found:
+                    supported_by_receptacle = True
+                    carried_forward = True
+
             # has the place receptacle moved too much?
             start_pose = pos_quat_to_pose_mat(
                 task_config.place_receptacle_start_pose[0:3],
@@ -104,11 +167,35 @@ class PickAndPlaceTask(BaseMujocoTask):
             pos_displacement = displacement[:3, 3]
             rot_displacement = R.from_matrix(displacement[:3, :3]).magnitude()
 
+            # Tilt-only rotation displacement: compute the start→current
+            # rotation in world frame and see how much it rotates [0,0,1].
+            r_diff_world = curr_pose[:3, :3] @ start_pose[:3, :3].T
+            diff_up = r_diff_world @ np.array([0.0, 0.0, 1.0])
+            cos_tilt = np.clip(diff_up[2], -1.0, 1.0)
+            tilt_displacement = np.arccos(cos_tilt)
+
+            # Check that the robot has released the object (no robot-object contact).
+            robot_root_body_id = self._env.current_robot.robot_view.base.root_body_id
+            robot_contact = False
+            for c in data.contact:
+                root_body1 = data.model.body_rootid[data.model.geom_bodyid[c.geom1]]
+                root_body2 = data.model.body_rootid[data.model.geom_bodyid[c.geom2]]
+                if (root_body1 == pickup_obj.body_id) ^ (root_body2 == pickup_obj.body_id):
+                    other_root_body = root_body1 if root_body1 != pickup_obj.body_id else root_body2
+                    if other_root_body == robot_root_body_id:
+                        robot_contact = True
+                        break
+
+            # Momentary check: re-evaluated from current poses each step, so a
+            # past transient displacement does not permanently prevent success.
+            # max_place_receptacle_rot_displacement is used as the tilt threshold
+            # (yaw-excluded); see tilt_displacement computation above.
             success = (
                 supported_by_receptacle
+                and not robot_contact
                 and np.linalg.norm(pos_displacement)
                 <= task_config.max_place_receptacle_pos_displacement
-                and rot_displacement <= task_config.max_place_receptacle_rot_displacement
+                and tilt_displacement <= task_config.max_place_receptacle_rot_displacement
             )
 
             metrics.append(
@@ -116,8 +203,13 @@ class PickAndPlaceTask(BaseMujocoTask):
                     "position_error": pos_err,
                     "success": success,
                     "supported_by_receptacle": supported_by_receptacle,
+                    "supported_by_carry_forward": carried_forward,
+                    "carry_forward_pos_diff": carry_forward_pos_diff,
+                    "carry_forward_rot_diff": carry_forward_rot_diff,
+                    "robot_contact": robot_contact,
                     "receptacle_pos_displacement": pos_displacement,
                     "receptacle_rot_displacement": rot_displacement,
+                    "receptacle_tilt_displacement": tilt_displacement,
                     "episode_step": self.episode_step_count,
                 }
             )

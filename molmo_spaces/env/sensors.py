@@ -3,6 +3,7 @@ import logging
 import gymnasium.spaces as gyms
 import numpy as np
 
+from molmo_spaces.configs.robot_configs import RBY1Config
 from molmo_spaces.controllers.abstract import AbstractPositionController
 from molmo_spaces.env.abstract_sensors import Sensor
 from molmo_spaces.env.data_views import create_mlspaces_body
@@ -729,7 +730,7 @@ class DoorStateSensor(Sensor):
             if hasattr(task, "door_object") and task.door_object is not None:
                 # Get door joint angle
                 if hasattr(task, "current_door_joint_state"):
-                    door_state_data["joint_angle"] = [float(task.current_door_joint_state)]
+                    door_state_data["joint_angle"] = [float(task.current_door_joint_state.item())]
 
                 # Calculate opening percentage
                 if hasattr(task, "exp_config") and hasattr(
@@ -740,6 +741,8 @@ class DoorStateSensor(Sensor):
                     opening_percentage = (current_angle - joint_range[0]) / (
                         joint_range[1] - joint_range[0]
                     )
+                    if isinstance(opening_percentage, np.ndarray):
+                        opening_percentage = opening_percentage.item()
                     door_state_data["opening_percentage"] = [
                         float(np.clip(opening_percentage, 0.0, 1.0))
                     ]
@@ -791,8 +794,20 @@ class DoorStateSensor(Sensor):
 class ObjectImagePointsSensor(Sensor):
     """Sensor for tracking object pixel coordinates across multiple cameras.
 
-    Detects task objects (pickup_obj_name, place_target_name) in camera views
-    and returns sampled pixel coordinates normalized 0 to 1.
+    Detects task objects in camera views and returns sampled pixel coordinates
+    normalized to 0-1 range. Returns HDF5-native numpy arrays (not JSON).
+
+    Output structure (nested dict of numpy arrays):
+    {
+        "<object_key>": {
+            "<camera_name>": {
+                "points": np.ndarray (max_points, 2) - normalized (x, y) coords, NaN-padded
+                "num_points": np.ndarray (1,) - number of valid points
+            },
+            ...
+        },
+        ...
+    }
     """
 
     def __init__(
@@ -800,18 +815,18 @@ class ObjectImagePointsSensor(Sensor):
         exp_config,
         camera_names: list[str] | None = None,
         uuid: str = "object_image_points",
-        str_max_len: int = 4000,
         max_points: int = 10,
         erosion_iterations: int = 2,
+        exclude_follower_cameras: bool = True,
     ) -> None:
         """
         Args:
             exp_config: Experiment configuration with camera_config
             camera_names: Optional list of camera names to track. If None, uses all cameras from config.
             uuid: Unique sensor identifier
-            str_max_len: Maximum string length for observation space
             max_points: Maximum number of points to sample per camera
             erosion_iterations: Number of erosion iterations for segmentation mask
+            exclude_follower_cameras: If True, exclude cameras with 'follower' in their name
         """
         # Build camera spec lookup from config
         all_camera_specs = {
@@ -830,15 +845,34 @@ class ObjectImagePointsSensor(Sensor):
         else:
             self.camera_specs = all_camera_specs
 
+        # Exclude follower cameras (they follow robot/workspace and aren't useful for object tracking)
+        if exclude_follower_cameras:
+            self.camera_specs = {
+                name: spec
+                for name, spec in self.camera_specs.items()
+                if "follower" not in name.lower()
+            }
+
         self.camera_names = list(self.camera_specs.keys())
         self.img_width, self.img_height = exp_config.camera_config.img_resolution
-        self.str_max_len = str_max_len
         self.max_points = max_points
         self.erosion_iterations = erosion_iterations
-        self.is_dict = True
 
-        observation_space = gyms.Box(low=0, high=255, shape=(str_max_len,), dtype=np.uint8)
+        # Use nested dict structure - NOT is_dict (which triggers JSON serialization)
+        # The nested dict will be handled natively by batch_observations and save_utils
+        self.is_dict = False
+
+        # Observation space is a nested dict structure (for reference, not enforced)
+        # Each camera produces (max_points, 2) points array + (1,) num_points array
+        observation_space = gyms.Dict({})  # Dynamic based on task objects
         super().__init__(uuid=uuid, observation_space=observation_space)
+
+    def _create_empty_points_data(self) -> dict[str, np.ndarray]:
+        """Create empty points data structure for a single camera."""
+        return {
+            "points": np.full((self.max_points, 2), np.nan, dtype=np.float32),
+            "num_points": np.array([0], dtype=np.int32),
+        }
 
     def get_observation(
         self,
@@ -847,38 +881,53 @@ class ObjectImagePointsSensor(Sensor):
         batch_index: int = 0,
         *args,
         **kwargs,
-    ) -> dict[str, dict[str, list[tuple[float, float]]]]:
+    ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
         """Get pixel coordinates of task objects in each camera view.
 
         All points are normalized to 0-1 range based on image resolution.
+        Returns HDF5-native numpy arrays (not JSON strings).
 
         Returns:
             Dictionary with structure:
             {
-                "pickup_obj": {camera_name: [(x, y), ...], ...},
-                "place_receptacle": {camera_name: [(x, y), ...], ...}
+                "<object_key>": {
+                    "<camera_name>": {
+                        "points": np.ndarray (max_points, 2) - normalized (x, y), NaN-padded
+                        "num_points": np.ndarray (1,) - count of valid points
+                    },
+                    ...
+                },
+                ...
             }
+            Where object_key is determined by task.get_task_objects() (e.g., 'pickup_obj',
+            'place_receptacle', 'door_handle').
         """
-        # TODO(rose): would be good for this to resolve similarly to get_visibility_objects in env.py (or something).
-        # Don't love a hardcode on pickup_obj_name and place_receptacle_name.
+        # Get object names from task's get_task_objects() method (preferred)
+        object_names = {}
+        if hasattr(task, "get_task_objects"):
+            object_names = task.get_task_objects(batch_index)
 
+        # Fall back to legacy config-based lookup for backward compatibility
+        if not object_names:
+            if hasattr(task, "config") and hasattr(task.config, "task_config"):
+                task_config = task.config.task_config
+                if hasattr(task_config, "pickup_obj_name") and task_config.pickup_obj_name:
+                    object_names["pickup_obj"] = task_config.pickup_obj_name
+                if (
+                    hasattr(task_config, "place_receptacle_name")
+                    and task_config.place_receptacle_name
+                ):
+                    object_names["place_receptacle"] = task_config.place_receptacle_name
+
+        # Initialize result dict with empty numpy arrays for all object/camera combinations
         result = {
-            "pickup_obj": {camera: [] for camera in self.camera_names},
-            "place_receptacle": {camera: [] for camera in self.camera_names},
+            obj_key: {camera: self._create_empty_points_data() for camera in self.camera_names}
+            for obj_key in object_names
         }
 
-        # Get object names from task config
-        object_names = {}
-        if hasattr(task, "config") and hasattr(task.config, "task_config"):
-            task_config = task.config.task_config
-            if hasattr(task_config, "pickup_obj_name") and task_config.pickup_obj_name:
-                object_names["pickup_obj"] = task_config.pickup_obj_name
-            if hasattr(task_config, "place_receptacle_name") and task_config.place_receptacle_name:
-                object_names["place_receptacle"] = task_config.place_receptacle_name
-
-        # If no objects found in config, return empty results
+        # If no objects found, return empty results
         if not object_names:
-            log.warning("No pickup_obj_name or place_receptacle_name found in task config")
+            log.warning("No task objects found from get_task_objects() or task config")
             return result
 
         # Check if environment supports segmentation masks
@@ -896,19 +945,31 @@ class ObjectImagePointsSensor(Sensor):
                     )
 
                     if segmentation_mask is None or not np.any(segmentation_mask > 0):
-                        result[obj_key][camera_name] = []
+                        # Keep empty result (already initialized with NaN/0)
                         continue
 
-                    # Erode mask to get more stable interior points
-                    eroded_mask = erode_segmentation_mask(
-                        segmentation_mask, iterations=self.erosion_iterations
-                    )
+                    # Skip erosion for thin objects (door handles, grippers) or cameras configured to skip
+                    camera_spec = self.camera_specs.get(camera_name)
+                    skip_erosion = "handle" in obj_key or (camera_spec and camera_spec.skip_erosion)
+                    if skip_erosion:
+                        mask_to_use = segmentation_mask
+                    else:
+                        # Erode mask to get more stable interior points
+                        eroded_mask = erode_segmentation_mask(
+                            segmentation_mask, iterations=self.erosion_iterations
+                        )
+                        # Fall back to original mask if erosion removed all points
+                        if eroded_mask is not None and np.any(eroded_mask > 0):
+                            mask_to_use = eroded_mask
+                        else:
+                            mask_to_use = segmentation_mask
 
                     # Find the points where the object is visible
-                    if eroded_mask is not None and np.any(eroded_mask > 0):
-                        points = np.argwhere(eroded_mask > 0)
+                    if mask_to_use is not None and np.any(mask_to_use > 0):
+                        points = np.argwhere(mask_to_use > 0)
 
                         # Sample random subset up to max_points
+                        num_points = min(len(points), self.max_points)
                         if len(points) > self.max_points:
                             indices = np.random.choice(len(points), self.max_points, replace=False)
                             points = points[indices]
@@ -917,7 +978,6 @@ class ObjectImagePointsSensor(Sensor):
                         switched_points = points[:, [1, 0]].astype(np.float32)
 
                         # Check if this specific camera is warped
-                        camera_spec = self.camera_specs.get(camera_name)
                         is_warped = camera_spec.is_warped if camera_spec else False
 
                         # Get distortion map if camera is warped
@@ -926,7 +986,6 @@ class ObjectImagePointsSensor(Sensor):
                             raise NotImplementedError(
                                 "Distortion map not implemented - what are you doing here?"
                             )
-                            distortion_map = None
 
                         # Normalize points (handles both distortion correction and 0-1 normalization)
                         normalized_points = normalize_points(
@@ -935,20 +994,29 @@ class ObjectImagePointsSensor(Sensor):
                             self.img_height,
                             distortion_map=distortion_map,
                         )
-                        # Round to 4 decimal places to reduce JSON size
+
+                        # Round to 4 decimal places
                         rounded_points = np.round(normalized_points, 4)
-                        result[obj_key][camera_name] = rounded_points.tolist()
+
+                        # Create padded array (NaN for unused slots)
+                        points_array = np.full((self.max_points, 2), np.nan, dtype=np.float32)
+                        points_array[:num_points] = rounded_points
+
+                        result[obj_key][camera_name] = {
+                            "points": points_array,
+                            "num_points": np.array([num_points], dtype=np.int32),
+                        }
 
                 except NotImplementedError:
                     log.warning(
                         f"Segmentation mask retrieval not yet implemented for {camera_name}"
                     )
-                    result[obj_key][camera_name] = []
+                    # Keep empty result
                 except Exception as e:
                     log.exception(
                         f"Error processing camera {camera_name} for object {obj_name}: {e}"
                     )
-                    result[obj_key][camera_name] = []
+                    # Keep empty result
 
         return result
 
@@ -1108,6 +1176,12 @@ def get_core_sensors(exp_config):
                 uuid="grasp_state_place_receptacle",
             )
         )
+    if isinstance(exp_config.robot_config, RBY1Config):
+        from molmo_spaces.env.rby1_sensors import RBY1GraspStateSensor
+
+        sensors.append(RBY1GraspStateSensor(uuid="rby1_left_grasp_state", arm_side="left"))
+        sensors.append(RBY1GraspStateSensor(uuid="rby1_right_grasp_state", arm_side="right"))
+
     sensors.append(TaskInfoSensor(uuid="task_info"))
 
     sensors.append(GraspPoseSensor(uuid="grasp_pose"))

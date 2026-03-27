@@ -1,0 +1,62 @@
+name: Core CI/CD checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-project:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git credentials for private repos
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Install UV package manager
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create and setup virtual environment
+        run: |
+          uv venv --python ${{ matrix.python-version }}
+          source .venv/bin/activate
+
+      - name: Install mujoco-thor package
+        run: |
+          source .venv/bin/activate
+          uv pip install -e .[dev,mujoco]
+
+  ruff-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ruff for formatting and linting
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: "latest"
+          args: "--version"
+
+      - name: Run formatting using ruff
+        run: |
+          ruff format --check .

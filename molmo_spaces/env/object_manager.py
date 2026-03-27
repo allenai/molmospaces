@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import re
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from collections.abc import Collection
 from enum import Enum
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
     from molmo_spaces.env.env import BaseMujocoEnv
 
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.INFO)
 """
 - Object can be a MlSpacesObject or instance of some subclass
 - Name is the object's name
@@ -107,6 +108,8 @@ class ObjectManager:
 
         if "scene_metadata" in self.__dict__:
             del self.__dict__["scene_metadata"]
+        if "_mesh_name_to_file" in self.__dict__:
+            del self.__dict__["_mesh_name_to_file"]
 
     def object_metadata(self, object_or_name_or_id: ObjectOrNameOrIdType) -> dict:
         return (
@@ -122,6 +125,112 @@ class ObjectManager:
     @property
     def model_path(self) -> Path:
         return Path(self._env.current_model_path)
+
+    @cached_property
+    def _mesh_name_to_file(self) -> dict[str, str]:
+        """Lazily parsed map from mesh name to file path from the scene XML <asset> section."""
+        tree = ET.parse(self.model_path)
+        asset_elem = tree.getroot().find("asset")
+        if asset_elem is None:
+            return {}
+        result: dict[str, str] = {}
+        for mesh_elem in asset_elem.findall("mesh"):
+            name = mesh_elem.get("name")
+            file = mesh_elem.get("file")
+            if name and file:
+                result[name] = file
+        return result
+
+    def get_collision_obj_files(
+        self, object_or_name_or_id: ObjectOrNameOrIdType, xml_path: Path | None = None
+    ) -> tuple[list[Path], np.ndarray]:
+        """Return collision mesh file paths and the world pose of the body holding them.
+
+        Parses an XML file to find all descendant collision geoms of the
+        object's body, resolves their mesh references to file paths, and
+        returns the list of absolute .obj file paths together with the 4x4
+        world pose of the child body that contains the geoms.
+
+        Args:
+            object_or_name_or_id: The object to look up.
+            xml_path: Optional XML file to parse instead of the scene model path.
+                      Useful for dynamically added objects whose meshes are defined
+                      in a standalone XML rather than the scene XML.
+
+        Returns:
+            A tuple of (obj_files, pose_4x4) where obj_files is a list of
+            absolute .obj file paths and pose_4x4 is the 4x4 world pose of
+            the child body holding the collision geoms.
+        """
+        from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+
+        object_name = self.get_object_name(object_or_name_or_id)
+        source_path = xml_path if xml_path is not None else self.model_path
+        tree = ET.parse(source_path)
+        root = tree.getroot()
+
+        identity_pose = np.eye(4)
+
+        # Build mesh name -> file map from the source XML's <asset> section
+        if xml_path is not None:
+            asset_elem = root.find("asset")
+            mesh_name_to_file: dict[str, str] = {}
+            if asset_elem is not None:
+                for mesh_elem in asset_elem.findall("mesh"):
+                    name = mesh_elem.get("name")
+                    file = mesh_elem.get("file")
+                    if name and file:
+                        mesh_name_to_file[name] = file
+        else:
+            mesh_name_to_file = self._mesh_name_to_file
+
+        # Find the body element matching the object name
+        if xml_path is not None:
+            base_name = object_name.split("/")[-1]
+            body_elem = root.find(f".//body[@name='{base_name}']")
+            if body_elem is None:
+                # Fallback: standalone XMLs typically have a single top-level body
+                worldbody = root.find("worldbody")
+                if worldbody is not None:
+                    bodies = worldbody.findall("body")
+                    if len(bodies) == 1:
+                        body_elem = bodies[0]
+        else:
+            body_elem = root.find(f".//body[@name='{object_name}']")
+
+        if body_elem is None:
+            return [], identity_pose
+
+        # Collect collision geoms (descendants with "collision" in their name and type="mesh")
+        obj_files: list[Path] = []
+        for geom in body_elem.iter("geom"):
+            if geom.get("class") == "__VISUAL_MJT__":
+                continue
+            if geom.get("type") != "mesh":
+                continue
+            mesh_name = geom.get("mesh")
+            if mesh_name and mesh_name in mesh_name_to_file:
+                rel_path = mesh_name_to_file[mesh_name]
+                if rel_path.startswith("../../"):
+                    abs_path = ASSETS_DIR / rel_path[len("../../") :]
+                else:
+                    abs_path = source_path.parent / rel_path
+                obj_files.append(abs_path.resolve())
+
+        # Find the child body that holds the collision geoms and get its world pose
+        parent_body_id = self.get_object_body_id(object_or_name_or_id)
+        child_ids = np.where(self.model.body_parentid == parent_body_id)[0]
+        geom_body_id = parent_body_id
+        for child_id in child_ids:
+            if self.model.body_geomnum[child_id] > 0:
+                geom_body_id = int(child_id)
+                break
+
+        pose = np.eye(4)
+        pose[:3, :3] = self.data.xmat[geom_body_id].reshape(3, 3)
+        pose[:3, 3] = self.data.xpos[geom_body_id]
+
+        return obj_files, pose
 
     def get_object_name(self, object_or_name_or_id: ObjectOrNameOrIdType) -> str:
         if isinstance(object_or_name_or_id, str):
@@ -258,7 +367,7 @@ class ObjectManager:
         return set()
 
     @staticmethod
-    def most_concrete_synset(all_hypernyms) -> str:
+    def most_concrete_synset(all_hypernyms) -> Any:
         for current in all_hypernyms:
             if not any(is_hypernym_of(other, current) for other in all_hypernyms - {current}):
                 return current
@@ -813,14 +922,28 @@ class ObjectManager:
                 ):
                     continue
 
-                region = self.compute_placement_region(object_or_name_or_id)
+                region = self.compute_placement_region(name)
                 xy_min, xy_max, top_z = region["xy_min"], region["xy_max"], float(region["top_z"])
                 in_xy = (xy_min[0] <= xy[0] <= xy_max[0]) and (xy_min[1] <= xy[1] <= xy_max[1])
+                clearance = obj_bottom - top_z
+                z_check = top_z <= obj_bottom + z_clearance_eps
+
+                is_better = top_z > best_top
+
+                # Debug log for each candidate
+                log.debug(
+                    f"[get_support_below] {oname} <- {name}: "
+                    f"clearance={clearance:.4f}, in_xy={in_xy}, "
+                    f"z_check={z_check} (top_z={top_z:.4f} <= obj_bottom={obj_bottom:.4f} + eps={z_clearance_eps:.4f}), "
+                    f"is_better={is_better} (top_z={top_z:.4f} vs best={best_top:.4f})"
+                )
+
                 # TODO The problem here must be that for objaverse assets, only one body has all the possible shelves
                 #  but It could also be due to a suboptimal placement region computation
                 if in_xy and (top_z <= obj_bottom + z_clearance_eps) and (top_z > best_top):
                     best_top = top_z
                     best_name = name
+                    log.debug(f"[get_support_below] New best support: {best_name}")
 
             if self._caching_enabled:
                 cache_in_use[oname]["support_below"] = best_name
@@ -893,20 +1016,26 @@ class ObjectManager:
         return f"{name} (category={category} synset={synset}) center=({pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}) {on_str}, {room_str}"
 
     @staticmethod
-    def prefilter_with_clip(target_type: str, uids: list[str], min_sim: float = 0.25) -> list[str]:
-        kept_uids = [uid for uid in uids if uid in ObjectMeta.all_uids()]
+    def prefilter_with_clip(
+        target_type: str | list[str], uids: list[str], min_sim: float = 0.25
+    ) -> list[str]:
+        all_uids = set(ObjectMeta.all_uids())
+        kept_uids = [uid for uid in uids if uid in all_uids]
         if not kept_uids:
             return []
 
-        expression = normalize_expression(target_type)
+        if isinstance(target_type, str):
+            expressions = [normalize_expression(target_type)]
+        else:
+            expressions = [normalize_expression(cur_type) for cur_type in target_type]
         try:
-            text_features = compute_text_clip([expression])
+            text_features = compute_text_clip(expressions)
         except ValueError:
             log.warning("No image features, using all uids")
             return uids
 
         img_features = ObjectMeta.img_features(kept_uids)
-        sims = clip_sim(img_features, text_features).flatten()
+        sims = clip_sim(img_features, text_features).max(axis=1).flatten()
         return np.array(kept_uids)[sims >= min_sim].tolist()
 
     def referral_expression_priority(
@@ -939,12 +1068,20 @@ class ObjectManager:
 
         asset_ids = sorted(set(name_to_uid.values()))
 
-        try:
-            img = ObjectMeta.img_features(asset_ids)
-        except ValueError:
-            log.warning("No image features, using dummy description scores.")
-            names = self.get_natural_object_names(object_or_name_or_id, [])
-            return [(1.0, 1.0, name) for name in names]
+        img = []
+        kept_asset_ids = []
+        for asset_id in asset_ids:
+            try:
+                img.append(ObjectMeta.img_features(asset_id))
+                kept_asset_ids.append(asset_id)
+            except ValueError:
+                log.warning(f"No image features for {asset_id}, ignoring.")
+
+        if name_to_uid[target_name] not in kept_asset_ids:
+            raise ValueError(f"Missing asset id {name_to_uid[target_name]} from {target_name}")
+
+        img = np.concatenate(img, axis=0)
+        asset_ids = kept_asset_ids
 
         descriptions = self.get_natural_object_names(
             object_or_name_or_id,
@@ -954,7 +1091,7 @@ class ObjectManager:
             sim = clip_sim(img, compute_text_clip(descriptions))
         except NameError:
             log.warning("No CLIP module, using dummy description scores.")
-            # e.g. when you don't want to install it / no gpu.
+            # e.g. when you don't want to install it / no gpu (?)
             names = self.get_natural_object_names(object_or_name_or_id, [])
             return [(1.0, 1.0, name) for name in names]
 

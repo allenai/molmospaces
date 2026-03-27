@@ -17,7 +17,7 @@ except ImportError as e:
         "  2. Make sure the Python package is installed:\n"
         "       pip install hidapi\n"
         "  3. You may also need udev rules to access the device without sudo:\n"
-        "       echo 'SUBSYSTEM==\"hidraw\", ATTRS{idVendor}==\"256f\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/99-spacemouse.rules\n"
+        '       echo \'SUBSYSTEM=="hidraw", ATTRS{idVendor}=="256f", MODE="0666"\' | sudo tee /etc/udev/rules.d/99-spacemouse.rules\n'
         "       sudo udevadm control --reload-rules && sudo udevadm trigger\n"
     ) from e
 from scipy.spatial.transform import Rotation as R
@@ -61,12 +61,14 @@ class _SpaceMouseReader:
                 "Possible fixes:\n"
                 "  1. Unplug and replug the SpaceMouse after setting udev rules.\n"
                 "  2. If udev rules are not set yet:\n"
-                "       echo 'SUBSYSTEM==\"hidraw\", ATTRS{idVendor}==\"256f\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/99-spacemouse.rules\n"
+                '       echo \'SUBSYSTEM=="hidraw", ATTRS{idVendor}=="256f", MODE="0666"\' | sudo tee /etc/udev/rules.d/99-spacemouse.rules\n'
                 "       sudo udevadm control --reload-rules && sudo udevadm trigger\n"
                 "  3. Verify the product ID matches your device:\n"
                 "       python -c \"import hid; [print(hex(d['vendor_id']), hex(d['product_id']), d['product_string']) for d in hid.enumerate(0x256f, 0)]\"\n"
             ) from e
-        log.info(f"SpaceMouse: {self._dev.get_manufacturer_string()} {self._dev.get_product_string()}")
+        log.info(
+            f"SpaceMouse: {self._dev.get_manufacturer_string()} {self._dev.get_product_string()}"
+        )
 
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
@@ -75,7 +77,6 @@ class _SpaceMouseReader:
         x, y, z, roll, pitch, yaw = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         prev_left = False
         prev_right = False
-        t_last_left = -1.0
 
         while True:
             d = self._dev.read(13)
@@ -155,7 +156,9 @@ class SpaceMouse_Policy(InferencePolicy):
             on_release=self._on_release,
         )
         self._listener.start()
-        log.info("SpaceMouse ready. Right click: engage. Left click: toggle gripper. Right double-click: disengage. q: pause.")
+        log.info(
+            "SpaceMouse ready. Right click: engage. Left click: toggle gripper. Right double-click: disengage. q: pause."
+        )
 
     def _on_press(self, key):
         self._pressed.add(key)

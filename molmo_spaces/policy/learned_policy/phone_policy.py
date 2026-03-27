@@ -35,24 +35,23 @@ class Phone_Policy(InferencePolicy):
 
     def render(self, obs):
         if self.robot_type == "floating_rum":
+            views = np.concatenate([obs["wrist_camera"], obs["exo_camera_1"]], axis=1)
+
             try:
                 window_exists = cv2.getWindowProperty("views", cv2.WND_PROP_VISIBLE) >= 0
             except cv2.error:
                 window_exists = False
-
             if not window_exists:
                 screen_res = (1920, 1080)
-                aspect_ratio = obs["wrist_camera"].shape[0] / obs["wrist_camera"].shape[1]
+                aspect_ratio = views.shape[0] / views.shape[1]
                 new_width = int(screen_res[0] * 0.9)
                 new_height = int(new_width * aspect_ratio)
-
                 cv2.namedWindow("views", cv2.WINDOW_NORMAL)
                 cv2.resizeWindow("views", new_width, new_height)
                 cv2.moveWindow(
                     "views", (screen_res[0] - new_width) // 2, (screen_res[1] - new_height) // 2
                 )
-
-            cv2.imshow("views", cv2.cvtColor(obs["wrist_camera"], cv2.COLOR_RGB2BGR))
+            cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
             cv2.waitKey(1)
         else:
             views = np.concatenate(

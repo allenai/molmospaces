@@ -3,7 +3,6 @@ import time
 
 import cv2
 import numpy as np
-from pynput import keyboard
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -20,6 +19,8 @@ class Keyboard_Policy(InferencePolicy):
         task_type: str,
     ) -> None:
         super().__init__(exp_config, task_type)
+        from pynput import keyboard
+
         self.robot_type = exp_config.robot_config.name
         self.step_size = exp_config.policy_config.step_size
         self.rot_step = exp_config.policy_config.rot_step

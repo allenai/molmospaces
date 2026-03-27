@@ -152,6 +152,97 @@ class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
             self.policy_cls = PickAndPlacePlannerPolicy
 
 
+class CuroboOpenClosePlannerPolicyConfig(OpenClosePlannerPolicyConfig):
+    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
+    right_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
+    left_planner_joint_ranges: dict[
+        str, tuple
+    ] = {  # Joint ranges for motion planning. Should match curobo config.
+        # Move group : Joint indices in curobo config
+        "base": (0, 3),
+        "left_arm": (3, 10),
+    }
+    right_planner_joint_ranges: dict[
+        str, tuple
+    ] = {  # Joint ranges for motion planning. Should match curobo config.
+        # Move group : Joint indices in curobo config
+        "base": (0, 3),
+        "right_arm": (3, 10),
+    }
+    enable_collision_avoidance: bool = True
+    batch_size: int = 4
+    max_grasping_timesteps: int = 5
+    max_opening_timesteps: int = 5
+    max_steps_per_waypoint: int = 10
+    max_batch_plan_attempts: int = 4
+    pregrasp_z_offset: float = 0.02
+    max_planning_reattempts: int = 2
+    gripper_closed_pos: float = 0.0
+    gripper_closed_tolerance: float = 0.005
+    velocity_constraints: dict[str, float] = {
+        "base": 0.5,
+        "head": 0.5,
+        "right_arm": 0.5,
+        "left_arm": 0.5,
+    }
+    grasp_vertical_cost_weight: float = 2.0
+    attach_obj: bool = False
+    max_settle_steps: int = 5
+    max_height_adjustment_steps: int = 10
+    server_timeout: float | None = (
+        300.0  # gRPC deadline for motion planning calls (seconds), None = no deadline
+    )
+    server_urls: list[str] = [
+        "jupiter-cs-aus-107.reviz.ai2.in:10002",
+    ]
+
+
+class CuroboPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
+    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
+    right_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
+    left_planner_joint_ranges: dict[
+        str, tuple
+    ] = {  # Joint ranges for motion planning. Should match curobo config.
+        # Move group : Joint indices in curobo config
+        "base": (0, 3),
+        "left_arm": (3, 10),
+    }
+    right_planner_joint_ranges: dict[
+        str, tuple
+    ] = {  # Joint ranges for motion planning. Should match curobo config.
+        # Move group : Joint indices in curobo config
+        "base": (0, 3),
+        "right_arm": (3, 10),
+    }
+    enable_collision_avoidance: bool = True
+    batch_size: int = 4
+    max_grasping_timesteps: int = 5
+    max_opening_timesteps: int = 5
+    max_steps_per_waypoint: int = 10
+    max_batch_plan_attempts: int = 4
+    pregrasp_z_offset: float = 0.02  # [m]
+    max_planning_reattempts: int = 5
+    gripper_closed_pos: float = 0.0  # [m]
+    gripper_closed_tolerance: float = 0.005  # [m]
+    velocity_constraints: dict[str, float] = {
+        "base": 0.5,  # [m / policy_dt_ms]
+        "head": 0.5,  # [rad / policy_dt_ms]
+        "right_arm": 0.5,  # [rad / policy_dt_ms]
+        "left_arm": 0.5,  # [rad / policy_dt_ms]
+    }
+    grasp_vertical_cost_weight: float = 0.5
+    attach_obj: bool = False
+    max_settle_steps: int = 5
+    server_timeout: float | None = (
+        300.0  # gRPC deadline for motion planning calls (seconds), None = no deadline
+    )
+    server_urls: list[str] = [
+        "jupiter-cs-aus-107.reviz.ai2.in:10002",
+    ]
+
+
 class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
 
@@ -230,7 +321,7 @@ class DoorOpeningPolicyConfig(BasePolicyConfig):
     left_gripper_open_command: dict = {"left_gripper": -100.0}
     right_gripper_close_command: dict = {"right_gripper": 100.0}
     right_gripper_open_command: dict = {"right_gripper": -100.0}
-    gripper_closed_tolerance: float = 0.005
+    gripper_closed_tolerance: float = 0.005  # [m]
     max_grasping_timesteps: int = 5
 
     # Door opening parameters
@@ -310,3 +401,32 @@ class AStarNavToObjPolicyConfig(NavToObjPlannerPolicyConfig):
             )
 
             self.policy_cls = AStarSmoothPlannerPolicy
+
+
+class DummyPolicyConfig(BasePolicyConfig):
+    """Policy config that uses DummyPolicy for testing."""
+
+    policy_type: str = "dummy"
+    policy_cls: type = None  # Set in model_post_init
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.dummy_policy import DummyPolicy
+
+            object.__setattr__(self, "policy_cls", DummyPolicy)
+
+
+class BrownianMotionPolicyConfig(BasePolicyConfig):
+    """Policy that applies Gaussian noise increments over noop control, resulting in Brownian motion."""
+
+    policy_cls: type = None
+    policy_type: str = "dummy"
+    std: float = 0.1
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy
+
+            self.policy_cls = BrownianMotionPolicy

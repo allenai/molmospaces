@@ -2,6 +2,7 @@ import gc
 import logging
 import multiprocessing as mp
 import os
+import pprint
 import random
 import signal
 import threading
@@ -31,7 +32,6 @@ from molmo_spaces.utils.mp_logging import (
 )
 from molmo_spaces.utils.profiler_utils import DatagenProfiler, Profiler
 from molmo_spaces.utils.save_utils import prepare_episode_for_saving, save_trajectories
-from molmo_spaces.policy.learned_policy.utils import PromptSampler
 
 # Set multiprocessing context based on CUDA availability
 # forkserver is safer for CUDA, spawn for fallback
@@ -128,13 +128,6 @@ def setup_policy(
 
     if preloaded_policy is not None:
         policy = preloaded_policy
-        if policy.task_type != exp_config.task_type:
-            policy.task_type = exp_config
-            policy.prompt_sampler = PromptSampler(
-                task_type=exp_config.task_type,
-                prompt_templates=exp_config.policy_config.prompt_templates,
-                prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
-            )
     else:
         policy = exp_config.policy_config.policy_cls(exp_config, task)
 
@@ -691,6 +684,7 @@ class ParallelRolloutRunner:
         viewer=None,
         shutdown_event=None,
         datagen_profiler: DatagenProfiler | None = None,
+        end_on_success: bool = False,
     ) -> bool:
         """Execute a single rollout with the given task and policy.
 
@@ -749,7 +743,7 @@ class ParallelRolloutRunner:
                 profiler.start("task_step")
             if datagen_profiler is not None:
                 datagen_profiler.start("task_step")
-            if action_cmd == None:
+            if action_cmd is None:
                 print("Policy returned None action, ending episode")
                 break
             observation, reward, terminal, truncated, infos = task.step(action_cmd)
@@ -760,7 +754,7 @@ class ParallelRolloutRunner:
 
             step_count += 1
             # Add termination if succ
-            if "success" in infos[0] and infos[0]["success"]:
+            if end_on_success and "success" in infos[0] and infos[0]["success"]:
                 success = True
                 break
 
@@ -1021,6 +1015,7 @@ class ParallelRolloutRunner:
                             viewer=viewer,
                             shutdown_event=shutdown_event,
                             datagen_profiler=datagen_profiler,
+                            end_on_success=exp_config.end_on_success,
                         )
 
                         num_sequential_rollout_failures = 0
@@ -1201,6 +1196,11 @@ class ParallelRolloutRunner:
             f"with {self.samples_per_house} episodes each ({total_expected_episodes} total episodes) "
             f"using {self.config.num_workers} worker processes"
         )
+
+        # make a copy of the config in the output directory
+        self.logger.info("Evaluation configuration:")
+        self.logger.info(pprint.pformat(self.config.model_dump()))
+        self.config.save_config(output_dir=Path(self.config.output_dir))
 
         # Start timing for WandB metrics
         start_time = time.time()
