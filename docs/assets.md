@@ -65,6 +65,36 @@ export MLSPACES_FORCE_INSTALL=True
 ```
 to replace them with the new provided versions.
 
+
+### MujoCo Assets Quick Start
+
+**Scene downloading.**  Assuming we have exported some convenient `MLSPACES_ASSETS_DIR`, we can install our first scene by:
+
+```python
+from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
+from molmo_spaces.molmo_spaces_constants import get_scenes
+
+install_scene_with_objects_and_grasps_from_path(get_scenes("ithor", "train")["train"][1])
+```
+
+and view it with
+
+```bash
+python -m mujoco.viewer --mjcf $MLSPACES_ASSETS_DIR/scenes/ithor/FloorPlan1_physics.xml
+```
+That's it!
+
+### Isaac-Sim Assets Quick Start
+
+Please refer to this [README.md](molmo_spaces_isaac/README.md) for instructions
+on how to setup and use the `MolmoSpaces` assets in `IsaacSim`.
+
+### ManiSkill Assets Quick Start
+
+Please refer to this [README.md](molmo_spaces_maniskill/README.md) for instructions
+on how to setup and use the `MolmoSpaces` assets in `ManiSkill`.
+
+
 ## Asset search
 
 To search assets of a specific type, we can just do
@@ -98,35 +128,6 @@ The pinned assets file should have the same structure as `DATA_TYPE_TO_SOURCE_TO
 ```
 
 
-## MujoCo Assets Quick Start
-
-**Scene downloading.**  Assuming we have exported some convenient `MLSPACES_ASSETS_DIR`, we can install our first scene by:
-
-```python
-from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
-from molmo_spaces.molmo_spaces_constants import get_scenes
-
-install_scene_with_objects_and_grasps_from_path(get_scenes("ithor", "train")["train"][1])
-```
-
-and view it with
-
-```bash
-python -m mujoco.viewer --mjcf $MLSPACES_ASSETS_DIR/scenes/ithor/FloorPlan1_physics.xml
-```
-
-That's it!
-
-
-## Isaac-Sim Quick Start
-
-Please refer to this [README.md](molmo_spaces_isaac/README.md) for instructions
-on how to setup and use the `MolmoSpaces` assets in `IsaacSim`.
-
-## ManiSkill Quick Start
-
-Please refer to this [README.md](molmo_spaces_maniskill/README.md) for instructions
-on how to setup and use the `MolmoSpaces` assets in `ManiSkill`.
 
 
 
