@@ -55,7 +55,7 @@ cd molmospaces
 ```
 
 ```bash
-pip install -e .[mujoco]
+pip install -e ".[mujoco]"
 ```
 One of the following options must be provided:
 - `mujoco` to use the classic MuJoCo renderer
@@ -67,8 +67,8 @@ The optional installation options are:
 - `housegen` installs dependencies for house generation pipeline from iTHOR, ProcTHOR, or Holodeck JSONs
 - `curobo` installs CuRobo for GPU-accelerated planning
 
-
 You may wish to specify some [environment variables](#environment-variables) to configure behavior.
+Currently ``molmospaces` supports Linux and Mac.
 
 ### Installing the Filament renderer (optional)
 
@@ -85,7 +85,7 @@ pip install -i https://test.pypi.org/simple/ mujoco-filament
 pip install -e .[mujoco-filament]
 ```
 
-### Installing Curobo (optional)
+### Installing Curobo (optional, used only for RB-Y1 tasks)
 
 For curobo support, inside of your conda environment, install with:
 
@@ -115,6 +115,29 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 | `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `../assets` relative to `molmo-spaces` directory |
 | `MLSPACES_FORCE_INSTALL` | Override existing assets | `True` |
 | `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |  |
+
+
+### Quick Test
+
+Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive viewer (push "w" for wire-frame view to see the robot more easily). Assets should be downloaded automatically for all runs.
+
+```bash
+# Linux
+python scripts/datagen/run_pipeline.py --viewer --seed 3
+# Mac
+mjpython scripts/datagen/run_pipeline.py --viewer --seed 3
+```
+
+The MolmoSpaces codebase three entry points for data generation, evaluation, and debugging. The two intial enty points make use of experiment configus to configure run. The third is more easily modifayble, with some logic for constructing runs on the fly, however constructing experiments is complicated and not all permutations have been tested fully.
+
+```bash
+molmo_spaces/evaluation/eval_main.py  # evaluation
+molmo_spaces/data_generation/main.py  # data generation
+scripts/datagen/run_pipeline.py       # debugging
+```
+
+For more information on using the other entry-points see the [evaluation](#molmospaces-benchmarks) and [data generation](#data-generation) sections of this readme. The base experiment config class is called `MlSpacesExpConfig` and is located in `molmo_spaces/configs/abstract_exp_config.py`, it contains documentation on configuring experiments.
+
 
 ## MolmoSpaces Assets
 
@@ -150,7 +173,7 @@ for it, (uid, sim) in enumerate(zip(uids, sims)):
   )
 ```
 
-### MuJoCo Quick Start
+### MolmoSpaces Assets Quick Start
 
 **Scene downloading.**  Assuming we have exported some convenient `MLSPACES_ASSETS_DIR`, we can install our first scene by:
 
@@ -245,6 +268,14 @@ To control a robot via phone based teleoperation do the following (only iPhones 
 - Click the Toggle to Grasp
 - Click the Button to go to the next episode
 
+## Data Generation
+
+Our data generation system make use of pre-defined experiment configs that specify scenes, robots, tasks and more.
+Example experiment configs can be found in e.g. `molmo_spaces/data_generation/config/object_manipulation_datagen_configs.py`
+
+```bash
+python molmo_spaces/data_generation/main.py FrankaPickOmniCamConfig
+```
 
 ## Development
 
