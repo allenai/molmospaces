@@ -240,6 +240,17 @@ To control a robot via phone based teleoperation do the following (only iPhones 
 - Click the Button to go to the next episode
 
 
+## Related Repositorys:
+
+The repositories related to this project can be found here:
+
+| Repository | Purpose |
+|---|---|
+| [ai2_robot_infra](https://github.com/allenai/ai2_robot_infra) | Real robot infrastructure and utilities, for experiments |
+| [MolmoBot](https://github.com/allenai/MolmoBot) | MolmoBot policy code |
+| [curobo](https://github.com/allenai/curobo) | Ai2 Curobo brnach |
+
+
 ## Development
 
 ### Code Formatting

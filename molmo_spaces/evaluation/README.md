@@ -82,22 +82,6 @@ Also, see `molmo_spaces/evaluation/configs/evaluation_configs.py` for more examp
 
 ---
 
-## Running benchmark with a custom asset
-
-You might want to replace the target rigid object for `pick` or `pick-and-place` with a custom asset for a specific episode.
-
-```bash
-python molmo_spaces/evaluation/eval_main.py \
-    molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig \
-    --benchmark_dir assets/benchmarks/path-to-benchmark.json \
-    --checkpoint_path <path/to/checkpoint/pi0_fast_droid_jointpos> \
-    --task_horizon_steps 500
-    --idx 0
-    --add_custom_object
-    --custom_object_path <path/to/custom/object.xml>
-    --custom_object_name <natural/language/name/of/object>
-```
-
 
 
 ## Implementing Eval in an External Repo
@@ -216,6 +200,25 @@ for r in results.episode_results:
 ```
 
 You can also pass `preloaded_policy=` if you've already instantiated the policy.
+
+
+## Running benchmark with a custom asset
+
+You might want to replace the target rigid object for `pick` or `pick-and-place` with a custom asset for a specific episode.
+
+```bash
+python molmo_spaces/evaluation/eval_main.py \
+    molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig \
+    --benchmark_dir assets/benchmarks/path-to-benchmark.json \
+    --checkpoint_path <path/to/checkpoint/pi0_fast_droid_jointpos> \
+    --task_horizon_steps 500
+    --idx 0
+    --add_custom_object
+    --custom_object_path <path/to/custom/object.xml>
+    --custom_object_name <natural/language/name/of/object>
+```
+
+
 
 ## Sample Episode Spec
 
