@@ -3,6 +3,21 @@
 Run learned policies on fixed, reproducible benchmarks.
 
 
+## Resources
+
+This README focuses on benchmark installation and running.
+
+### Related documentation
+- Theoretical Notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts/export?format=pdf)
+- Benchmark usage documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g/export?format=pdf). 
+
+
+### Submitting results
+
+1. Run the policy and evaluation script,following the instructions below to obtain .csv files or a zip of them.
+2. Create a GitHub issue in the repository mentioned [here](https://github.com/allenai/molmospaces/issues/8).
+3. Assign @BlGene or @omarrayyann, also feel free to reach out for help.
+
 ## Concepts
 
 A **benchmark** is a `benchmark.json` file containing a list of self-contained episode specs. Each spec includes everything needed to recreate a task: scene, robot pose, object poses, cameras, language instructions.
