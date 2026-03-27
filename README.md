@@ -68,7 +68,7 @@ The optional installation options are:
 - `curobo` installs CuRobo for GPU-accelerated planning
 
 You may wish to specify some [environment variables](#environment-variables) to configure behavior.
-Currently ``molmospaces` supports Linux and Mac.
+Currently `molmospaces` supports Linux and Mac.
 
 ### Installing the Filament renderer (optional)
 
