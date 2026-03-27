@@ -64,26 +64,25 @@ respectively, and then symlinked the correct version into the provided folder (i
 You can then open a scene in `IsaacSim` by just dragging and dropping the `usd` file
 into the editor. For example, below we show the `scene.usda` associated with the `FloorPlan1`
 scene from the `ithor` dataset:
+![gif-fridge-isaacsim][3]
 
 ## Finding assets
 
-To search assets of a specific type, we can just do
+To search for assets of a specific type, we can just do
 
 ```python
 from molmo_spaces.utils.object_retriever import ObjectRetriever
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
 r = ObjectRetriever()
-uids, sims = r.query("cellphone")
+uids, sims = r.query("a 3D model of a cellphone")
 for it, (uid, sim) in enumerate(zip(uids, sims)):
   anno = ObjectMeta.annotation(uid)
   print(
-      f"{it} {sim=} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
+      f"{it} sim={sim} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
       f" {anno['description_short']['five_words']}"
   )
 ```
-
-![gif-fridge-isaacsim][3]
 
 [0]: <https://docs.isaacsim.omniverse.nvidia.com/5.1.0/index.html> (isaacsim-website)
 [1]: <https://isaac-sim.github.io/IsaacLab/main/index.html> (isaaclab-website)

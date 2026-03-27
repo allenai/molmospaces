@@ -112,6 +112,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "thormap": "20251209",
     },
     benchmarks={
+        "molmospaces-bench-v1": "20260210",
         "molmospaces-bench-v2": "20260327",
     },
 )

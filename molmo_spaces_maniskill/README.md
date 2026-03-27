@@ -96,18 +96,18 @@ The viewer should be launched and you should be able to see the scene in the vie
 
 ## Finding assets
 
-To search assets of a specific type, we can just do
+To search for assets of a specific type, we can just do
 
 ```python
 from molmo_spaces.utils.object_retriever import ObjectRetriever
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
 r = ObjectRetriever()
-uids, sims = r.query("cellphone")
+uids, sims = r.query("a 3D model of a cellphone")
 for it, (uid, sim) in enumerate(zip(uids, sims)):
   anno = ObjectMeta.annotation(uid)
   print(
-      f"{it} {sim=} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
+      f"{it} sim={sim} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
       f" {anno['description_short']['five_words']}"
   )
 ```

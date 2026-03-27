@@ -51,7 +51,7 @@ pre-commit install
 After this, you can run `pre-commit run` on your local changes that are staged,
 it should show something like this:
 
-![pre-commit example][img-doc-pre-commit-example-1]
+![pre-commit example](images/img_doc_pre_commit_sample.png)
 
 In this case the hooks catched an issue with the line ending of the `requirements.txt`
 file, it complains that files should have an empty line at the end (we could disable
@@ -127,7 +127,7 @@ and you can grab the rule ID for that lint check.
 
 For formatting and linting you might want to install the `ruff` vscode extension:
 
-![ruff-vscode-extension][img-docs-ruff-vscode-extension]
+![ruff-vscode-extension](images/img_docs_ruff_vscode_extension.png)
 
 To set it up, just add this to your user settings (change `formatOnSave` to your
 desired setting):

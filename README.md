@@ -146,23 +146,25 @@ This readme contains more information on [experiment configs](#experiment-config
 
 Molmospaces provides scenes, objects, robots, and benchmarks. These can be downloaded using an asset manager to automatically fetch and version-control asset dependencies. A number of assets are provided; this overview explains the naming of the assets in code:
 
-| Type | Code Name | Paper Name |Description|Size|
-|---|---|---|---|---|
-| objects| thor |   |hand-crafted kitchen assets ~1.1k||
-| objects| objaverse |  |converted Objaverse assets ~130k||
-| scenes | ithor | MSCrafted |hand-crafted, many articulated assets||
-| scenes | procthor-10k | MSProc | procedurally generated with THOR assets||
-| scenes | procthor-objaverse | MSProcObja |procedurally generated with Objaverse assets||
-| scenes | holodeck | MSMultiType |LLM generated with Objaverse assets||
-| benchmark|   | MS-Bench v1 | base benchmark for atomic tasks ||
+| Type | Code Name            | Paper Name   | Description                                  | Size  |
+|---|----------------------|--------------|----------------------------------------------|-------|
+| objects| thor                 |              | hand-crafted indoor assets                   | ~2k   |
+| objects| objaverse            |              | converted Objaverse assets                   | ~129k |
+| scenes | ithor                | MSCrafted    | hand-crafted, many articulated assets        | 120   |
+| scenes | procthor-10k         | MSProc       | procedurally generated with THOR assets      | ~120k |
+| scenes | procthor-objaverse   | MSProcObja   | procedurally generated with Objaverse assets | ~110k |
+| scenes | holodeck             | MSMultiType  | LLM generated with Objaverse assets          | ~110k |
+| benchmark| molmospaces_bench_v1 | MS-Bench v1 | base benchmark for atomic tasks              |       |
+| benchmark| molmospaces_bench_v2 | MS-Bench v2 | extended benchmark for atomic tasks          |       |
+
 
 Please refer to [here](./docs/assets.md) for instructions to set up data directories, but you shouldn't need to manually manage any dependencies beyond setting the appropriate environment variables. If you are interested only in data generation and evaluation using MujoCo you can skip the rest of this section.
 
 
-| Simulator | Documentation |
-|---|---|
-| MuJoCo | [MuJoCo Assets Quick Start Instructions](docs/assets.md#mujoco-assets-quick-start) |
-| Isaac-Sim | [Isaac-Sim Assets Quick Start Instructions](molmo_spaces_isaac/README.md) |
+| Simulator | Documentation                                                                 |
+|---|-------------------------------------------------------------------------------|
+| MuJoCo | [MuJoCo Assets Quick Start Instructions](docs/assets.md#mujoco-assets)        |
+| Isaac-Sim | [Isaac-Sim Assets Quick Start Instructions](molmo_spaces_isaac/README.md)     |
 | ManiSkill | [ManiSkill Assets Quick Start Instructions](molmo_spaces_maniskill/README.md) |
 
 ## Experiment Configs
@@ -306,5 +308,15 @@ The xml files have been modified from the original versions provided by the foll
     title={MolmoSpaces: A Large-Scale Open Ecosystem for Robot Navigation and Manipulation},
     author={Yejin Kim and Wilbert Pumacay and Omar Rayyan and Max Argus and Winson Han and Eli VanderBilt and Jordi Salvador and Abhay Deshpande and Rose Hendrix and Snehal Jauhri and Shuo Liu and Nur Muhammad Mahi Shafiullah and Maya Guru and Arjun Guru and Ainaz Eftekhar and Karen Farley and Donovan Clay and Jiafei Duan and Piper Wolters and Alvaro Herrasti and Ying-Chun Lee and Georgia Chalvatzaki and Yuchen Cui and Ali Farhadi and Dieter Fox and Ranjay Krishna},
     year={2026},
+}
+
+@misc{deshpande2026molmobot,
+      title={MolmoB0T: Large-Scale Simulation Enables Zero-Shot Manipulation},
+      author={Abhay Deshpande and Maya Guru and Rose Hendrix and Snehal Jauhri and Ainaz Eftekhar and Rohun Tripathi and Max Argus and Jordi Salvador and Haoquan Fang and Matthew Wallingford and Wilbert Pumacay and Yejin Kim and Quinn Pfeifer and Ying-Chun Lee and Piper Wolters and Omar Rayyan and Mingtong Zhang and Jiafei Duan and Karen Farley and Winson Han and Eli Vanderbilt and Dieter Fox and Ali Farhadi and Georgia Chalvatzaki and Dhruv Shah and Ranjay Krishna},
+      year={2026},
+      eprint={2603.16861},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2603.16861},
 }
 ```
