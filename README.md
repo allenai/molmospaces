@@ -159,22 +159,11 @@ Molmospaces provides scenes, objects, robots, and benchmarks. These can be downl
 Please refer to [here](./docs/assets.md) for instructions to set up data directories, but you shouldn't need to manually manage any dependencies beyond setting the appropriate environment variables. If you are interested only in data generation and evaluation using MujoCo you can skip the rest of this section.
 
 
-### MuJoCo Assets Quick Start
-
-Please refer to [this](docs/assets.md#mujoco-assets-quick-start) documentation for instructions
-on how to setup and use the `MolmoSpaces` assets in `MuJoCo`.
-
-
-### Isaac-Sim Assets Quick Start
-
-Please refer to this [README.md](molmo_spaces_isaac/README.md) for instructions
-on how to setup and use the `MolmoSpaces` assets in `IsaacSim`.
-
-### ManiSkill Assets Quick Start
-
-Please refer to this [README.md](molmo_spaces_maniskill/README.md) for instructions
-on how to setup and use the `MolmoSpaces` assets in `ManiSkill`.
-
+| Simulator | Documentation |
+|---|---|
+| MuJoCo | [MuJoCo Assets Quick Start Instructions](docs/assets.md#mujoco-assets-quick-start) |
+| Isaac-Sim | [Isaac-Sim Assets Quick Start Instructions](molmo_spaces_isaac/README.md) |
+| ManiSkill | [ManiSkill Assets Quick Start Instructions](molmo_spaces_maniskill/README.md) |
 
 ## Experiment Configs
 
@@ -258,7 +247,7 @@ Before committing, ensure your code is formatted:
 ruff format .
 ```
 
-### Testing
+### Unit Testing
 
 We use pytest for integration testing.
 
