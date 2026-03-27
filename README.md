@@ -70,6 +70,10 @@ The optional installation options are:
 You may wish to specify some [environment variables](#environment-variables) to configure behavior.
 Currently `molmospaces` supports Linux and Mac.
 
+We provide simulation assets for Mujoco, Isaac, and ManiSkill.
+Data genration and Benchmarking are only supported for Mujoco.
+
+
 ### Installing the Filament renderer (optional)
 
 If using `uv`, simply run:
@@ -140,9 +144,7 @@ This readme contains more information on [experiment configs](#experiment-config
 
 ## MolmoSpaces Assets
 
-Molmospaces provides scenes, objects, robots, and benchmarks. These can be downloaded using an asset manager to automatically fetch and version-control asset dependencies. Please refer to [assets/README.md](assets/README.md) for instructions to set up data directories, but you shouldn't need to manually manage any dependencies beyond setting the appropriate environment variables.
-
-A number of assets are provided; this overview explains the naming of the assets in code:
+Molmospaces provides scenes, objects, robots, and benchmarks. These can be downloaded using an asset manager to automatically fetch and version-control asset dependencies. A number of assets are provided; this overview explains the naming of the assets in code:
 
 | Type | Code Name | Paper Name |Description|Size|
 |---|---|---|---|---|
@@ -154,25 +156,9 @@ A number of assets are provided; this overview explains the naming of the assets
 | scenes | holodeck | MSMultiType |LLM generated with Objaverse assets||
 | benchmark|   | MS-Bench v1 | base benchmark for atomic tasks ||
 
-### Asset search
+Please refer to [here](./docs/assets.md) for instructions to set up data directories, but you shouldn't need to manually manage any dependencies beyond setting the appropriate environment variables. If you are interested only in data generation and evaluation using MujoCo you can skip the rest of this section.
 
-To search assets of a specific type, we can just do
-
-```python
-from molmo_spaces.utils.object_retriever import ObjectRetriever
-from molmo_spaces.utils.object_metadata import ObjectMeta
-
-r = ObjectRetriever()
-uids, sims = r.query("cellphone")
-for it, (uid, sim) in enumerate(zip(uids, sims)):
-  anno = ObjectMeta.annotation(uid)
-  print(
-      f"{it} {sim=} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
-      f" {anno['description_short']['five_words']}"
-  )
-```
-
-### MolmoSpaces Assets Quick Start
+### MujoCo Assets Quick Start
 
 **Scene downloading.**  Assuming we have exported some convenient `MLSPACES_ASSETS_DIR`, we can install our first scene by:
 
@@ -188,34 +174,19 @@ and view it with
 ```bash
 python -m mujoco.viewer --mjcf $MLSPACES_ASSETS_DIR/scenes/ithor/FloorPlan1_physics.xml
 ```
-
 That's it!
 
 
-
-### Isaac-Sim Quick Start
+### Isaac-Sim Assets Quick Start
 
 Please refer to this [README.md](molmo_spaces_isaac/README.md) for instructions
 on how to setup and use the `MolmoSpaces` assets in `IsaacSim`.
 
-### ManiSkill Quick Start
+### ManiSkill Assets Quick Start
 
 Please refer to this [README.md](molmo_spaces_maniskill/README.md) for instructions
 on how to setup and use the `MolmoSpaces` assets in `ManiSkill`.
 
-
-### Example of Pinned Assets File (Optional)
-The pinned assets file should have the same structure as `DATA_TYPE_TO_SOURCE_TO_VERSION` in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). For example:
-```json
-{
-    "robots": {
-         "franka_droid": "20260127"
-    },
-    "scenes": {
-        "ithor": "20251217"
-    }
-}
-```
 
 ## Experiment Configs
 
