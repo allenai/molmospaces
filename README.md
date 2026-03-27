@@ -158,23 +158,11 @@ Molmospaces provides scenes, objects, robots, and benchmarks. These can be downl
 
 Please refer to [here](./docs/assets.md) for instructions to set up data directories, but you shouldn't need to manually manage any dependencies beyond setting the appropriate environment variables. If you are interested only in data generation and evaluation using MujoCo you can skip the rest of this section.
 
-### MujoCo Assets Quick Start
 
-**Scene downloading.**  Assuming we have exported some convenient `MLSPACES_ASSETS_DIR`, we can install our first scene by:
+### MuJoCo Assets Quick Start
 
-```python
-from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
-from molmo_spaces.molmo_spaces_constants import get_scenes
-
-install_scene_with_objects_and_grasps_from_path(get_scenes("ithor", "train")["train"][1])
-```
-
-and view it with
-
-```bash
-python -m mujoco.viewer --mjcf $MLSPACES_ASSETS_DIR/scenes/ithor/FloorPlan1_physics.xml
-```
-That's it!
+Please refer to [this](docs/assets.md#mujoco-assets-quick-start) documentation for instructions
+on how to setup and use the `MolmoSpaces` assets in `MuJoCo`.
 
 
 ### Isaac-Sim Assets Quick Start
