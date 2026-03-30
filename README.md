@@ -223,7 +223,7 @@ To control a robot via phone based teleoperation do the following (only iPhones 
    ```bash
    python molmo_spaces/evaluation/eval_main.py \
     molmo_spaces.evaluation.configs.evaluation_configs:TeleopPolicyEvalConfig \
-    --benchmark_dir assets/bench/path-to-bnechmark.json \
+    --benchmark_dir assets/bench/path-to-benchmark.json \
     --task_horizon_steps 1000
     ```
 3. Scan the QR-Code that shows up using the app (or manually enter the ip:port). Example terminal output:
