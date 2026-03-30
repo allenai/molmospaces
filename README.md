@@ -213,28 +213,28 @@ Example experiment configs can be found in e.g. `molmo_spaces/data_generation/co
 python molmo_spaces/data_generation/main.py FrankaPickOmniCamConfig
 ```
 
-## Robot Teleoperation
+
+## Teleop Input
 
 To control a robot via phone based teleoperation do the following (only iPhones supported).
 
-1. Install Mujoco AR from the App Store see [here](https://apps.apple.com/us/app/mujoco-ar/id6612039501).
+1. Install TeleDex from the App Store see [here](https://apps.apple.com/us/app/teledex/id6612039501).
 2. Run the datagen pipeline with the teleop policy
    ```bash
    python molmo_spaces/evaluation/eval_main.py \
     molmo_spaces.evaluation.configs.evaluation_configs:TeleopPolicyEvalConfig \
-    --benchmark_dir assets/bench/path-to-benchmark.json \
+    --benchmark_dir assets/bench/path-to-bnechmark.json \
     --task_horizon_steps 1000
     ```
-3. Ensure your phone and the machine running the pipeline are connected to the same network.
-4. Scan the QR-Code that shows up using the app (or manually enter the ip:port) while connected to a similar network. Example terminal output:
+3. Scan the QR-Code that shows up using the app (or manually enter the ip:port). Example terminal output:
    ```bash
-   MujocoARConnector Starting on port 8888...
-   MujocoARConnector Started. Details:
+   TeleDex Session Starting on port 8888...
+   Session Started. Details:
    IP Address: xxx.xxx.xx.xxx
    Port: 8888
    Waiting for a device to connect...
    ```
-5. Start teleoperating!
+4. Start teleoperating!
 
 - Click the Toggle to Grasp
 - Click the Button to go to the next episode
