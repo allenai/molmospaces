@@ -3,6 +3,8 @@ from molmo_spaces.configs.policy_configs import BasePolicyConfig
 
 class PiPolicyConfig(BasePolicyConfig):
     checkpoint_path: str = "checkpoints/pi"
+    # remote_config: None -> launch local server
+    # or dict(host,port) -> attaches to remote server
     remote_config: dict | None = dict(host="localhost", port=8080)
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
