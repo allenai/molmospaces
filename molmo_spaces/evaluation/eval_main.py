@@ -748,6 +748,8 @@ def main() -> None:
         num_workers=args.num_workers,
         use_wandb=not args.no_wandb,
         wandb_project=args.wandb_project,
+        max_episodes=args.max_episodes,
+        use_filament=args.use_filament,
         environment_light_intensity=args.environment_light_intensity,
         camera_config_override=eval_camera_config,
         camera_names_override=args.camera_names,
