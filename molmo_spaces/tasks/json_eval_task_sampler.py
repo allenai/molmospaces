@@ -869,10 +869,8 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
 
 
         task_description = self.episode_spec.language.task_description
-
         def get_task_description(self, _td=task_description) -> str:
             return _td
-
         task.get_task_description = types.MethodType(get_task_description, task)
 
         return task
