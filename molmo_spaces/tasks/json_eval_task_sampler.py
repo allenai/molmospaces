@@ -870,12 +870,11 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         # TODO(max): hack to overide the use of task.get_task_description() in PickAndPlaceColorTask with the episode_spec language.task_description
         from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
 
-        if isinstance(task, PickAndPlaceColorTask):
-            task_description = self.episode_spec.language.task_description
+        task_description = self.episode_spec.language.task_description
 
-            def get_task_description(self, _td=task_description) -> str:
-                return _td
+        def get_task_description(self, _td=task_description) -> str:
+            return _td
 
-            task.get_task_description = types.MethodType(get_task_description, task)
+        task.get_task_description = types.MethodType(get_task_description, task)
 
         return task
