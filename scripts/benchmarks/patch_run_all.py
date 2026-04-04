@@ -1,3 +1,5 @@
+
+from pathlib import Path
 import subprocess
 import argparse
 
@@ -22,7 +24,7 @@ def find_benchmarks(root: str) -> list[str]:
 
 
 def build_update_cmd(json_file: str, dry_run: bool = False) -> list[str]:
-    cmd = ["python", "update_task_descriptions.py", json_file]
+    cmd = ["python", "patch_task_descriptions.py", json_file]
     task_type = detect_task_type(json_file)
     if task_type:
         cmd += ["--task-type", task_type]
@@ -48,19 +50,19 @@ if __name__ == "__main__":
     benchmarks = find_benchmarks(args.root)
     print(f"Found {len(benchmarks)} benchmark files\n")
 
-    # --- patch_benchmarks.py (once, on the root dir) ---
-    patch_cmd = build_patch_cmd(args.root, dry_run=args.dry_run)
-    print("# patch_benchmarks.py")
-    print(" ".join(patch_cmd))
-    if not args.print_only:
-        subprocess.run(patch_cmd, check=True)
-
-    print()
-
     # --- update_task_descriptions.py (once per benchmark.json) ---
     print("# update_task_descriptions.py")
     for bench in benchmarks:
+        bench_parent = str(Path(bench).parent)
+        
+        cmd = build_patch_cmd(bench_parent, dry_run=args.dry_run)
+        print(" ".join(cmd))
+        if not args.print_only:
+            subprocess.run(cmd, check=True)
+            
+
         cmd = build_update_cmd(bench, dry_run=args.dry_run)
         print(" ".join(cmd))
         if not args.print_only:
             subprocess.run(cmd, check=True)
+        
