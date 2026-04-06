@@ -8,15 +8,20 @@ python patch_run_all.py benchmarks
 rm benchmarks/mjthor_resource*
 rm benchmarks/.molmospaces-bench-v2_*
 mv benchmarks molmospaces-bench-v2
+zip -r molmospaces-bench-v2.zip molmospaces-bench-v2
 mjt_upload molmospaces-bench-v2 20240406 --no-dry-run
 
-cp -R /Users/maxa/.cache/molmo-spaces-resources/benchmarks/molmospaces-bench-v1
+cp -R /Users/maxa/.cache/molmo-spaces-resources/benchmarks/molmospaces-bench-v1/20260318 benchmarks
 chmod -R u+w benchmarks
 python patch_run_all.py benchmarks
-rm benchmarks/mjthor_resource*
+sed -i '' 's/"task_horizon_sec": 40/"task_horizon_sec": 45/g' benchmarks/procthor-10k/FrankaPickandPlaceDroidMiniBench/FrankaPickandPlaceDroidMiniBench_20260111_json_benchmark/benchmark.json
+sed -i '' 's/"task_horizon_sec": 20/"task_horizon_sec": 30/g' benchmarks/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231/benchmark.json
+#rm benchmarks/mjthor_resource*
 rm benchmarks/.molmospaces-bench-v1_*
 mv benchmarks molmospaces-bench-v1
-mjt_upload molmospaces-bench-v2 20240406 --no-dry-run
+zip -r molmospaces-bench-v1.zip molmospaces-bench-v1
+
+mjt_upload molmospaces-bench-v1 20240407 --no-dry-run
 
 
 """
@@ -49,7 +54,7 @@ def detect_task_type(path: str) -> str | None:
 def detect_num_words(path: str) -> str | None:
     if "FrankaCloseDataGenConfig" in path or "FrankaOpenDataGenConfig" in path:
         return 1
-    if "FrankaPickDroidMiniBench" in path or "FrankaPickAndPlaceDroidMiniBench" in path:
+    if "FrankaPickDroidMiniBench" in path or "FrankaPickandPlaceDroidMiniBench" in path:
         return 1
     else:
         return None
