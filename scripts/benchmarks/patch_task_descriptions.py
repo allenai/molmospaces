@@ -97,7 +97,7 @@ def sample_word_num(rng):
 def main():
     parser = argparse.ArgumentParser(description="Update task descriptions in benchmark JSON.")
     parser.add_argument("json_file", help="Path to the benchmark JSON file")
-    parser.add_argument("--task-type", choices=["pick", "open", "close"], default=None,
+    parser.add_argument("--task-type", choices=["pick", "open", "close", "pick_and_place_next_to", "pick_and_place_color", "pick_and_place"], default=None,
                         help="Override task type (auto-detected from task_cls if not set)")
     parser.add_argument("--word-num", type=int, default=None,
                         help="Fixed word count (1/2/3). If not set, randomly samples 50%%/30%%/20%%.")
