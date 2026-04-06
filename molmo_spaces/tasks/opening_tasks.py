@@ -89,8 +89,6 @@ class OpeningTask(PickTask):
         """
         rewards_envs = np.zeros(self._env.n_batch)
 
-        self.config.task_type = "open"
-
         if self.config.task_type == "open":
             for n in range(self._env.n_batch):
                 reward_cand = []

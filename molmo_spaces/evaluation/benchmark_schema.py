@@ -170,7 +170,7 @@ class OpenCloseTaskSpec(BaseTaskSpec):
     articulation_object_name: str | None = None
     joint_name: str
     joint_index: int = 0
-    joint_start_position: float
+    joint_start_position: float | list[float]
     joint_goal_position: float | None = None
 
     # Success criteria
