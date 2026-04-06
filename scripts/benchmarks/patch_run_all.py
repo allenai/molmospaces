@@ -3,8 +3,11 @@
 patch all benchmarks
 
 cp -R /Users/maxa/.cache/molmo-spaces-resources/benchmarks/molmospaces-bench-v2/20260327 benchmarks
-chmod -R u+w benchmarks_updated/
-
+chmod -R u+w benchmarks
+python patch_run_all.py benchmarks
+rm benchmarks/mjthor_resource*
+mv benchmarks molmospaces-bench-v2
+mjt_upload 
 
 """
 from pathlib import Path
@@ -22,7 +25,14 @@ def detect_task_type(path: str) -> str | None:
         return "pick"
     return None
 
-
+def detect_num_words(path: str) -> str | None:
+    if "FrankaCloseDataGenConfig" in path or "FrankaOpenDataGenConfig" in path:
+        return 1
+    if "FrankaPickDroidMiniBench" in path or "FrankaPickAndPlaceDroidMiniBench" in path:
+        return 1
+    else:
+        return None
+        
 def find_benchmarks(root: str) -> list[str]:
     result = subprocess.run(
         ["find", root, "-iname", "benchmark.json"],
@@ -47,6 +57,9 @@ def build_patch_cmd(json_file: str, dry_run: bool = False) -> list[str]:
     task_type = detect_task_type(json_file)
     if task_type == "close":
         cmd += ["--task_type", "close"]
+    num_words = detect_num_words(json_file)
+    if num_words:
+        cmd += ["--word_num", str(num_words)]
     if dry_run:
         cmd.append("--dry_run")
     return cmd
