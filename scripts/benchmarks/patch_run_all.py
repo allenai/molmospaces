@@ -9,6 +9,16 @@ rm benchmarks/mjthor_resource*
 rm benchmarks/.molmospaces-bench-v2_*
 mv benchmarks molmospaces-bench-v2
 mjt_upload molmospaces-bench-v2 20240406 --no-dry-run
+
+cp -R /Users/maxa/.cache/molmo-spaces-resources/benchmarks/molmospaces-bench-v1
+chmod -R u+w benchmarks
+python patch_run_all.py benchmarks
+rm benchmarks/mjthor_resource*
+rm benchmarks/.molmospaces-bench-v1_*
+mv benchmarks molmospaces-bench-v1
+mjt_upload molmospaces-bench-v2 20240406 --no-dry-run
+
+
 """
 from pathlib import Path
 import subprocess
@@ -21,8 +31,19 @@ def detect_task_type(path: str) -> str | None:
         return "close"
     if "open" in p or "opening" in p:
         return "open"
+    
+    if "pickandplacenextto" in p:
+        return "pick_and_place_next_to"
+    
+    if "pickandplacecolor" in p:
+        return "pick_and_place_color"
+    
+    if "pickandplace" in p:
+        return "pick_and_place"
+
     if "pick" in p or "pnp" in p:
         return "pick"
+    
     return None
 
 def detect_num_words(path: str) -> str | None:
