@@ -1,4 +1,12 @@
+"""
 
+patch all benchmarks
+
+cp -R /Users/maxa/.cache/molmo-spaces-resources/benchmarks/molmospaces-bench-v2/20260327 benchmarks
+chmod -R u+w benchmarks_updated/
+
+
+"""
 from pathlib import Path
 import subprocess
 import argparse
@@ -33,8 +41,12 @@ def build_update_cmd(json_file: str, dry_run: bool = False) -> list[str]:
     return cmd
 
 
-def build_patch_cmd(root: str, dry_run: bool = False) -> list[str]:
+def build_patch_cmd(json_file: str, dry_run: bool = False) -> list[str]:
+    root = str(Path(json_file).parent)
     cmd = ["python", "patch_benchmarks.py", "--benchmarks_dir", root]
+    task_type = detect_task_type(json_file)
+    if task_type == "close":
+        cmd += ["--task_type", "close"]
     if dry_run:
         cmd.append("--dry_run")
     return cmd
@@ -53,9 +65,8 @@ if __name__ == "__main__":
     # --- update_task_descriptions.py (once per benchmark.json) ---
     print("# update_task_descriptions.py")
     for bench in benchmarks:
-        bench_parent = str(Path(bench).parent)
         
-        cmd = build_patch_cmd(bench_parent, dry_run=args.dry_run)
+        cmd = build_patch_cmd(bench, dry_run=args.dry_run)
         print(" ".join(cmd))
         if not args.print_only:
             subprocess.run(cmd, check=True)

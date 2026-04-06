@@ -90,9 +90,18 @@ DEFAULT_TASK_HORIZONS_SEC = {
     "molmo_spaces.tasks.nav_task.NavToObjTask": 100,
 }
 
+DEFAULT_TASK_TYPES = {
+    'molmo_spaces.tasks.pick_task.PickTask': 'pick',
+    "molmo_spaces.tasks.opening_tasks.OpeningTask": 'open',
+    "molmo_spaces.tasks.pick_and_place_task.PickAndPlaceTask": 'pick_and_place',
+    "molmo_spaces.tasks.pick_and_place_next_to_task.PickAndPlaceNextToTask": 'pick_and_place_next_to',
+    "molmo_spaces.tasks.pick_and_place_color_task.PickAndPlaceColorTask": 'pick_and_place_color',
+    "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": 'open_door',
+    "molmo_spaces.tasks.nav_task.NavToObjTask": 'nav_to_obj',
+}
 
 
-def patch_benchmark(benchmark_dir: Path, dry_run: bool = False) -> bool:
+def patch_benchmark(benchmark_dir: Path, args, dry_run: bool = False) -> bool:
     """
     Patch a single benchmark directory to add missing fields.
 
@@ -158,7 +167,6 @@ def patch_benchmark(benchmark_dir: Path, dry_run: bool = False) -> bool:
 
     # Track what we're patching
     needs_img_resolution = img_resolution is not None and "img_resolution" not in episodes[0]
-    needs_time_limit = "task_horizon_sec" not in episodes[0].get("task", {})
     needs_record_depth = False
     first_task = episodes[0].get("task", {})
     needs_task_cls_rename = first_task.get("task_cls", "").startswith(OLD_MODULE_PREFIX)
@@ -171,9 +179,9 @@ def patch_benchmark(benchmark_dir: Path, dry_run: bool = False) -> bool:
         first_cam = episodes[0]["cameras"][0]
         needs_record_depth = "record_depth" not in first_cam
 
-    if not needs_img_resolution and not needs_record_depth and not needs_time_limit and not needs_task_field_update and not needs_task_cls_rename:
-        log.info(f"Already patched: {benchmark_dir}")
-        return True
+    #if not needs_img_resolution and not needs_record_depth and not needs_time_limit and not needs_task_field_update and not needs_task_cls_rename:
+    #    log.info(f"Already patched: {benchmark_dir}")
+    #    return True
 
     # Patch each episode
     for episode in episodes:
@@ -192,6 +200,7 @@ def patch_benchmark(benchmark_dir: Path, dry_run: bool = False) -> bool:
                 camera_name = camera.get("name", "")
                 camera["record_depth"] = record_depth_map.get(camera_name, False)
 
+        needs_time_limit = "task_horizon_sec" not in episode.get("task", {})
         if needs_time_limit:
             task_cls = episode["task"]["task_cls"]
             if task_cls in DEFAULT_TASK_HORIZONS_SEC:
@@ -204,6 +213,26 @@ def patch_benchmark(benchmark_dir: Path, dry_run: bool = False) -> bool:
                 time_horizon = 30
             episode.setdefault("task", {})["task_horizon_sec"] = time_horizon
             episode.pop("task_horizon_sec", None)
+
+        #needs_task_type = "task_type" not in episode.get("task", {})
+        needs_task_type=True 
+        if needs_task_type:
+            task_cls = episode["task"]["task_cls"]
+            if args.task_type is not None:
+                task_type = args.task_type
+
+            elif task_cls in DEFAULT_TASK_TYPES:
+                task_type = DEFAULT_TASK_TYPES[task_cls]
+            else:
+                log.warning(
+                    f"Unknown task_cls '{task_cls}' in {benchmark_dir}. "
+                    f"Using default task_type=pick "
+                )
+                task_type = "pick"
+
+            episode.setdefault("task", {})["task_type"] = task_type
+            episode.pop("task_type", None)
+            
 
         if needs_task_field_update and "task" in episode:
             for field, expected in TASK_FIELD_SCHEMA_VALUES.items():
@@ -247,6 +276,13 @@ def main():
         action="store_true",
         help="Don't write changes, just report what would be done",
     )
+    parser.add_argument(
+        "--task_type",
+        type=str,
+        default=None,
+        help="Overwrite imputed task type",
+    )
+    
 
     args = parser.parse_args()
     benchmarks_dir = Path(args.benchmarks_dir)
@@ -256,9 +292,9 @@ def main():
 
     # Find all benchmark directories
     benchmark_dirs = []
-    for path in benchmarks_dir.iterdir():
-        if path.is_dir() and (path / "benchmark.json").exists():
-            benchmark_dirs.append(path)
+    #for path in benchmarks_dir.iterdir():
+    if benchmarks_dir.is_dir() and (benchmarks_dir / "benchmark.json").exists():
+        benchmark_dirs.append(benchmarks_dir)
 
     if not benchmark_dirs:
         log.warning(f"No benchmark directories found in {benchmarks_dir}")
@@ -271,10 +307,11 @@ def main():
     failed = 0
     for benchmark_dir in sorted(benchmark_dirs):
         try:
-            if patch_benchmark(benchmark_dir, dry_run=args.dry_run):
+            if patch_benchmark(benchmark_dir, args, dry_run=args.dry_run):
                 patched += 1
         except Exception as e:
             log.error(f"Failed to patch {benchmark_dir}: {e}")
+            raise e   
             failed += 1
 
     log.info(f"Done. Patched: {patched}, Failed: {failed}")
