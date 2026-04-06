@@ -6,9 +6,9 @@ cp -R /Users/maxa/.cache/molmo-spaces-resources/benchmarks/molmospaces-bench-v2/
 chmod -R u+w benchmarks
 python patch_run_all.py benchmarks
 rm benchmarks/mjthor_resource*
+rm benchmarks/.molmospaces-bench-v2_*
 mv benchmarks molmospaces-bench-v2
-mjt_upload 
-
+mjt_upload molmospaces-bench-v2 20240406 --no-dry-run
 """
 from pathlib import Path
 import subprocess
@@ -46,6 +46,9 @@ def build_update_cmd(json_file: str, dry_run: bool = False) -> list[str]:
     task_type = detect_task_type(json_file)
     if task_type:
         cmd += ["--task-type", task_type]
+    num_words = detect_num_words(json_file)
+    if num_words:
+        cmd += ["--word-num", str(num_words)]
     if dry_run:
         cmd.append("--dry-run")
     return cmd
@@ -57,9 +60,6 @@ def build_patch_cmd(json_file: str, dry_run: bool = False) -> list[str]:
     task_type = detect_task_type(json_file)
     if task_type == "close":
         cmd += ["--task_type", "close"]
-    num_words = detect_num_words(json_file)
-    if num_words:
-        cmd += ["--word_num", str(num_words)]
     if dry_run:
         cmd.append("--dry_run")
     return cmd
