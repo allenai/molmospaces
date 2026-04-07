@@ -256,6 +256,12 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         if exp_config.robot_config.action_noise_config is not None:
             exp_config.robot_config.action_noise_config.enabled = False
 
+        # Apply robot-specific evaluation overrides (e.g. enable depth) after the camera
+        # config is populated from the episode spec, but before super().__init__() builds sensors.
+        robot_override = getattr(exp_config, '_robot_eval_override', None)
+        if robot_override is not None:
+            robot_override(episode_spec, exp_config.camera_config)
+
         super().__init__(exp_config)
 
         # Cache the task class for _sample_task
