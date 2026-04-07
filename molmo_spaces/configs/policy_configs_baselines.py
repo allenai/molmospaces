@@ -136,9 +136,10 @@ class TiptopPolicyConfig(BasePolicyConfig):
     # Number of interpolation steps to reach cam_obs_qpos (each step = one policy dt).
     cam_obs_n_steps: int = 50
     # Hold each TiPToP waypoint for roughly its serialized duration relative to policy_dt_ms.
-    repeat_waypoints_by_dt: bool = True
+    repeat_waypoints_by_dt: bool = False
     # Extra policy steps to hold the final arm waypoint before a gripper open/close action.
-    trajectory_settle_steps: int = 8
+    # Can set to 8
+    trajectory_settle_steps: int = 0
 
     policy_cls: type = None
     policy_type: str = "tamp"
