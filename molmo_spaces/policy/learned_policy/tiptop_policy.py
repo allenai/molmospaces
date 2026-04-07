@@ -77,7 +77,11 @@ class TiptopWebsocketClient:
             self._ws.send(data)
             response = self._ws.recv()
         if isinstance(response, str):
-            raise RuntimeError(f"Error in inference server:\n{response}")
+            import json
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError:
+                raise RuntimeError(f"Error in inference server:\n{response}")
         return msgpack_numpy.unpackb(response)
 
     def reset(self, reset_info: Dict = None) -> None:
@@ -117,6 +121,9 @@ class Tiptop_Policy(InferencePolicy):
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.cam_obs_qpos = exp_config.policy_config.cam_obs_qpos
         self.cam_obs_n_steps = exp_config.policy_config.cam_obs_n_steps
+        self.repeat_waypoints_by_dt = getattr(exp_config.policy_config, "repeat_waypoints_by_dt", True)
+        self.trajectory_settle_steps = getattr(exp_config.policy_config, "trajectory_settle_steps", 8)
+        self.policy_dt_ms = float(exp_config.policy_dt_ms)
         self.model = None  # don't init model till inference to allow multiprocessing
 
     def reset(self):
@@ -175,6 +182,8 @@ class Tiptop_Policy(InferencePolicy):
     #   - sensor_param_{camera_name}: dict with "intrinsic_cv" (3,3) and "cam2world_gl" (4,4)
     #   - qpos["arm"]: 7 joint positions
     def obs_to_model_input(self, obs):
+        if isinstance(obs, list):
+            obs = obs[0]
         prompt = self.prompt_sampler.get_prompt(self.task).lower()
 
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
@@ -223,7 +232,7 @@ class Tiptop_Policy(InferencePolicy):
         current_gripper = 0.0  # start open
         last_arm_pos = None
 
-        for step in plan:
+        for step in plan["steps"]:
             step_type = step["type"] if isinstance(step, dict) else step.get(b"type", b"").decode()
             if step_type == "metadata":
                 q_init = step.get("q_init") if step.get("q_init") is not None else step.get(b"q_init")
@@ -231,16 +240,24 @@ class Tiptop_Policy(InferencePolicy):
             elif step_type == "trajectory":
                 positions = step.get("positions") if step.get("positions") is not None else step.get(b"positions")
                 positions = np.array(positions, dtype=np.float32)
+                dt = step.get("dt") if step.get("dt") is not None else step.get(b"dt")
+                repeats = 1
+                if self.repeat_waypoints_by_dt and dt is not None:
+                    repeats = max(1, int(round(float(dt) * 1000.0 / self.policy_dt_ms)))
                 for waypoint in positions:
                     last_arm_pos = waypoint[:7]
-                    actions.append(np.concatenate([last_arm_pos, [current_gripper]]))
+                    action = np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32)
+                    actions.extend([action.copy() for _ in range(repeats)])
             elif step_type == "gripper":
+                if last_arm_pos is not None and self.trajectory_settle_steps > 0:
+                    settle_action = np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32)
+                    actions.extend([settle_action.copy() for _ in range(self.trajectory_settle_steps)])
                 action_val = step.get("action") if step.get("action") is not None else step.get(b"action")
                 if isinstance(action_val, bytes):
                     action_val = action_val.decode()
                 current_gripper = 1.0 if action_val == "close" else 0.0
                 if last_arm_pos is not None:
-                    actions.append(np.concatenate([last_arm_pos, [current_gripper]]))
+                    actions.append(np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32))
 
         return actions
 
@@ -300,7 +317,12 @@ class Tiptop_Policy(InferencePolicy):
                 raise RuntimeError(f"Tiptop planning failed: {result.get('error', 'unknown error')}")
             self.actions_buffer = self._unroll_plan(result["plan"])
             self.current_buffer_index = 0
-            log.info(f"Tiptop plan unrolled into {len(self.actions_buffer)} waypoints")
+            log.info(
+                "Tiptop plan unrolled into %d policy actions (repeat_by_dt=%s, settle_steps=%d)",
+                len(self.actions_buffer),
+                self.repeat_waypoints_by_dt,
+                self.trajectory_settle_steps,
+            )
         if self.current_buffer_index >= len(self.actions_buffer):
             log.warning("Tiptop plan exhausted; holding last waypoint and sending done action")
             self._plan_exhausted = True

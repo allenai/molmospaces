@@ -50,6 +50,7 @@ def tiptop_robot_eval_override(
     log.info("Applying Tiptop robot evaluation overrides")
     # Tiptop needs depth info
     camera_config.cameras[0].record_depth = True
+    camera_config.cameras[1].record_depth = True
 
 ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {
     "FrankaCAPRobotConfig": cap_robot_eval_override,
