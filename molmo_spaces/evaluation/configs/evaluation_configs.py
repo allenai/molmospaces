@@ -143,7 +143,8 @@ class JsonBenchmarkEvalConfig(MlSpacesExpConfig):
     filter_for_successful_trajectories: bool = False
 
     # Episode termination
-    terminate_upon_success: bool = False
+    # Setting this to true for tiptop
+    terminate_upon_success: bool = True
 
     @property
     def tag(self) -> str:
