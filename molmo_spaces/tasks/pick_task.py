@@ -130,6 +130,7 @@ class PickTask(BaseMujocoTask):
             only_robot_collision = robot_collision and not non_robot_collision
 
             # Success check
+            # print(f"robot_collision: {robot_collision}, lift_height: {lift_height}, self.config.task_config.succ_pos_threshold: {self.config.task_config.succ_pos_threshold}, lift_height >= self.config.task_config.succ_pos_threshold: {lift_height >= self.config.task_config.succ_pos_threshold}")
             success = (
                 only_robot_collision and lift_height >= self.config.task_config.succ_pos_threshold
                 # and rot_error < self.config.task_config.succ_rot_threshold

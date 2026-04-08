@@ -149,7 +149,7 @@ class CameraParameterSensor(Sensor):
         extrinsic_cv = np.linalg.inv(world2cam)[:3, :]  # 3x4 matrix
         cam2world_gl = world2cam
 
-        height, width = self.img_resolution
+        width, height = self.img_resolution
         fovy_degrees = camera.fov
 
         # Convert field of view to focal length
