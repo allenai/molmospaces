@@ -1,10 +1,4 @@
-"""
-Observation and action conversion for running policies in Isaac Lab Arena.
-
-Maps Arena observations to the observation dict expected by remote policies (e.g. Pi),
-and converts policy action dicts to Arena's 7D Franka action (delta pose + gripper).
-Used by pi_remote_client when communicating with an OpenPI server.
-"""
+"""Observation and action conversion between Isaac Lab Arena and remote policies (e.g. Pi0)."""
 
 from __future__ import annotations
 
@@ -25,16 +19,7 @@ def arena_obs_to_policy_obs(
     device: torch.device,
     policy_obs_format: str = "standard",
 ) -> dict[str, Any]:
-    """
-    Build the observation dict expected by policies (e.g. Pi).
-
-    Standard format: robot_state["qpos"] + camera_name -> image.
-    Pi format: also set top-level "qpos" so PI_Policy.obs_to_model_input finds obs["qpos"],
-    obs["wrist_camera"], obs["exo_camera_1"].
-
-    Arena Franka obs["policy"] has: joint_pos (9,), gripper_pos (2,), eef_pos, eef_quat.
-    We map joint_pos[:7] -> arm, joint_pos[7:9] or gripper_pos -> gripper.
-    """
+    """Build the obs dict for remote policies from Arena obs. pi format adds top-level qpos key."""
     policy_obs: dict[str, Any] = {}
     if "policy" not in arena_obs:
         raise KeyError("arena_obs must contain 'policy' group")
@@ -55,7 +40,6 @@ def arena_obs_to_policy_obs(
         if gripper_pos is not None:
             gripper_pos = gripper_pos[0]
 
-    # Franka: 7 arm + 2 gripper in joint_pos; or joint_pos 7 and gripper_pos 2
     if joint_pos.size >= 9:
         arm = np.asarray(joint_pos[:7], dtype=np.float32)
         gripper = np.asarray(joint_pos[7:9], dtype=np.float32) if gripper_pos is None else np.asarray(gripper_pos, dtype=np.float32)
@@ -63,13 +47,7 @@ def arena_obs_to_policy_obs(
         arm = np.asarray(joint_pos[:7], dtype=np.float32)
         gripper = np.asarray(gripper_pos, dtype=np.float32) if gripper_pos is not None else np.zeros(2, dtype=np.float32)
 
-    policy_obs["robot_state"] = {
-        "qpos": {
-            "arm": arm,
-            "gripper": gripper,
-        }
-    }
-    # Ensure all move groups present
+    policy_obs["robot_state"] = {"qpos": {"arm": arm, "gripper": gripper}}
     for g in action_move_group_names:
         if g not in policy_obs["robot_state"]["qpos"]:
             if g == "arm":
@@ -79,7 +57,6 @@ def arena_obs_to_policy_obs(
             else:
                 policy_obs["robot_state"]["qpos"][g] = np.zeros(1, dtype=np.float32)
 
-    # Cameras: map from policy name to Arena key
     for cam_name, arena_key in camera_key_map.items():
         parts = arena_key.split(".", 1)
         if len(parts) == 2:
@@ -88,9 +65,11 @@ def arena_obs_to_policy_obs(
                 img = arena_obs[group][term]
                 if isinstance(img, torch.Tensor):
                     img = img.cpu().numpy()
-                if img.ndim == 3:
+                while img.ndim > 3:  # strip (num_envs, ...) batch dims
                     img = img[0]
-                policy_obs[cam_name] = img
+                if img.ndim == 3 and img.shape[-1] == 4:
+                    img = img[:, :, :3]  # RGBA → RGB
+                policy_obs[cam_name] = np.asarray(img, dtype=np.uint8)
             else:
                 policy_obs[cam_name] = np.zeros(default_image_shape, dtype=np.uint8)
         else:
@@ -111,13 +90,7 @@ def policy_action_to_arena_action(
     action_gripper_open_threshold: float,
     device: torch.device,
 ) -> torch.Tensor:
-    """
-    Convert policy action dict (e.g. {"arm": (7,), "gripper": (2,)}) to Arena 7D (6 delta pose + 1 gripper).
-
-    Policy often outputs normalized [0,1] or [-1,1]. We interpret:
-      - arm[:3] as position delta (centered), arm[3:6] as rotation delta
-      - gripper as open/close; mean of 2 dims vs threshold -> single gripper command
-    """
+    """Convert delta-EEF policy action to Arena 7D (3 pos delta + 3 rot delta + 1 gripper)."""
     arm = policy_action.get("arm")
     gripper = policy_action.get("gripper")
     if arm is None:
@@ -127,7 +100,6 @@ def policy_action_to_arena_action(
     arm = np.atleast_1d(arm).astype(np.float32)
     gripper = np.atleast_1d(gripper).astype(np.float32)
 
-    # Center normalized actions and scale
     if arm.size >= 6:
         delta_pos = (arm[:3] - 0.5) * action_scale_pos
         delta_rot = (arm[3:6] - 0.5) * action_scale_rot
@@ -138,3 +110,24 @@ def policy_action_to_arena_action(
     gripper_cmd = float(np.mean(gripper) > action_gripper_open_threshold)
     action_7d = np.concatenate([delta_pos, delta_rot, [gripper_cmd]], axis=0).astype(np.float32)
     return torch.from_numpy(action_7d).unsqueeze(0).to(device)
+
+
+def policy_joint_pos_action_to_arena_action(
+    policy_action: dict[str, np.ndarray],
+    action_gripper_open_threshold: float,
+    device: torch.device,
+) -> torch.Tensor:
+    """Convert joint-position policy output to Arena 8D (7 absolute joint angles + 1 binary gripper)."""
+    arm = policy_action.get("arm")
+    gripper = policy_action.get("gripper")
+    if arm is None:
+        arm = np.zeros(7, dtype=np.float32)
+    if gripper is None:
+        gripper = np.zeros(1, dtype=np.float32)
+    arm = np.atleast_1d(arm).astype(np.float32)[:7]
+    if arm.size < 7:
+        arm = np.pad(arm, (0, 7 - arm.size))
+    gripper = np.atleast_1d(gripper).astype(np.float32)
+    gripper_cmd = float(np.mean(gripper) > action_gripper_open_threshold)
+    action_8d = np.concatenate([arm, [gripper_cmd]], axis=0).astype(np.float32)
+    return torch.from_numpy(action_8d).unsqueeze(0).to(device)

@@ -1,0 +1,2814 @@
+[
+  {
+    "house_index": 13,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.05519501864910126,
+          -0.6697935461997986,
+          -0.19323918223381042,
+          -2.499117612838745,
+          -0.09655436873435974,
+          1.424780011177063,
+          -1.1118799448013306
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.598732921441578,
+          1.940245125574391,
+          0.6088894540432871,
+          -0.28106019876992705,
+          0.0,
+          0.0,
+          0.9596901399240325
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.598732921441578,
+        1.940245125574391,
+        0.6088894540432871,
+        -0.28106019876992705,
+        0.0,
+        0.0,
+        0.9596901399240325
+      ],
+      "robot_base_pose": [
+        -1.135627240307428,
+        2.2369488972074376,
+        0.1888894540432871,
+        -0.28106019876992705,
+        0.0,
+        0.0,
+        0.9596901399240325
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "dark matte cup with grooves"
+      }
+    }
+  },
+  {
+    "house_index": 14,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.2562839388847351,
+          -1.0106256008148193,
+          -0.14317645132541656,
+          -2.1495361328125,
+          -0.20107437670230865,
+          1.6616647243499756,
+          -1.4482501745224
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          0.03972207551689505,
+          0.9964074999360261,
+          0.5414452203109807,
+          0.917899806669001,
+          0.0,
+          0.0,
+          -0.3968122287896512
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        0.03972207551689505,
+        0.9964074999360261,
+        0.5414452203109807,
+        0.917899806669001,
+        0.0,
+        0.0,
+        -0.3968122287896512
+      ],
+      "robot_base_pose": [
+        -0.3370719850743934,
+        1.397064754834934,
+        0.12144522031098076,
+        0.917899806669001,
+        0.0,
+        0.0,
+        -0.3968122287896512
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "smooth gray ceramic shallow bowl"
+      }
+    }
+  },
+  {
+    "house_index": 15,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.06657422333955765,
+          -0.9347314238548279,
+          -0.038564007729291916,
+          -2.467482328414917,
+          -0.19048626720905304,
+          1.572908878326416,
+          0.2951570749282837
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -3.0849655196171746,
+          2.1751018737638064,
+          0.7615005282757481,
+          -0.10966770082913913,
+          0.0,
+          0.0,
+          0.9939683070374279
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -3.0849655196171746,
+        2.1751018737638064,
+        0.7615005282757481,
+        -0.10966770082913913,
+        0.0,
+        0.0,
+        0.9939683070374279
+      ],
+      "robot_base_pose": [
+        -2.548195224682839,
+        2.2950087145866154,
+        0.34150052827574806,
+        -0.10966770082913913,
+        0.0,
+        0.0,
+        0.9939683070374279
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "steel pot"
+      }
+    }
+  },
+  {
+    "house_index": 16,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.22303377091884613,
+          -0.8583837151527405,
+          -0.017103837803006172,
+          -2.5399210453033447,
+          -0.20969101786613464,
+          1.3846009969711304,
+          -1.2726011276245117
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.0477507970323305,
+          2.697812960009331,
+          1.0418551188256076,
+          -0.324060912627791,
+          0.0,
+          0.0,
+          0.9460362175449961
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.0477507970323305,
+        2.697812960009331,
+        1.0418551188256076,
+        -0.324060912627791,
+        0.0,
+        0.0,
+        0.9460362175449961
+      ],
+      "robot_base_pose": [
+        -0.6132678196348031,
+        3.0350436560495635,
+        0.6218551188256076,
+        -0.324060912627791,
+        0.0,
+        0.0,
+        0.9460362175449961
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "translucent glass bottle with bulbous body"
+      }
+    }
+  },
+  {
+    "house_index": 17,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.08077291399240494,
+          -0.9672994613647461,
+          0.06984645873308182,
+          -2.421571731567383,
+          -0.10345000773668289,
+          1.4403917789459229,
+          -0.6472805142402649
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          1.1725142766289516,
+          0.3554906454798965,
+          0.4354467263385624,
+          0.9996857506976845,
+          0.0,
+          0.0,
+          0.025067904818850323
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        1.1725142766289516,
+        0.3554906454798965,
+        0.4354467263385624,
+        0.9996857506976845,
+        0.0,
+        0.0,
+        0.025067904818850323
+      ],
+      "robot_base_pose": [
+        0.6232055164661592,
+        0.32792461550792096,
+        0.015446726338562422,
+        0.9996857506976845,
+        0.0,
+        0.0,
+        0.025067904818850323
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "bowl"
+      }
+    }
+  },
+  {
+    "house_index": 18,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.17954809963703156,
+          -0.9487795233726501,
+          0.1514485478401184,
+          -2.422790288925171,
+          -0.045124370604753494,
+          1.6576166152954102,
+          0.5452661514282227
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.7476108262369807,
+          0.5038016117272993,
+          0.5114781354598077,
+          -0.6587481005277294,
+          0.0,
+          0.0,
+          0.7523635690615997
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.7476108262369807,
+        0.5038016117272993,
+        0.5114781354598077,
+        -0.6587481005277294,
+        0.0,
+        0.0,
+        0.7523635690615997
+      ],
+      "robot_base_pose": [
+        -0.6749547921807613,
+        1.0489814909554505,
+        0.0914781354598076,
+        -0.6587481005277294,
+        0.0,
+        0.0,
+        0.7523635690615997
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "medium light brown rough potato"
+      }
+    }
+  },
+  {
+    "house_index": 19,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.01980873942375183,
+          -0.5852820873260498,
+          0.18582817912101746,
+          -2.5958518981933594,
+          0.14362958073616028,
+          1.8292800188064575,
+          1.0147093534469604
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.41921464993333357,
+          -2.783676328008798,
+          0.5283057984803983,
+          0.9998868397451323,
+          0.0,
+          0.0,
+          -0.015043526996422057
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.41921464993333357,
+        -2.783676328008798,
+        0.5283057984803983,
+        0.9998868397451323,
+        0.0,
+        0.0,
+        -0.015043526996422057
+      ],
+      "robot_base_pose": [
+        -0.9689657114583923,
+        -2.767130320875018,
+        0.10830579848039829,
+        0.9998868397451323,
+        0.0,
+        0.0,
+        -0.015043526996422057
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "kitchen utensil"
+      }
+    }
+  },
+  {
+    "house_index": 20,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.06212545931339264,
+          -0.8504796624183655,
+          0.20552466809749603,
+          -2.469935417175293,
+          0.09346318989992142,
+          1.7905912399291992,
+          -0.6864346265792847
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          1.469341201011773,
+          -1.0865458563414887,
+          0.56823806691757,
+          0.997192251931845,
+          0.0,
+          0.0,
+          0.07488399486603073
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        1.469341201011773,
+        -1.0865458563414887,
+        0.56823806691757,
+        0.997192251931845,
+        0.0,
+        0.0,
+        0.07488399486603073
+      ],
+      "robot_base_pose": [
+        0.9255095749675784,
+        -1.1686869697630096,
+        0.14823806691756997,
+        0.997192251931845,
+        0.0,
+        0.0,
+        0.07488399486603073
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "smooth gray bowl"
+      }
+    }
+  },
+  {
+    "house_index": 21,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.04544563218951225,
+          -0.813752293586731,
+          -0.028440317139029503,
+          -2.5842461585998535,
+          -0.17447657883167267,
+          1.7832797765731812,
+          0.5251066088676453
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.6497051813908454,
+          -0.7941730037900513,
+          0.6532054017824107,
+          -0.012964237600480736,
+          0.0,
+          0.0,
+          0.9999159607404206
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.6497051813908454,
+        -0.7941730037900513,
+        0.6532054017824107,
+        -0.012964237600480736,
+        0.0,
+        0.0,
+        0.9999159607404206
+      ],
+      "robot_base_pose": [
+        -1.0998900599930632,
+        -0.7799135408849444,
+        0.23320540178241084,
+        -0.012964237600480736,
+        0.0,
+        0.0,
+        0.9999159607404206
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "small red potato with texture"
+      }
+    }
+  },
+  {
+    "house_index": 22,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.021378081291913986,
+          -0.6016413569450378,
+          0.14689788222312927,
+          -2.117412567138672,
+          0.17049437761306763,
+          1.3937478065490723,
+          0.010794304311275482
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          0.27180669002212976,
+          1.351693524640584,
+          0.9261438397079536,
+          0.9522626275325753,
+          0.0,
+          0.0,
+          0.30528001605862726
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        0.27180669002212976,
+        1.351693524640584,
+        0.9261438397079536,
+        0.9522626275325753,
+        0.0,
+        0.0,
+        0.30528001605862726
+      ],
+      "robot_base_pose": [
+        -0.17567783295263886,
+        1.0319160993928913,
+        0.5061438397079536,
+        0.9522626275325753,
+        0.0,
+        0.0,
+        0.30528001605862726
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "smooth light brown egg"
+      }
+    }
+  },
+  {
+    "house_index": 24,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.24269883334636688,
+          -1.0056544542312622,
+          0.25299379229545593,
+          -2.200695037841797,
+          -0.12529920041561127,
+          1.504599690437317,
+          1.16782808303833
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          0.5858082209783879,
+          2.1100933743299186,
+          0.6182156825462191,
+          0.9501002630544365,
+          0.0,
+          0.0,
+          -0.3119446908410055
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        0.5858082209783879,
+        2.1100933743299186,
+        0.6182156825462191,
+        0.9501002630544365,
+        0.0,
+        0.0,
+        -0.3119446908410055
+      ],
+      "robot_base_pose": [
+        0.14284866013666742,
+        2.4361099804390403,
+        0.19821568254621913,
+        0.9501002630544365,
+        0.0,
+        0.0,
+        -0.3119446908410055
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "spatula"
+      }
+    }
+  },
+  {
+    "house_index": 213,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.10118166357278824,
+          -0.9037519097328186,
+          0.01239181961864233,
+          -2.191415786743164,
+          -0.2348351776599884,
+          1.5153369903564453,
+          -1.3595553636550903
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          10.455339910379053,
+          1.2498820310997245,
+          0.2470344943593864,
+          -0.6711083579969801,
+          0.0,
+          0.0,
+          0.7413592731102762
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        10.455339910379053,
+        1.2498820310997245,
+        0.2470344943593864,
+        -0.6711083579969801,
+        0.0,
+        0.0,
+        0.7413592731102762
+      ],
+      "robot_base_pose": [
+        10.50991483938831,
+        1.797167676008884,
+        -0.17296550564061353,
+        -0.6711083579969801,
+        0.0,
+        0.0,
+        0.7413592731102762
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "medium open brown cardboard box"
+      }
+    }
+  },
+  {
+    "house_index": 214,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.2303134948015213,
+          -0.7452057600021362,
+          0.12129450589418411,
+          -2.2859768867492676,
+          -0.13796845078468323,
+          1.5159820318222046,
+          1.385852575302124
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.5179173207128285,
+          5.397304523381178,
+          0.12306924194800922,
+          0.9395242322369598,
+          0.0,
+          0.0,
+          -0.34248243318388055
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.5179173207128285,
+        5.397304523381178,
+        0.12306924194800922,
+        0.9395242322369598,
+        0.0,
+        0.0,
+        -0.34248243318388055
+      ],
+      "robot_base_pose": [
+        -0.9388936819693221,
+        5.751252122982082,
+        -0.29693075805199076,
+        0.9395242322369598,
+        0.0,
+        0.0,
+        -0.34248243318388055
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "wide shallow blue vase with neck"
+      }
+    }
+  },
+  {
+    "house_index": 215,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.19427980482578278,
+          -0.8145178556442261,
+          -0.11106360703706741,
+          -2.251126766204834,
+          0.1573239266872406,
+          1.3836675882339478,
+          -1.3516888618469238
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -2.729489990124558,
+          3.825308797326757,
+          0.2183946130439301,
+          0.911484939155112,
+          0.0,
+          0.0,
+          0.4113334483036869
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -2.729489990124558,
+        3.825308797326757,
+        0.2183946130439301,
+        0.911484939155112,
+        0.0,
+        0.0,
+        0.4113334483036869
+      ],
+      "robot_base_pose": [
+        -3.093375263861816,
+        3.412892129917254,
+        -0.20160538695606994,
+        0.911484939155112,
+        0.0,
+        0.0,
+        0.4113334483036869
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "smooth rounded ceramic bowl with rim"
+      }
+    }
+  },
+  {
+    "house_index": 217,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.05641413480043411,
+          -0.979773998260498,
+          -0.12945538759231567,
+          -2.113023042678833,
+          -0.13440494239330292,
+          1.7502497434616089,
+          -0.7251834869384766
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.1885733234021093,
+          4.589707544880928,
+          0.6278044654342962,
+          0.9998816568825372,
+          0.0,
+          0.0,
+          -0.015384155154975642
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.1885733234021093,
+        4.589707544880928,
+        0.6278044654342962,
+        0.9998816568825372,
+        0.0,
+        0.0,
+        -0.015384155154975642
+      ],
+      "robot_base_pose": [
+        -0.7383129839492939,
+        4.606628112881633,
+        0.2078044654342962,
+        0.9998816568825372,
+        0.0,
+        0.0,
+        -0.015384155154975642
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "blue remote"
+      }
+    }
+  },
+  {
+    "house_index": 218,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.09872489422559738,
+          -0.531623363494873,
+          -0.2517627775669098,
+          -2.378012180328369,
+          -0.12680335342884064,
+          1.7995789051055908,
+          0.02812068723142147
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.7017047206684919,
+          2.4184086982885216,
+          0.09258481866885898,
+          0.7695214753624723,
+          0.0,
+          0.0,
+          0.6386209352628239
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.7017047206684919,
+        2.4184086982885216,
+        0.09258481866885898,
+        0.7695214753624723,
+        0.0,
+        0.0,
+        0.6386209352628239
+      ],
+      "robot_base_pose": [
+        -1.8030843518169315,
+        1.8778329215576304,
+        -0.327415181331141,
+        0.7695214753624723,
+        0.0,
+        0.0,
+        0.6386209352628239
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "open brown cardboard box"
+      }
+    }
+  },
+  {
+    "house_index": 219,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.196445494890213,
+          -0.8509773015975952,
+          -0.015628796070814133,
+          -2.2580575942993164,
+          0.04114915058016777,
+          1.505391001701355,
+          -1.5259870290756226
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.3713014253605338,
+          0.5162776267604805,
+          1.5127932602839147,
+          -0.3953664706491829,
+          0.0,
+          0.0,
+          0.9185234639824987
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.3713014253605338,
+        0.5162776267604805,
+        1.5127932602839147,
+        -0.3953664706491829,
+        0.0,
+        0.0,
+        0.9185234639824987
+      ],
+      "robot_base_pose": [
+        -0.9932475360854841,
+        0.9157463449400252,
+        1.0927932602839148,
+        -0.3953664706491829,
+        0.0,
+        0.0,
+        0.9185234639824987
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "glossy dark statue"
+      }
+    }
+  },
+  {
+    "house_index": 220,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.20820854604244232,
+          -0.721404492855072,
+          -0.0196189284324646,
+          -2.1639952659606934,
+          -0.10658983141183853,
+          1.5696766376495361,
+          -1.4893412590026855
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.4995744345716111,
+          3.910444524959206,
+          0.9194630566021369,
+          0.9285964505840061,
+          0.0,
+          0.0,
+          -0.3710911370038169
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.4995744345716111,
+        3.910444524959206,
+        0.9194630566021369,
+        0.9285964505840061,
+        0.0,
+        0.0,
+        -0.3710911370038169
+      ],
+      "robot_base_pose": [
+        -0.898094939412547,
+        4.289497828890626,
+        0.49946305660213697,
+        0.9285964505840061,
+        0.0,
+        0.0,
+        -0.3710911370038169
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "glossy dark statue of hand"
+      }
+    }
+  },
+  {
+    "house_index": 221,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.1396184116601944,
+          -1.0075645446777344,
+          -0.22901494801044464,
+          -2.2262425422668457,
+          -0.11606544256210327,
+          1.763850450515747,
+          -0.7214245796203613
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.600564660260528,
+          -0.6675692270913403,
+          0.24692892326094218,
+          0.9864038212588987,
+          0.0,
+          0.0,
+          0.164339591717403
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.600564660260528,
+        -0.6675692270913403,
+        0.24692892326094218,
+        0.9864038212588987,
+        0.0,
+        0.0,
+        0.164339591717403
+      ],
+      "robot_base_pose": [
+        -2.120856408714101,
+        -0.8458849484709312,
+        -0.17307107673905786,
+        0.9864038212588987,
+        0.0,
+        0.0,
+        0.164339591717403
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "slim black glossy remote control"
+      }
+    }
+  },
+  {
+    "house_index": 222,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.030161811038851738,
+          -0.5762340426445007,
+          0.20988167822360992,
+          -2.58164119720459,
+          0.21588899195194244,
+          1.6640146970748901,
+          0.8377560377120972
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          0.3736588813717807,
+          0.2788514135619764,
+          -0.08410664057727185,
+          -0.09106917438288228,
+          0.0,
+          0.0,
+          0.9958445689349419
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        0.3736588813717807,
+        0.2788514135619764,
+        -0.08410664057727185,
+        -0.09106917438288228,
+        0.0,
+        0.0,
+        0.9958445689349419
+      ],
+      "robot_base_pose": [
+        0.914535927396723,
+        0.37861123053921714,
+        -0.5041066405772718,
+        -0.09106917438288228,
+        0.0,
+        0.0,
+        0.9958445689349419
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "remote"
+      }
+    }
+  },
+  {
+    "house_index": 223,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.2502102255821228,
+          -0.5863343477249146,
+          -0.16479745507240295,
+          -2.2970104217529297,
+          -0.08929219841957092,
+          1.7863572835922241,
+          0.10407592356204987
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -2.5031541557565387,
+          2.773712459332555,
+          0.283734616879056,
+          0.872774703548299,
+          0.0,
+          0.0,
+          0.48812325989055133
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -2.5031541557565387,
+        2.773712459332555,
+        0.283734616879056,
+        0.872774703548299,
+        0.0,
+        0.0,
+        0.48812325989055133
+      ],
+      "robot_base_pose": [
+        -2.791063407225742,
+        2.305088662541949,
+        -0.13626538312094394,
+        0.872774703548299,
+        0.0,
+        0.0,
+        0.48812325989055133
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "glossy black remote control"
+      }
+    }
+  },
+  {
+    "house_index": 224,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.25766825675964355,
+          -0.8136269450187683,
+          -0.07358546555042267,
+          -2.382944345474243,
+          -0.045702967792749405,
+          1.572245478630066,
+          -1.0355737209320068
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.1543966529305203,
+          -2.235014323027052,
+          0.4337485999877538,
+          0.9092645361490488,
+          0.0,
+          0.0,
+          -0.4162186964825764
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.1543966529305203,
+        -2.235014323027052,
+        0.4337485999877538,
+        0.9092645361490488,
+        0.0,
+        0.0,
+        -0.4162186964825764
+      ],
+      "robot_base_pose": [
+        -0.5138348492986997,
+        -1.8187161330338808,
+        0.013748599987753851,
+        0.9092645361490488,
+        0.0,
+        0.0,
+        -0.4162186964825764
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "golden human statue"
+      }
+    }
+  },
+  {
+    "house_index": 313,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.060130223631858826,
+          -0.7232240438461304,
+          0.14226636290550232,
+          -2.467433214187622,
+          0.0370967872440815,
+          1.4950988292694092,
+          0.33123937249183655
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          0.10979695152175345,
+          -1.4109232484763328,
+          0.5994891144056791,
+          -0.5655195727468062,
+          0.0,
+          0.0,
+          0.8247348742718897
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        0.10979695152175345,
+        -1.4109232484763328,
+        0.5994891144056791,
+        -0.5655195727468062,
+        0.0,
+        0.0,
+        0.8247348742718897
+      ],
+      "robot_base_pose": [
+        0.3080033256460502,
+        -0.8978791633759396,
+        0.17948911440567916,
+        -0.5655195727468062,
+        0.0,
+        0.0,
+        0.8247348742718897
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "dark gray laptop"
+      }
+    }
+  },
+  {
+    "house_index": 315,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.1031002476811409,
+          -0.5454317331314087,
+          -0.21252554655075073,
+          -2.143442392349243,
+          -0.13386644423007965,
+          1.5898395776748657,
+          -0.6885254383087158
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.2590817153184738,
+          -3.780966064488676,
+          0.5336068119754658,
+          0.8118642348145131,
+          0.0,
+          0.0,
+          -0.5838462676330518
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.2590817153184738,
+        -3.780966064488676,
+        0.5336068119754658,
+        0.8118642348145131,
+        0.0,
+        0.0,
+        -0.5838462676330518
+      ],
+      "robot_base_pose": [
+        -0.43411760466652405,
+        -3.2595617708353375,
+        0.11360681197546585,
+        0.8118642348145131,
+        0.0,
+        0.0,
+        -0.5838462676330518
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "glossy beige ceramic mug with handle"
+      }
+    }
+  },
+  {
+    "house_index": 319,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.011890250258147717,
+          -0.8957921266555786,
+          -0.22662107646465302,
+          -2.3816614151000977,
+          -0.15698161721229553,
+          1.7011250257492065,
+          -0.15446190536022186
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          1.5214756422122049,
+          -1.5920209782300223,
+          1.2442201706612812,
+          0.8530281203340033,
+          0.0,
+          0.0,
+          -0.5218649498859232
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        1.5214756422122049,
+        -1.5920209782300223,
+        1.2442201706612812,
+        0.8530281203340033,
+        0.0,
+        0.0,
+        -0.5218649498859232
+      ],
+      "robot_base_pose": [
+        1.2710529707235856,
+        -1.1023389532336956,
+        0.8242201706612813,
+        0.8530281203340033,
+        0.0,
+        0.0,
+        -0.5218649498859232
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "sculpture"
+      }
+    }
+  },
+  {
+    "house_index": 321,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.18563006818294525,
+          -0.7785684466362,
+          -0.15150681138038635,
+          -2.5582077503204346,
+          -0.2163253128528595,
+          1.7184932231903076,
+          -1.407840371131897
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          0.13252203812384344,
+          -0.781916273531979,
+          0.22602240436509635,
+          -0.010536891234441759,
+          0.0,
+          0.0,
+          0.9999444854206225
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        0.13252203812384344,
+        -0.781916273531979,
+        0.22602240436509635,
+        -0.010536891234441759,
+        0.0,
+        0.0,
+        0.9999444854206225
+      ],
+      "robot_base_pose": [
+        0.6823999094392683,
+        -0.7703263366202864,
+        -0.19397759563490363,
+        -0.010536891234441759,
+        0.0,
+        0.0,
+        0.9999444854206225
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "tissue box"
+      }
+    }
+  },
+  {
+    "house_index": 323,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.18589822947978973,
+          -0.8283713459968567,
+          0.14743807911872864,
+          -2.5698869228363037,
+          0.22311313450336456,
+          1.3873056173324585,
+          0.4554039537906647
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          2.019124196245306,
+          -3.0863956153017513,
+          0.7355264269231812,
+          0.8271637060243593,
+          0.0,
+          0.0,
+          -0.5619610337345885
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        2.019124196245306,
+        -3.0863956153017513,
+        0.7355264269231812,
+        0.8271637060243593,
+        0.0,
+        0.0,
+        -0.5619610337345885
+      ],
+      "robot_base_pose": [
+        1.816504420024958,
+        -2.575078466866051,
+        0.31552642692318117,
+        0.8271637060243593,
+        0.0,
+        0.0,
+        -0.5619610337345885
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "gray bowl"
+      }
+    }
+  },
+  {
+    "house_index": 413,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.022361252456903458,
+          -0.5623606443405151,
+          -0.1895960122346878,
+          -2.342747688293457,
+          -0.15220144391059875,
+          1.4368572235107422,
+          1.0042213201522827
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.7037274222889471,
+          3.2531187634636316,
+          0.2768301784399178,
+          0.26898630617536784,
+          0.0,
+          0.0,
+          0.9631440012221076
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.7037274222889471,
+        3.2531187634636316,
+        0.2768301784399178,
+        0.26898630617536784,
+        0.0,
+        0.0,
+        0.9631440012221076
+      ],
+      "robot_base_pose": [
+        -1.2333164184898027,
+        2.9681389615395632,
+        -0.14316982156008218,
+        0.26898630617536784,
+        0.0,
+        0.0,
+        0.9631440012221076
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "blue soap bottle with silver pump"
+      }
+    }
+  },
+  {
+    "house_index": 414,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.10591014474630356,
+          -0.7784097194671631,
+          -0.21162427961826324,
+          -2.2350707054138184,
+          0.24244771897792816,
+          1.5740753412246704,
+          -0.24625587463378906
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -2.6549573327494067,
+          0.6492378807123971,
+          0.6915239155384181,
+          0.7833741976656793,
+          0.0,
+          0.0,
+          -0.6215503732053044
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -2.6549573327494067,
+        0.6492378807123971,
+        0.6915239155384181,
+        0.7833741976656793,
+        0.0,
+        0.0,
+        -0.6215503732053044
+      ],
+      "robot_base_pose": [
+        -2.7799999796745882,
+        1.184835058122757,
+        0.27152391553841815,
+        0.7833741976656793,
+        0.0,
+        0.0,
+        -0.6215503732053044
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "paper towel roll"
+      }
+    }
+  },
+  {
+    "house_index": 415,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.11217133700847626,
+          -0.7345374226570129,
+          -0.24568937718868256,
+          -2.167034387588501,
+          0.24511495232582092,
+          1.7487804889678955,
+          1.3524738550186157
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.010683403661956747,
+          -0.700820442564045,
+          0.9188412133045349,
+          0.8968831401897156,
+          0.0,
+          0.0,
+          0.4422676032035752
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.010683403661956747,
+        -0.700820442564045,
+        0.9188412133045349,
+        0.8968831401897156,
+        0.0,
+        0.0,
+        0.4422676032035752
+      ],
+      "robot_base_pose": [
+        -0.34552270753417824,
+        -1.1371490350059867,
+        0.49884121330453485,
+        0.8968831401897156,
+        0.0,
+        0.0,
+        0.4422676032035752
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "white cloth"
+      }
+    }
+  },
+  {
+    "house_index": 416,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.17703379690647125,
+          -0.7398011684417725,
+          0.009465562179684639,
+          -2.2205450534820557,
+          0.22131964564323425,
+          1.718684196472168,
+          -0.9228516817092896
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -1.5278522403557286,
+          1.7049137763237627,
+          0.4699785590536309,
+          0.4301809063125304,
+          0.0,
+          0.0,
+          0.9027427030135053
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -1.5278522403557286,
+        1.7049137763237627,
+        0.4699785590536309,
+        0.4301809063125304,
+        0.0,
+        0.0,
+        0.9027427030135053
+      ],
+      "robot_base_pose": [
+        -1.1814134137271857,
+        1.2777368347594522,
+        0.049978559053630855,
+        0.4301809063125304,
+        0.0,
+        0.0,
+        0.9027427030135053
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "light yellow cloth"
+      }
+    }
+  },
+  {
+    "house_index": 417,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.03608837351202965,
+          -0.6857587695121765,
+          -0.09402813017368317,
+          -2.4391281604766846,
+          0.14856299757957458,
+          1.526829719543457,
+          -1.332131028175354
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -2.627006091065118,
+          -1.9780100897238524,
+          0.8379962517833791,
+          -0.23816295148668917,
+          0.0,
+          0.0,
+          0.9712252099997966
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -2.627006091065118,
+        -1.9780100897238524,
+        0.8379962517833791,
+        -0.23816295148668917,
+        0.0,
+        0.0,
+        0.9712252099997966
+      ],
+      "robot_base_pose": [
+        -2.139399841672054,
+        -1.7235692408948382,
+        0.41799625178337907,
+        -0.23816295148668917,
+        0.0,
+        0.0,
+        0.9712252099997966
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "green cylindrical candle"
+      }
+    }
+  },
+  {
+    "house_index": 418,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.03556254506111145,
+          -0.9388835430145264,
+          -0.11854325979948044,
+          -2.1776609420776367,
+          0.12882155179977417,
+          1.473648190498352,
+          -0.49365681409835815
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -3.0270630231204603,
+          -2.383765672332702,
+          0.37405528018020534,
+          -0.4860767511128488,
+          0.0,
+          0.0,
+          0.8739161241375385
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -3.0270630231204603,
+        -2.383765672332702,
+        0.37405528018020534,
+        -0.4860767511128488,
+        0.0,
+        0.0,
+        0.8739161241375385
+      ],
+      "robot_base_pose": [
+        -2.736960691890125,
+        -1.9164963309302032,
+        -0.045944719819794644,
+        -0.4860767511128488,
+        0.0,
+        0.0,
+        0.8739161241375385
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "tall pale yellow candle"
+      }
+    }
+  },
+  {
+    "house_index": 419,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          -0.2150769829750061,
+          -0.7645949125289917,
+          -0.024019544944167137,
+          -2.194077253341675,
+          -0.05765750631690025,
+          1.6472350358963013,
+          0.6787693500518799
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.038827995287871286,
+          -1.8394552763133385,
+          1.0156824172144805,
+          0.9274356548990174,
+          0.0,
+          0.0,
+          0.3739827616642654
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.038827995287871286,
+        -1.8394552763133385,
+        1.0156824172144805,
+        0.9274356548990174,
+        0.0,
+        0.0,
+        0.3739827616642654
+      ],
+      "robot_base_pose": [
+        -0.43497857866363754,
+        -2.220984718546884,
+        0.5956824172144806,
+        0.9274356548990174,
+        0.0,
+        0.0,
+        0.3739827616642654
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "atomizer"
+      }
+    }
+  },
+  {
+    "house_index": 420,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.09418684244155884,
+          -0.9864096641540527,
+          -0.06552045792341232,
+          -2.274728775024414,
+          0.07668787240982056,
+          1.6189814805984497,
+          1.3785719871520996
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.21316794079829615,
+          -1.543552956971971,
+          0.5088334433243928,
+          0.9997758282267014,
+          0.0,
+          0.0,
+          -0.02117293776529368
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.21316794079829615,
+        -1.543552956971971,
+        0.5088334433243928,
+        0.9997758282267014,
+        0.0,
+        0.0,
+        -0.02117293776529368
+      ],
+      "robot_base_pose": [
+        -0.7626748181753218,
+        -1.5202679464426532,
+        0.08883344332439291,
+        0.9997758282267014,
+        0.0,
+        0.0,
+        -0.02117293776529368
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "soap dispenser"
+      }
+    }
+  },
+  {
+    "house_index": 423,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.2498428374528885,
+          -0.5454921126365662,
+          -0.11156629770994186,
+          -2.468726873397827,
+          -0.24001532793045044,
+          1.6837537288665771,
+          0.5698755979537964
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -2.1071573489877875,
+          0.3120916723048237,
+          0.6979863032142861,
+          0.7496362960254674,
+          0.0,
+          0.0,
+          -0.6618500008923607
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -2.1071573489877875,
+        0.3120916723048237,
+        0.6979863032142861,
+        0.7496362960254674,
+        0.0,
+        0.0,
+        -0.6618500008923607
+      ],
+      "robot_base_pose": [
+        -2.1753073829384477,
+        0.8578531338175654,
+        0.277986303214286,
+        0.7496362960254674,
+        0.0,
+        0.0,
+        -0.6618500008923607
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "spray bottle"
+      }
+    }
+  },
+  {
+    "house_index": 424,
+    "scene_dataset": "ithor",
+    "data_split": "val",
+    "robot": {
+      "robot_name": "franka_droid",
+      "init_qpos": {
+        "base": [],
+        "arm": [
+          0.2254045456647873,
+          -0.9337176084518433,
+          -0.13575604557991028,
+          -2.21755313873291,
+          0.02367391064763069,
+          1.7116276025772095,
+          -0.7938393950462341
+        ],
+        "gripper": [
+          0.002959999954327941,
+          0.002959999954327941
+        ]
+      }
+    },
+    "img_resolution": [
+      624,
+      352
+    ],
+    "cameras": [],
+    "scene_modifications": {
+      "added_objects": {
+        "Bowl_27": "objects/thor/Bowl_27.xml"
+      },
+      "object_poses": {
+        "Bowl_27": [
+          -0.25947772344351405,
+          2.191472855715267,
+          0.5655352587708746,
+          0.9977687344939135,
+          0.0,
+          0.0,
+          0.06676490445147425
+        ]
+      },
+      "removed_objects": []
+    },
+    "task": {
+      "task_cls": "molmo_spaces.tasks.pick_task.PickTask",
+      "task_type": "pick",
+      "pickup_obj_name": "Bowl_27",
+      "pickup_obj_start_pose": [
+        -0.25947772344351405,
+        2.191472855715267,
+        0.5655352587708746,
+        0.9977687344939135,
+        0.0,
+        0.0,
+        0.06676490445147425
+      ],
+      "robot_base_pose": [
+        -0.8045744157304581,
+        2.118195328069797,
+        0.1455352587708746,
+        0.9977687344939135,
+        0.0,
+        0.0,
+        0.06676490445147425
+      ],
+      "succ_pos_threshold": 0.01
+    },
+    "language": {
+      "task_description": "Pick up the bowl.",
+      "referral_expressions": {
+        "pickup_obj_name": "lightweight turquoise rectangular soft cloth"
+      }
+    }
+  }
+]

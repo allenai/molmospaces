@@ -1,4 +1,8 @@
-"""Create Isaac Lab Arena Object instances from MolmoSpaces THOR USD assets."""
+"""Create Isaac Lab Arena Object instances from MolmoSpaces THOR USD assets.
+
+Set MOLMO_ARENA_THOR_PREFER_FLAT_USD=1 to prefer {id}/{id}.usda over {id}_mesh/{id}_mesh.usda
+(useful when instanced mesh layouts cause rigid-body / render disagreement).
+"""
 
 from __future__ import annotations
 
@@ -29,61 +33,61 @@ def get_thor_assets_root() -> Path:
             return flat
     return PACKAGE_ROOT / "assets" / "usd" / "objects" / "thor"
 
+
 # Arena imports (optional at module load so rest of package works without Arena)
 try:
-    from isaaclab_arena.assets.object import Object
     from isaaclab_arena.assets.object_base import ObjectType
     from isaaclab_arena.utils.pose import Pose
+
+    from molmo_spaces_isaac.arena.arena_collision_objects import get_arena_object_class
 
     _ARENA_AVAILABLE = True
 except ImportError:
     _ARENA_AVAILABLE = False
-    Object = None
     ObjectType = None
     Pose = None
+    get_arena_object_class = None  # type: ignore[misc, assignment]
+
+
+def _thor_usd_candidates(asset_id: str, base: Path) -> list[Path]:
+    """Ordered list of possible USD paths under base.
+
+    Default: ``{id}_mesh/{id}_mesh.usda`` then ``{id}/{id}.usda`` (ms-download layout).
+    Set ``MOLMO_ARENA_THOR_PREFER_FLAT_USD=1`` to try the non-mesh layout first (often fewer
+    instance/prototype issues with Isaac Lab rigid-body + rendering).
+    """
+    mesh = base / f"{asset_id}_mesh" / f"{asset_id}_mesh.usda"
+    flat = base / asset_id / f"{asset_id}.usda"
+    prefer_flat = (os.environ.get("MOLMO_ARENA_THOR_PREFER_FLAT_USD") or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    return [flat, mesh] if prefer_flat else [mesh, flat]
 
 
 def get_thor_usd_path(asset_id: str, assets_dir: Path | None = None) -> Path:
-    """Return the USD path for a THOR asset (e.g. Apple_1 -> .../Apple_1_mesh/Apple_1_mesh.usda)."""
+    """Return the USD path for a THOR asset. Tries several roots (ms-download layouts)."""
     if assets_dir is None:
         assets_dir = get_thor_assets_root()
-    mesh_dir = assets_dir / f"{asset_id}_mesh"
-    base_name = f"{asset_id}_mesh"
-    return mesh_dir / f"{base_name}.usda"
 
+    search_roots: list[Path] = [assets_dir]
+    # Flat `objects/thor` given but objects live under `objects/thor/thor/20260128/` (common ms-download layout)
+    nested = assets_dir / "thor" / THOR_DEFAULT_VERSION
+    if nested.is_dir() and nested not in search_roots:
+        search_roots.append(nested)
+    # If assets_dir is already versioned, also try parent flat `objects/thor` (symlink / mixed installs)
+    if assets_dir.name == THOR_DEFAULT_VERSION and assets_dir.parent.name == "thor":
+        flat_sibling = assets_dir.parent.parent
+        if flat_sibling.is_dir() and flat_sibling not in search_roots:
+            search_roots.append(flat_sibling)
 
-def get_rigid_body_relative_path(usd_path: Path) -> str:
-    """Path from object root to RigidBodyAPI prim (default_prim_name/rel). Empty if pxr unavailable."""
-    try:
-        from pxr import Usd, UsdPhysics
-    except ImportError:
-        return ""
-
-    stage = Usd.Stage.Open(usd_path.as_posix())
-    if not stage:
-        return ""
-    default_prim = stage.GetDefaultPrim()
-    if not default_prim.IsValid():
-        return ""
-    root_path = default_prim.GetPath()
-    default_prim_name = default_prim.GetName()
-    for prim in _iter_prims(default_prim):
-        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
-            p = prim.GetPath()
-            if p == root_path:
-                return ""
-            # Path relative to default prim
-            rel = str(p).replace(str(root_path), "", 1).lstrip("/")
-            # Include default prim name so path matches post-spawn hierarchy: name/default_prim/rel
-            return f"{default_prim_name}/{rel}" if rel else default_prim_name
-    return ""
-
-
-def _iter_prims(prim):
-    out = [prim]
-    for c in prim.GetChildren():
-        out.extend(_iter_prims(c))
-    return out
+    canonical = _thor_usd_candidates(asset_id, assets_dir)[0]
+    for root in search_roots:
+        for candidate in _thor_usd_candidates(asset_id, root):
+            if candidate.is_file():
+                return candidate
+    return canonical
 
 
 def create_thor_object_for_arena(
@@ -94,8 +98,12 @@ def create_thor_object_for_arena(
     metadata_path: Path | None = None,
     usd_path_override: Path | str | None = None,
 ):
-    """Create an Arena Object for a THOR asset (RIGID or ARTICULATION) for Scene(assets=[...])."""
-    if not _ARENA_AVAILABLE:
+    """Create an Arena Object for a THOR asset (RIGID or ARTICULATION) for Scene(assets=[...]).
+
+    Matches :func:`molmo_spaces_isaac.arena.objaverse_asset.create_objaverse_object_for_arena`:
+    plain Arena ``Object`` with default spawn cfg (no extra PhysX schema overrides on the root).
+    """
+    if not _ARENA_AVAILABLE or get_arena_object_class is None:
         raise ImportError(
             "isaaclab_arena is required for Arena. "
             "Install from source (see Isaac Lab Arena documentation) and ensure it is on PYTHONPATH."
@@ -129,7 +137,8 @@ def create_thor_object_for_arena(
     info = metadata[asset_id]
     object_type = ObjectType.ARTICULATION if info.articulated else ObjectType.RIGID
     name = instance_name if instance_name else asset_id
-    return Object(
+    arena_object_cls = get_arena_object_class()
+    return arena_object_cls(
         name=name,
         prim_path=None,
         usd_path=usd_path.as_posix(),

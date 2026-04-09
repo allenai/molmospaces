@@ -44,7 +44,7 @@ uv pip install -e .[dev,sim]
 We have a helper script `ms-download` that can be used to grab the desired assets and
 scenes datasets in `usd` format, ready for use in `IsaacSim` and `IsaacLab`.
 
-- To get the assets for a specific dataset (e.g. `thor`, `objaverse`):
+- To get the assets for a specific dataset (e.g. `thor`):
 
 ```bash
 ms-download --type usd --install-dir assets/usd --assets thor
@@ -79,27 +79,38 @@ scene from the `ithor` dataset:
 
 ---
 
-## Isaac Lab Arena (run MolmoSpaces benchmarks in Arena)
+## Isaac Lab Arena (MolmoSpaces pick demo)
 
-You can run MolmoSpaces pick / pick-and-place benchmark episodes in [Isaac Lab Arena][2] using the same USD assets and benchmark JSONs.
+Pick task only (THOR by default; add `--allow-objaverse` for Objaverse). Success = `lift_height >= succ_pos_threshold` (default 0.01 m).
 
-**Prerequisites:** Isaac Lab Arena installed from source ([Arena installation][3]). Set `ISAACLAB_ARENA_PATH` to the Arena repo root if you run from outside that repo.
+**Prerequisites:** Isaac Lab Arena installed from source ([Arena installation][3]). Set `ISAACLAB_ARENA_PATH` to the Arena repo root.
 
-**Assets and benchmarks:** You need (1) USD assets — THOR and optionally Objaverse under an assets root (e.g. from [allenai/molmospaces](https://huggingface.co/datasets/allenai/molmospaces) or `ms-download` above); (2) a benchmark directory containing `benchmark.json` (e.g. from `molmospaces_bench` or the Hugging Face repo). Layout: THOR at `objects/thor/thor/20260128/` or `objects/thor/`; Objaverse at `objects/objaverse/` with `obja_<id>/obja_<id>.usda` per object.
+**Assets:** Download THOR USDs and (optionally) iTHOR scene USDs into one root:
 
-**Run one episode** (use Arena’s Python via `isaaclab.sh`; the `--` is required):
+```bash
+ms-download --type usd --install-dir /path/to/assets --assets thor --scenes ithor
+```
+
+**Run (single bundled episode):**
 
 ```bash
 cd /path/to/IsaacLab-Arena
 ./submodules/IsaacLab/isaaclab.sh -p /path/to/molmo_spaces_isaac/scripts/run_arena_benchmark_episode.py -- \
-  --assets_root /path/to/molmospaces_isaac \
-  --benchmark_dir /path/to/molmospaces_bench/mujoco/benchmarks/molmospaces-bench-v1/20260210/ithor/FrankaPickandPlaceHardBench/FrankaPickandPlaceHardBench_20260206_json_benchmark \
-  --episode_idx 0
+  --assets_root /path/to/assets
 ```
 
-**Options:** `--steps N` (default 5000), `--headless`, `--max_episodes N` (run multiple episodes), `--episode_json /path/to/episode.json` for a single episode file. Policy: **`zero`** (no motion) or **`pi_remote`** (OpenPI server; start the server first). Optional: `--scenes_root /path/to/scenes` to load the episode’s MolmoSpaces scene USD when available; otherwise the script uses the Arena default background (e.g. `--background kitchen`). Environment variables: `MOLMO_ISAAC_ASSETS_ROOT` can replace `--assets_root`; `MOLMO_PI_SERVER_HOST` and `MOLMO_PI_SERVER_PORT` for `pi_remote`.
+`--scenes_root` defaults to `--assets_root` so iTHOR FloorPlans resolve automatically. Use `--scene_extra_xyz 0 0 Z` to tune vertical fit. Use `--benchmark_dir` + `--episode_idx N` to run a specific episode. List episodes without Isaac Sim: `python3 scripts/list_arena_benchmark_episodes.py --assets_root /path/to/assets`.
 
-**Troubleshooting:** (1) **Torch not compiled with CUDA** — The Isaac Sim Python used by `isaaclab.sh` must have a CUDA-enabled PyTorch build. (2) **`ModuleNotFoundError: isaaclab_arena`** — Set `ISAACLAB_ARENA_PATH` to the Arena repo root. (3) **SciPy / conda errors** — Run without conda activated (`conda deactivate`) so `isaaclab.sh` uses Isaac Sim’s Python. (4) Success criteria are geometry-only (lift height for pick; pose/radius for place); no contact sensors or USD patching.
+**OpenPI / Pi0 (with cameras):** Cameras are auto-enabled with `--policy_type pi_remote`. Two DROID-style cameras: wrist (`panda_hand`) and exo shoulder (`panda_link0`, raised 1.56 m to match physical DROID geometry). Use `--joint_pos_policy` for joint-position pi0 models.
+
+```bash
+export ISAACLAB_ARENA_PATH=/path/to/IsaacLab-Arena
+export MOLMO_ISAAC_ASSETS_ROOT=/path/to/assets
+bash molmo_spaces_isaac/scripts/test_pi_remote.sh [episode_idx [steps]]
+```
+
+Camera obs keys: `camera_obs.wrist_cam_rgb`, `camera_obs.exo_cam_rgb` (override with `MOLMO_PI_WRIST_CAMERA` / `MOLMO_PI_EXO_CAMERA`). Enable cameras without pi_remote via `--with_cameras`.
+
 
 ---
 

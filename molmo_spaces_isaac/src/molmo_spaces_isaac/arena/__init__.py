@@ -10,23 +10,21 @@ Task and THOR asset helpers are lazy-loaded so --list_only works without Simulat
 from molmo_spaces_isaac.arena.episode_to_arena import (
     ArenaEpisodeSpec,
     episode_dict_to_arena_spec,
-    episode_spec_to_arena_spec,
 )
 
 __all__ = [
     "ArenaEpisodeSpec",
-    "MolmoSpacesPickAndPlaceTask",
+    "MolmoSpacesPickTask",
     "create_thor_object_for_arena",
     "episode_dict_to_arena_spec",
-    "episode_spec_to_arena_spec",
 ]
 
 
 def __getattr__(name: str):
     """Lazy-load task and thor_asset so they are not imported until needed (they pull in isaaclab/omni)."""
-    if name == "MolmoSpacesPickAndPlaceTask":
-        from molmo_spaces_isaac.arena.molmospaces_pick_and_place_task import MolmoSpacesPickAndPlaceTask
-        return MolmoSpacesPickAndPlaceTask
+    if name == "MolmoSpacesPickTask":
+        from molmo_spaces_isaac.arena.molmospaces_pick_task import MolmoSpacesPickTask
+        return MolmoSpacesPickTask
     if name == "create_thor_object_for_arena":
         from molmo_spaces_isaac.arena.thor_asset import create_thor_object_for_arena
         return create_thor_object_for_arena

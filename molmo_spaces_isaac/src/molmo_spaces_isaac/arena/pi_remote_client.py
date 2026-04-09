@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Any
@@ -10,6 +12,16 @@ from typing import Any
 import numpy as np
 
 log = logging.getLogger(__name__)
+
+# Isaac Sim bundles websockets 12.x via omni.kit.pip_archive; the openpi server requires 15.x.
+# Inject the openpi venv's site-packages so openpi_client finds the correct websockets version.
+_OPENPI_VENV_SITE = os.environ.get(
+    "MOLMO_OPENPI_VENV_SITE",
+    os.path.expanduser("~/openpi/.venv/lib/python3.11/site-packages"),
+)
+if os.path.isdir(_OPENPI_VENV_SITE) and _OPENPI_VENV_SITE not in sys.path:
+    sys.path.insert(0, _OPENPI_VENV_SITE)
+    log.debug("Prepended openpi venv site-packages for websockets 15.x: %s", _OPENPI_VENV_SITE)
 
 # Optional: openpi_client for remote inference
 try:
@@ -149,12 +161,19 @@ def get_pi_remote_action(
     camera_key_map: dict[str, str],
     default_image_shape: tuple[int, int, int],
     device,
+    use_joint_pos_control: bool = False,
 ) -> "torch.Tensor":
-    """Build policy obs (pi format), get action from Pi server, return Arena 7D action tensor."""
+    """Build policy obs (pi format), get action from Pi server, return Arena action tensor.
+
+    use_joint_pos_control=True: 8D (7 arm joint angles + 1 binary gripper), for pi0 DROID
+    joint-position policies. Requires Arena Franka configured with JointPositionActionCfg.
+    use_joint_pos_control=False (default): 7D delta EEF pose, for normalized EEF policies.
+    """
     import torch
     from molmo_spaces_isaac.arena.molmospaces_learned_policy_adapter import (
         arena_obs_to_policy_obs,
         policy_action_to_arena_action,
+        policy_joint_pos_action_to_arena_action,
     )
     policy_obs = arena_obs_to_policy_obs(
         arena_obs,
@@ -165,11 +184,18 @@ def get_pi_remote_action(
         policy_obs_format="pi",
     )
     action_dict = pi_policy.get_action([policy_obs])
+    _dev = torch.device(device) if not isinstance(device, torch.device) else device
+    if use_joint_pos_control:
+        return policy_joint_pos_action_to_arena_action(
+            action_dict,
+            action_gripper_open_threshold=0.5,
+            device=_dev,
+        )
     return policy_action_to_arena_action(
         action_dict,
         action_spec={"arm": 7, "gripper": 2},
         action_scale_pos=0.5,
         action_scale_rot=0.3,
         action_gripper_open_threshold=0.5,
-        device=torch.device(device) if not isinstance(device, torch.device) else device,
+        device=_dev,
     )
