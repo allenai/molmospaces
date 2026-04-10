@@ -21,7 +21,7 @@ python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
-  --benchmark_dir assets/benchmarks/molmospaces-bench-v2/ithor/FrankaOpenDataGenConfig/FrankaOpenDataGenConfig_20260123_json_benchmark
+  --benchmark_dir assets/benchmarks/molmospaces-bench-v1/ithor/FrankaOpenDataGenConfig/FrankaOpenDataGenConfig_20260123_json_benchmark
 ```
 
 ### Pick
@@ -35,5 +35,5 @@ python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
-  --benchmark_dir assets/benchmarks/molmospaces-bench-v2/procthor-10k/FrankaPickandPlaceDroidMiniBench/FrankaPickandPlaceDroidMiniBench_20260111_json_benchmark
+  --benchmark_dir assets/benchmarks/molmospaces-bench-v1/procthor-10k/FrankaPickandPlaceDroidMiniBench/FrankaPickandPlaceDroidMiniBench_20260111_json_benchmark
 ```
