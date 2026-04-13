@@ -20,14 +20,14 @@ from the project root directory.
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
-  --benchmark_dir molmospaces-bench-v2/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231
 ```
 
 ### Pick-Classic
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
-  --benchmark_dir molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
 ## Benchmarks with filament renderer
@@ -43,7 +43,7 @@ from the project root directory and pass the `--use-filament` option to the eval
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
-  --benchmark_dir molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
 ### Pick-RandCam
@@ -52,7 +52,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
   --camera_names randomized_zed2_analogue_1 wrist_camera \
-  --benchmark_dir molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
 ### Pick & Place
@@ -60,7 +60,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
-  --benchmark_dir molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
 ### Pick & Place-NextTo
@@ -68,7 +68,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
-  --benchmark_dir molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceNextToHardBench/FrankaPickandPlaceNextToHardBench_20260305_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceNextToHardBench/FrankaPickandPlaceNextToHardBench_20260305_json_benchmark
 ```
 
 ### Pick & Place-Color
@@ -76,5 +76,5 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
-  --benchmark_dir molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceColorHardBench/FrankaPickandPlaceColorHardBench_20260304_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceColorHardBench/FrankaPickandPlaceColorHardBench_20260304_json_benchmark
 ```
