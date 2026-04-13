@@ -314,7 +314,15 @@ class Tiptop_Policy(InferencePolicy):
         if self.actions_buffer is None:
             result = self.model.infer(model_input)
             if not result["success"]:
-                raise RuntimeError(f"Tiptop planning failed: {result.get('error', 'unknown error')}")
+                log.warning(
+                    "Tiptop planning failed: %s. Returning no-op (hold current pose) and marking done.",
+                    result.get("error", "unknown error"),
+                )
+                noop = np.concatenate([model_input["q_init"][:7], [0.0]]).astype(np.float32)
+                self.actions_buffer = [noop]
+                self.current_buffer_index = 0
+                self._plan_exhausted = True
+                return noop
             self.actions_buffer = self._unroll_plan(result["plan"])
             self.current_buffer_index = 0
             log.info(
