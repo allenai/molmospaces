@@ -1,4 +1,4 @@
-# JSON Benchmark Evaluation
+# Benchmark Evaluation
 
 Run learned policies on fixed, reproducible benchmarks.
 
@@ -8,17 +8,17 @@ Run learned policies on fixed, reproducible benchmarks.
 This README focuses on benchmark installation and running.
 
 ### Related documentation
-- Theoretical Notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts/export?format=pdf)
-- Benchmark usage documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g/export?format=pdf). 
+- Leaderboard documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g/export?format=pdf). 
+- Submitting results, see the GitHub issue in the repository [here](https://github.com/allenai/molmospaces/issues/8).
+- Theoretical notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts/export?format=pdf)
 
-
-### Submitting results
-
-1. Run the policy and evaluation script,following the instructions below to obtain .csv files or a zip of them.
-2. Create a GitHub issue in the repository mentioned [here](https://github.com/allenai/molmospaces/issues/8).
-3. Assign @BlGene or @omarrayyann, also feel free to reach out for help.
 
 ## Concepts
+
+The MolmoSpaces **leaderboard** shows the results of various polices on benchmarks.
+
+**Benchmark Sets** are collections of individual benchmarks that have been released together, e.g., 
+the ones from the MolmoSpaces paper, prefixed by "MS-" or the ones from the MolmoBot paper prefixed by "MB-".
 
 A **benchmark** is a `benchmark.json` file containing a list of self-contained episode specs. Each spec includes everything needed to recreate a task: scene, robot pose, object poses, cameras, language instructions.
 
@@ -29,7 +29,7 @@ An **eval config** is a normal datagen config with your policy attached. When po
 
 The benchmark datasets are installed when resource manager gets instantiated. You can either run
 ```bash
-export MLSPACES_ASSETS_DIR=/path/to/symlink/resources
+export MLSPACES_ASSETS_DIR=/path/to/symlink/resources  # optional
 python -m molmo_spaces.molmo_spaces_constants
 ```
 
@@ -39,10 +39,20 @@ from molmospaces.molmo_spaces_constants import get_resource_manager()
 get_resource_manager()
 ```
 
+## Choosing a Benchmark
+
+Which benchmarks should I evaluate on? This depends on what you want to show. The current TLDR is:
+
+- MolmoSpaces Manipulation: Easy manipulation tasks
+- MolmoSpaces Navigation: Navigation tasks
+- MolmoBot Manipulation: Harder manipulation tasks
+
+For more information see [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g).
+
 
 ## Running Benchmarks
 
-### Quick guide: set up the Pi policy server once, then run the benchmark.
+### Running a Generic Benchmark with Pi
 
 #### 1. Setup: install and run the Pi policy server
 
@@ -67,18 +77,35 @@ uv run scripts/serve_policy.py --port=8080 policy:checkpoint \
 
 If using OpenPI models: `pip install openpi_client`.
 
+For this we chose the easy `MS-Pick` benchmark, which is located here `assets/benchmarks/molmospaces-bench-v1/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231/`.
+
 Then launch benchmark episodes in MuJoCo:
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py \
     molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig \
-    --benchmark_dir assets/benchmarks/path-to-benchmark/ \
+    --benchmark_dir assets/benchmarks/molmospaces-bench-v1/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231/ \
     --task_horizon_steps 500
 ```
 
 Make sure the *port* number is the same in `molmo_spaces.configs.policy_configs_baselines:PiPolicyConfig`
 
 Also, see `molmo_spaces/evaluation/configs/evaluation_configs.py` for more examples on eval configs.
+
+#### 3. Run the evaluation
+Finally we run the evaluation output script that aggegates the results as csv files.
+```bash 
+python scripts/benchmarks/eval_to_csv.py <eval_output_dir> pi05ft --success-condition oracle  --output-csv data/pick_easy/pi05.csv
+```
+
+
+### Running MolmoSpaces Benchmarks
+
+see [here](./ms-bench.md)
+
+### Running MolmoBot Benchmarks
+
+see [here](./mb-bench.md).
 
 ---
 
