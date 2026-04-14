@@ -60,7 +60,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
-  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
+  --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceHardBench/FrankaPickandPlaceHardBench_20260206_json_benchmark
 ```
 
 ### Pick & Place-NextTo
