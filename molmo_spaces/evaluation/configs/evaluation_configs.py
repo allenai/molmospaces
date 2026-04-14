@@ -39,6 +39,7 @@ from molmo_spaces.configs.policy_configs import (
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
     DreamZeroPolicyConfig,
+    Molmoact2PolicyConfig,
     PiPolicyConfig,
     TeleopPolicyConfig,
 )
@@ -194,6 +195,17 @@ class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     policy_config: PiPolicyConfig = PiPolicyConfig()
     policy_dt_ms: float = 66.0  # ~15hz
     end_on_success: bool = True  # End episode immediately upon success, ignoring task_horizon
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+class Molmoact2PolicyEvalConfig(JsonBenchmarkEvalConfig):
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+    policy_config: Molmoact2PolicyConfig = Molmoact2PolicyConfig()
+    policy_dt_ms: float = 66.0  # ~15hz
+    end_on_success: bool = True
 
     def model_post_init(self, __context):
         super().model_post_init(__context)

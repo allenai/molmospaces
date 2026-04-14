@@ -26,7 +26,7 @@ if not PYOPENGL_PLATFORM:
 elif PYOPENGL_PLATFORM.lower() != "egl":
     raise ImportError(
         "Cannot use EGL rendering platform. "
-        "The PYOPENGL_PLATFORM environment variable is set to {!r} "
+        f"The PYOPENGL_PLATFORM environment variable is set to {PYOPENGL_PLATFORM!r} "
         "(should be either unset or 'egl')."
     )
 

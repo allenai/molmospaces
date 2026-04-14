@@ -53,3 +53,7 @@ mlspaces_tests/**/test_data
 # pytest
 .pytest_cache/
 __pycache__/
+
+debug.log
+scripts.sh
+.nltk*
