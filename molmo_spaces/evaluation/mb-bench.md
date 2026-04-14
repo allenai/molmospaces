@@ -51,7 +51,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --use-filament \
-  --camera_names randomized_zed2_analogue_1 wrist_camera \
+  --camera_names randomized_zed2_analogue_1 wrist_camera_zed_mini \
   --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
