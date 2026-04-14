@@ -184,7 +184,7 @@ class Tiptop_Policy(InferencePolicy):
     def obs_to_model_input(self, obs):
         if isinstance(obs, list):
             obs = obs[0]
-        prompt = self.prompt_sampler.get_prompt(self.task).lower()
+        prompt = self.task.get_task_description()
 
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         camera_params = obs[f"sensor_param_{wrist_camera_key}"]
