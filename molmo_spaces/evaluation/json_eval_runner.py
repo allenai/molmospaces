@@ -71,7 +71,10 @@ class JsonEvalRunner(ParallelRolloutRunner):
             episode_idx: Optional index of a specific episode to evaluate. If provided,
                 only that episode will be evaluated and the process will stop after it.
             max_episodes: Optional maximum number of episodes to evaluate. If provided,
-                only the first N episodes will be evaluated.
+                only the episodes for the houses used in the first N episodes will be
+                evaluated. Note that the final number of episodes can be larger than N
+                if more than one episode is sampled for any of the houses among the
+                first N episodes.
             add_custom_object: Whether to replace the target object with a custom object.
             custom_object_path: Path to the custom object XML file. Required if
                 add_custom_object is True.
