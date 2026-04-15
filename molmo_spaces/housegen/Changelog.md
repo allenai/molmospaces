@@ -68,14 +68,14 @@ Now it should be like this:
 - Added an extra offset to some object categories only for holodeck houses, as it seems that the
   location used for the house json was computed using a different version of the assets, giving a
   different bounding box, which might caused the objects from these categories to have a wrong
-  position in the house json. This issue is being tracked [here](https://github.com/allenai/molmospaces/issues/314)
+  position in the house json. This issue is being tracked [here](https://github.com/allenai/mujoco-thor/issues/314)
 
 ### 11-19-25
 
 - Added a processing step during exporting to delete the cloned versions of some assets, as it seems
   some houses have duplicated of some objects that spawn in the same position, which makes the
   simulation slow down to around 1% realtime factor, due to too many contacts being handled for only
-  these problematic objects. This issue is being tracked [here](https://github.com/allenai/molmospaces/issues/302)
+  these problematic objects. This issue is being tracked [here](https://github.com/allenai/mujoco-thor/issues/302)
 
 
 ### 11-17-25
@@ -85,7 +85,7 @@ are `Toilet_2` and `Desk_306_1`, which look fine in iTHOR houses, but have bad p
 in ProcTHOR-10k houses. The fix for now was to add an offset to the model when adding it to the
 house. This was introduced in `401b5726cd3d7c28761fdf26ab2f86c651b48e5f` for Procthor-10k, Procthor-Objaverse
 and Holodeck-Objaverse houses only, as this works fine for iTHOR houses (the positions come good
-  from the Unity scene). This issue is being tracked [here](https://github.com/allenai/molmospaces/issues/318)
+from the Unity scene). This issue is being tracked [here](https://github.com/allenai/mujoco-thor/issues/318)
 
 ### 11-14-25
 
@@ -93,19 +93,19 @@ and Holodeck-Objaverse houses only, as this works fine for iTHOR houses (the pos
   primitive collider type from capsule to cylinder to make it more stable. This was changed in commit
   `1e32f1ab32002c1c447876d8f3f284c234551fd0`. These changes fix the issue we had with pens and pencils
   going through some surfaces from tables and desks when doing the settle phase when exporting the houses.
-  This issue is being tracked [here](https://github.com/allenai/molmospaces/issues/319)
+  This issue is being tracked [here](https://github.com/allenai/mujoco-thor/issues/319)
 
 ### 11-10-25
 
 - Fixed an issue with z-fighting on some walls for ProcTHOR-10k scenes. The fix was added in commit
-  `ee8f309f4cf0652ff5a77034e99485b2fedd37f0`, and the issue is being tracked in [this](https://github.com/allenai/molmospaces/issues/315)
+  `ee8f309f4cf0652ff5a77034e99485b2fedd37f0`, and the issue is being tracked in [this](https://github.com/allenai/mujoco-thor/issues/315)
   github issue.
 
 ### 11-07-25
 
 - Fixed an issue with the walls not using the correct colliders when adding holes to the doors. This
   was fixed in commit `4e8ab58fafec39f6ac6f36e6c2e47e847d4d868d`, and the issue is being tracked in
-  [this](https://github.com/allenai/molmospaces/issues/317) github issue.
+  [this](https://github.com/allenai/mujoco-thor/issues/317) github issue.
 
 ### 11-05-25
 
