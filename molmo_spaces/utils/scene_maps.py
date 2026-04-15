@@ -9,17 +9,29 @@ import cv2
 import matplotlib.pyplot as plt
 import mujoco
 import numpy as np
-from mujoco import MjData
+from mujoco import MjData, MjModel
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 
 from molmo_spaces.env.mj_extensions import MjModelBindings
+from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.utils.linalg_utils import homogenize, inverse_homogeneous_matrix, single_or_batch
 from molmo_spaces.utils.mj_model_and_data_utils import geom_aabb
 
 log = logging.getLogger(__name__)
 
+def _get_renderer(model: MjModel, width: int, height: int, device_id: int, use_filament: bool = False) -> MjOpenGLRenderer | MjFilamentRenderer:
+    renderer: MjOpenGLRenderer | MjFilamentRenderer | None = None
+    if use_filament:
+        renderer = MjFilamentRenderer(
+            MjModelBindings(model), height=height, width=width
+        )
+    else:
+        renderer = MjOpenGLRenderer(
+            MjModelBindings(model), height=height, width=width, device_id=device_id
+        )
+    return renderer
 
 def _delete_blacklisted_bodies(spec: mujoco.MjSpec) -> int:
     """Delete bodies from the spec that match blacklisted asset UIDs.
@@ -133,6 +145,7 @@ class THORMap:
         voxel_map=None,
         voxel_scale_factor=None,
         px_per_m: int = 100,
+        use_filament: bool = False,
     ):
         self._occupancy_map = occupancy_map
         self._occupancy_scale_factor = occupancy_scale_factor
@@ -140,6 +153,7 @@ class THORMap:
         self._voxel_map = voxel_map
         self._voxel_scale_factor = voxel_scale_factor
         self._px_per_m = px_per_m
+        self._use_filament = use_filament
 
     @property
     def occupancy_map(self):
@@ -294,8 +308,9 @@ class ProcTHORMap(THORMap):
         px_per_m: int,
         room_map: np.ndarray = None,
         room_ids_to_name: dict = None,
+        use_filament: bool = False
     ):
-        super().__init__(occupancy_map=occupancy, px_per_m=px_per_m)
+        super().__init__(occupancy_map=occupancy, px_per_m=px_per_m, use_filament=use_filament)
         self.occupancy = occupancy
         self._room_map = room_map
         self.room_ids_to_name = room_ids_to_name
@@ -421,6 +436,7 @@ class ProcTHORMap(THORMap):
         px_per_m: int = 100,
         data: MjData | None = None,
         device_id: int = None,
+        use_filament: bool = False,
     ):
         """
         Generate a ProcTHORMap from a MuJoCo model with the open door path cleared.
@@ -564,9 +580,7 @@ class ProcTHORMap(THORMap):
             w = round(px_per_m * aabb_size[1])
             effective_px = h / aabb_size[0]
 
-            renderer = MjOpenGLRenderer(
-                MjModelBindings(model), height=h, width=w, device_id=device_id
-            )
+            renderer = _get_renderer(model, width=w, height=h, device_id=device_id, use_filament=use_filament)
             renderer.update(data, cam)
             for camera in renderer.scene.camera:
                 camera: mujoco.MjvGLCamera
@@ -814,6 +828,7 @@ class iTHORMap(ProcTHORMap):
         px_per_m: int = 100,
         data: MjData | None = None,
         device_id: int = None,
+        use_filament: bool = False,
     ):
         # Create a new model without ceiling bodies
         spec = mujoco.MjSpec.from_file(model_path)
@@ -861,9 +876,7 @@ class iTHORMap(ProcTHORMap):
             cam.orthographic = 1
             h, w = round(px_per_m * aabb_size[0]), round(px_per_m * aabb_size[1])
             px_per_m = h / aabb_size[0]  # recompute to account for rounding
-            renderer = MjOpenGLRenderer(
-                MjModelBindings(model), height=h, width=w, device_id=device_id
-            )
+            renderer = _get_renderer(model, width=w, height=h, device_id=device_id, use_filament=use_filament)
             renderer.update(data, cam)
             for camera in renderer.scene.camera:
                 camera: mujoco.MjvGLCamera
@@ -875,9 +888,7 @@ class iTHORMap(ProcTHORMap):
             assert model.cam_orthographic[cam_model.id], "Camera must be orthographic"
             w, h = model.cam_resolution[cam_model.id]
             px_per_m = h / cam_model.fovy.item()
-            renderer = MjOpenGLRenderer(
-                MjModelBindings(model), height=h, width=w, device_id=device_id
-            )
+            renderer = _get_renderer(model, width=w, height=h, device_id=device_id, use_filament=use_filament)
             renderer.update(data, camera)
 
         cam_to_world = np.eye(4)

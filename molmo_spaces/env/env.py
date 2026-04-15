@@ -720,6 +720,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
                 agent_radius=agent_radius,
                 px_per_m=px_per_m,
                 device_id=None,
+                use_filament=self.config.use_filament,
             )
         elif "procthor" in self.current_model_path or "holodeck" in self.current_model_path:
             thormap = ProcTHORMap.from_mj_model_path(
@@ -727,6 +728,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
                 px_per_m=px_per_m,
                 agent_radius=agent_radius,
                 device_id=None,
+                use_filament=self.config.use_filament,
             )
         else:
             raise ValueError(f"Unknown scene type: {self.current_model_path}")
