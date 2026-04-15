@@ -72,7 +72,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
                 only that episode will be evaluated and the process will stop after it.
             max_episodes: Optional maximum number of episodes to evaluate. If provided,
                 only the episodes for the houses used in the first N episodes will be
-                evaluated. Note that the final number of episodes can be larger than N
+                evaluated. Note that the final number of episodes can differ from N
                 if more than one episode is sampled for any of the houses among the
                 first N episodes.
             add_custom_object: Whether to replace the target object with a custom object.

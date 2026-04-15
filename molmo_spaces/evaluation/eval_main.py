@@ -231,7 +231,7 @@ def get_args():
         "--max_episodes",
         type=int,
         default=None,
-        help="Maximum number of episodes to evaluate from benchmark. If None, evaluates all episodes.",
+        help="Limit number of episodes to evaluate from benchmark. If None, evaluates all episodes, else, evaluates only the episodes for the houses used in the first `max_episodes`. Note that the final number of episodes can differ from `max_episodes` if more than one episode is sampled for any of the houses among the first `max_episodes` episodes.",
     )
     parser.add_argument(
         "--camera_names",
