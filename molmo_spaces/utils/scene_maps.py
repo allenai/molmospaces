@@ -21,17 +21,19 @@ from molmo_spaces.utils.mj_model_and_data_utils import geom_aabb
 
 log = logging.getLogger(__name__)
 
-def _get_renderer(model: MjModel, width: int, height: int, device_id: int, use_filament: bool = False) -> MjOpenGLRenderer | MjFilamentRenderer:
+
+def _get_renderer(
+    model: MjModel, width: int, height: int, device_id: int, use_filament: bool = False
+) -> MjOpenGLRenderer | MjFilamentRenderer:
     renderer: MjOpenGLRenderer | MjFilamentRenderer | None = None
     if use_filament:
-        renderer = MjFilamentRenderer(
-            MjModelBindings(model), height=height, width=width
-        )
+        renderer = MjFilamentRenderer(MjModelBindings(model), height=height, width=width)
     else:
         renderer = MjOpenGLRenderer(
             MjModelBindings(model), height=height, width=width, device_id=device_id
         )
     return renderer
+
 
 def _delete_blacklisted_bodies(spec: mujoco.MjSpec) -> int:
     """Delete bodies from the spec that match blacklisted asset UIDs.
@@ -308,7 +310,7 @@ class ProcTHORMap(THORMap):
         px_per_m: int,
         room_map: np.ndarray = None,
         room_ids_to_name: dict = None,
-        use_filament: bool = False
+        use_filament: bool = False,
     ):
         super().__init__(occupancy_map=occupancy, px_per_m=px_per_m, use_filament=use_filament)
         self.occupancy = occupancy
@@ -580,7 +582,9 @@ class ProcTHORMap(THORMap):
             w = round(px_per_m * aabb_size[1])
             effective_px = h / aabb_size[0]
 
-            renderer = _get_renderer(model, width=w, height=h, device_id=device_id, use_filament=use_filament)
+            renderer = _get_renderer(
+                model, width=w, height=h, device_id=device_id, use_filament=use_filament
+            )
             renderer.update(data, cam)
             for camera in renderer.scene.camera:
                 camera: mujoco.MjvGLCamera
@@ -876,7 +880,9 @@ class iTHORMap(ProcTHORMap):
             cam.orthographic = 1
             h, w = round(px_per_m * aabb_size[0]), round(px_per_m * aabb_size[1])
             px_per_m = h / aabb_size[0]  # recompute to account for rounding
-            renderer = _get_renderer(model, width=w, height=h, device_id=device_id, use_filament=use_filament)
+            renderer = _get_renderer(
+                model, width=w, height=h, device_id=device_id, use_filament=use_filament
+            )
             renderer.update(data, cam)
             for camera in renderer.scene.camera:
                 camera: mujoco.MjvGLCamera
@@ -888,7 +894,9 @@ class iTHORMap(ProcTHORMap):
             assert model.cam_orthographic[cam_model.id], "Camera must be orthographic"
             w, h = model.cam_resolution[cam_model.id]
             px_per_m = h / cam_model.fovy.item()
-            renderer = _get_renderer(model, width=w, height=h, device_id=device_id, use_filament=use_filament)
+            renderer = _get_renderer(
+                model, width=w, height=h, device_id=device_id, use_filament=use_filament
+            )
             renderer.update(data, camera)
 
         cam_to_world = np.eye(4)
