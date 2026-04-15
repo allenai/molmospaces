@@ -2,11 +2,24 @@
 
 ## Usage
 
+We first run an evaluation like
 ```bash
-python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG>  [OPTIONS]  --benchmark_dir <BENCHMARK_DIR>
+python molmo_spaces/evaluation/eval_main.py \
+  <YOUR_POLICY_CONFIG> \
+  [OPTIONS] \
+  --benchmark_dir <BENCHMARK_DIR> \
+  --output_dir <eval_output_dir>
 ```
+Please see detailed commands for each task type below, and replace `<YOUR_POLICY_CONFIG>` with your evaluation config (e.g. `molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig`).
 
-Replace `<YOUR_POLICY_CONFIG>` with your evaluation config (e.g. `molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig`).
+Finally, run the evaluation output script that aggregates results as csv files:
+```bash 
+python scripts/benchmarks/eval_to_csv.py \
+  <eval_output_dir>/<date_str> \
+  <policy_name> \
+  --success-condition both \
+  --output-csv /eg/path/to/<task_type>/<policy_name>.csv
+```
 
 ## Benchmarks with classic renderer
 
