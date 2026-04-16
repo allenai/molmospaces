@@ -1106,12 +1106,12 @@ class CPUMujocoEnv(BaseMujocoEnv):
                 if t.shape != (3,):
                     raise ValueError("Target point must be a 3D numpy array")
                 target_positions.append(t)
-            elif isinstance(t, MjThorArticulationObject):
+            elif isinstance(t, MlSpacesArticulationObject):
                 target_positions.append(t.get_joint_leaf_body_position(0))
-            elif isinstance(t, MjThorObject):
+            elif isinstance(t, MlSpacesObject):
                 target_positions.append(t.position)
             elif isinstance(t, str):
-                obj = create_mjthor_body(self.current_data, t)
+                obj = create_mlspaces_body(self.current_data, t)
                 target_positions.append(obj.position)
             else:
                 raise ValueError(f"Target must be np.ndarray, Object, or str, got {type(t)}")

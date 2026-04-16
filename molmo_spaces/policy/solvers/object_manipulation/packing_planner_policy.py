@@ -3,9 +3,9 @@ from typing import Any
 
 import numpy as np
 
-from molmo_spaces.configs.abstract_exp_config import MjThorExpConfig
+from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.task_configs import PickAndPlaceTaskConfig
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy import (
     ActionPrimitive,
     JointMoveSequence,
@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 class PackingPlannerPolicy(PickAndPlacePlannerPolicy):
     """Packs multiple objects (clutter + original) into a box sequentially."""
 
-    def __init__(self, config: MjThorExpConfig, task: BaseMujocoTask) -> None:
+    def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         super().__init__(config, task)
         task_config = config.task_config
         if task_config.packing_object_names:
@@ -62,7 +62,7 @@ class PackingPlannerPolicy(PickAndPlacePlannerPolicy):
 
         robot_view = self.task.env.current_robot.robot_view
         om = self.task.env.object_managers[self.task.env.current_batch_index]
-        pickup_obj: MjThorObject = om.get_object_by_name(task_config.pickup_obj_name)
+        pickup_obj: MlSpacesObject = om.get_object_by_name(task_config.pickup_obj_name)
 
         grasp_pose_world = compute_grasp_pose(
             self,

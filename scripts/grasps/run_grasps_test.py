@@ -64,6 +64,7 @@ from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.env.data_views import (
     MlSpacesObject,
     MlSpacesArticulationObject,
+    create_mlspaces_body,
 )
 from molmo_spaces.utils.lazy_loading_utils import (
     install_scene_with_objects_and_grasps_from_path,

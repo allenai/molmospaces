@@ -4,9 +4,9 @@ from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
     AllCameraSystems,
+    FrankaDroidCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
 )
-from molmo_spaces.configs.commonsense_task_configs import BlockSupportTaskConfig
 from molmo_spaces.configs.commonsense_task_configs import (
     BlockSupportTaskConfig,
     MugBallPickTaskConfig,
@@ -17,8 +17,11 @@ from molmo_spaces.configs.commonsense_task_sampler_configs import (
     MugBallPickTaskSamplerConfig,
     SemanticGraspPickTaskSamplerConfig,
 )
-from molmo_spaces.configs.policy_configs import PickPlannerPolicyConfig
-from molmo_spaces.configs.robot_configs import BaseRobotConfig
+from molmo_spaces.configs.policy_configs import (
+    BlockStackingPolicyConfig,
+    PickPlannerPolicyConfig,
+)
+from molmo_spaces.configs.robot_configs import BaseRobotConfig, FrankaRobotConfig
 from molmo_spaces.tasks.commonsense_samplers.block_support_task_sampler import (
     BlockSupportTaskSampler,
 )
@@ -43,9 +46,16 @@ class BlockSupportConfig(PickBaseConfig):
     BlockSupportTaskSampler for task-specific functionality.
     """
 
-    task_type: str = "block_support"
+    task_type: str = "block_stacking"
 
     scene_dataset: str = "procthor-objaverse-debug"  # Name of the scene dataset to load
+
+    # Droid setup (matches run_pipeline.py's `--robot droid` branch). Without
+    # an explicit robot_config here, distributed launchers like
+    # manager_multi_machine_sqs_beaker.py — which don't take a `--robot` flag —
+    # would leave robot_config=None and crash in setup_robot_scene with
+    # `'NoneType' object has no attribute 'name'`.
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
 
     # Task sampler configuration - uses BlockSupportTaskSampler
     task_sampler_config: BlockSupportTaskSamplerConfig = BlockSupportTaskSamplerConfig(
@@ -58,8 +68,11 @@ class BlockSupportConfig(PickBaseConfig):
     # Camera configuration - inherited from PickBaseConfig
     camera_config: FrankaRandomizedD405D455CameraSystem = FrankaRandomizedD405D455CameraSystem()
 
-    # Policy configuration - inherited from PickBaseConfig
-    policy_config: PickPlannerPolicyConfig = PickPlannerPolicyConfig()
+    # Block-stacking task needs the dedicated stacking planner, not the pick
+    # planner inherited from PickBaseConfig. Locally, run_pipeline.py sets this
+    # explicitly; distributed launchers instantiate the config as-is, so the
+    # default must be correct here too.
+    policy_config: BlockStackingPolicyConfig = BlockStackingPolicyConfig()
 
     @property
     def tag(self) -> str:
@@ -85,15 +98,26 @@ class MugBallPickConfig(PickBaseConfig):
 
     scene_dataset: str = "procthor-objaverse-debug"
 
+    # Droid setup (matches run_pipeline.py's `--robot droid` branch). Without
+    # an explicit robot_config here, distributed launchers like
+    # manager_multi_machine_sqs_beaker.py — which don't take a `--robot` flag —
+    # would leave robot_config=None and crash in setup_robot_scene with
+    # `'NoneType' object has no attribute 'name'`.
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+
     task_sampler_config: MugBallPickTaskSamplerConfig = MugBallPickTaskSamplerConfig(
         task_sampler_class=MugBallPickTaskSampler,
     )
 
     task_config: MugBallPickTaskConfig = MugBallPickTaskConfig(task_cls=MugBallPickTask)
 
-    camera_config: FrankaRandomizedD405D455CameraSystem = FrankaRandomizedD405D455CameraSystem()
+    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem(
+        img_resolution=(1280, 720),
+    )
 
-    policy_config: PickPlannerPolicyConfig = PickPlannerPolicyConfig()
+    policy_config: PickPlannerPolicyConfig = PickPlannerPolicyConfig(
+        phase_timeout=20.0,
+    )
 
     @property
     def tag(self) -> str:
@@ -120,6 +144,13 @@ class SemanticGraspPickConfig(PickBaseConfig):
 
     scene_dataset: str = "procthor-objaverse-debug"
 
+    # Droid setup (matches run_pipeline.py's `--robot droid` branch). Without
+    # an explicit robot_config here, distributed launchers like
+    # manager_multi_machine_sqs_beaker.py — which don't take a `--robot` flag —
+    # would leave robot_config=None and crash in setup_robot_scene with
+    # `'NoneType' object has no attribute 'name'`.
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+
     task_sampler_config: SemanticGraspPickTaskSamplerConfig = SemanticGraspPickTaskSamplerConfig(
         task_sampler_class=SemanticGraspPickTaskSampler,
     )
@@ -128,10 +159,13 @@ class SemanticGraspPickConfig(PickBaseConfig):
         task_cls=SemanticGraspPickTask,
     )
 
-    camera_config: FrankaRandomizedD405D455CameraSystem = FrankaRandomizedD405D455CameraSystem()
+    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem(
+        img_resolution=(1280, 720),
+    )
 
     policy_config: PickPlannerPolicyConfig = PickPlannerPolicyConfig(
         postgrasp_z_offset=0.20,  # 15cm lift to ensure clear separation from surface
+        phase_timeout=20.0,
     )
 
     @property

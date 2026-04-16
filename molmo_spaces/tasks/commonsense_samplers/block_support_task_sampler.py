@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from mujoco import MjSpec, mjtGeom
 
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.tasks.commonsense_tasks.block_support_task import BlockSupportTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
@@ -34,6 +34,15 @@ def block_name(i: int) -> str:
     return f"block_{i}"
 
 
+# Per-block half-extents, baked in at spec time (no runtime mutation).
+# block_1 is the base (biggest, never grasped); each subsequent block is 1 cm
+# smaller per side so the stack is monotonically shrinking from bottom to top.
+# For an episode with num_blocks=N, the first N blocks (block_1..block_N) are
+# used and the rest are hidden off-scene.
+# Indexed [i-1] for block_i.
+BLOCK_HALF_SIZES = [0.04, 0.03, 0.02, 0.01]
+
+
 class BlockSupportTaskSampler(PickTaskSampler):
     """
     Task sampler for block support tasks that extends PickTaskSampler.
@@ -41,16 +50,25 @@ class BlockSupportTaskSampler(PickTaskSampler):
     """
 
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
-        """Add all possible blocks (up to MAX_BLOCKS) at spec time.
-        Unused blocks will be moved off-scene during task sampling.
+        """Add all MAX_BLOCKS blocks at spec time with their final sizes.
+
+        Sizes are fixed per block index (see BLOCK_HALF_SIZES) so mass,
+        inertia, and collision bounds are all baked correctly by the MuJoCo
+        compiler. Episodes with num_blocks < MAX_BLOCKS use the first
+        num_blocks of these as the tower and hide the rest off-scene.
         """
         for i in range(1, MAX_BLOCKS + 1):
-            self._add_support_cube(spec, name=block_name(i), color=BLOCK_COLORS[i - 1])
+            self._add_support_cube(
+                spec,
+                name=block_name(i),
+                color=BLOCK_COLORS[i - 1],
+                half_size=BLOCK_HALF_SIZES[i - 1],
+            )
 
         # Call parent class to add any additional auxiliary objects from policy
         super().add_auxiliary_objects(spec)
 
-    def _get_scene_objects(self, env: CPUMujocoEnv) -> list[MjThorObject]:
+    def _get_scene_objects(self, env: CPUMujocoEnv) -> list[MlSpacesObject]:
         """Override to return only the active blocks as candidate objects."""
         om = env.object_managers[env.current_batch_index]
         task_sampler_config = self.config.task_sampler_config
@@ -178,7 +196,7 @@ class BlockSupportTaskSampler(PickTaskSampler):
         task_cfg.pickup_obj_goal_pose = pickup_obj_goal_pose.tolist()
 
     def _place_cubes_near_reference(
-        self, env: CPUMujocoEnv, reference_object: MjThorObject, active_block_names: list[str]
+        self, env: CPUMujocoEnv, reference_object: MlSpacesObject, active_block_names: list[str]
     ) -> None:
         """Place support cubes near a reference graspable object."""
         import mujoco
@@ -229,7 +247,7 @@ class BlockSupportTaskSampler(PickTaskSampler):
                 log.error(f"[BLOCK SUPPORT] Failed to place {name} near target object: {e}")
                 raise
 
-    def _move_object_away(self, env: CPUMujocoEnv, obj: MjThorObject) -> None:
+    def _move_object_away(self, env: CPUMujocoEnv, obj: MlSpacesObject) -> None:
         """Move an object far away from the scene."""
         away_pos = np.array([10.0, 10.0, 10.0])
 
@@ -253,14 +271,28 @@ class BlockSupportTaskSampler(PickTaskSampler):
         mujoco.mj_forward(env.current_model, env.current_data)
 
     @staticmethod
-    def _add_support_cube(spec: MjSpec, pos=None, name="block_1", color=None) -> None:
+    def _add_support_cube(
+        spec: MjSpec,
+        pos=None,
+        name="block_1",
+        color=None,
+        half_size: float = 0.03,
+    ) -> None:
         """
         Add a support cube to the scene with separate visual and collision geometry.
+
+        The cube's size is baked in at spec time: MuJoCo's compiler computes
+        mass, inertia, and broadphase bounds from it, and these stay correct
+        for the life of the model. Per-block sizes come from BLOCK_HALF_SIZES
+        via add_auxiliary_objects — avoid mutating geom_size at runtime since
+        it leaves those cached quantities stale.
+
         Args:
             spec: MuJoCo MjSpec object
             pos: [x, y, z] position. If None, uses a default position
             name: Name for the cube body
             color: RGBA color for the visual geometry. Defaults to red [1, 0, 0, 1]
+            half_size: Half-extent of the cube in meters. Default 0.03 = 6 cm cube.
         """
         if pos is None:
             # Default position on table surface
@@ -268,6 +300,8 @@ class BlockSupportTaskSampler(PickTaskSampler):
 
         if color is None:
             color = [1, 0, 0, 1]  # Default to red
+
+        size_vec = [half_size, half_size, half_size]
 
         # Create cube body with free joint for physics simulation
         cube_body = spec.worldbody.add_body(name=name, pos=pos)
@@ -277,7 +311,7 @@ class BlockSupportTaskSampler(PickTaskSampler):
         cube_body.add_geom(
             name=f"{name}_visual",
             type=mjtGeom.mjGEOM_BOX,
-            size=[0.03, 0.03, 0.03],  # Half-size of 3cm per side = 6cm cube
+            size=size_vec,
             rgba=color,  # Specified color (RGBA)
             contype=0,  # Visual-only geometry
             conaffinity=0,
@@ -287,7 +321,7 @@ class BlockSupportTaskSampler(PickTaskSampler):
         cube_body.add_geom(
             name=f"{name}_collision",
             type=mjtGeom.mjGEOM_BOX,
-            size=[0.03, 0.03, 0.03],  # Same size as visual
+            size=size_vec,
             rgba=[0, 0, 0, 0],  # Invisible (alpha=0)
             friction=[1.0, 0.005, 0.0001],  # Add friction for stability
         )

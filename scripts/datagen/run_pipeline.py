@@ -42,7 +42,6 @@ from molmo_spaces.configs.robot_configs import (
     RBY1Config,
     ActionNoiseConfig,
 )
-<<<<<<< HEAD
 from molmo_spaces.configs.robot_configs import (
     BimanualYamRobotConfig,
     FloatingRUMRobotConfig,
@@ -53,14 +52,12 @@ from molmo_spaces.configs.robot_configs import (
 )
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.configs.base_packing_configs import PackingDataGenConfig
+from molmo_spaces.configs.commonsense_configs import (
+    BlockSupportConfig,
+    MugBallPickConfig,
+    SemanticGraspPickConfig,
+)
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
-=======
-from mujoco_thor.configs.robot_configs import BimanualYamRobotConfig, FloatingRUMRobotConfig, FrankaRobotConfig, I2rtYamRobotConfig, RBY1Config, ActionNoiseConfig
-from mujoco_thor.mujoco_thor_constants import ASSETS_DIR
-from mujoco_thor.utils.resource_manager_setup_utils import str2bool
-from mujoco_thor.configs.base_packing_configs import PackingDataGenConfig, PickPackingDataGenConfig
-from mujoco_thor.data_generation.config.object_manipulation_datagen_configs import (
->>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify)
     FrankaPickAndPlaceDroidDataGenConfig,
     FrankaPickAndPlaceColorDataGenConfig,
     FrankaPickAndPlaceColorDroidDataGenConfig,
@@ -206,6 +203,8 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     datagen_cfg.task_type = task_type
 
     datagen_cfg.task_horizon = 1500 if task_type in ("packing", "pick_packing") else 300
+    if args.task_horizon is not None:
+        datagen_cfg.task_horizon = args.task_horizon
     if args.target_types:
         datagen_cfg.task_sampler_config.pickup_types = args.target_types.split(",")
     datagen_cfg.task_sampler_config.samples_per_house = (
@@ -394,6 +393,12 @@ if __name__ == "__main__":
     )
     args.add_argument(
         "--samples_per_house", type=int, default=4, help="number of samples per house"
+    )
+    args.add_argument(
+        "--task_horizon",
+        type=int,
+        default=None,
+        help="override max steps per episode (defaults: 1500 for packing/pick_packing, 300 otherwise)",
     )
     args.add_argument(
         "--filter_for_successful_trajectories",

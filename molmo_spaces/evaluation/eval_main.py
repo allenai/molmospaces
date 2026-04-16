@@ -682,7 +682,6 @@ def run_evaluation(
         log.info(f"Overriding policy_config.camera_names: {camera_names_override}")
         exp_config.policy_config.camera_names = camera_names_override
 
-<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
     # Patch config with evaluation-specific runtime parameters
     exp_config = JsonEvalRunner.patch_config(
         exp_config=exp_config,
@@ -800,26 +799,17 @@ def main() -> None:
         wandb_project=args.wandb_project,
         max_episodes=args.max_episodes,
         environment_light_intensity=args.environment_light_intensity,
-<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
         camera_config_override=eval_camera_config,
         camera_names_override=args.camera_names,
         episode_idx=args.idx,
         add_custom_object=args.add_custom_object,
         custom_object_path=args.custom_object_path,
         custom_object_name=args.custom_object_name,
-=======
         viewer=args.viewer,
-<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
->>>>>>> 253ab57d (Fix success condition for packing tasks):mujoco_thor/evaluation/eval_main.py
-=======
         oracle_termination=args.oracle_termination,
-<<<<<<< HEAD:molmo_spaces/evaluation/eval_main.py
->>>>>>> 47ffc684 (Oracle termination for evals and packing datagen for pick to verify):mujoco_thor/evaluation/eval_main.py
-=======
         house_inds=args.house_inds,
         policy_host=args.policy_host,
         policy_port=args.policy_port,
->>>>>>> 06b91f74 (Minor eval fixes for quality of life):mujoco_thor/evaluation/eval_main.py
     )
 
     log.info(f"Evaluation complete: {results.success_count}/{results.total_count} successful")

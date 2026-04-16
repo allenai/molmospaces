@@ -1,7 +1,7 @@
 import functools
 import logging
 
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task import SemanticGraspPickTask
@@ -27,7 +27,7 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
     2. Creating SemanticGraspPickTask instances with loaded classification data.
     """
 
-    def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MjThorObject]:
+    def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MlSpacesObject]:
         """Get candidate objects, filtered to those with grasp classification data."""
         candidates = super()._get_scene_objects(env, mass_limit=mass_limit)
 
@@ -69,7 +69,7 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
         if asset_uid is None:
             from molmo_spaces.utils.asset_names import get_thor_name
 
-            pickup_obj = MjThorObject(data=env.current_data, object_name=pickup_obj_name)
+            pickup_obj = MlSpacesObject(data=env.current_data, object_name=pickup_obj_name)
             asset_uid = get_thor_name(env.current_model, pickup_obj)
 
         # Load grasp classifications — skip scene if file is missing

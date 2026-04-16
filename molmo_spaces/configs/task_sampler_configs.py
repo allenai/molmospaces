@@ -103,7 +103,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         True  # change to True if you want cluttering in pick task for commonsense
     )
     covering: bool = (
-        True  # If you want objects sampled on top of pickup object as opposed to around
+        False  # If you want objects sampled on top of pickup object as opposed to around
     )
     clutter_with_taller_objects: bool = False  # If you want the surrounding clutter to be taller.
     # Typically set this if you want occlusion rather than covering.
@@ -116,7 +116,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         False  # If you want the surrounding clutter to be the same object
     )
 
-    num_clutter_objects: int = 5  # Number of clutter objects to place around the target object
+    num_clutter_objects: int = 3  # Number of clutter objects to place around the target object
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over

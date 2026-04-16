@@ -1357,8 +1357,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             )
 
     def _sort_objects_by_semantic_similarity(
-        self, objects: list[MjThorObject], reference_obj_name: str, om
-    ) -> list[MjThorObject]:
+        self, objects: list[MlSpacesObject], reference_obj_name: str, om
+    ) -> list[MlSpacesObject]:
         """Sort objects by CLIP semantic similarity to a reference object.
         Args:
             objects: List of objects to sort
@@ -1458,12 +1458,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 if self._same_class_clutter_metadata_adder is not None:
                     self._same_class_clutter_metadata_adder.add_meta(env.current_scene_metadata)
 
-                # Convert pre-added clutter object names to MjThorObject instances
+                # Convert pre-added clutter object names to MlSpacesObject instances
                 clutter_names = self._same_class_clutter_objects[pickup_asset_id]
                 other_objects = []
                 for clutter_name in clutter_names:
                     try:
-                        clutter_obj = MjThorObject(clutter_name, env.current_data)
+                        clutter_obj = MlSpacesObject(clutter_name, env.current_data)
                         other_objects.append(clutter_obj)
                     except KeyError:
                         log.warning(

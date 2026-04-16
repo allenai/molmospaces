@@ -6,11 +6,11 @@ import numpy as np
 from mujoco import MjSpec
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.packing_task import PackingTask
-from molmo_spaces.tasks.pick_and_place_task_sampler import MetadataAdder, PickAndPlaceTaskSampler
+from molmo_spaces.tasks.pick_and_place_task_sampler import PickAndPlaceTaskSampler
 from molmo_spaces.tasks.task_sampler_errors import RobotPlacementError
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
 from molmo_spaces.utils.lazy_loading_utils import install_uid
@@ -145,7 +145,7 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
                 self._datagen_profiler.end("robot_randomize_pickup_obj")
 
         robot_view = env.current_robot.robot_view
-        if not isinstance(pickup_obj, MjThorObject):
+        if not isinstance(pickup_obj, MlSpacesObject):
             raise ValueError(f"Invalid pickup object type: {type(pickup_obj)}")
         target_pos = pickup_obj.position
 

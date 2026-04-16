@@ -4,8 +4,8 @@ from typing import Any
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.configs.abstract_exp_config import MjThorExpConfig
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy import (
     ActionPrimitive,
     BaseObjectManipulationPlannerPolicy,
@@ -48,7 +48,7 @@ class BlockStackingPlannerPolicy(BaseObjectManipulationPlannerPolicy):
     using live block positions (since blocks move during simulation).
     """
 
-    def __init__(self, config: MjThorExpConfig, task: BaseMujocoTask) -> None:
+    def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         self._block_names = config.task_config.block_names
         # Index of the block currently being picked (1-based into block_names)
         # e.g. stack_index=1 means picking block_names[1] onto block_names[0]
@@ -165,8 +165,8 @@ class BlockStackingPlannerPolicy(BaseObjectManipulationPlannerPolicy):
         robot_view = self.task.env.current_robot.robot_view
 
         om = self.task.env.object_managers[self.task.env.current_batch_index]
-        pickup_obj: MjThorObject = om.get_object_by_name(pickup_name)
-        base_block: MjThorObject = om.get_object_by_name(base_name)
+        pickup_obj: MlSpacesObject = om.get_object_by_name(pickup_name)
+        base_block: MlSpacesObject = om.get_object_by_name(base_name)
 
         # Use TopDownGraspPoseSampler to get grasp pose for the block to pick up
         grasp_sampler = FrankaTopDownGraspPoseSampler()
@@ -213,9 +213,14 @@ class BlockStackingPlannerPolicy(BaseObjectManipulationPlannerPolicy):
         # Offset the EE to ensure the pickup object is in the middle of the base block
         preplace_pose[:3, 3] += grasp_pose_world[:3, 3] - pickup_obj.position
 
-        # Place pose - on top of base block
+        # Place pose - held block's bottom lands 1cm above the base block's top
+        # surface instead of exactly touching it. The extra clearance avoids
+        # interpenetration from gripper sag / IK tracking error; the block
+        # falls the last cm and settles via physics.
         place_pose = preplace_pose.copy()
-        place_pose[2, 3] = base_block_top_z + pickup_obj_clearance_offset
+        place_pose[2, 3] = (
+            base_block_top_z + self.policy_config.place_z_clearance + pickup_obj_clearance_offset
+        )
 
         # Postplace pose - retreat from place
         postplace_pose = place_pose.copy()

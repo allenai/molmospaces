@@ -45,7 +45,7 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
         """Set policy_cls after initialization to avoid circular imports."""
         super().model_post_init(__context)
         if self.policy_cls is None:
-            from mujoco_thor.policy.learned_policy.dreamzero_policy import DreamZero_Policy
+            from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
 
             self.policy_cls = DreamZero_Policy
 

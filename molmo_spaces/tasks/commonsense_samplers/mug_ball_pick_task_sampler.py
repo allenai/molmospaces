@@ -8,7 +8,7 @@ from mujoco import MjSpec, mjtGeom
 from PIL import Image
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.data_views import MjThorObject, create_mjthor_body
+from molmo_spaces.env.data_views import MlSpacesObject, create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task import MugBallPickTask
@@ -99,7 +99,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
             return objects
         return super().resolve_visibility_object(env, key)
 
-    def _get_scene_objects(self, env: CPUMujocoEnv) -> list[MjThorObject]:
+    def _get_scene_objects(self, env: CPUMujocoEnv) -> list[MlSpacesObject]:
         """Return only the two mugs as candidate pickup objects."""
         # Inject metadata for the dynamically added mugs
         if self._mug_metadata_adder is not None:
@@ -108,7 +108,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
         mugs = []
         for mug_name in self._mug_body_names:
             try:
-                mug_obj = MjThorObject(object_name=mug_name, data=env.current_data)
+                mug_obj = MlSpacesObject(object_name=mug_name, data=env.current_data)
                 log.info(f"Found mug '{mug_name}' as candidate pickup object")
                 mugs.append(mug_obj)
             except Exception as e:
@@ -209,7 +209,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
                 z_eps=0.003,
             )
             mujoco.mj_forward(env.current_model, env.current_data)
-            ball_view = create_mjthor_body(env.current_data, BALL_NAME)
+            ball_view = create_mlspaces_body(env.current_data, BALL_NAME)
             ball_pos = ball_view.position.copy()
 
             # Place invisible target (mug 2 landing spot) near the ball
@@ -226,7 +226,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
                 z_eps=0.003,
             )
             mujoco.mj_forward(env.current_model, env.current_data)
-            inv_target_view = create_mjthor_body(env.current_data, INVISIBLE_TARGET_NAME)
+            inv_target_view = create_mlspaces_body(env.current_data, INVISIBLE_TARGET_NAME)
             inv_target_pos = inv_target_view.position.copy()
 
             # Check proximity to other scene objects (toasters, etc.)
@@ -257,13 +257,13 @@ class MugBallPickTaskSampler(PickTaskSampler):
                 continue
 
             # Temporarily place mugs in their floating positions to check for collisions
-            mug1_view = create_mjthor_body(env.current_data, mug_1_name)
+            mug1_view = create_mlspaces_body(env.current_data, mug_1_name)
             mug1_pos = ball_pos.copy()
             mug1_pos[2] += MUG_DROP_HEIGHT
             mug1_view.position = mug1_pos
             mug1_view.quat = UPSIDE_DOWN_QUAT
 
-            mug2_view = create_mjthor_body(env.current_data, mug_2_name)
+            mug2_view = create_mlspaces_body(env.current_data, mug_2_name)
             mug2_pos = inv_target_pos.copy()
             mug2_pos[2] += MUG_DROP_HEIGHT
             mug2_view.position = mug2_pos
@@ -321,13 +321,13 @@ class MugBallPickTaskSampler(PickTaskSampler):
                 self._move_object_away(env, obj)
 
             # Place mugs in their final floating positions (best-effort after retries)
-            mug1_view = create_mjthor_body(env.current_data, mug_1_name)
+            mug1_view = create_mlspaces_body(env.current_data, mug_1_name)
             mug1_pos = ball_pos.copy()
             mug1_pos[2] += MUG_DROP_HEIGHT
             mug1_view.position = mug1_pos
             mug1_view.quat = UPSIDE_DOWN_QUAT
 
-            mug2_view = create_mjthor_body(env.current_data, mug_2_name)
+            mug2_view = create_mlspaces_body(env.current_data, mug_2_name)
             mug2_pos = inv_target_pos.copy()
             mug2_pos[2] += MUG_DROP_HEIGHT
             mug2_view.position = mug2_pos
@@ -345,7 +345,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
         )
 
         # Move invisible target away (it served its purpose as a placement reference)
-        inv_target_view = create_mjthor_body(env.current_data, INVISIBLE_TARGET_NAME)
+        inv_target_view = create_mlspaces_body(env.current_data, INVISIBLE_TARGET_NAME)
         inv_target_view.position = np.array([10.0, 10.0, 10.0])
 
         # Setup cameras early so we can capture debug images
@@ -376,7 +376,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
                     )
 
         # Update task config with pickup object pose info (use settled pose)
-        mug1_obj = MjThorObject(object_name=mug_1_name, data=env.current_data)
+        mug1_obj = MlSpacesObject(object_name=mug_1_name, data=env.current_data)
         self.config.task_config.pickup_obj_start_pose = pose_mat_to_7d(mug1_obj.pose).tolist()
 
         pickup_obj_goal_pose = pose_mat_to_7d(mug1_obj.pose)
@@ -397,10 +397,10 @@ class MugBallPickTaskSampler(PickTaskSampler):
     @staticmethod
     def _find_nearby_objects(
         env: CPUMujocoEnv,
-        scene_objects: list[MjThorObject],
+        scene_objects: list[MlSpacesObject],
         check_positions: list[np.ndarray],
         min_dist: float,
-    ) -> list[MjThorObject]:
+    ) -> list[MlSpacesObject]:
         """Return scene objects that are within min_dist of any check position."""
         too_close = []
         for obj in scene_objects:
@@ -411,7 +411,7 @@ class MugBallPickTaskSampler(PickTaskSampler):
                     break
         return too_close
 
-    def _move_object_away(self, env: CPUMujocoEnv, obj: MjThorObject) -> None:
+    def _move_object_away(self, env: CPUMujocoEnv, obj: MlSpacesObject) -> None:
         """Move an object far away from the scene."""
         away_pos = np.array([10.0, 10.0, 10.0])
         body_jntadr = env.current_model.body_jntadr[obj.object_id]

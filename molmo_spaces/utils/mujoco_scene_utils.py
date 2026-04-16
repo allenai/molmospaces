@@ -318,7 +318,7 @@ def clear_surface(
                 # If this object is not in the keep list and we haven't already moved it
                 if other_body_id not in object_ids_to_keep and other_body_id not in moved_objects:
                     # Use the same position update method as place_object_near
-                    object_body = create_mjthor_body(data, other_body_id)
+                    object_body = create_mlspaces_body(data, other_body_id)
                     object_body.pose = away_pose
                     # Disable gravity and zero velocities so displaced objects
                     # don't fall forever through empty space
@@ -375,6 +375,9 @@ def is_object_supported_by_body(
     angle_threshold: float = np.radians(30),
     frac_weight_threshold: float = 0.5,
     eps: float = 1e-6,
+    geometric_fallback: bool = False,
+    geometric_xy_tol: float = 0.0,
+    geometric_z_gap_tol: float = 0.02,
 ) -> bool:
     """
     Checks if an object is supported by a given body, using heuristics.
@@ -387,7 +390,13 @@ def is_object_supported_by_body(
         angle_threshold: Threshold for the angle between the normal and the vertical axis to be considered parallel, in radians
         frac_weight_threshold: The upward component of the contact force must be at least this fraction of the object weight to be considered supported
         eps: Threshold for the net contact force to be considered non-zero
-
+        geometric_fallback: If True and no qualifying contact is found, fall back to a
+            pose-based check: the object's AABB-center XY lies within the support's
+            AABB XY footprint (expanded by geometric_xy_tol) and the object's AABB
+            bottom sits at or just above the support's AABB top (within geometric_z_gap_tol).
+        geometric_xy_tol: Extra slack added to the support's XY footprint, in meters.
+        geometric_z_gap_tol: Max allowed vertical gap between the support's top and
+            the object's bottom, in meters. Negative gaps (interpenetration) are also accepted.
     Returns:
         bool: True if the object is supported by the given support, False otherwise
     """
@@ -413,7 +422,15 @@ def is_object_supported_by_body(
             net_force += contact_force_world
 
     if np.linalg.norm(net_force) < eps:
-        # no contact between objects
+        # no contact between objects — optionally fall back to a geometric check
+        if geometric_fallback:
+            return _is_object_geometrically_above(
+                data=data,
+                object_id=object_id,
+                support_id=body_rootid,
+                xy_tol=geometric_xy_tol,
+                z_gap_tol=geometric_z_gap_tol,
+            )
         return False
 
     cos_threshold = np.cos(angle_threshold)
@@ -432,3 +449,38 @@ def is_object_supported_by_body(
     # both transitive support and multiple supports.
 
     return contact_is_vertical and is_supporting_weight
+
+
+def _is_object_geometrically_above(
+    data: MjData,
+    object_id: int,
+    support_id: int,
+    xy_tol: float,
+    z_gap_tol: float,
+) -> bool:
+    """Pose-only check: object's AABB sits in the column above the support's AABB.
+
+    True iff:
+      - object's AABB-center XY lies inside the support's XY footprint (expanded by xy_tol)
+      - object's AABB bottom is at or just above the support's AABB top (gap <= z_gap_tol);
+        interpenetration (negative gap) is also accepted
+    """
+    model = data.model
+    obj_center, obj_size = body_aabb(model, data, object_id, visual_only=False)
+    sup_center, sup_size = body_aabb(model, data, support_id, visual_only=False)
+
+    obj_half = obj_size / 2
+    sup_half = sup_size / 2
+
+    sup_xy_min = sup_center[:2] - sup_half[:2] - xy_tol
+    sup_xy_max = sup_center[:2] + sup_half[:2] + xy_tol
+    if not (
+        sup_xy_min[0] <= obj_center[0] <= sup_xy_max[0]
+        and sup_xy_min[1] <= obj_center[1] <= sup_xy_max[1]
+    ):
+        return False
+
+    sup_top_z = sup_center[2] + sup_half[2]
+    obj_bot_z = obj_center[2] - obj_half[2]
+    gap = obj_bot_z - sup_top_z
+    return gap <= z_gap_tol

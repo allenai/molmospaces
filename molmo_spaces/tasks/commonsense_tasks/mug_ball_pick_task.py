@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.tasks.pick_task import PickTask
 from molmo_spaces.utils.pose import pose_mat_to_7d
 
@@ -38,7 +38,9 @@ class MugBallPickTask(PickTask):
                 # Settling just finished — update poses to reflect settled object position
                 self._settled = True
                 pickup_obj_name = self.config.task_config.pickup_obj_name
-                pickup_obj = MjThorObject(object_name=pickup_obj_name, data=self._env.current_data)
+                pickup_obj = MlSpacesObject(
+                    object_name=pickup_obj_name, data=self._env.current_data
+                )
                 old_start_z = self.config.task_config.pickup_obj_start_pose[2]
                 new_start_pose = pose_mat_to_7d(pickup_obj.pose)
                 new_goal_pose = new_start_pose.copy()

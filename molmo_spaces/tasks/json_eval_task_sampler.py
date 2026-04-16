@@ -36,8 +36,8 @@ from molmo_spaces.configs.task_configs import (
     DoorOpeningTaskConfig,
     NavToObjTaskConfig,
     OpeningTaskConfig,
-    PickAndPlaceColorTaskConfig,
     PackingTaskConfig,
+    PickAndPlaceColorTaskConfig,
     PickAndPlaceNextToTaskConfig,
     PickAndPlaceTaskConfig,
     PickTaskConfig,
@@ -119,6 +119,9 @@ def import_class_from_string(class_path: str) -> type:
         raise ValueError(f"Invalid class path: {class_path}. Expected 'module.ClassName' format.")
 
     module_path, class_name = parts
+    # Remap legacy mujoco_thor paths to molmo_spaces
+    if module_path.startswith("mujoco_thor."):
+        module_path = module_path.replace("mujoco_thor.", "molmo_spaces.", 1)
     module = importlib.import_module(module_path)
     return getattr(module, class_name)
 
@@ -347,6 +350,15 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.pick_and_place_color_task.PickAndPlaceColorTask": "pick_and_place_color",
             "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.nav_task.NavToObjTask": "nav_to_obj",
+            "molmo_spaces.tasks.packing_task.PackingTask": "packing",
+            # Legacy mujoco_thor paths (from older benchmark JSONs)
+            "mujoco_thor.tasks.pick_task.PickTask": "pick",
+            "mujoco_thor.tasks.opening_tasks.OpeningTask": "open",
+            "mujoco_thor.tasks.pick_and_place_task.PickAndPlaceTask": "pick_and_place",
+            "mujoco_thor.tasks.pick_and_place_next_to_task.PickAndPlaceNextToTask": "pick_and_place_next_to",
+            "mujoco_thor.tasks.pick_and_place_color_task.PickAndPlaceColorTask": "pick_and_place_color",
+            "mujoco_thor.tasks.opening_tasks.DoorOpeningTask": "door_opening",
+            "mujoco_thor.tasks.nav_task.NavToObjTask": "nav_to_obj",
             "mujoco_thor.tasks.packing_task.PackingTask": "packing",
         }
 
@@ -644,14 +656,16 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         mujoco.mj_forward(model, data)
         self.set_joint_values(env)
 
-        # Set robot joint positions (override with known-good qpos for packing eval)
-        test_qpos = {
-            "base": [],
-            "arm": [[0, -1 / 5 * np.pi, 0, -4 / 5 * np.pi, 0, 3 / 5 * np.pi, 0.0]],
-            "gripper": [0.00296, 0.00296],
-        }
-        for group_name in self.episode_spec.robot.init_qpos:
-            robot_view.get_move_group(group_name).joint_pos = test_qpos[group_name]
+        # # Set robot joint positions (override with known-good qpos for packing eval)
+        # test_qpos = {
+        #     "base": [],
+        #     "arm": [[0, -1 / 5 * np.pi, 0, -4 / 5 * np.pi, 0, 3 / 5 * np.pi, 0.0]],
+        #     "gripper": [0.00296, 0.00296],
+        # }
+        # for group_name in self.episode_spec.robot.init_qpos:
+        #     robot_view.get_move_group(group_name).joint_pos = test_qpos[group_name]
+        for group_name, qpos in self.config.robot_config.init_qpos.items():
+            robot_view.get_move_group(group_name).joint_pos = np.array(qpos)
 
         mujoco.mj_forward(model, data)
 

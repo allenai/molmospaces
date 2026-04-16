@@ -27,7 +27,7 @@ class BlockSupportTaskSamplerConfig(PickTaskSamplerConfig):
     robot_placement_rotation_range_rad: float = math.radians(20)
 
     # Number of blocks to use (sampled uniformly from this range, inclusive)
-    num_blocks_range: tuple[int, int] = (3, 3)
+    num_blocks_range: tuple[int, int] = (2, 4)
 
     # Block placement distances (relative to a reference graspable object)
     min_block_placement_dist: float = 0.05
@@ -51,6 +51,14 @@ class SemanticGraspPickTaskSamplerConfig(PickTaskSamplerConfig):
 
     clutter_scene_around_target_object: bool = False
     pickup_types: list[str] = [
-        # "ButterKnife", "Cup", "Fork", "Knife", "Ladle", "Mug", "Pan", "Spoon",
+        "ButterKnife",
+        "Cup",
+        "Fork",
+        "Kettle",
+        "Knife",
+        "Ladle",
+        "Mug",
         "Pan",
+        "Spatula",
+        "Spoon",
     ]

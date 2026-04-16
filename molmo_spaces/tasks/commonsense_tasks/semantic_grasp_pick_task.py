@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from molmo_spaces.env.data_views import MjThorObject
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, DATA_CACHE_DIR
 from molmo_spaces.tasks.pick_task import PickTask
 from molmo_spaces.utils.grasp_sample import load_grasps_for_object
@@ -122,7 +122,7 @@ class SemanticGraspPickTask(PickTask):
         tcp_world = robot_view.base.pose @ tcp_pose
 
         # Get pickup object pose
-        pickup_obj = MjThorObject(
+        pickup_obj = MlSpacesObject(
             data=self._env.current_data,
             object_name=self.config.task_config.pickup_obj_name,
         )
@@ -144,12 +144,12 @@ class SemanticGraspPickTask(PickTask):
         nearest_classifications = self.grasp_classifications[nearest_indices]
         is_good = nearest_classifications.sum() > k_actual / 2
 
-        nearest_dists = distances[nearest_indices]
-        log.info(
-            f"Grasp classification: {is_good} "
-            f"(k={k_actual}, good={nearest_classifications.sum()}/{k_actual}, "
-            f"min_dist={nearest_dists.min():.4f}, max_dist={nearest_dists.max():.4f})"
-        )
+        # nearest_dists = distances[nearest_indices]
+        # log.info(
+        #     f"Grasp classification: {is_good} "
+        #     f"(k={k_actual}, good={nearest_classifications.sum()}/{k_actual}, "
+        #     f"min_dist={nearest_dists.min():.4f}, max_dist={nearest_dists.max():.4f})"
+        # )
 
         # Save debug visualization
         self._save_grasp_debug_visualization(
@@ -355,7 +355,7 @@ class SemanticGraspPickTask(PickTask):
         filename = DEBUG_VIS_DIR / f"grasp_vis_{self._asset_id}_{self._vis_counter}.png"
         fig.savefig(filename, dpi=150, bbox_inches="tight")
         plt.close(fig)
-        log.info(f"[SEMANTIC GRASP PICK] Saved debug visualization: {filename}")
+        # log.info(f"[SEMANTIC GRASP PICK] Saved debug visualization: {filename}")
 
     def get_task_description(self) -> str:
         pickup_obj_name = self.config.task_config.referral_expressions.get(
@@ -376,7 +376,7 @@ class SemanticGraspPickTask(PickTask):
         for info in infos:
             base_success = info["success"]
 
-            pickup_obj = MjThorObject(
+            pickup_obj = MlSpacesObject(
                 data=self._env.current_data,
                 object_name=self.config.task_config.pickup_obj_name,
             )
@@ -390,12 +390,12 @@ class SemanticGraspPickTask(PickTask):
                 # Only check lift height, skip the contact check
                 lifted = lift_height >= succ_threshold
 
-            log.info(
-                f"[SEMANTIC GRASP PICK] get_info: base_success={base_success}, "
-                f"lifted={lifted}, lift_height={lift_height:.4f} (threshold={succ_threshold}), "
-                f"require_contact_check={self.config.task_config.require_no_receptacle_contact}, "
-                f"step={info.get('episode_step', '?')}"
-            )
+            # log.info(
+            #     f"[SEMANTIC GRASP PICK] get_info: base_success={base_success}, "
+            #     f"lifted={lifted}, lift_height={lift_height:.4f} (threshold={succ_threshold}), "
+            #     f"require_contact_check={self.config.task_config.require_no_receptacle_contact}, "
+            #     f"step={info.get('episode_step', '?')}"
+            # )
 
             if lifted:
                 grasp_correct = self.classify_current_grasp()

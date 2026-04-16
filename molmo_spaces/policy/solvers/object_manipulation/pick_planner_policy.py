@@ -36,7 +36,7 @@ class PickPlannerPolicy(BaseObjectManipulationPlannerPolicy):
         else:
             # First reset: defer trajectory computation until scene settles
             if not self.ik_warmed_up:
-                from mujoco_thor.utils.profiler_utils import Timer
+                from molmo_spaces.utils.profiler_utils import Timer
 
                 with Timer() as warmup_time:
                     self.task.env.current_robot.parallel_kinematics.warmup_ik(

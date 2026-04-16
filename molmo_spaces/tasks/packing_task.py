@@ -5,7 +5,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs.task_configs import PackingTaskConfig
-from molmo_spaces.env.data_views import create_mjthor_body
+from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 from molmo_spaces.utils.mujoco_scene_utils import is_object_supported_by_body
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
@@ -35,7 +35,7 @@ class PackingTask(PickAndPlaceTask):
 
         for i in range(self._env.n_batch):
             data = self._env.mj_datas[i]
-            place_receptacle = create_mjthor_body(data, task_config.place_receptacle_name)
+            place_receptacle = create_mlspaces_body(data, task_config.place_receptacle_name)
 
             # Check receptacle displacement
             start_pose = pos_quat_to_pose_mat(
@@ -54,7 +54,7 @@ class PackingTask(PickAndPlaceTask):
             per_object_supported = {}
             om = self._env.object_managers[i]
             for obj_name in packing_names:
-                pickup_obj = create_mjthor_body(data, obj_name)
+                pickup_obj = create_mlspaces_body(data, obj_name)
                 supported = is_object_supported_by_body(
                     data,
                     pickup_obj.body_id,
