@@ -29,14 +29,14 @@ pip install -e ".[mujoco]"
 ```
 from the project root directory.
 
-### Pick-MSProc
+### Pick-MSProc (Pick-v1.5)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231
 ```
 
-### Pick-Classic
+### Pick-Classic (Pick-v2-classic)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
@@ -51,7 +51,7 @@ pip install -e ".[mujoco-filament]"
 ```
 from the project root directory and pass the `--use-filament` option to the evaluation script.
 
-### Pick-Filament
+### Pick-Filament (Pick-v2-filament)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
@@ -59,7 +59,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
-### Pick-RandCam
+### Pick-RandCam (Pick-v2-rand-cam)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
@@ -68,7 +68,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickHardBench/FrankaPickHardBench_20260206_json_benchmark
 ```
 
-### Pick & Place
+### Pick & Place (PnP-v2)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
@@ -76,7 +76,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceHardBench/FrankaPickandPlaceHardBench_20260206_json_benchmark
 ```
 
-### Pick & Place-NextTo
+### Pick & Place-NextTo (PnP-next-to-v2)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
@@ -84,7 +84,7 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
   --benchmark_dir $MLSPACES_ASSETS_DIR/benchmarks/molmospaces-bench-v2/procthor-objaverse/FrankaPickandPlaceNextToHardBench/FrankaPickandPlaceNextToHardBench_20260305_json_benchmark
 ```
 
-### Pick & Place-Color
+### Pick & Place-Color (PnP-color-v2)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \

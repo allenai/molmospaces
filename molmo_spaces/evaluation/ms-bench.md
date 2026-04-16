@@ -22,28 +22,28 @@ python scripts/benchmarks/eval_to_csv.py \
 
 ## Benchmarks
 
-### Close
+### Close (Close-v1)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
   --benchmark_dir assets/benchmarks/molmospaces-bench-v1/ithor/FrankaCloseDataGenConfig/FrankaCloseDataGenConfig_20260123_json_benchmark
 ```
 
-### Open
+### Open (Open-v1)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
   --benchmark_dir assets/benchmarks/molmospaces-bench-v1/ithor/FrankaOpenDataGenConfig/FrankaOpenDataGenConfig_20260123_json_benchmark
 ```
 
-### Pick
+### Pick (Pick-v1.1)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
   --benchmark_dir assets/benchmarks/molmospaces-bench-v1/procthor-10k/FrankaPickDroidMiniBench/FrankaPickDroidMiniBench_json_benchmark_20251231
 ```
 
-### Pick and Place
+### Pick and Place (PnP-v1)
 
 ```bash
 python molmo_spaces/evaluation/eval_main.py YOUR_POLICY_CONFIG \
