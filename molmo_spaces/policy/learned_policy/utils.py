@@ -32,6 +32,9 @@ class PromptSampler:
         "mug_ball_pick": [
             "Pick up the mug with the ball under it.",
         ],
+        "semantic_grasp_pick": [
+            "pick up the {} to give to someone.",
+        ],
     }
 
     def __init__(
@@ -213,6 +216,13 @@ class PromptSampler:
             self._cached_prompt = self.prompt_templates[self.current_index].format(
                 object_name, receptacle_name
             )
+        elif self.task_type == "semantic_grasp_pick":
+            template = (
+                "pick up the hot {}."
+                if object_name == "pan"
+                else "pick up the {} to give to someone."
+            )
+            self._cached_prompt = template.format(object_name)
         else:
             self._cached_prompt = self.prompt_templates[self.current_index].format(object_name)
 

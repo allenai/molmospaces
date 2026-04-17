@@ -52,6 +52,20 @@ class SemanticGraspPickTask(PickTask):
         self._asset_id: str | None = None
         self._vis_counter: int = 0
 
+        pickup_obj_name = config.task_config.pickup_obj_name
+        asset_uid = (
+            (env.current_scene_metadata or {})
+            .get("objects", {})
+            .get(pickup_obj_name, {})
+            .get("asset_id")
+        )
+        if asset_uid is None:
+            from molmo_spaces.utils.asset_names import get_thor_name
+
+            pickup_obj = MlSpacesObject(data=env.current_data, object_name=pickup_obj_name)
+            asset_uid = get_thor_name(env.current_model, pickup_obj)
+        self.load_grasp_classifications(asset_uid)
+
     def load_grasp_classifications(self, asset_id: str) -> None:
         """Load grasp classification data for the given asset.
 
@@ -144,12 +158,12 @@ class SemanticGraspPickTask(PickTask):
         nearest_classifications = self.grasp_classifications[nearest_indices]
         is_good = nearest_classifications.sum() > k_actual / 2
 
-        # nearest_dists = distances[nearest_indices]
-        # log.info(
-        #     f"Grasp classification: {is_good} "
-        #     f"(k={k_actual}, good={nearest_classifications.sum()}/{k_actual}, "
-        #     f"min_dist={nearest_dists.min():.4f}, max_dist={nearest_dists.max():.4f})"
-        # )
+        nearest_dists = distances[nearest_indices]
+        log.info(
+            f"[SEMANTIC GRASP PICK] Grasp classification: {is_good} "
+            f"(k={k_actual}, good={int(nearest_classifications.sum())}/{k_actual}, "
+            f"min_dist={nearest_dists.min():.4f}, max_dist={nearest_dists.max():.4f})"
+        )
 
         # Save debug visualization
         self._save_grasp_debug_visualization(
@@ -390,12 +404,13 @@ class SemanticGraspPickTask(PickTask):
                 # Only check lift height, skip the contact check
                 lifted = lift_height >= succ_threshold
 
-            # log.info(
-            #     f"[SEMANTIC GRASP PICK] get_info: base_success={base_success}, "
-            #     f"lifted={lifted}, lift_height={lift_height:.4f} (threshold={succ_threshold}), "
-            #     f"require_contact_check={self.config.task_config.require_no_receptacle_contact}, "
-            #     f"step={info.get('episode_step', '?')}"
-            # )
+            log.info(
+                f"[SEMANTIC GRASP PICK] Lift check: lifted={lifted}, "
+                f"lift_height={lift_height:.4f} (threshold={succ_threshold}), "
+                f"base_success={base_success}, "
+                f"require_contact_check={self.config.task_config.require_no_receptacle_contact}, "
+                f"step={info.get('episode_step', '?')}"
+            )
 
             if lifted:
                 grasp_correct = self.classify_current_grasp()
@@ -403,4 +418,8 @@ class SemanticGraspPickTask(PickTask):
                 grasp_correct = False
             info["grasp_semantically_correct"] = grasp_correct
             info["success"] = lifted and grasp_correct
+            log.info(
+                f"[SEMANTIC GRASP PICK] Step success: lifted={lifted}, "
+                f"grasp_semantically_correct={grasp_correct}, success={info['success']}"
+            )
         return infos

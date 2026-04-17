@@ -305,6 +305,7 @@ class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: DreamZeroPolicyConfig = DreamZeroPolicyConfig()
     policy_dt_ms: float = 66.0
+    end_on_success: bool = True  # End episode immediately upon success, ignoring task_horizon
 
     def model_post_init(self, __context):
         super().model_post_init(__context)

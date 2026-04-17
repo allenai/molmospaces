@@ -60,9 +60,6 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
         # Let parent do all the heavy lifting (object selection, robot placement, etc.)
         _parent_task = super()._sample_task(env)
 
-        # Create our task using the same config (already populated by the parent)
-        task = SemanticGraspPickTask(env, self.config)
-
         # Look up the asset_uid for the selected pickup object
         pickup_obj_name = self.config.task_config.pickup_obj_name
         asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
@@ -72,13 +69,16 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
             pickup_obj = MlSpacesObject(data=env.current_data, object_name=pickup_obj_name)
             asset_uid = get_thor_name(env.current_model, pickup_obj)
 
-        # Load grasp classifications — skip scene if file is missing
+        # Check classification file exists before constructing the task, so we can
+        # raise HouseInvalidForTask gracefully instead of a hard FileNotFoundError
+        # from SemanticGraspPickTask.__init__.
         if not has_grasp_classification_file(asset_uid):
             raise HouseInvalidForTask(
                 f"No grasp classification file for {pickup_obj_name} (uid={asset_uid}), skipping scene"
             )
 
-        task.load_grasp_classifications(asset_uid)
+        # Construct the task; __init__ loads grasp classifications.
+        task = SemanticGraspPickTask(env, self.config)
 
         log.info(f"[SEMANTIC GRASP PICK] Task created for {pickup_obj_name} (uid={asset_uid})")
         return task

@@ -31,6 +31,11 @@ from molmo_spaces.configs.camera_configs import (
     FixedExocentricCameraConfig,
     RobotMountedCameraConfig,
 )
+from molmo_spaces.configs.commonsense_task_configs import (
+    BlockSupportTaskConfig,
+    MugBallPickTaskConfig,
+    SemanticGraspPickTaskConfig,
+)
 from molmo_spaces.configs.task_configs import (
     BaseMujocoTaskConfig,
     DoorOpeningTaskConfig,
@@ -84,6 +89,9 @@ TASK_CLASS_TO_CONFIG_CLASS: dict[str, type[BaseMujocoTaskConfig]] = {
     "DoorOpeningTask": DoorOpeningTaskConfig,
     "NavToObjTask": NavToObjTaskConfig,
     "PackingTask": PackingTaskConfig,
+    "BlockSupportTask": BlockSupportTaskConfig,
+    "MugBallPickTask": MugBallPickTaskConfig,
+    "SemanticGraspPickTask": SemanticGraspPickTaskConfig,
 }
 
 # Mapping from task class names to their benchmark schema spec classes.
@@ -97,6 +105,9 @@ TASK_CLASS_TO_SPEC_CLASS: dict[str, type[BaseTaskSpec]] = {
     "OpeningTask": OpenCloseTaskSpec,
     "DoorOpeningTask": DoorOpeningTaskSpec,
     "NavToObjTask": NavToObjTaskSpec,
+    "BlockSupportTask": PickTaskSpec,
+    "MugBallPickTask": PickTaskSpec,
+    "SemanticGraspPickTask": PickTaskSpec,
 }
 
 
@@ -351,6 +362,9 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.nav_task.NavToObjTask": "nav_to_obj",
             "molmo_spaces.tasks.packing_task.PackingTask": "packing",
+            "molmo_spaces.tasks.commonsense_tasks.block_support_task.BlockSupportTask": "block_stacking",
+            "molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task.MugBallPickTask": "mug_ball_pick",
+            "molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task.SemanticGraspPickTask": "semantic_grasp_pick",
             # Legacy mujoco_thor paths (from older benchmark JSONs)
             "mujoco_thor.tasks.pick_task.PickTask": "pick",
             "mujoco_thor.tasks.opening_tasks.OpeningTask": "open",
