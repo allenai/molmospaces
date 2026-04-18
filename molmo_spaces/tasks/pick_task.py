@@ -180,6 +180,12 @@ class PickTask(BaseMujocoTask):
                     "rotation_error": rot_error,
                     "success": success,
                     "episode_step": self.episode_step_count,
+                    # Intermediate success components (useful for downstream
+                    # per-step diagnostics, e.g. MugBallPickTask logging).
+                    "lift_height": float(lift_height),
+                    "robot_collision": robot_collision,
+                    "non_robot_collision": non_robot_collision,
+                    "only_robot_collision": only_robot_collision,
                 }
             )
 

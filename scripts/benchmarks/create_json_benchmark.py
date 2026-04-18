@@ -401,6 +401,9 @@ def frozen_config_to_episode_spec(
     # Nav fields
     add_if_present("pickup_obj_candidates")
 
+    # Block-support fields (procedural primitives, no XML asset)
+    add_if_present("block_names")
+
     # Extract added_objects and object_poses for scene modifications
     added_objects_raw = get_val(task_config, "added_objects", {})
     added_objects = {}
@@ -412,6 +415,17 @@ def frozen_config_to_episode_spec(
             path_str = path_str[len(assets_dir_str) :].lstrip("/")
         added_objects[name] = path_str
 
+    # Procedurally-created primitive bodies (blocks, balls, anchors) that have
+    # no XML asset. Stored as plain dicts in task_config; pydantic validation
+    # happens inside SceneModificationsSpec below.
+    primitive_objects_raw = get_val(task_config, "primitive_objects", {}) or {}
+    primitive_objects = {}
+    for name, primitive in primitive_objects_raw.items():
+        if hasattr(primitive, "model_dump"):
+            primitive_objects[name] = primitive.model_dump()
+        else:
+            primitive_objects[name] = primitive
+
     object_poses_raw = get_val(task_config, "object_poses", {})
     object_poses = {}
     if object_poses_raw:
@@ -422,6 +436,7 @@ def frozen_config_to_episode_spec(
 
     scene_modifications = SceneModificationsSpec(
         added_objects=added_objects,
+        primitive_objects=primitive_objects,
         object_poses=object_poses,
     )
 

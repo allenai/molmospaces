@@ -32,6 +32,9 @@ class PromptSampler:
         "mug_ball_pick": [
             "Pick up the mug with the ball under it.",
         ],
+        "block_stacking": [
+            "stack the blocks.",
+        ],
         "semantic_grasp_pick": [
             "pick up the {} to give to someone.",
         ],

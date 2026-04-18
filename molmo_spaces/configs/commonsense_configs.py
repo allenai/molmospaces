@@ -48,6 +48,11 @@ class BlockSupportConfig(PickBaseConfig):
 
     task_type: str = "block_stacking"
 
+    # Oracle-terminate the rollout as soon as the success condition fires
+    # so flicker at the end of a barely-successful trajectory can't flip
+    # the outcome back to failure (see pipeline.run_single_rollout).
+    end_on_success: bool = True
+
     scene_dataset: str = "procthor-objaverse-debug"  # Name of the scene dataset to load
 
     # Droid setup (matches run_pipeline.py's `--robot droid` branch). Without
@@ -96,6 +101,11 @@ class MugBallPickConfig(PickBaseConfig):
 
     task_type: str = "mug_ball_pick"
 
+    # Oracle-terminate the rollout as soon as the success condition fires
+    # so flicker at the end of a barely-successful trajectory can't flip
+    # the outcome back to failure (see pipeline.run_single_rollout).
+    end_on_success: bool = True
+
     scene_dataset: str = "procthor-objaverse-debug"
 
     # Droid setup (matches run_pipeline.py's `--robot droid` branch). Without
@@ -116,6 +126,11 @@ class MugBallPickConfig(PickBaseConfig):
     )
 
     policy_config: PickPlannerPolicyConfig = PickPlannerPolicyConfig(
+        # Upside-down mug grips are weak; at the 8cm default the mug
+        # routinely slips and only clears the 1cm success threshold by a
+        # fraction of a mm. Lifting to 15cm buys enough margin that a
+        # partial slip still leaves the mug well above threshold.
+        postgrasp_z_offset=0.15,
         phase_timeout=20.0,
     )
 
@@ -141,6 +156,11 @@ class SemanticGraspPickConfig(PickBaseConfig):
     """
 
     task_type: str = "semantic_grasp_pick"
+
+    # Oracle-terminate the rollout as soon as the success condition fires
+    # so flicker at the end of a barely-successful trajectory can't flip
+    # the outcome back to failure (see pipeline.run_single_rollout).
+    end_on_success: bool = True
 
     scene_dataset: str = "procthor-objaverse-debug"
 

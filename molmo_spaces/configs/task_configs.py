@@ -24,6 +24,14 @@ class BaseMujocoTaskConfig(Config):
     # dict of object names to xml locations
     added_objects: dict[str, Path] = {}
 
+    # Procedurally-created primitive bodies (blocks, balls, anchors) that
+    # have no XML asset. Keyed by body name. Each value is the
+    # ``PrimitiveObjectSpec.model_dump()`` of the primitive, i.e. enough
+    # info for ``JsonEvalTaskSampler`` to replay the add-body/add-geom
+    # calls. Stored as plain dicts to avoid a config→evaluation import
+    # cycle; validated via ``PrimitiveObjectSpec`` at export/import time.
+    primitive_objects: dict[str, dict] = {}
+
     # Object positions (for internal use by eval_task_sampler)
     # dict of object names to world poses
     object_poses: dict[str, list[float]] | None = None

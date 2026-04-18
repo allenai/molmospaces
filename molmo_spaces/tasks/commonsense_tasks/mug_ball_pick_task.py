@@ -67,7 +67,13 @@ class MugBallPickTask(PickTask):
             raise ValueError(f"Invalid task_type {self.config.task_type}")
 
     def get_info(self) -> list[dict[str, Any]]:
-        """Get metrics including which mug is the correct one."""
+        """Get metrics including which mug is the correct one.
+
+        Success (inherited from PickTask.get_info) requires both
+        ``only_robot_collision`` and ``lift_height >= succ_pos_threshold``,
+        evaluated against the pickup mug (set by the sampler to
+        ``correct_mug_name``).
+        """
         infos = super().get_info()
         for info in infos:
             info["correct_mug_name"] = self.correct_mug_name

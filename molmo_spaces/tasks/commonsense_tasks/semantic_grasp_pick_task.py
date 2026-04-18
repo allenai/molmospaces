@@ -158,13 +158,6 @@ class SemanticGraspPickTask(PickTask):
         nearest_classifications = self.grasp_classifications[nearest_indices]
         is_good = nearest_classifications.sum() > k_actual / 2
 
-        nearest_dists = distances[nearest_indices]
-        log.info(
-            f"[SEMANTIC GRASP PICK] Grasp classification: {is_good} "
-            f"(k={k_actual}, good={int(nearest_classifications.sum())}/{k_actual}, "
-            f"min_dist={nearest_dists.min():.4f}, max_dist={nearest_dists.max():.4f})"
-        )
-
         # Save debug visualization
         self._save_grasp_debug_visualization(
             current_tcp=current_tcp,
@@ -404,22 +397,10 @@ class SemanticGraspPickTask(PickTask):
                 # Only check lift height, skip the contact check
                 lifted = lift_height >= succ_threshold
 
-            log.info(
-                f"[SEMANTIC GRASP PICK] Lift check: lifted={lifted}, "
-                f"lift_height={lift_height:.4f} (threshold={succ_threshold}), "
-                f"base_success={base_success}, "
-                f"require_contact_check={self.config.task_config.require_no_receptacle_contact}, "
-                f"step={info.get('episode_step', '?')}"
-            )
-
             if lifted:
                 grasp_correct = self.classify_current_grasp()
             else:
                 grasp_correct = False
             info["grasp_semantically_correct"] = grasp_correct
             info["success"] = lifted and grasp_correct
-            log.info(
-                f"[SEMANTIC GRASP PICK] Step success: lifted={lifted}, "
-                f"grasp_semantically_correct={grasp_correct}, success={info['success']}"
-            )
         return infos

@@ -4,12 +4,16 @@ from typing import TYPE_CHECKING
 
 import mujoco
 import numpy as np
-from mujoco import MjSpec, mjtGeom
+from mujoco import MjSpec
 from PIL import Image
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.data_views import MlSpacesObject, create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.evaluation.benchmark_schema import (
+    PrimitiveGeomSpec,
+    PrimitiveObjectSpec,
+)
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task import MugBallPickTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler, SameClassClutterMetadataAdder
@@ -23,6 +27,11 @@ from molmo_spaces.utils.mujoco_scene_utils import (
     place_object_near,
 )
 from molmo_spaces.utils.pose import pose_mat_to_7d
+from molmo_spaces.utils.primitive_object_utils import (
+    add_primitive_to_spec,
+    primitive_metadata_entry,
+    primitive_spec_to_config_dict,
+)
 
 if TYPE_CHECKING:
     pass
@@ -74,10 +83,28 @@ class MugBallPickTaskSampler(PickTaskSampler):
         self._objects_placed = False
 
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
-        """Add the ball, two iThor mugs, and an invisible placement target."""
-        self._add_ball(spec)
+        """Add the ball, two iThor mugs, and an invisible placement target.
 
-        # Load and add two iThor mug assets
+        The ball and invisible target are procedural primitives with no
+        backing XML asset, so they are also recorded in
+        ``task_config.primitive_objects`` for the JSON benchmark loader.
+        """
+        # Build primitive specs (ball + invisible target) and replay them.
+        primitives = [self._build_ball_primitive(), self._build_invisible_target_primitive()]
+        for primitive in primitives:
+            add_primitive_to_spec(spec, primitive)
+
+        primitive_objects = self.config.task_config.primitive_objects or {}
+        for primitive in primitives:
+            primitive_objects[primitive.body_name] = primitive_spec_to_config_dict(primitive)
+        self.config.task_config.primitive_objects = primitive_objects
+
+        # Register synthetic scene_metadata for primitives. The ball is the
+        # only primitive here that might be read by downstream policy code;
+        # the invisible target never is, but we register it for consistency.
+        self._metadata_adder.update({p.body_name: primitive_metadata_entry(p) for p in primitives})
+
+        # Load and add two iThor mug assets (XML-backed, unchanged).
         name_to_meta = {}
         self._mug_body_names = []
         for i, asset_id in enumerate(MUG_ASSET_IDS):
@@ -87,7 +114,6 @@ class MugBallPickTaskSampler(PickTaskSampler):
         if name_to_meta:
             self._mug_metadata_adder = SameClassClutterMetadataAdder(name_to_meta)
 
-        self._add_invisible_target(spec)
         super().add_auxiliary_objects(spec)
 
     def resolve_visibility_object(self, env: CPUMujocoEnv, key: str) -> list[str]:
@@ -445,30 +471,33 @@ class MugBallPickTaskSampler(PickTaskSampler):
             log.warning(f"[MUG BALL PICK] Could not save debug image '{label}': {e}")
 
     @staticmethod
-    def _add_ball(spec: MjSpec, name: str = BALL_NAME, pos=None) -> None:
-        """Add a small ball (sphere) to the scene."""
-        if pos is None:
-            pos = [0.0, 0.5, 0.71]
+    def _build_ball_primitive(name: str = BALL_NAME) -> PrimitiveObjectSpec:
+        """Build the PrimitiveObjectSpec for the small yellow ball.
 
-        ball_body = spec.worldbody.add_body(name=name, pos=pos)
-        ball_body.add_freejoint()
-
-        # Visual geom
-        ball_body.add_geom(
-            name=f"{name}_visual",
-            type=mjtGeom.mjGEOM_SPHERE,
-            size=[BALL_RADIUS, 0, 0],
-            rgba=[1, 1, 0, 1],  # Yellow
-            contype=0,
-            conaffinity=0,
-        )
-        # Collision geom
-        ball_body.add_geom(
-            name=f"{name}_collision",
-            type=mjtGeom.mjGEOM_SPHERE,
-            size=[BALL_RADIUS, 0, 0],
-            rgba=[0, 0, 0, 0],
-            friction=[0.5, 0.005, 0.0001],
+        Two geoms: a yellow visual-only sphere and an invisible collision
+        sphere with lower friction than the mug-support blocks.
+        """
+        return PrimitiveObjectSpec(
+            body_name=name,
+            initial_pos=[0.0, 0.5, 0.71],
+            add_freejoint=True,
+            geoms=[
+                PrimitiveGeomSpec(
+                    name_suffix="_visual",
+                    geom_type="sphere",
+                    size=[BALL_RADIUS, 0, 0],
+                    rgba=[1, 1, 0, 1],  # Yellow
+                    contype=0,
+                    conaffinity=0,
+                ),
+                PrimitiveGeomSpec(
+                    name_suffix="_collision",
+                    geom_type="sphere",
+                    size=[BALL_RADIUS, 0, 0],
+                    rgba=[0, 0, 0, 0],
+                    friction=[0.5, 0.005, 0.0001],
+                ),
+            ],
         )
 
     def _add_ithor_mug(
@@ -532,24 +561,26 @@ class MugBallPickTaskSampler(PickTaskSampler):
         return body_name
 
     @staticmethod
-    def _add_invisible_target(spec: MjSpec, name: str = INVISIBLE_TARGET_NAME, pos=None) -> None:
-        """Add an invisible body with no colliders.
+    def _build_invisible_target_primitive(
+        name: str = INVISIBLE_TARGET_NAME,
+    ) -> PrimitiveObjectSpec:
+        """Build the PrimitiveObjectSpec for the invisible placement anchor.
 
-        Used as a placement reference for mug 2. Placed on the counter surface
-        via place_object_near, then mug 2 is positioned above it.
+        Single sphere geom, non-colliding and fully transparent. Used as a
+        placement reference for mug 2 and then moved off-screen.
         """
-        if pos is None:
-            pos = [0.0, 0.5, 0.71]
-
-        target_body = spec.worldbody.add_body(name=name, pos=pos)
-        target_body.add_freejoint()
-
-        # Invisible sphere with no collision — just a placement anchor
-        target_body.add_geom(
-            name=f"{name}_geom",
-            type=mjtGeom.mjGEOM_SPHERE,
-            size=[0.01, 0, 0],
-            rgba=[0, 0, 0, 0],
-            contype=0,
-            conaffinity=0,
+        return PrimitiveObjectSpec(
+            body_name=name,
+            initial_pos=[0.0, 0.5, 0.71],
+            add_freejoint=True,
+            geoms=[
+                PrimitiveGeomSpec(
+                    name_suffix="_geom",
+                    geom_type="sphere",
+                    size=[0.01, 0, 0],
+                    rgba=[0, 0, 0, 0],
+                    contype=0,
+                    conaffinity=0,
+                ),
+            ],
         )

@@ -2,10 +2,14 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
-from mujoco import MjSpec, mjtGeom
+from mujoco import MjSpec
 
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.evaluation.benchmark_schema import (
+    PrimitiveGeomSpec,
+    PrimitiveObjectSpec,
+)
 from molmo_spaces.tasks.commonsense_tasks.block_support_task import BlockSupportTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 from molmo_spaces.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
@@ -13,6 +17,11 @@ from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
 from molmo_spaces.utils.mujoco_scene_utils import (
     get_supporting_geom,
     place_object_near,
+)
+from molmo_spaces.utils.primitive_object_utils import (
+    add_primitive_to_spec,
+    primitive_metadata_entry,
+    primitive_spec_to_config_dict,
 )
 
 if TYPE_CHECKING:
@@ -56,14 +65,23 @@ class BlockSupportTaskSampler(PickTaskSampler):
         inertia, and collision bounds are all baked correctly by the MuJoCo
         compiler. Episodes with num_blocks < MAX_BLOCKS use the first
         num_blocks of these as the tower and hide the rest off-scene.
+
+        Each block is also recorded in ``task_config.primitive_objects`` so
+        the JSON benchmark loader can recreate it at eval time (blocks have
+        no backing XML asset).
         """
-        for i in range(1, MAX_BLOCKS + 1):
-            self._add_support_cube(
-                spec,
-                name=block_name(i),
-                color=BLOCK_COLORS[i - 1],
-                half_size=BLOCK_HALF_SIZES[i - 1],
-            )
+        primitives = [self._build_block_primitive(i) for i in range(1, MAX_BLOCKS + 1)]
+        for primitive in primitives:
+            add_primitive_to_spec(spec, primitive)
+
+        primitive_objects = self.config.task_config.primitive_objects or {}
+        for primitive in primitives:
+            primitive_objects[primitive.body_name] = primitive_spec_to_config_dict(primitive)
+        self.config.task_config.primitive_objects = primitive_objects
+
+        # Register synthetic scene_metadata so learned policies can resolve
+        # blocks as pickup targets (planner policies don't read this).
+        self._metadata_adder.update({p.body_name: primitive_metadata_entry(p) for p in primitives})
 
         # Call parent class to add any additional auxiliary objects from policy
         super().add_auxiliary_objects(spec)
@@ -271,57 +289,39 @@ class BlockSupportTaskSampler(PickTaskSampler):
         mujoco.mj_forward(env.current_model, env.current_data)
 
     @staticmethod
-    def _add_support_cube(
-        spec: MjSpec,
-        pos=None,
-        name="block_1",
-        color=None,
-        half_size: float = 0.03,
-    ) -> None:
+    def _build_block_primitive(i: int) -> PrimitiveObjectSpec:
+        """Build the PrimitiveObjectSpec for block index ``i`` (1-based).
+
+        Sizes come from BLOCK_HALF_SIZES and colors from BLOCK_COLORS. The
+        body has a free joint plus two geoms: a colored visual-only geom
+        and an invisible collision geom with friction tuned for stacking
+        stability.
         """
-        Add a support cube to the scene with separate visual and collision geometry.
-
-        The cube's size is baked in at spec time: MuJoCo's compiler computes
-        mass, inertia, and broadphase bounds from it, and these stay correct
-        for the life of the model. Per-block sizes come from BLOCK_HALF_SIZES
-        via add_auxiliary_objects — avoid mutating geom_size at runtime since
-        it leaves those cached quantities stale.
-
-        Args:
-            spec: MuJoCo MjSpec object
-            pos: [x, y, z] position. If None, uses a default position
-            name: Name for the cube body
-            color: RGBA color for the visual geometry. Defaults to red [1, 0, 0, 1]
-            half_size: Half-extent of the cube in meters. Default 0.03 = 6 cm cube.
-        """
-        if pos is None:
-            # Default position on table surface
-            pos = [0.0, 0.5, 0.71]
-
-        if color is None:
-            color = [1, 0, 0, 1]  # Default to red
-
+        half_size = BLOCK_HALF_SIZES[i - 1]
         size_vec = [half_size, half_size, half_size]
-
-        # Create cube body with free joint for physics simulation
-        cube_body = spec.worldbody.add_body(name=name, pos=pos)
-        cube_body.add_freejoint()
-
-        # Add visual geometry
-        cube_body.add_geom(
-            name=f"{name}_visual",
-            type=mjtGeom.mjGEOM_BOX,
-            size=size_vec,
-            rgba=color,  # Specified color (RGBA)
-            contype=0,  # Visual-only geometry
-            conaffinity=0,
-        )
-
-        # Add collision geometry (invisible collider for physics)
-        cube_body.add_geom(
-            name=f"{name}_collision",
-            type=mjtGeom.mjGEOM_BOX,
-            size=size_vec,
-            rgba=[0, 0, 0, 0],  # Invisible (alpha=0)
-            friction=[1.0, 0.005, 0.0001],  # Add friction for stability
+        color = list(BLOCK_COLORS[i - 1])
+        name = block_name(i)
+        return PrimitiveObjectSpec(
+            body_name=name,
+            # Default position on table surface; the authoritative per-episode
+            # pose is set later via object_poses / _place_cubes_near_reference.
+            initial_pos=[0.0, 0.5, 0.71],
+            add_freejoint=True,
+            geoms=[
+                PrimitiveGeomSpec(
+                    name_suffix="_visual",
+                    geom_type="box",
+                    size=size_vec,
+                    rgba=color,
+                    contype=0,  # Visual-only geometry
+                    conaffinity=0,
+                ),
+                PrimitiveGeomSpec(
+                    name_suffix="_collision",
+                    geom_type="box",
+                    size=size_vec,
+                    rgba=[0, 0, 0, 0],  # Invisible (alpha=0)
+                    friction=[1.0, 0.005, 0.0001],  # Stable stacking friction
+                ),
+            ],
         )

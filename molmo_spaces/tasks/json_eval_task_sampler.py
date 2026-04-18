@@ -54,6 +54,7 @@ from molmo_spaces.env.data_views import (
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.evaluation.benchmark_schema import (
     BaseTaskSpec,
+    BlockSupportTaskSpec,
     DoorOpeningTaskSpec,
     EpisodeSpec,
     ExocentricCameraSpec,
@@ -74,6 +75,11 @@ from molmo_spaces.utils.lazy_loading_utils import install_uid
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms
 from molmo_spaces.utils.object_metadata import ObjectMeta
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
+from molmo_spaces.utils.primitive_object_utils import (
+    add_primitive_to_spec,
+    primitive_metadata_entry,
+    primitive_spec_from_config_dict,
+)
 
 log = logging.getLogger(__name__)
 
@@ -105,7 +111,7 @@ TASK_CLASS_TO_SPEC_CLASS: dict[str, type[BaseTaskSpec]] = {
     "OpeningTask": OpenCloseTaskSpec,
     "DoorOpeningTask": DoorOpeningTaskSpec,
     "NavToObjTask": NavToObjTaskSpec,
-    "BlockSupportTask": PickTaskSpec,
+    "BlockSupportTask": BlockSupportTaskSpec,
     "MugBallPickTask": PickTaskSpec,
     "SemanticGraspPickTask": PickTaskSpec,
 }
@@ -601,7 +607,21 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
 
             log.info(f"Added body to scene: {object_name}")
 
+        # Reconstruct procedurally-created primitive bodies (blocks, balls,
+        # anchors). These have no XML asset — the spec captures the exact
+        # add_body / add_freejoint / add_geom sequence used at datagen time.
+        # We also register a synthetic scene_metadata entry per primitive so
+        # learned-policy code that looks up pickup targets by asset_id
+        # doesn't KeyError on primitive bodies.
+        primitive_objects = self.episode_spec.scene_modifications.primitive_objects
+        for body_name, primitive_data in primitive_objects.items():
+            primitive = primitive_spec_from_config_dict(primitive_data)
+            add_primitive_to_spec(spec, primitive)
+            name_to_meta[body_name] = primitive_metadata_entry(primitive)
+            log.info(f"Added primitive body to scene: {body_name}")
+
         self._metadata_adder.update(name_to_meta)
+
         # Add policy auxiliary objects (e.g. grasp collision bodies for planner policies)
         policy_cls = self.config.policy_config.policy_cls
         if hasattr(policy_cls, "add_auxiliary_objects"):
@@ -859,6 +879,15 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             for name, path in self.episode_spec.scene_modifications.added_objects.items()
         }
         task_config.object_poses = self.episode_spec.scene_modifications.object_poses
+
+        # Propagate primitive_objects from scene_modifications to task_config
+        # so downstream task code sees the same view of the scene as at datagen.
+        # Values are plain dicts (PrimitiveObjectSpec.model_dump()) matching
+        # BaseMujocoTaskConfig.primitive_objects' declared type.
+        task_config.primitive_objects = {
+            name: primitive.model_dump() if hasattr(primitive, "model_dump") else primitive
+            for name, primitive in self.episode_spec.scene_modifications.primitive_objects.items()
+        }
 
         # Set referral expressions from language spec
         task_config.referral_expressions = self.episode_spec.language.referral_expressions
