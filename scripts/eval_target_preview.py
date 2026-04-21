@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import h5py
@@ -115,14 +116,17 @@ def _pick_step(num_ds: np.ndarray, preferred: int) -> int:
     return preferred
 
 
-def _process_house(house_dir: Path, frame_index: int, collected: list[tuple[Path, Path]], resume: bool) -> int:
-    h5_files = sorted(house_dir.glob("trajectories_batch_*.h5"))
-    if not h5_files:
-        return 0
-    written = 0
-    for h5_path in h5_files:
-        with h5py.File(h5_path, "r") as f:
-            traj_keys = sorted(k for k in f.keys() if k.startswith("traj_"))
+def _enumerate_tasks(results_dir: Path):
+    """Yield (h5_path, traj_key, mp4_path, out_path) across all houses in order."""
+    for house_dir in sorted(results_dir.glob("house_*")):
+        if not house_dir.is_dir():
+            continue
+        h5_files = sorted(house_dir.glob("trajectories_batch_*.h5"))
+        if not h5_files:
+            continue
+        for h5_path in h5_files:
+            with h5py.File(h5_path, "r") as f:
+                traj_keys = sorted(k for k in f.keys() if k.startswith("traj_"))
             # Pair traj_<i> with episode_<N>_exo_camera_1_<same batch>.mp4.
             batch_tag = h5_path.stem.replace("trajectories_", "")  # e.g. batch_1_of_1
             mp4s = sorted(house_dir.glob(f"episode_*_exo_camera_1_{batch_tag}.mp4"))
@@ -130,44 +134,55 @@ def _process_house(house_dir: Path, frame_index: int, collected: list[tuple[Path
                 m = EPISODE_RE.search(mp4_path.name)
                 episode_id = m.group(1) if m else traj_key
                 out_path = house_dir / f"episode_{episode_id}_target.png"
+                yield h5_path, traj_key, mp4_path, out_path
 
-                if resume and out_path.exists():
-                    collected.append((mp4_path, out_path))
-                    print(f"[skip] {out_path} (exists)")
-                    continue
 
-                try:
-                    scene = _parse_obs_scene(bytes(f[f"{traj_key}/obs_scene"][()]))
-                except Exception as e:
-                    print(f"[warn] {house_dir.name}/{traj_key}: scene parse failed: {e}")
-                    continue
-                task_desc = scene.get("task_description", "")
-                target_name = _target_name(scene)
+def _process_one(
+    h5_path: Path, traj_key: str, mp4_path: Path, out_path: Path,
+    frame_index: int, resume: bool,
+) -> tuple[str, Path, Path, str | None]:
+    """Render a single episode's preview png. Opens its own h5 handle so it's
+    safe to call concurrently from multiple threads."""
+    if resume and out_path.exists():
+        return "skip", mp4_path, out_path, None
 
-                pts_ds = f.get(f"{traj_key}/obs/extra/object_image_points/pickup_obj/exo_camera_1/points")
-                num_ds = f.get(f"{traj_key}/obs/extra/object_image_points/pickup_obj/exo_camera_1/num_points")
+    try:
+        with h5py.File(h5_path, "r") as f:
+            try:
+                scene = _parse_obs_scene(bytes(f[f"{traj_key}/obs_scene"][()]))
+            except Exception as e:
+                return "warn", mp4_path, out_path, f"scene parse failed: {e}"
+            task_desc = scene.get("task_description", "")
+            target_name = _target_name(scene)
 
-                step = frame_index
-                if num_ds is not None:
-                    step = _pick_step(np.asarray(num_ds), frame_index)
+            pts_ds = f.get(f"{traj_key}/obs/extra/object_image_points/pickup_obj/exo_camera_1/points")
+            num_ds = f.get(f"{traj_key}/obs/extra/object_image_points/pickup_obj/exo_camera_1/num_points")
 
-                try:
-                    frame = iio.imread(mp4_path, index=step)
-                except Exception as e:
-                    print(f"[warn] {mp4_path}: frame {step} read failed: {e}")
-                    continue
-                h, w = frame.shape[:2]
+            step = frame_index
+            num_at_step: int | None = None
+            pts_at_step: np.ndarray | None = None
+            if num_ds is not None:
+                num_arr = np.asarray(num_ds)
+                step = _pick_step(num_arr, frame_index)
+                num_at_step = int(num_arr[step][0])
+            if pts_ds is not None:
+                pts_at_step = np.asarray(pts_ds[step])
+    except Exception as e:
+        return "warn", mp4_path, out_path, f"h5 read failed: {e}"
 
-                bbox = None
-                if pts_ds is not None and num_ds is not None:
-                    bbox = _points_bbox(np.asarray(pts_ds[step]), int(num_ds[step][0]), w, h)
+    try:
+        frame = iio.imread(mp4_path, index=step)
+    except Exception as e:
+        return "warn", mp4_path, out_path, f"frame {step} read failed: {e}"
+    h, w = frame.shape[:2]
 
-                preview = _render_preview(frame, bbox, task_desc, target_name)
-                preview.save(out_path)
-                collected.append((mp4_path, out_path))
-                written += 1
-                print(f"[ok] {out_path}")
-    return written
+    bbox = None
+    if pts_at_step is not None and num_at_step is not None:
+        bbox = _points_bbox(pts_at_step, num_at_step, w, h)
+
+    preview = _render_preview(frame, bbox, task_desc, target_name)
+    preview.save(out_path)
+    return "ok", mp4_path, out_path, None
 
 
 def _resize_to_height(img: np.ndarray, target_h: int) -> np.ndarray:
@@ -178,7 +193,7 @@ def _resize_to_height(img: np.ndarray, target_h: int) -> np.ndarray:
     return np.asarray(Image.fromarray(img).resize((new_w, target_h), Image.LANCZOS))
 
 
-def _stitch_video(pairs: list[tuple[Path, Path]], out_path: Path, k: int) -> None:
+def _stitch_video(pairs: list[tuple[Path, Path]], out_path: Path, k: int, speedup: float) -> None:
     sampled = pairs[::k]
     if not sampled:
         print("[stitch] no episodes to sample, skipping")
@@ -201,7 +216,7 @@ def _stitch_video(pairs: list[tuple[Path, Path]], out_path: Path, k: int) -> Non
     writer = iio2.get_writer(
         str(out_path),
         format="ffmpeg",
-        fps=fps * 3.0,
+        fps=fps * speedup,
         codec="libx264",
         quality=8,
         macro_block_size=2,
@@ -236,8 +251,12 @@ def main() -> None:
                     help="Trajectory step to sample for both the video frame and the projected object points (default: 0)")
     ap.add_argument("--resume", action="store_true",
                     help="Skip episodes whose target png already exists (still includes them in stitching)")
+    ap.add_argument("--workers", type=int, default=16,
+                    help="Parallel worker threads for per-episode png generation (default: 16)")
     ap.add_argument("--stitch-every", type=int, default=0,
                     help="If > 0, also write a stitched mp4 sampling every k-th episode with the target preview side-by-side")
+    ap.add_argument("--stitch-speedup", type=float, default=3.0,
+                    help="Playback speedup multiplier for the stitched video, applied to source fps (default: 3.0)")
     ap.add_argument("--stitch-out", type=Path, default=None,
                     help="Output path for the stitched video (default: <results_dir>/stitched_every_<k>.mp4)")
     args = ap.parse_args()
@@ -245,16 +264,37 @@ def main() -> None:
     results_dir: Path = args.results_dir
     if not results_dir.is_dir():
         raise SystemExit(f"not a directory: {results_dir}")
-    total = 0
+
+    tasks = list(_enumerate_tasks(results_dir))
     collected: list[tuple[Path, Path]] = []
-    for house_dir in sorted(results_dir.glob("house_*")):
-        if house_dir.is_dir():
-            total += _process_house(house_dir, args.frame_index, collected, args.resume)
-    print(f"wrote {total} previews under {results_dir}")
+    written = 0
+
+    def _worker(t):
+        return _process_one(*t, args.frame_index, args.resume)
+
+    if args.workers > 1:
+        with ThreadPoolExecutor(max_workers=args.workers) as ex:
+            results_iter = ex.map(_worker, tasks)
+            results = list(results_iter)
+    else:
+        results = [_worker(t) for t in tasks]
+
+    for status, mp4_path, out_path, msg in results:
+        if status == "ok":
+            written += 1
+            collected.append((mp4_path, out_path))
+            print(f"[ok] {out_path}")
+        elif status == "skip":
+            collected.append((mp4_path, out_path))
+            print(f"[skip] {out_path} (exists)")
+        else:  # "warn"
+            print(f"[warn] {mp4_path}: {msg}")
+
+    print(f"wrote {written} previews under {results_dir}")
 
     if args.stitch_every and args.stitch_every > 0:
         out_path = args.stitch_out or (results_dir / f"stitched_every_{args.stitch_every}.mp4")
-        _stitch_video(collected, out_path, args.stitch_every)
+        _stitch_video(collected, out_path, args.stitch_every, args.stitch_speedup)
 
 
 if __name__ == "__main__":
