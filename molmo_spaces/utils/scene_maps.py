@@ -393,7 +393,7 @@ class ProcTHORMap(THORMap):
         return self._px_per_m
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, agent_radius: float | None = None):
         if path.endswith(".png"):
             # stacked images
             all_img = Image.open(path)
@@ -408,6 +408,15 @@ class ProcTHORMap(THORMap):
             room_ids_to_name = {int(k): v for k, v in room_ids_to_name.items()}
             occupancy = np.array(img) > 0
             room_map = np.array(room_map)
+
+            if agent_radius is not None:
+                occupancy = ~occupancy
+                rad_px = int(agent_radius * px_per_m)
+                kernel = circular_kernel(rad_px)
+                occupancy = cv2.dilate(img.astype(np.uint8), kernel).astype(bool)
+                room_map[occupancy] = 0
+                occupancy = ~occupancy
+
             return cls(
                 occupancy=occupancy,
                 room_map=room_map,
@@ -418,6 +427,20 @@ class ProcTHORMap(THORMap):
             )
         elif path.endswith(".npz"):
             data = np.load(path)
+
+            world_to_map = data["world_to_map"]
+            map_to_world = data["map_to_world"]
+            px_per_m = data["px_per_m"]
+            room_ids_to_name = data["room_ids_to_name"]
+            occupancy = data["occupancy"]
+            room_map = data["occupancy"]
+
+            if agent_radius is not None:
+                rad_px = int(agent_radius * px_per_m)
+                kernel = circular_kernel(rad_px)
+                occ_final = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
+                room_map[occ_final] = 0
+
             return cls(
                 occupancy=data["occupancy"],
                 room_map=data["room_map"],
@@ -997,7 +1020,7 @@ class iTHORMap(ProcTHORMap):
         return self._px_per_m
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, agent_radius: float | None = None):
         if path.endswith(".png"):
             # stacked images
             img = Image.open(path)
@@ -1007,6 +1030,14 @@ class iTHORMap(ProcTHORMap):
             map_to_world = np.array(json.loads(img.info["map_to_world"]))
             px_per_m = int(np.ceil(json.loads(img.info["px_per_m"])))
             occupancy = np.array(img) > 0
+
+            if agent_radius is not None:
+                occupancy = ~occupancy
+                rad_px = int(agent_radius * px_per_m)
+                kernel = circular_kernel(rad_px)
+                occupancy = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
+                occupancy = ~occupancy
+
             return cls(
                 occupancy=occupancy,
                 world_to_map=world_to_map,
@@ -1015,8 +1046,15 @@ class iTHORMap(ProcTHORMap):
             )
         elif path.endswith(".npz"):
             data = np.load(path)
+            occupancy = data["occupancy"]
+
+            if agent_radius is not None:
+                rad_px = int(agent_radius * data["px_per_m"])
+                kernel = circular_kernel(rad_px)
+                occupancy = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
+
             return cls(
-                occupancy=data["occupancy"],
+                occupancy=occupancy,
                 world_to_map=data["world_to_map"],
                 map_to_world=data["map_to_world"],
                 px_per_m=data["px_per_m"],
