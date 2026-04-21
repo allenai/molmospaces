@@ -90,7 +90,7 @@ mujoco = [
     "mujoco==3.4.0",
 ]
 mujoco-filament = [
-    "mujoco-filament",
+    "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
 ]
 
 [build-system]

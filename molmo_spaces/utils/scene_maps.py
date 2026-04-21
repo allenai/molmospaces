@@ -413,7 +413,7 @@ class ProcTHORMap(THORMap):
                 occupancy = ~occupancy
                 rad_px = int(agent_radius * px_per_m)
                 kernel = circular_kernel(rad_px)
-                occupancy = cv2.dilate(img.astype(np.uint8), kernel).astype(bool)
+                occupancy = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
                 room_map[occupancy] = 0
                 occupancy = ~occupancy
 
@@ -436,14 +436,16 @@ class ProcTHORMap(THORMap):
             room_map = data["occupancy"]
 
             if agent_radius is not None:
+                occupancy = ~occupancy
                 rad_px = int(agent_radius * px_per_m)
                 kernel = circular_kernel(rad_px)
-                occ_final = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
-                room_map[occ_final] = 0
+                occupancy = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
+                room_map[occupancy] = 0
+                occupancy = ~occupancy
 
             return cls(
-                occupancy=data["occupancy"],
-                room_map=data["room_map"],
+                occupancy=occupancy,
+                room_map=room_map,
                 room_ids_to_name=data["room_ids_to_name"],
                 world_to_map=data["world_to_map"],
                 map_to_world=data["map_to_world"],

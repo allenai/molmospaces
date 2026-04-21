@@ -211,8 +211,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
             width, height = (640, 480)  # Default resolution
         if self._use_filament:
             self._renderer = MjFilamentRenderer(model=self.mj_model, width=width, height=height)
+            log.info("Using MuJoCo renderer: filament")
         else:
             self._renderer = MjOpenGLRenderer(model=self.mj_model, width=width, height=height)
+            log.info("Using MuJoCo renderer: classic")
 
         if self._parallelize and self._n_batch > 1:
             self._executor = ThreadPoolExecutor(max_workers=self._n_batch)
