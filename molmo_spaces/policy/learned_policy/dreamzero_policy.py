@@ -162,7 +162,7 @@ class DreamZero_Policy(InferencePolicy):
         cv2.waitKey(1)
 
     def obs_to_model_input(self, obs):
-        #self.render(obs)
+        # self.render(obs)
         if isinstance(obs, list):
             obs = obs[0]
         prompt = self.prompt_sampler.get_prompt(self.task)

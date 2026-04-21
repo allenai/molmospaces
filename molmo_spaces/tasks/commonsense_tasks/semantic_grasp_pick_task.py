@@ -158,12 +158,13 @@ class SemanticGraspPickTask(PickTask):
         nearest_classifications = self.grasp_classifications[nearest_indices]
         is_good = nearest_classifications.sum() > k_actual / 2
 
-        # Save debug visualization
-        self._save_grasp_debug_visualization(
-            current_tcp=current_tcp,
-            nearest_indices=nearest_indices,
-            is_good=bool(is_good),
-        )
+        # Debug visualization disabled — PNG dumps per step are a
+        # per-episode bottleneck. Re-enable by uncommenting.
+        # self._save_grasp_debug_visualization(
+        #     current_tcp=current_tcp,
+        #     nearest_indices=nearest_indices,
+        #     is_good=bool(is_good),
+        # )
 
         return bool(is_good)
 
