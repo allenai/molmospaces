@@ -207,6 +207,15 @@ def get_args():
         help="Output directory for evaluation results. Defaults to eval_output/<config>/<timestamp>.",
     )
     parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Resume a previously terminated run from the given folder. Outputs are written "
+        "directly into this folder (no timestamp/config nesting), and any house whose "
+        "trajectories*.h5 already exists there is skipped. Overrides --output_dir. "
+        "If the folder is empty or doesn't exist, it is used as the output dir for a fresh run.",
+    )
+    parser.add_argument(
         "--num_workers",
         type=int,
         default=1,
@@ -495,6 +504,7 @@ def run_evaluation(
     house_inds: list[int] | None = None,
     policy_host: str | None = None,
     policy_port: int | None = None,
+    resume: str | Path | None = None,
 ) -> EvaluationResults:
     """Run evaluation on a JSON benchmark programmatically.
 
@@ -524,6 +534,9 @@ def run_evaluation(
         custom_object_path: Path to the custom object XML file. Required if add_custom_object is True.
         custom_object_name: Natural language name for the custom object (e.g., 'lemon', 'cup').
             If not provided, will attempt to extract from the object path.
+        resume: If set, resume a previous run by writing outputs directly into this folder
+            (no timestamp/config nesting). Houses whose trajectories*.h5 already exists are
+            skipped by the pipeline. Overrides output_dir.
 
     Returns:
         EvaluationResults containing success counts, output paths, and per-episode details.
@@ -623,11 +636,36 @@ def run_evaluation(
     else:
         config_name = eval_config_cls.__name__
 
-    if output_dir is not None:
+    if resume is not None:
+        resolved_output_dir = Path(resume)
+        if output_dir is not None:
+            log.warning(
+                "--resume overrides --output_dir; using resume folder %s for outputs",
+                resolved_output_dir,
+            )
+    elif output_dir is not None:
         resolved_output_dir = Path(output_dir) / config_name / timestamp
     else:
         resolved_output_dir = Path("eval_output") / config_name / timestamp
     os.makedirs(resolved_output_dir, exist_ok=True)
+
+    if resume is not None:
+        resumed_houses = sorted(
+            int(p.parent.name.removeprefix("house_"))
+            for p in resolved_output_dir.glob("house_*/trajectories*.h5")
+            if p.parent.name.startswith("house_")
+            and p.parent.name.removeprefix("house_").isdigit()
+        )
+        if resumed_houses:
+            log.info(
+                "Resume: %d house(s) already have trajectories in %s and will be skipped: %s",
+                len(resumed_houses), resolved_output_dir, resumed_houses,
+            )
+        else:
+            log.info(
+                "Resume: no existing trajectories found in %s; starting fresh in this folder.",
+                resolved_output_dir,
+            )
 
     # Determine task horizon
     assert not (task_horizon_steps is not None and task_horizon_sec is not None), (
@@ -810,6 +848,7 @@ def main() -> None:
         house_inds=args.house_inds,
         policy_host=args.policy_host,
         policy_port=args.policy_port,
+        resume=args.resume,
     )
 
     log.info(f"Evaluation complete: {results.success_count}/{results.total_count} successful")
