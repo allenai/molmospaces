@@ -30,8 +30,8 @@
 ### Updates
 - **[2026/03/24]** 🔥 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for scripted planners, data generation, and benchmark creation.
 - **[2026/02/27]** 🔥 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
-- **[2026/02/11]** 🔥 [**Datasets**](https://github.com/allenai/mujoco-thor/blob/main/assets/README.md) for assets and scenes in MJCF and USDa format.
-- **[2026/02/11]** 🔥 [**Benchmark**](https://github.com/allenai/mujoco-thor/blob/main/molmo_spaces/evaluation/README.md) for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs.
+- **[2026/02/11]** 🔥 [**Datasets**](https://github.com/allenai/molmospaces/blob/main/docs/assets.md#assets-and-resource-manager) for assets and scenes in MJCF and USDa format.
+- **[2026/02/11]** 🔥 [**Benchmark**](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/evaluation/README.md) for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs.
 - **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
 
 
@@ -315,10 +315,11 @@ The xml files have been modified from the original versions provided by the foll
 ## Citing
 
 ```
-@misc{molmospaces2026,
-    title={MolmoSpaces: A Large-Scale Open Ecosystem for Robot Navigation and Manipulation},
-    author={Yejin Kim and Wilbert Pumacay and Omar Rayyan and Max Argus and Winson Han and Eli VanderBilt and Jordi Salvador and Abhay Deshpande and Rose Hendrix and Snehal Jauhri and Shuo Liu and Nur Muhammad Mahi Shafiullah and Maya Guru and Arjun Guru and Ainaz Eftekhar and Karen Farley and Donovan Clay and Jiafei Duan and Piper Wolters and Alvaro Herrasti and Ying-Chun Lee and Georgia Chalvatzaki and Yuchen Cui and Ali Farhadi and Dieter Fox and Ranjay Krishna},
-    year={2026},
+@article{kim2026molmospaces,
+  title={MolmoSpaces: A Large-Scale Open Ecosystem for Robot Navigation and Manipulation},
+  author={Kim, Yejin and Pumacay, Wilbert and Rayyan, Omar and Argus, Max and Han, Winson and VanderBilt, Eli and Salvador, Jordi and Deshpande, Abhay and Hendrix, Rose and Jauhri, Snehal and others},
+  journal={arXiv preprint arXiv:2602.11337},
+  year={2026}
 }
 
 @misc{deshpande2026molmobot,

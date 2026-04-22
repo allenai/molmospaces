@@ -583,7 +583,6 @@ class DoorOpeningTask(BaseMujocoTask):
     ) -> tuple:
         """
         Compute an ee pose from a handle pose.
-        Adapted from https://github.com/allenai/mujoco-thor/blob/thor-assets/scripts/calibration/ithor_artiuclate_test.py#L552
         Also return the offset distance to be added to the ee pose to be at the edge of the handle (using the handle bbox).
         """
         # Assumption: VISUAL GEOM Z Axis is usually along the handle (front to back). X-axis is up/right. Y is left/up.
