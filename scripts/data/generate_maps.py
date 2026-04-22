@@ -37,7 +37,7 @@ def generate_map(scene_xml: Path) -> bool:
                 scene_xml.as_posix(), px_per_m=200, agent_radius=None
             )
 
-        map_filepath = scene_xml.parent.resolve() / f"{scene_xml.stem}_map.png"
+        map_filepath = scene_xml.resolve().parent / f"{scene_xml.stem}_map.png"
         thormap.save(map_filepath.as_posix())
         success = True
     except Exception as e:
