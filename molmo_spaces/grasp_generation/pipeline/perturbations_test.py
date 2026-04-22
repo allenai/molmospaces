@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation as R
 from sklearn.cluster import MiniBatchKMeans
 from tqdm import tqdm
 
-from molmo_spaces.molmo_spaces_constants import ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR
+from molmo_spaces.molmo_spaces_constants import ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR, ASSETS_DIR
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--object_name", type=str)
@@ -149,7 +149,7 @@ def test_single_grasp(grasp_data, object_name, model=None, data=None, viewer=Non
         include = ET.Element("include", {"file": args.xml_file})
         root.append(include)
         xml_content = ET.tostring(root, encoding="unicode")
-        gripper_xml_path = f"{ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR}/assets/robots/floating_robotiq/model_rigid.xml"
+        gripper_xml_path = str(ASSETS_DIR / "robots/floating_robotiq/model_rigid.xml")
         with open(gripper_xml_path, "r") as f:
             additional_xml_content = f.read()
         xml_content = merge_xml_contents(xml_content, additional_xml_content)
@@ -604,9 +604,7 @@ if __name__ == "__main__":
     include = ET.Element("include", {"file": args.xml_file})
     root.append(include)
     xml_content = ET.tostring(root, encoding="unicode")
-    gripper_xml_path = (
-        f"{ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR}/assets/robots/floating_robotiq/model_rigid.xml"
-    )
+    gripper_xml_path = str(ASSETS_DIR / "robots/floating_robotiq/model_rigid.xml")
     with open(gripper_xml_path, "r") as f:
         additional_xml_content = f.read()
     xml_content = merge_xml_contents(xml_content, additional_xml_content)
