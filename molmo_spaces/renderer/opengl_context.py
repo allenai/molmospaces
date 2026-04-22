@@ -123,6 +123,7 @@ class EGLGLContext:
         global EGL_DISPLAY, EGL_DISPLAY_INITIALIZED
         del max_width, max_height  # unused
         self.device_id = device_id
+        self._context = None
         num_configs = ctypes.c_long()
         config_size = 1
         config = EGL.EGLConfig()
@@ -163,17 +164,18 @@ class EGLGLContext:
     def free(self) -> None:
         """Frees resources associated with this context."""
         global EGL_DISPLAY, EGL_DISPLAY_INITIALIZED
-        if self._context and EGL_DISPLAY_INITIALIZED:
+        context = getattr(self, "_context", None)
+        if context and EGL_DISPLAY_INITIALIZED:
             try:
                 current_context = EGL.eglGetCurrentContext()
-                if current_context and self._context.address == current_context.address:
+                if current_context and context.address == current_context.address:
                     EGL.eglMakeCurrent(
                         EGL_DISPLAY,
                         EGL.EGL_NO_SURFACE,
                         EGL.EGL_NO_SURFACE,
                         EGL.EGL_NO_CONTEXT,
                     )
-                EGL.eglDestroyContext(EGL_DISPLAY, self._context)
+                EGL.eglDestroyContext(EGL_DISPLAY, context)
                 EGL.eglReleaseThread()
             except EGLError:
                 # Display may have already been terminated by atexit handler
