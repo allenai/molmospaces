@@ -5,6 +5,7 @@ Overwrite in the environment with e.g.:
     MLSPACES_ASSETS_DIR=/Users/username/mlspaces_resources mjpython scripts/...
 """
 
+import base64
 import itertools
 import json
 import logging
@@ -55,8 +56,19 @@ ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR = Path(__file__).resolve().parent.parent
 _DATA_CACHE_DEFAULT = Path("~/.cache/molmo-spaces-resources").expanduser()
 DATA_CACHE_DIR = Path(os.environ.get("MLSPACES_CACHE_DIR", _DATA_CACHE_DEFAULT))
 
+# Each molmospaces installation needs its own assets directory.
+# The default ASSETS_DIR will be in the user's cache directory,
+# but uses a unique hash of the installation path to avoid conflicts.
+_install_hash = (
+    base64.urlsafe_b64encode(str(ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR).encode())
+    .decode()
+    .rstrip("=")
+)
 ASSETS_DIR = Path(
-    os.environ.get("MLSPACES_ASSETS_DIR", ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR / "assets")
+    os.environ.get(
+        "MLSPACES_ASSETS_DIR",
+        Path.home() / ".cache" / "molmospaces" / "assets" / _install_hash,
+    )
 )
 ROBOTS_DIR = ASSETS_DIR / "robots"
 OBJAVERSE_ASSETS_DIR = Path(
@@ -217,7 +229,7 @@ def get_scenes_root():
             _SCENES_ROOT = Path(
                 os.environ.get(
                     "MLSPACES_SCENES_ROOT",
-                    ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR / "assets" / "scenes",
+                    ASSETS_DIR / "scenes",
                 )
             )
         print(f"Using SCENES_ROOT: {_SCENES_ROOT}")

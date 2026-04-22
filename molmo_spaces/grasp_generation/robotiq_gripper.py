@@ -2,7 +2,7 @@ import numpy as np
 import trimesh
 import trimesh.transformations as tra
 
-from molmo_spaces.molmo_spaces_constants import ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 
 
 class RobotiqGripper:
@@ -22,14 +22,8 @@ class RobotiqGripper:
         self.q = q
         gripping_center = 0.155
         self.tcp_offset = np.array([0, 0, gripping_center])
-        fn_base = (
-            root_folder
-            + f"{ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR}/assets/robots/floating_robotiq/assets/hand.stl"
-        )
-        fn_finger = (
-            root_folder
-            + f"{ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR}/assets/robots/floating_robotiq/assets/finger.stl"
-        )
+        fn_base = root_folder + str(ASSETS_DIR / "robots/floating_robotiq/assets/hand.stl")
+        fn_finger = root_folder + str(ASSETS_DIR / "robots/floating_robotiq/assets/finger.stl")
         self.base = trimesh.load(fn_base)
         self.finger_l = trimesh.load(fn_finger)
         self.finger_r = self.finger_l.copy()

@@ -14,7 +14,7 @@ from scipy.spatial.transform import Rotation as R
 from sklearn.cluster import MiniBatchKMeans
 from tqdm import tqdm
 
-from molmo_spaces.molmo_spaces_constants import ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR
+from molmo_spaces.molmo_spaces_constants import ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR, ASSETS_DIR
 
 
 def rotation_matrix_from_axis_angle(axis, angle):
@@ -788,7 +788,7 @@ def main_single_file_filtering(
         return 0, None
 
     xml_content = ET.tostring(root, encoding="unicode")
-    robot_xml_path = f"{ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR}/assets/robots/floating_robotiq/model_articulate.xml"
+    robot_xml_path = str(ASSETS_DIR / "robots/floating_robotiq/model_articulate.xml")
 
     with open(robot_xml_path, "r") as f:
         robot_xml_content = f.read()
