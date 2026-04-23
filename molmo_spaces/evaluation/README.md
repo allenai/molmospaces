@@ -12,7 +12,6 @@ This README focuses on benchmark installation and running.
 - Submitting results, see the GitHub issue in the repository [here](https://github.com/allenai/molmospaces/issues/8).
 - Theoretical notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts/export?format=pdf)
 
-
 ## Concepts
 
 The MolmoSpaces **leaderboard** shows the results of various polices on benchmarks.
@@ -74,6 +73,10 @@ uv run scripts/serve_policy.py --port=8080 policy:checkpoint \
 ```
 
 #### 2. Run the benchmark
+
+Please look at the concrete commands for each task type in our [leaderboard](https://molmospaces.allen.ai/leaderboard):
+- MolmoSpaces tasks (`MS-` prefix): [ms-bench](ms-bench.md)
+- MolmoBot tasks (`MB-` prefix): [mb-bench](mb-bench.md)
 
 If using OpenPI models: `pip install openpi_client`.
 
@@ -196,6 +199,10 @@ class MyEvalConfig(JsonBenchmarkEvalConfig):
 ```
 
 ### 4. Run Evaluation
+
+Please look at the concrete commands for each task type in our [leaderboard](https://molmospaces.allen.ai/leaderboard):
+- MolmoSpaces tasks (`MS-` prefix): [ms-bench](ms-bench.md)
+- MolmoBot tasks (`MB-` prefix): [mb-bench](mb-bench.md)
 
 Command line:
 

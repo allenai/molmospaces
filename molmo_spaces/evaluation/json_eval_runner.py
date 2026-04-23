@@ -55,6 +55,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
     def patch_config(
         exp_config: MlSpacesExpConfig,
         episode_idx: int | None = None,
+        max_episodes: int | None = None,
         add_custom_object: bool = False,
         custom_object_path: str | Path | None = None,
         custom_object_name: str | None = None,
@@ -69,6 +70,11 @@ class JsonEvalRunner(ParallelRolloutRunner):
             exp_config: The experiment config to patch
             episode_idx: Optional index of a specific episode to evaluate. If provided,
                 only that episode will be evaluated and the process will stop after it.
+            max_episodes: Optional maximum number of episodes to evaluate. If provided,
+                only the episodes for the houses used in the first N episodes will be
+                evaluated. Note that the final number of episodes can differ from N
+                if more than one episode is sampled for any of the houses among the
+                first N episodes.
             add_custom_object: Whether to replace the target object with a custom object.
             custom_object_path: Path to the custom object XML file. Required if
                 add_custom_object is True.
@@ -89,6 +95,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
         # eval_runtime_params is now a proper field in MlSpacesExpConfig, so normal assignment works
         exp_config.eval_runtime_params = EvalRuntimeParams(
             episode_idx=episode_idx,
+            max_episodes=max_episodes,
             add_custom_object=add_custom_object,
             custom_object_path=custom_object_path,
             custom_object_name=custom_object_name,
@@ -127,13 +134,19 @@ class JsonEvalRunner(ParallelRolloutRunner):
                 f"Expected benchmark.json file with list of episode specs."
             )
 
+        eval_params = exp_config.eval_runtime_params
+        if eval_params.max_episodes is not None and len(all_episodes) > eval_params.max_episodes:
+            log.info(
+                f"Limiting to first {eval_params.max_episodes} of {len(all_episodes)} episodes"
+            )
+            all_episodes = all_episodes[: eval_params.max_episodes]
+
         self._episodes_by_house: dict[int, list[EpisodeSpec]] = defaultdict(list)
         for ep in all_episodes:
             self._episodes_by_house[ep.house_index].append(ep)
         self._episodes_by_house = dict(self._episodes_by_house)
 
         # If episode_idx is specified, only process the house containing that episode
-        eval_params = exp_config.eval_runtime_params
         episode_idx = eval_params.episode_idx
         if episode_idx is not None:
             if episode_idx < 0 or episode_idx >= len(all_episodes):
@@ -190,8 +203,13 @@ class JsonEvalRunner(ParallelRolloutRunner):
             )
             return [], None
 
-        # Filter by episode index if specified
         eval_params = exp_config.eval_runtime_params
+
+        # Truncate to max_episodes before any filtering
+        if eval_params.max_episodes is not None and len(all_episodes) > eval_params.max_episodes:
+            all_episodes = all_episodes[: eval_params.max_episodes]
+
+        # Filter by episode index if specified
         episode_idx = eval_params.episode_idx
         if episode_idx is not None:
             if episode_idx < 0 or episode_idx >= len(all_episodes):
@@ -217,7 +235,6 @@ class JsonEvalRunner(ParallelRolloutRunner):
             return [], None
 
         # Apply custom object replacement if requested
-        eval_params = exp_config.eval_runtime_params
         add_custom_object = eval_params.add_custom_object
         custom_object_path = eval_params.custom_object_path
         custom_object_name = eval_params.custom_object_name

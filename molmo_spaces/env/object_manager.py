@@ -1614,9 +1614,9 @@ class ObjectManager:
     def get_body_to_geoms(self):
         body_to_geom_ids = defaultdict(set)
         for geom_id in range(0, self.model.ngeom):
-            body_id = self.model.geom(geom_id).bodyid
-            root_id = self.model.body(body_id).rootid
-            body_to_geom_ids[int(root_id)].add(int(geom_id))
+            body_id = int(self.model.geom(geom_id).bodyid.item())
+            root_id = int(self.model.body(body_id).rootid.item())
+            body_to_geom_ids[root_id].add(geom_id)
         return {
             key: sorted(values)
             for key, values in body_to_geom_ids.items()
