@@ -47,6 +47,8 @@ Always be aware of which object is the target. For this, refer to the first imag
 The path the policy takes. Does it run into other objects on its path toward the target object
 Does the robot stop and attempt to grasp other objects, or does it keep going towards the target object
 Always be aware of how long the robot is spending next to other objects, prior to its gripper being around the target object. If it is spending a lot of time next to another object, that should count as being distracted by that object or colliding with it.
+Note that for a grasp wrong object classification, it doesn't have to successfully grasp the wrong object. The gripper just needs to move in that direction pretty noticeably/potentially touch that other object. These are all
+valid cases for the grasp wrong object class.
 If the robot gripper's trajectory appears to be getting progressively closer to the target object across frames, but it runs into a different object along the way, that should count as a failure due to clutter. Depending on the context, either it tries to grasp
 the wrong object, or it runs runs into the wrong object on the way to the right object, which should count as a grasp_right_object_fail_clutter.
 If the gripper gets close to the target object across frames, but then fails to grasp it without any clear collision with a different object, that should count as a grasp_right_object_fail_idiosyncratic.

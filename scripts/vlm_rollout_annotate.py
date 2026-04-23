@@ -164,13 +164,14 @@ def wait_for_annotation(
     target_bgr: np.ndarray,
     legend_lines: list[str],
     status_line: str,
+    playback_speed: float = 1.0,
 ) -> int:
     """Loop video playback until the user presses a recognized key. Returns the key code.
 
     'r' restarts the current video from the first frame; other unrecognized keys
     are ignored so stray keypresses don't exit the loop.
     """
-    frame_delay_ms = max(1, int(1000.0 / max(fps, 1.0)))
+    frame_delay_ms = max(1, int(1000.0 / (max(fps, 1.0) * max(playback_speed, 0.01))))
     end_linger_iters = max(1, int(1000 / 100))  # ~1s of hold on last frame
 
     while True:
@@ -238,6 +239,12 @@ def main() -> int:
                         help="Max videos to present this session (after resume filter).")
     parser.add_argument("--reannotate", action="store_true",
                         help="Present already-annotated videos too; a new annotation overrides the prior one.")
+    parser.add_argument("--match-annotations", type=Path, default=None,
+                        help=("Path to an existing annotations JSONL (e.g. from a different policy's "
+                              "eval run). Restricts pending videos to the (house, episode) pairs found "
+                              "in that file so the same episodes are annotated for this policy."))
+    parser.add_argument("--playback-speed", type=float, default=30.0,
+                        help="Video playback speed multiplier (default: %(default)s).")
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args()
 
@@ -253,6 +260,23 @@ def main() -> int:
     jobs = discover_jobs(args.eval_dir)
     log.info("Discovered %d exo videos across %d houses.",
              len(jobs), len({j.house for j in jobs}))
+
+    if args.match_annotations is not None:
+        if not args.match_annotations.exists():
+            print(f"ERROR: --match-annotations file does not exist: {args.match_annotations}",
+                  file=sys.stderr)
+            return 2
+        match_keys = set(load_existing(args.match_annotations).keys())
+        log.info("Restricting to %d (house, episode) pairs from %s.",
+                 len(match_keys), args.match_annotations)
+        before = len(jobs)
+        jobs = [j for j in jobs if (j.house, j.episode) in match_keys]
+        missing = match_keys - {(j.house, j.episode) for j in jobs}
+        log.info("Matched %d/%d jobs from eval-dir (was %d total); %d reference pairs had no video.",
+                 len(jobs), len(match_keys), before, len(missing))
+        if missing:
+            for h, e in sorted(missing)[:10]:
+                log.warning("No video in eval-dir for reference pair: %s %s", h, e)
 
     existing = load_existing(args.output)
     if existing:
@@ -302,7 +326,8 @@ def main() -> int:
             if prior is not None:
                 status += f"  (prior: {prior.get('annotation', '?')})"
 
-            key = wait_for_annotation(frames, fps, target_bgr, legend_lines, status)
+            key = wait_for_annotation(frames, fps, target_bgr, legend_lines, status,
+                                      playback_speed=args.playback_speed)
 
             if key == KEY_QUIT:
                 log.info("Quit requested.")

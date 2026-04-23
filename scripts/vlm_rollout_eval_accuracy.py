@@ -1,19 +1,25 @@
 """Quantitative VLM classification accuracy vs human annotations.
 
 Loads a human-annotated JSONL (from ``vlm_rollout_annotate.py``), runs the
-Gemini VLM on each annotated video (resumable, reuses ``process_job`` from
+Gemini VLM on each annotated video (reuses ``process_job`` from
 ``vlm_rollout_eval.py``), then prints a confusion matrix and a per-class
 classification accuracy table.
 
 Usage:
     export GEMINI_API_KEY=...
+    # One-shot: run inference in-memory and score.
     python scripts/vlm_rollout_eval_accuracy.py \\
         --annotations human_annotations.jsonl \\
-        --predictions vlm_predictions.jsonl \\
         --report vlm_accuracy_report.txt
 
-Pass ``--skip-vlm`` to reuse an existing predictions file without hitting the
-API again.
+    # Persistent / resumable: append predictions to a file so re-runs skip
+    # already-predicted episodes.
+    python scripts/vlm_rollout_eval_accuracy.py \\
+        --annotations human_annotations.jsonl \\
+        --predictions vlm_predictions.jsonl
+
+Pass ``--skip-vlm`` (requires ``--predictions``) to reuse an existing
+predictions file without hitting the API again.
 """
 
 from __future__ import annotations
@@ -32,7 +38,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vlm_rollout_eval import (  # noqa: E402
     RESPONSE_SCHEMA,
     VideoJob,
-    load_done_keys,
     process_job,
 )
 
@@ -85,11 +90,17 @@ def build_jobs_from_annotations(annotations: dict[tuple[str, str], dict]) -> lis
 
 def run_vlm(
     jobs: list[VideoJob],
-    predictions_path: Path,
+    predictions_path: Path | None,
     model: str,
     concurrency: int,
     debug_image_dir: Path | None,
-) -> None:
+) -> dict[tuple[str, str], dict]:
+    """Run the VLM on ``jobs`` and return predictions keyed by (house, episode).
+
+    If ``predictions_path`` is provided, records are appended to it (resumable:
+    already-predicted jobs are skipped). If ``None``, predictions are collected
+    in-memory only.
+    """
     from google import genai  # lazy import so --skip-vlm doesn't need the dep
 
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -97,37 +108,53 @@ def run_vlm(
         raise SystemExit("ERROR: set GEMINI_API_KEY in the environment.")
     client = genai.Client(api_key=api_key)
 
-    done = load_done_keys(predictions_path)
+    if predictions_path is not None:
+        prior = load_latest_per_key(predictions_path)
+        done = set(prior.keys())
+    else:
+        prior = {}
+        done = set()
     pending = [j for j in jobs if (j.house, j.episode) not in done]
     log.info("VLM: %d annotated videos, %d already predicted, %d pending.",
              len(jobs), len(done), len(pending))
-    if not pending:
-        return
 
-    predictions_path.parent.mkdir(parents=True, exist_ok=True)
-    with predictions_path.open("a") as out_f, concurrent.futures.ThreadPoolExecutor(
-        max_workers=concurrency
-    ) as pool:
-        futures = {
-            pool.submit(process_job, j, client, model, debug_image_dir): j
-            for j in pending
-        }
-        for i, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
-            job = futures[fut]
-            try:
-                rec = fut.result()
-            except Exception as e:  # noqa: BLE001
-                rec = {
-                    "house": job.house, "episode": job.episode,
-                    "video_path": str(job.video_path), "model": model,
-                    "error": f"unhandled: {e}",
-                }
-            out_f.write(json.dumps(rec) + "\n")
-            out_f.flush()
-            status = rec.get("result", {}).get("outcome") or rec.get("error", "?")
-            log.info("[%d/%d] %s %s -> %s (%.1fs)",
-                     i, len(pending), job.house, job.episode, status,
-                     rec.get("elapsed_s", 0.0))
+    results: dict[tuple[str, str], dict] = dict(prior)
+    if not pending:
+        return results
+
+    out_f = None
+    if predictions_path is not None:
+        predictions_path.parent.mkdir(parents=True, exist_ok=True)
+        out_f = predictions_path.open("a")
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
+            futures = {
+                pool.submit(process_job, j, client, model, debug_image_dir): j
+                for j in pending
+            }
+            for i, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
+                job = futures[fut]
+                try:
+                    rec = fut.result()
+                except Exception as e:  # noqa: BLE001
+                    rec = {
+                        "house": job.house, "episode": job.episode,
+                        "video_path": str(job.video_path), "model": model,
+                        "error": f"unhandled: {e}",
+                    }
+                if out_f is not None:
+                    out_f.write(json.dumps(rec) + "\n")
+                    out_f.flush()
+                if not rec.get("error"):
+                    results[(job.house, job.episode)] = rec
+                status = rec.get("result", {}).get("outcome") or rec.get("error", "?")
+                log.info("[%d/%d] %s %s -> %s (%.1fs)",
+                         i, len(pending), job.house, job.episode, status,
+                         rec.get("elapsed_s", 0.0))
+    finally:
+        if out_f is not None:
+            out_f.close()
+    return results
 
 
 def score(
@@ -231,9 +258,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotations", type=Path, required=True,
                         help="JSONL from vlm_rollout_annotate.py.")
-    parser.add_argument("--predictions", type=Path, required=True,
-                        help="JSONL of VLM predictions. Appended to (resumable); pass an existing "
-                             "file plus --skip-vlm to score without re-running the API.")
+    parser.add_argument("--predictions", type=Path, default=None,
+                        help="Optional JSONL of VLM predictions. If given, appended to (resumable); "
+                             "pass an existing file plus --skip-vlm to score without re-running the "
+                             "API. If omitted, inference runs fully in-memory for a one-shot eval.")
     parser.add_argument("--report", type=Path, default=None,
                         help="Optional path to write the confusion matrix + accuracy table to.")
     parser.add_argument("--model", default="gemini-robotics-er-1.6-preview",
@@ -262,19 +290,29 @@ def main() -> int:
         print("ERROR: no annotations found.", file=sys.stderr)
         return 2
 
-    if not args.skip_vlm:
+    if args.skip_vlm and args.predictions is None:
+        print("ERROR: --skip-vlm requires --predictions.", file=sys.stderr)
+        return 2
+
+    if args.skip_vlm:
+        predictions = load_latest_per_key(args.predictions)
+        log.info("Loaded %d successful VLM predictions from %s",
+                 len(predictions), args.predictions)
+    else:
         jobs = build_jobs_from_annotations(annotations)
-        run_vlm(
+        predictions = run_vlm(
             jobs=jobs,
             predictions_path=args.predictions,
             model=args.model,
             concurrency=args.concurrency,
             debug_image_dir=args.debug_image_dir,
         )
-
-    predictions = load_latest_per_key(args.predictions)
-    log.info("Loaded %d successful VLM predictions from %s",
-             len(predictions), args.predictions)
+        if args.predictions is not None:
+            log.info("Wrote predictions to %s (%d kept for scoring).",
+                     args.predictions, len(predictions))
+        else:
+            log.info("Scored %d in-memory predictions (no --predictions path given).",
+                     len(predictions))
 
     confusion, per_total, per_correct, matched, unmatched, labels = score(
         annotations, predictions, CLASSES,
@@ -282,7 +320,8 @@ def main() -> int:
 
     report_lines: list[str] = []
     report_lines.append(f"Annotations: {args.annotations} ({len(annotations)} unique videos)")
-    report_lines.append(f"Predictions: {args.predictions} ({len(predictions)} successful)")
+    pred_source = str(args.predictions) if args.predictions is not None else "(in-memory)"
+    report_lines.append(f"Predictions: {pred_source} ({len(predictions)} successful)")
     report_lines.append(f"Matched pairs: {matched}")
     if unmatched:
         report_lines.append(
