@@ -92,6 +92,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "floating_rum": "20251110",
         "floating_robotiq": "20260208_retry4",
         "franka_fr3": "20260303",
+        "i2rt_yam": "20260223",
     },
     scenes={
         "ithor": "20251217",

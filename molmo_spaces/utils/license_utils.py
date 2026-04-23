@@ -428,7 +428,7 @@ def resolve_robot_license(data_source, identifier):
             "creator_username": "ROS-Industrial",
             "attribution": "Copyright (c) 2013, ROS-Industrial",
             "source": "mujoco_menagerie/robotiq_2f85_v4",
-            "license": "Copyright (c) 2013, ROS-Industrial",
+            "license": "BSD-2-Clause License",
             "uri": "https://github.com/google-deepmind/mujoco_menagerie/blob/main/robotiq_2f85_v4/LICENSE",
             "downloaded": "2025",
         }
@@ -438,9 +438,19 @@ def resolve_robot_license(data_source, identifier):
             "creator_username": "NYU Generalizable Robotics and AI Lab (GRAIL)",
             "attribution": "Copyright (c) 2026 NYU Generalizable Robotics and AI Lab (GRAIL)",
             "source": "jeffacce/cap-policy",
-            "license": "Copyright (c) 2026 NYU Generalizable Robotics and AI Lab (GRAIL)",
-            "uri": "https://github.com/jeffacce/cap-policy",
+            "license": "MIT",
+            "uri": "https://github.com/jeffacce/cap-policy/blob/main/LICENSE",
             "downloaded": "2025",
+        }
+    elif "yam" in identifier:
+        cur_license = {
+            **common_license,
+            "creator_username": "I2RT Robotics, LLC",
+            "attribution": "Copyright (c) I2RT Robotics",
+            "source": "https://github.com/i2rt-robotics/i2rt/blob/d36027fc50e12d9261f091f9d91c4715bb5e398f/i2rt/robots/get_robot.py#L129",
+            "license": "MIT",
+            "uri": "https://github.com/i2rt-robotics/i2rt/blob/main/LICENSE",
+            "downloaded": "2026",
         }
     else:
         raise NotImplementedError(f"Got unknown robot {identifier}")

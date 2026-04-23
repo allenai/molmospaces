@@ -311,6 +311,7 @@ The xml files have been modified from the original versions provided by the foll
 - [mujoco_menagerie / robotiq_2f85_v4](https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotiq_2f85_v4) - Copyright (c) 2013, ROS-Industrial
 - [Rainbow Robotics / rby1-sdk](https://github.com/RainbowRobotics/rby1-sdk) - Copyright 2024-2025 Rainbow Robotics
 - [RUM Gripper](https://github.com/jeffacce/cap-policy) - Copyright (c) 2026 NYU Generalizable Robotics and AI Lab (GRAIL)
+- [I2RT Robotics / i2rt Python API](https://github.com/i2rt-robotics/i2rt) - Copyright (c) I2RT Robotics
 
 ## Citing
 
