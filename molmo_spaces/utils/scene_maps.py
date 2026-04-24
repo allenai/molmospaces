@@ -878,7 +878,7 @@ class iTHORMap(ProcTHORMap):
         device_id: int = None,
         use_filament: bool = False,
     ):
-        # We make to passes of spec/model loading:
+        # We make two passes of spec/model loading:
         #  1. determine which objects are more than 1.5m above the floor
         #  2. compute the occupancy map with high objects removed
 
