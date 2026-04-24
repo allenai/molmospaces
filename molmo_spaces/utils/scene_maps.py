@@ -867,7 +867,6 @@ class iTHORMap(ProcTHORMap):
 
         return model, data
 
-
     @classmethod
     def from_mj_model_path(
         cls,
@@ -905,7 +904,7 @@ class iTHORMap(ProcTHORMap):
         low_names = set()
         for geom_id in range(model.ngeom):
             aabb_center, aabb_size = geom_aabb(model, data, [geom_id], tight_mesh=False)
-            if model.geom(geom_id).contype == 0:   # is "__VISUAL_MJT__":
+            if model.geom(geom_id).contype == 0:  # is "__VISUAL_MJT__":
                 min_z = aabb_center[2] - aabb_size[2] / 2
                 body_id = model.geom_bodyid[geom_id]
                 body_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id)
