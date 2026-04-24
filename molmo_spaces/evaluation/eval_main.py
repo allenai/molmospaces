@@ -451,7 +451,6 @@ def run_evaluation(
     max_episodes: int | None = None,
     camera_config_override: Any | None = None,
     camera_names_override: list[str] | None = None,
-    use_filament: bool = False,
     environment_light_intensity: float | None = None,
     episode_idx: int | None = None,
     add_custom_object: bool = False,
@@ -617,7 +616,6 @@ def run_evaluation(
     )
 
     # Custom filament settings to overwrite by the user
-    exp_config.use_filament |= use_filament
     exp_config.environment_light_intensity = (
         environment_light_intensity or exp_config.environment_light_intensity
     )
@@ -749,7 +747,6 @@ def main() -> None:
         use_wandb=not args.no_wandb,
         wandb_project=args.wandb_project,
         max_episodes=args.max_episodes,
-        use_filament=args.use_filament,
         environment_light_intensity=args.environment_light_intensity,
         camera_config_override=eval_camera_config,
         camera_names_override=args.camera_names,
