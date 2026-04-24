@@ -548,7 +548,9 @@ class ProcTHORMap(THORMap):
             root_body_id = root_body.id
             root_body_name = root_body.name
             if root_body_name and (
-                root_body_name.startswith("door_") or root_body_name.startswith("doorway_") or root_body_name.startswith("doorframe_")
+                root_body_name.startswith("door_")
+                or root_body_name.startswith("doorway_")
+                or root_body_name.startswith("doorframe_")
             ):
                 if root_body_id not in parent_to_child:
                     parent_to_child[root_body_id] = []
