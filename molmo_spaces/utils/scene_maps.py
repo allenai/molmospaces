@@ -454,6 +454,26 @@ class ProcTHORMap(THORMap):
         else:
             raise ValueError(f"Unsupported file format: {path}")
 
+    @staticmethod
+    def safe_model_data(spec, data=None):
+        # Delete bodies that match blacklisted asset UIDs (prevents compile errors)
+        _delete_blacklisted_bodies(spec)
+
+        # Create new model and data
+        try:
+            model = spec.compile()
+        except ValueError as e:
+            _handle_compile_error_and_blacklist(e)
+            raise
+        finally:
+            del spec  # Explicitly free the spec
+
+        if data is None:
+            data = mujoco.MjData(model)
+            mujoco.mj_forward(model, data)
+
+        return model, data
+
     @classmethod
     def from_mj_model_path(
         cls,
@@ -506,20 +526,7 @@ class ProcTHORMap(THORMap):
             log.debug(f"[ProcTHORMap] Deleting ceiling geom: {geom.name}")
             spec.delete(geom)  # for mujoco>3.3.5
 
-        # Delete bodies that match blacklisted asset UIDs (prevents compile errors)
-        _delete_blacklisted_bodies(spec)
-
-        try:
-            model: mujoco.MjModel = spec.compile()
-        except ValueError as e:
-            _handle_compile_error_and_blacklist(e)
-            raise
-        finally:
-            del spec  # Explicitly free the spec object
-
-        if data is None:
-            data = MjData(model)
-            mujoco.mj_forward(model, data)
+        model, data = cls.safe_model_data(spec, data)
 
         # Identify floor geom indices
         floor_ids = []
@@ -849,25 +856,6 @@ class iTHORMap(ProcTHORMap):
             map_to_world=map_to_world,
             px_per_m=px_per_m,
         )
-
-    @staticmethod
-    def safe_model_data(spec):
-        # Delete bodies that match blacklisted asset UIDs (prevents compile errors)
-        _delete_blacklisted_bodies(spec)
-
-        # Create new model and data
-        try:
-            model = spec.compile()
-        except ValueError as e:
-            _handle_compile_error_and_blacklist(e)
-            raise
-        finally:
-            del spec  # Explicitly free the spec
-
-        data = mujoco.MjData(model)
-        mujoco.mj_forward(model, data)
-
-        return model, data
 
     @classmethod
     def from_mj_model_path(
