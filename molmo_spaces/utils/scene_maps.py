@@ -848,28 +848,8 @@ class iTHORMap(ProcTHORMap):
             px_per_m=px_per_m,
         )
 
-    @classmethod
-    def from_mj_model_path(
-        cls,
-        model_path,
-        camera: str | None = None,
-        agent_radius: float | None = None,
-        px_per_m: int = 100,
-        data: MjData | None = None,
-        device_id: int = None,
-        use_filament: bool = False,
-    ):
-        # Create a new model without ceiling bodies
-        spec = mujoco.MjSpec.from_file(model_path)
-
-        # Collect bodies to delete first
-        for body in spec.worldbody.bodies:
-            body_name = body.name
-            if body_name and "ceiling" in body_name.lower():
-                spec.delete(body)
-            elif body_name and "light" in body_name.lower():
-                spec.delete(body)
-
+    @staticmethod
+    def safe_model_data(spec):
         # Delete bodies that match blacklisted asset UIDs (prevents compile errors)
         _delete_blacklisted_bodies(spec)
 
@@ -884,6 +864,81 @@ class iTHORMap(ProcTHORMap):
 
         data = mujoco.MjData(model)
         mujoco.mj_forward(model, data)
+
+        return model, data
+
+
+    @classmethod
+    def from_mj_model_path(
+        cls,
+        model_path,
+        camera: str | None = None,
+        agent_radius: float | None = None,
+        px_per_m: int = 100,
+        data: MjData | None = None,
+        device_id: int = None,
+        use_filament: bool = False,
+    ):
+        # We make to passes of spec/model loading:
+        #  1. determine which objects are more than 1.5m above the floor
+        #  2. compute the occupancy map with high objects removed
+
+        # Pass 1.
+        spec = mujoco.MjSpec.from_file(model_path)
+        model, data = cls.safe_model_data(spec)
+
+        # Find floor geoms
+        floor_ids = []
+        for geom_id in range(model.ngeom):
+            geom_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, geom_id)
+            if geom_name and "floor" in geom_name.lower():
+                if model.geom(geom_id).contype == 0:  # is "__VISUAL_MJT__":
+                    floor_ids.append(geom_id)
+        assert len(floor_ids) > 0, "No floors found in the model"
+
+        # Compute top of floor and height threshold (1.5m above floor)
+        aabb_center, aabb_size = geom_aabb(model, data, floor_ids, tight_mesh=False)
+        z_threshold = 1.5 + (aabb_center[2] + aabb_size[2] / 2)  # floor top + 1.5
+
+        # Find top-level body names
+        high_names = set()
+        low_names = set()
+        for geom_id in range(model.ngeom):
+            aabb_center, aabb_size = geom_aabb(model, data, [geom_id], tight_mesh=False)
+            if model.geom(geom_id).contype == 0:   # is "__VISUAL_MJT__":
+                min_z = aabb_center[2] - aabb_size[2] / 2
+                body_id = model.geom_bodyid[geom_id]
+                body_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id)
+
+                # Get top-level body name
+                parts = body_name.split("_")
+                parts[-2] = "0"
+                body_name = "_".join(parts)
+
+                if min_z > z_threshold:
+                    high_names.add(body_name)
+                else:
+                    low_names.add(body_name)
+
+        # If any low-level body is low, the top-level one cannot be considered high
+        high_names -= low_names
+
+        del data, model
+
+        # Pass 2.
+        spec = mujoco.MjSpec.from_file(model_path)
+
+        # Delete high bodies
+        for body in spec.worldbody.bodies:
+            body_name = body.name
+            if body_name and "ceiling" in body_name.lower():
+                spec.delete(body)
+            elif body_name and "light" in body_name.lower():
+                spec.delete(body)
+            elif body_name in high_names:
+                spec.delete(body)
+
+        model, data = cls.safe_model_data(spec)
 
         floor_ids = []
         for geom_id in range(model.ngeom):
