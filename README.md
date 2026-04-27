@@ -41,7 +41,7 @@ Installing `molmospaces` is easy!
 
 First, set up a Python 3.11 environment. 
 
-> Note: on macOS, `mjpython` (used for `--viewer`) requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship. If you need the viewer, use conda or a Homebrew Python.
+> Note: If you want to use the debug viewer on macOS you need to use conda or a Homebrew Python. This is because `mjpython` used by the debug viewer requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship.
 
 With conda:
 
@@ -133,7 +133,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 
 ### Quick Test
 
-Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive viewer (push "w" for wire-frame view to see the robot more easily, more details [here](#mujoco-viewer-tips)). Assets should be downloaded automatically for all runs.
+Run a quick sample of data generation. For machines with a display use the `--viewer` option to launching the passive debug viewer (push "w" for wire-frame view to see the robot more easily, more details [here](#mujoco-viewer-tips)). Assets should be downloaded automatically for all runs.
 
 ```bash
 # Linux
