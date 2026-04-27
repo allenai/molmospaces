@@ -39,13 +39,23 @@
 
 Installing `molmospaces` is easy!
 
-First, set up a conda environment with Python 3.11:
+First, set up a Python 3.11 environment.
+
+With conda:
 
 ```bash
 conda create -n mlspaces python=3.11
 conda activate mlspaces
 ```
 
+Or with `uv`:
+
+```bash
+uv venv --python 3.11 .venv
+source .venv/bin/activate
+```
+
+> Note: on macOS, `mjpython` (used for `--viewer`) requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship. If you need the viewer, use conda or a Homebrew Python.
 
 Then, clone and install the project:
 
@@ -116,7 +126,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 
 | Environment Variable | Effect | Default |
 |---|---|---|
-| `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `../assets` relative to `molmo-spaces` directory |
+| `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `~/.cache/molmospaces/assets/<install-hash>` |
 | `MLSPACES_FORCE_INSTALL` | Override existing assets | `True` |
 | `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |  |
 
