@@ -1,0 +1,52 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install UV package manager
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Create virtual environment
+        run: uv venv --python 3.11
+
+      - name: Install docs dependencies
+        run: |
+          source .venv/bin/activate
+          uv pip install \
+            "mkdocs>=1.6.0" \
+            "mkdocs-material>=9.5.0" \
+            "mkdocstrings[python]>=0.27.0" \
+            "mkdocs-autorefs>=1.2.0" \
+            "mkdocs-git-revision-date-localized-plugin"
+
+      - name: Install package (no heavy deps, for static analysis)
+        run: |
+          source .venv/bin/activate
+          uv pip install -e . --no-deps
+
+      - name: Build and deploy to gh-pages
+        run: |
+          source .venv/bin/activate
+          mkdocs gh-deploy --force --clean

@@ -1,0 +1,104 @@
+site_name: MolmoSpaces
+site_description: Large scale assets and benchmarks for vision language policies
+site_url: https://allenai.github.io/molmospaces
+repo_url: https://github.com/allenai/molmospaces
+repo_name: allenai/molmospaces
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Allen Institute for Artificial Intelligence
+
+theme:
+  name: material
+  logo: images/MolmoSpacesLogo.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Assets: assets.md
+      - Data Format: data_format.md
+      - Data Processing: data_processing.md
+      - Code Structure: code_structure.md
+      - Development: development.md
+  - API Reference:
+      - Overview: api/index.md
+      - molmo_spaces: api/molmo_spaces.md
+      - env: api/env.md
+      - tasks: api/tasks.md
+      - robots: api/robots.md
+      - controllers: api/controllers.md
+      - kinematics: api/kinematics.md
+      - renderer: api/renderer.md
+      - policy: api/policy.md
+      - evaluation: api/evaluation.md
+      - utils: api/utils.md
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            docstring_section_style: table
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            show_submodules: false
+            allow_inspection: false
+            preload_modules: []
+            inherited_members: true
+            show_if_no_docstring: true
+            show_root_toc_entry: true
+            summary: true
+            # type annotation display
+            separate_signature: true
+            show_signature_annotations: true
+            annotations_path: brief
+            signature_crossrefs: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
