@@ -39,7 +39,9 @@
 
 Installing `molmospaces` is easy!
 
-First, set up a Python 3.11 environment.
+First, set up a Python 3.11 environment. 
+
+> Note: on macOS, `mjpython` (used for `--viewer`) requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship. If you need the viewer, use conda or a Homebrew Python.
 
 With conda:
 
@@ -54,8 +56,6 @@ Or with `uv`:
 uv venv --python 3.11 .venv
 source .venv/bin/activate
 ```
-
-> Note: on macOS, `mjpython` (used for `--viewer`) requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship. If you need the viewer, use conda or a Homebrew Python.
 
 Then, clone and install the project:
 
