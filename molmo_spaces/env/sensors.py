@@ -1083,6 +1083,7 @@ class GraspPoseSensor(Sensor):
     def __init__(self, uuid: str = "grasp_pose") -> None:
         observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
         super().__init__(uuid=uuid, observation_space=observation_space)
+        self._logged_warning = False
 
     def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
         """Get grasp pose (using current TCP pose as proxy)."""
@@ -1092,7 +1093,9 @@ class GraspPoseSensor(Sensor):
                 dtype=np.float32,
             )
         else:
-            log.warning("No registered policy, cannot get grasp pose.")
+            if not self._logged_warning:
+                log.warning("Policy is not registered or does not support grasp pose sensing.")
+                self._logged_warning = True
             return np.zeros(7, dtype=np.float32)
 
 
