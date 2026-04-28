@@ -164,11 +164,13 @@ class MlSpacesCamera(MlSpacesObjectAbstract):
         3x3 intrinsic matrix, see: https://en.wikipedia.org/wiki/Camera_resectioning#Intrinsic_parameters
         """
         f = self.get_focal_length(height, width)
-        return np.array([
-            [f, 0, width / 2],
-            [0, f, height / 2],
-            [0, 0, 1],
-        ])
+        return np.array(
+            [
+                [f, 0, width / 2],
+                [0, f, height / 2],
+                [0, 0, 1],
+            ]
+        )
 
     def get_camera_matrix(self, height: int, width: int) -> np.ndarray:
         """

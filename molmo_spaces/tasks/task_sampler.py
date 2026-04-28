@@ -740,7 +740,9 @@ class BaseMujocoTaskSampler:
 
                 self._datagen_profiler.start("asset_install_grasps")
                 for grasp_source in ("droid_objaverse",):
-                    install_grasps_for_scene(scene_path, grasp_source=grasp_source, exclude_thor=True)
+                    install_grasps_for_scene(
+                        scene_path, grasp_source=grasp_source, exclude_thor=True
+                    )
                 self._datagen_profiler.end("asset_install_grasps")
 
                 self._datagen_profiler.end("scene_asset_install")
