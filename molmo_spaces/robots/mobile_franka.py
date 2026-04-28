@@ -256,7 +256,9 @@ if __name__ == "__main__":
 
     from molmo_spaces.configs.robot_configs import MobileFrankaRobotConfig
     from molmo_spaces.molmo_spaces_constants import get_procthor_10k_houses, get_robot_path
-    from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
+    from molmo_spaces.utils.lazy_loading_utils import (
+        install_scene_with_objects_and_grasps_from_path,
+    )
 
     houses = get_procthor_10k_houses(split="val")
     house_xml_path = houses["val"][0]["base"]
