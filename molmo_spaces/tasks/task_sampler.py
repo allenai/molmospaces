@@ -34,6 +34,7 @@ from molmo_spaces.molmo_spaces_constants import (
     DATA_TYPE_TO_SOURCE_TO_VERSION,
     get_robot_path,
     get_scenes,
+    get_scenes_root,
 )
 
 MJC_VERSION = tuple(map(int, mujoco.__version__.split(".")))
@@ -717,32 +718,34 @@ class BaseMujocoTaskSampler:
         if scene_path is None:
             scene_path = self._current_house_scene_path(variant=variant)
 
-        # Track asset installation time (fetching/extracting scene, objects, grasps)
-        # Use detailed profiling to identify which asset type is slow
-        if self._datagen_profiler is not None:
-            self._datagen_profiler.start("scene_asset_install")
-            from molmo_spaces.utils.lazy_loading_utils import (
-                install_grasps_for_scene,
-                install_objects_for_scene,
-                install_scene_from_path,
-            )
+        # If using a MolmoSpaces scene, install it
+        if get_scenes_root().resolve() in Path(scene_path).resolve().parents:
+            # Track asset installation time (fetching/extracting scene, objects, grasps)
+            # Use detailed profiling to identify which asset type is slow
+            if self._datagen_profiler is not None:
+                self._datagen_profiler.start("scene_asset_install")
+                from molmo_spaces.utils.lazy_loading_utils import (
+                    install_grasps_for_scene,
+                    install_objects_for_scene,
+                    install_scene_from_path,
+                )
 
-            self._datagen_profiler.start("asset_install_scene")
-            install_scene_from_path(scene_path)
-            self._datagen_profiler.end("asset_install_scene")
+                self._datagen_profiler.start("asset_install_scene")
+                install_scene_from_path(scene_path)
+                self._datagen_profiler.end("asset_install_scene")
 
-            self._datagen_profiler.start("asset_install_objects")
-            install_objects_for_scene(scene_path, exclude_thor=True)
-            self._datagen_profiler.end("asset_install_objects")
+                self._datagen_profiler.start("asset_install_objects")
+                install_objects_for_scene(scene_path, exclude_thor=True)
+                self._datagen_profiler.end("asset_install_objects")
 
-            self._datagen_profiler.start("asset_install_grasps")
-            for grasp_source in ("droid_objaverse",):
-                install_grasps_for_scene(scene_path, grasp_source=grasp_source, exclude_thor=True)
-            self._datagen_profiler.end("asset_install_grasps")
+                self._datagen_profiler.start("asset_install_grasps")
+                for grasp_source in ("droid_objaverse",):
+                    install_grasps_for_scene(scene_path, grasp_source=grasp_source, exclude_thor=True)
+                self._datagen_profiler.end("asset_install_grasps")
 
-            self._datagen_profiler.end("scene_asset_install")
-        else:
-            install_scene_with_objects_and_grasps_from_path(scene_path)
+                self._datagen_profiler.end("scene_asset_install")
+            else:
+                install_scene_with_objects_and_grasps_from_path(scene_path)
 
         # Track scene compilation time (XML processing + MuJoCo spec.compile())
         if self._datagen_profiler is not None:
