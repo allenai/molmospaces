@@ -182,7 +182,7 @@ class MobileFrankaRobot(Robot):
             return act
 
         robot_config = cast("MobileFrankaRobotConfig", robot_config)
-        pos = pos + [0.0] if len(pos) == 2 else pos
+        pos = pos + [0.005] if len(pos) == 2 else pos
 
         material_name = cls.create_robot_base_material(
             robot_config, spec, prefix, randomize_textures
@@ -248,3 +248,45 @@ class MobileFrankaRobot(Robot):
             [0, -theta_act_params["kp"], theta_act_params["kd"]],
             5,
         )
+
+
+if __name__ == "__main__":
+    from scipy.spatial.transform import Rotation as R
+    import mujoco.viewer
+
+    from molmo_spaces.configs.robot_configs import MobileFrankaRobotConfig
+    from molmo_spaces.molmo_spaces_constants import get_procthor_10k_houses, get_robot_path
+    from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
+
+    houses = get_procthor_10k_houses(split="val")
+    house_xml_path = houses["val"][0]["base"]
+    install_scene_with_objects_and_grasps_from_path(house_xml_path)
+
+    spec = MjSpec.from_file(house_xml_path)
+
+    robot_config = MobileFrankaRobotConfig(base_size=[0.5, 0.5, 0.75])
+    robot_file_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+    robot_spec = MjSpec.from_file(str(robot_file_path))
+
+    MobileFrankaRobot.add_robot_to_scene(
+        robot_config,
+        spec,
+        robot_spec,
+        prefix=robot_config.robot_namespace,
+        pos=[6.8, 9.75],
+        quat=R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True),
+    )
+    MobileFrankaRobot.apply_control_overrides(spec, robot_config)
+
+    model = spec.compile()
+    data = MjData(model)
+    view = robot_config.robot_view_factory(data, robot_config.robot_namespace)
+
+    view.set_qpos_dict(robot_config.init_qpos)
+    mujoco.mj_forward(model, data)
+    for mg_id in view.move_group_ids():
+        mg = view.get_move_group(mg_id)
+        mg.ctrl = mg.noop_ctrl
+    mujoco.mj_forward(model, data)
+
+    mujoco.viewer.launch(model, data)
