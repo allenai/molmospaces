@@ -289,8 +289,8 @@ class BaseMujocoTaskSampler:
 
         self._house_inds = exp_config.task_sampler_config.house_inds
         if self._house_inds is None or self._house_inds == []:
-            mapping = get_scenes(exp_config.scene_dataset, exp_config.data_split)
-            self._house_inds = list(
+            mapping = self._get_dataset_index_map()
+            self._house_inds = sorted(
                 [k for k, v in mapping[exp_config.data_split].items() if v is not None]
             )
 
@@ -886,23 +886,24 @@ class BaseMujocoTaskSampler:
                 inertia_perturbation_ratio=0.2,
             )
 
-    # Dataset utilities (optional)
-    def _get_dataset_index_map(self) -> dict | None:
+    def _get_dataset_index_map(self) -> dict:
         if self._dataset_index_map is not None:
             return self._dataset_index_map
         name = self.config.scene_dataset
-        if not name:
-            return None
 
-        if isinstance(name, str) and not os.path.isabs(name):
+        if name != "user":
             mapping = get_scenes(name, self.config.data_split)
+            assert isinstance(mapping, dict)
         else:
-            current_idx = self._house_inds[0] if self._house_inds else 0
-            # Create new format with variant structure, defaulting to "base"
             mapping = {
-                "train": {current_idx: {"ceiling": None, "map": None, "base": name}},
-                "val": {current_idx: {"ceiling": None, "map": None, "base": name}},
+                self.config.data_split: {
+                    i: {"base": scene_xml_path}
+                    for i, scene_xml_path in enumerate(
+                        self.config.task_sampler_config.scene_xml_paths
+                    )
+                }
             }
+
         self._dataset_index_map = mapping
 
         return mapping
