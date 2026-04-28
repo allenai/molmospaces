@@ -1,0 +1,3498 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Large scale assets and benchmarks for vision language policies">
+      
+      
+      
+        <link rel="canonical" href="https://allenai.github.io/molmospaces/api/molmo_spaces/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../env/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>molmo_spaces - MolmoSpaces</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/timeago.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#molmo_spaces_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="MolmoSpaces" class="md-header__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MolmoSpaces
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              molmo_spaces
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../assets/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="MolmoSpaces" class="md-nav__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    MolmoSpaces
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data_format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data_processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code_structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    molmo_spaces
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    molmo_spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#molmo_spaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;molmo_spaces
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" molmo_spaces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.MOLMO_SPACES_BASE_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;MOLMO_SPACES_BASE_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;molmo_spaces_constants
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" molmo_spaces_constants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DATA_CACHE_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ASSETS_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.ROBOTS_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ROBOTS_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;OBJAVERSE_ASSETS_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;PINNED_ASSETS_FILE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.USE_HUGGING_FACE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;USE_HUGGING_FACE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.DATA_TYPE_TO_SOURCE_TO_VERSION" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DATA_TYPE_TO_SOURCE_TO_VERSION
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.pinned_assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;pinned_assets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.single_thread_environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;single_thread_environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.resource_manager_log_level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resource_manager_log_level
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_resource_manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_resource_manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_scenes_root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_scenes_root
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_asset_id_to_object_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_asset_id_to_object_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_object_type_to_asset_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_object_type_to_asset_ids
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_scenes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_scenes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.check_in_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;check_in_cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.populate_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;populate_cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_ithor_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_ithor_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_procthor_10k_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_procthor_10k_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_debug_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_procthor_objaverse_debug_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_procthor_objaverse_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_holodeck_objaverse_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_holodeck_objaverse_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_robot_paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_robot_paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_robot_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_robot_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.print_license_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;print_license_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    env
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../robots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    robots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../controllers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    controllers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kinematics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../renderer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#molmo_spaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;molmo_spaces
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" molmo_spaces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.MOLMO_SPACES_BASE_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;MOLMO_SPACES_BASE_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;molmo_spaces_constants
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" molmo_spaces_constants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DATA_CACHE_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ASSETS_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.ROBOTS_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ROBOTS_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;OBJAVERSE_ASSETS_DIR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;PINNED_ASSETS_FILE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.USE_HUGGING_FACE" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;USE_HUGGING_FACE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.DATA_TYPE_TO_SOURCE_TO_VERSION" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;DATA_TYPE_TO_SOURCE_TO_VERSION
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.pinned_assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;pinned_assets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.single_thread_environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;single_thread_environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.resource_manager_log_level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;resource_manager_log_level
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_resource_manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_resource_manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_scenes_root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_scenes_root
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_asset_id_to_object_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_asset_id_to_object_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_object_type_to_asset_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_object_type_to_asset_ids
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_scenes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_scenes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.check_in_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;check_in_cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.populate_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;populate_cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_ithor_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_ithor_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_procthor_10k_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_procthor_10k_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_debug_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_procthor_objaverse_debug_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_procthor_objaverse_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_holodeck_objaverse_houses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_holodeck_objaverse_houses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_robot_paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_robot_paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.get_robot_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_robot_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.print_license_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;print_license_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/allenai/molmospaces/edit/main/docs/api/molmo_spaces.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="molmo_spaces_1">molmo_spaces<a class="headerlink" href="#molmo_spaces_1" title="Permanent link">&para;</a></h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="molmo_spaces" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">molmo_spaces</span>
+
+
+<a href="#molmo_spaces" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+<p><span class="doc-section-title">Modules:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="molmo_spaces.configs">configs</span></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>Configuration module for MolmoSpaces experiments.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            controllers (molmo_spaces.controllers)" href="../controllers/#molmo_spaces.controllers">controllers</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="molmo_spaces.data_generation">data_generation</span></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            env (molmo_spaces.env)" href="../env/#molmo_spaces.env">env</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            evaluation (molmo_spaces.evaluation)" href="../evaluation/#molmo_spaces.evaluation">evaluation</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>Evaluation utilities for MolmoSpaces benchmarks.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="molmo_spaces.grasp_generation">grasp_generation</span></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="molmo_spaces.housegen">housegen</span></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            kinematics (molmo_spaces.kinematics)" href="../kinematics/#molmo_spaces.kinematics">kinematics</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            molmo_spaces_constants (molmo_spaces.molmo_spaces_constants)" href="#molmo_spaces.molmo_spaces_constants">molmo_spaces_constants</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>Constants and paths for the MolmoSpaces project. Paths should be provided as Path objects.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="molmo_spaces.planner">planner</span></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            policy (molmo_spaces.policy)" href="../policy/#molmo_spaces.policy">policy</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            renderer (molmo_spaces.renderer)" href="../renderer/#molmo_spaces.renderer">renderer</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="molmo_spaces.resources">resources</span></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            robots (molmo_spaces.robots)" href="../robots/#molmo_spaces.robots">robots</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            tasks (molmo_spaces.tasks)" href="../tasks/#molmo_spaces.tasks">tasks</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            utils (molmo_spaces.utils)" href="../utils/#molmo_spaces.utils">utils</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            MOLMO_SPACES_BASE_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.MOLMO_SPACES_BASE_DIR)" href="#molmo_spaces.MOLMO_SPACES_BASE_DIR">MOLMO_SPACES_BASE_DIR</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.MOLMO_SPACES_BASE_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">MOLMO_SPACES_BASE_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.MOLMO_SPACES_BASE_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">MOLMO_SPACES_BASE_DIR</span> <span class="o">=</span> <span class="n"><span title="parent">parent</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="molmo_spaces.molmo_spaces_constants" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">molmo_spaces_constants</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Constants and paths for the MolmoSpaces project. Paths should be provided as Path objects.</p>
+<p>Overwrite in the environment with e.g.:
+    MLSPACES_ASSETS_DIR=/Users/username/mlspaces_resources mjpython scripts/...</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            single_thread_environment (molmo_spaces.molmo_spaces_constants.single_thread_environment)" href="#molmo_spaces.molmo_spaces_constants.single_thread_environment">single_thread_environment</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            resource_manager_log_level (molmo_spaces.molmo_spaces_constants.resource_manager_log_level)" href="#molmo_spaces.molmo_spaces_constants.resource_manager_log_level">resource_manager_log_level</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_resource_manager (molmo_spaces.molmo_spaces_constants.get_resource_manager)" href="#molmo_spaces.molmo_spaces_constants.get_resource_manager">get_resource_manager</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_scenes_root (molmo_spaces.molmo_spaces_constants.get_scenes_root)" href="#molmo_spaces.molmo_spaces_constants.get_scenes_root">get_scenes_root</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_asset_id_to_object_type (molmo_spaces.molmo_spaces_constants.get_asset_id_to_object_type)" href="#molmo_spaces.molmo_spaces_constants.get_asset_id_to_object_type">get_asset_id_to_object_type</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_object_type_to_asset_ids (molmo_spaces.molmo_spaces_constants.get_object_type_to_asset_ids)" href="#molmo_spaces.molmo_spaces_constants.get_object_type_to_asset_ids">get_object_type_to_asset_ids</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_scenes (molmo_spaces.molmo_spaces_constants.get_scenes)" href="#molmo_spaces.molmo_spaces_constants.get_scenes">get_scenes</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            check_in_cache (molmo_spaces.molmo_spaces_constants.check_in_cache)" href="#molmo_spaces.molmo_spaces_constants.check_in_cache">check_in_cache</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            populate_cache (molmo_spaces.molmo_spaces_constants.populate_cache)" href="#molmo_spaces.molmo_spaces_constants.populate_cache">populate_cache</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_ithor_houses (molmo_spaces.molmo_spaces_constants.get_ithor_houses)" href="#molmo_spaces.molmo_spaces_constants.get_ithor_houses">get_ithor_houses</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return {split: {index: xml_path_or_None}} for iTHOR houses.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_procthor_10k_houses (molmo_spaces.molmo_spaces_constants.get_procthor_10k_houses)" href="#molmo_spaces.molmo_spaces_constants.get_procthor_10k_houses">get_procthor_10k_houses</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return {split: {index: xml_path_or_None}} for ProcTHOR-10k houses.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_procthor_objaverse_debug_houses (molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_debug_houses)" href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_debug_houses">get_procthor_objaverse_debug_houses</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_procthor_objaverse_houses (molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_houses)" href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_houses">get_procthor_objaverse_houses</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_holodeck_objaverse_houses (molmo_spaces.molmo_spaces_constants.get_holodeck_objaverse_houses)" href="#molmo_spaces.molmo_spaces_constants.get_holodeck_objaverse_houses">get_holodeck_objaverse_houses</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_robot_paths (molmo_spaces.molmo_spaces_constants.get_robot_paths)" href="#molmo_spaces.molmo_spaces_constants.get_robot_paths">get_robot_paths</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  <p>Return {robot_name: Path} for all available robot files.</p>
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            get_robot_path (molmo_spaces.molmo_spaces_constants.get_robot_path)" href="#molmo_spaces.molmo_spaces_constants.get_robot_path">get_robot_path</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            print_license_info (molmo_spaces.molmo_spaces_constants.print_license_info)" href="#molmo_spaces.molmo_spaces_constants.print_license_info">print_license_info</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+      </tbody>
+    </table>
+
+
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR)" href="#molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR">ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            DATA_CACHE_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR)" href="#molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR">DATA_CACHE_DIR</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            ASSETS_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.ASSETS_DIR)" href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR">ASSETS_DIR</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            ROBOTS_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.ROBOTS_DIR)" href="#molmo_spaces.molmo_spaces_constants.ROBOTS_DIR">ROBOTS_DIR</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            OBJAVERSE_ASSETS_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR)" href="#molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR">OBJAVERSE_ASSETS_DIR</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            PINNED_ASSETS_FILE
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE)" href="#molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE">PINNED_ASSETS_FILE</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            USE_HUGGING_FACE
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.USE_HUGGING_FACE)" href="#molmo_spaces.molmo_spaces_constants.USE_HUGGING_FACE">USE_HUGGING_FACE</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            DATA_TYPE_TO_SOURCE_TO_VERSION
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.DATA_TYPE_TO_SOURCE_TO_VERSION)" href="#molmo_spaces.molmo_spaces_constants.DATA_TYPE_TO_SOURCE_TO_VERSION">DATA_TYPE_TO_SOURCE_TO_VERSION</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            pinned_assets
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.pinned_assets)" href="#molmo_spaces.molmo_spaces_constants.pinned_assets">pinned_assets</a></code></td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR</span> <span class="o">=</span> <span class="n"><span title="parent.parent">parent</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">DATA_CACHE_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DATA_CACHE_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_CACHE_DIR&#39;</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.molmo_spaces_constants._DATA_CACHE_DEFAULT">_DATA_CACHE_DEFAULT</span></span><span class="p">))</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.ASSETS_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">ASSETS_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ASSETS_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_ASSETS_DIR&#39;</span><span class="p">,</span> <span class="n"><span title="pathlib.Path.home">home</span></span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;.cache&#39;</span> <span class="o">/</span> <span class="s1">&#39;molmospaces&#39;</span> <span class="o">/</span> <span class="s1">&#39;assets&#39;</span> <span class="o">/</span> <span class="n"><span title="molmo_spaces.molmo_spaces_constants._install_hash">_install_hash</span></span><span class="p">))</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.ROBOTS_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">ROBOTS_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.ROBOTS_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ROBOTS_DIR</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            ASSETS_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.ASSETS_DIR)" href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR">ASSETS_DIR</a></span> <span class="o">/</span> <span class="s1">&#39;robots&#39;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">OBJAVERSE_ASSETS_DIR</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">OBJAVERSE_ASSETS_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_OBJAVERSE_ASSETS_DIR&#39;</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            ASSETS_DIR
+
+
+  
+      module-attribute
+   (molmo_spaces.molmo_spaces_constants.ASSETS_DIR)" href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR">ASSETS_DIR</a></span> <span class="o">/</span> <span class="s1">&#39;objects&#39;</span> <span class="o">/</span> <span class="s1">&#39;objaverse&#39;</span><span class="p">))</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">PINNED_ASSETS_FILE</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">PINNED_ASSETS_FILE</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ">environ</span></span><span class="p">[</span><span class="s1">&#39;MLSPACES_PINNED_ASSETS_FILE&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="s1">&#39;MLSPACES_PINNED_ASSETS_FILE&#39;</span> <span class="ow">in</span> <span class="n"><span title="os.environ">environ</span></span> <span class="k">else</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.USE_HUGGING_FACE" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">USE_HUGGING_FACE</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.USE_HUGGING_FACE" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">USE_HUGGING_FACE</span> <span class="o">=</span> <span class="kc">False</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.DATA_TYPE_TO_SOURCE_TO_VERSION" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">DATA_TYPE_TO_SOURCE_TO_VERSION</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.DATA_TYPE_TO_SOURCE_TO_VERSION" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">(</span><span class="n"><span title="dict(robots)">robots</span></span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rby1&#39;</span><span class="p">:</span> <span class="s1">&#39;20251224&#39;</span><span class="p">,</span> <span class="s1">&#39;rby1m&#39;</span><span class="p">:</span> <span class="s1">&#39;20251224&#39;</span><span class="p">,</span> <span class="s1">&#39;franka_droid&#39;</span><span class="p">:</span> <span class="s1">&#39;20260127&#39;</span><span class="p">,</span> <span class="s1">&#39;franka_cap&#39;</span><span class="p">:</span> <span class="s1">&#39;20260213&#39;</span><span class="p">,</span> <span class="s1">&#39;floating_rum&#39;</span><span class="p">:</span> <span class="s1">&#39;20251110&#39;</span><span class="p">,</span> <span class="s1">&#39;floating_robotiq&#39;</span><span class="p">:</span> <span class="s1">&#39;20260208_retry4&#39;</span><span class="p">,</span> <span class="s1">&#39;franka_fr3&#39;</span><span class="p">:</span> <span class="s1">&#39;20260303&#39;</span><span class="p">,</span> <span class="s1">&#39;i2rt_yam&#39;</span><span class="p">:</span> <span class="s1">&#39;20260223&#39;</span><span class="p">},</span> <span class="n"><span title="dict(scenes)">scenes</span></span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ithor&#39;</span><span class="p">:</span> <span class="s1">&#39;20251217&#39;</span><span class="p">,</span> <span class="s1">&#39;refs&#39;</span><span class="p">:</span> <span class="s1">&#39;20250923&#39;</span><span class="p">,</span> <span class="s1">&#39;procthor-10k-train&#39;</span><span class="p">:</span> <span class="s1">&#39;20251122&#39;</span><span class="p">,</span> <span class="s1">&#39;procthor-10k-val&#39;</span><span class="p">:</span> <span class="s1">&#39;20251217&#39;</span><span class="p">,</span> <span class="s1">&#39;procthor-10k-test&#39;</span><span class="p">:</span> <span class="s1">&#39;20251121&#39;</span><span class="p">,</span> <span class="s1">&#39;holodeck-objaverse-train&#39;</span><span class="p">:</span> <span class="s1">&#39;20251217&#39;</span><span class="p">,</span> <span class="s1">&#39;holodeck-objaverse-val&#39;</span><span class="p">:</span> <span class="s1">&#39;20251217&#39;</span><span class="p">,</span> <span class="s1">&#39;procthor-objaverse-train&#39;</span><span class="p">:</span> <span class="s1">&#39;20251205&#39;</span><span class="p">,</span> <span class="s1">&#39;procthor-objaverse-val&#39;</span><span class="p">:</span> <span class="s1">&#39;20251205&#39;</span><span class="p">},</span> <span class="n"><span title="dict(objects)">objects</span></span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;thor&#39;</span><span class="p">:</span> <span class="s1">&#39;20251117&#39;</span><span class="p">,</span> <span class="s1">&#39;objaverse&#39;</span><span class="p">:</span> <span class="s1">&#39;20260131&#39;</span><span class="p">,</span> <span class="s1">&#39;objathor_metadata&#39;</span><span class="p">:</span> <span class="s1">&#39;20260129&#39;</span><span class="p">},</span> <span class="n"><span title="dict(grasps)">grasps</span></span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;droid&#39;</span><span class="p">:</span> <span class="s1">&#39;20251116&#39;</span><span class="p">,</span> <span class="s1">&#39;droid_objaverse&#39;</span><span class="p">:</span> <span class="s1">&#39;20251218&#39;</span><span class="p">},</span> <span class="n"><span title="dict(test_data)">test_data</span></span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;franka_pick&#39;</span><span class="p">:</span> <span class="s1">&#39;20260209&#39;</span><span class="p">,</span> <span class="s1">&#39;franka_pick_and_place&#39;</span><span class="p">:</span> <span class="s1">&#39;20260305&#39;</span><span class="p">,</span> <span class="s1">&#39;rby1_door_opening&#39;</span><span class="p">:</span> <span class="s1">&#39;20260228&#39;</span><span class="p">,</span> <span class="s1">&#39;rby1_pnp&#39;</span><span class="p">:</span> <span class="s1">&#39;20260305&#39;</span><span class="p">,</span> <span class="s1">&#39;rum_open_close&#39;</span><span class="p">:</span> <span class="s1">&#39;20260305&#39;</span><span class="p">,</span> <span class="s1">&#39;rum_pick&#39;</span><span class="p">:</span> <span class="s1">&#39;20260209&#39;</span><span class="p">,</span> <span class="s1">&#39;test_randomized_data&#39;</span><span class="p">:</span> <span class="s1">&#39;20251209&#39;</span><span class="p">,</span> <span class="s1">&#39;thormap&#39;</span><span class="p">:</span> <span class="s1">&#39;20251209&#39;</span><span class="p">},</span> <span class="n"><span title="dict(benchmarks)">benchmarks</span></span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;molmospaces-bench-v1&#39;</span><span class="p">:</span> <span class="s1">&#39;20260408&#39;</span><span class="p">,</span> <span class="s1">&#39;molmospaces-bench-v2&#39;</span><span class="p">:</span> <span class="s1">&#39;20260415&#39;</span><span class="p">})</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.pinned_assets" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">pinned_assets</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#molmo_spaces.molmo_spaces_constants.pinned_assets" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pinned_assets</span> <span class="o">=</span> <span class="n"><span title="json.load">load</span></span><span class="p">(</span><span class="n"><span title="f">f</span></span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.single_thread_environment" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">single_thread_environment</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.single_thread_environment" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">single_thread_environment</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-26">26</a></span>
+<span class="normal"><a href="#__codelineno-0-27">27</a></span>
+<span class="normal"><a href="#__codelineno-0-28">28</a></span>
+<span class="normal"><a href="#__codelineno-0-29">29</a></span>
+<span class="normal"><a href="#__codelineno-0-30">30</a></span>
+<span class="normal"><a href="#__codelineno-0-31">31</a></span>
+<span class="normal"><a href="#__codelineno-0-32">32</a></span>
+<span class="normal"><a href="#__codelineno-0-33">33</a></span>
+<span class="normal"><a href="#__codelineno-0-34">34</a></span>
+<span class="normal"><a href="#__codelineno-0-35">35</a></span>
+<span class="normal"><a href="#__codelineno-0-36">36</a></span>
+<span class="normal"><a href="#__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#__codelineno-0-39">39</a></span>
+<span class="normal"><a href="#__codelineno-0-40">40</a></span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="k">def</span><span class="w"> </span><span class="nf">single_thread_environment</span><span class="p">():</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting single thread environment for proc </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30"></a>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a>        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a>        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_interop_threads</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">set_num_interop_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MKL_NUM_THREADS&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;MKL_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.resource_manager_log_level" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">resource_manager_log_level</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.resource_manager_log_level" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resource_manager_log_level</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n"><span title="logging.DEBUG">DEBUG</span></span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="k">def</span><span class="w"> </span><span class="nf">resource_manager_log_level</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;molmospaces_resources&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_level</span><span class="p">)</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">())</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_resource_manager" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_resource_manager</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_resource_manager" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_resource_manager</span><span class="p">(</span><span class="n">force_post_setup</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-136">136</a></span>
+<span class="normal"><a href="#__codelineno-0-137">137</a></span>
+<span class="normal"><a href="#__codelineno-0-138">138</a></span>
+<span class="normal"><a href="#__codelineno-0-139">139</a></span>
+<span class="normal"><a href="#__codelineno-0-140">140</a></span>
+<span class="normal"><a href="#__codelineno-0-141">141</a></span>
+<span class="normal"><a href="#__codelineno-0-142">142</a></span>
+<span class="normal"><a href="#__codelineno-0-143">143</a></span>
+<span class="normal"><a href="#__codelineno-0-144">144</a></span>
+<span class="normal"><a href="#__codelineno-0-145">145</a></span>
+<span class="normal"><a href="#__codelineno-0-146">146</a></span>
+<span class="normal"><a href="#__codelineno-0-147">147</a></span>
+<span class="normal"><a href="#__codelineno-0-148">148</a></span>
+<span class="normal"><a href="#__codelineno-0-149">149</a></span>
+<span class="normal"><a href="#__codelineno-0-150">150</a></span>
+<span class="normal"><a href="#__codelineno-0-151">151</a></span>
+<span class="normal"><a href="#__codelineno-0-152">152</a></span>
+<span class="normal"><a href="#__codelineno-0-153">153</a></span>
+<span class="normal"><a href="#__codelineno-0-154">154</a></span>
+<span class="normal"><a href="#__codelineno-0-155">155</a></span>
+<span class="normal"><a href="#__codelineno-0-156">156</a></span>
+<span class="normal"><a href="#__codelineno-0-157">157</a></span>
+<span class="normal"><a href="#__codelineno-0-158">158</a></span>
+<span class="normal"><a href="#__codelineno-0-159">159</a></span>
+<span class="normal"><a href="#__codelineno-0-160">160</a></span>
+<span class="normal"><a href="#__codelineno-0-161">161</a></span>
+<span class="normal"><a href="#__codelineno-0-162">162</a></span>
+<span class="normal"><a href="#__codelineno-0-163">163</a></span>
+<span class="normal"><a href="#__codelineno-0-164">164</a></span>
+<span class="normal"><a href="#__codelineno-0-165">165</a></span>
+<span class="normal"><a href="#__codelineno-0-166">166</a></span>
+<span class="normal"><a href="#__codelineno-0-167">167</a></span>
+<span class="normal"><a href="#__codelineno-0-168">168</a></span>
+<span class="normal"><a href="#__codelineno-0-169">169</a></span>
+<span class="normal"><a href="#__codelineno-0-170">170</a></span>
+<span class="normal"><a href="#__codelineno-0-171">171</a></span>
+<span class="normal"><a href="#__codelineno-0-172">172</a></span>
+<span class="normal"><a href="#__codelineno-0-173">173</a></span>
+<span class="normal"><a href="#__codelineno-0-174">174</a></span>
+<span class="normal"><a href="#__codelineno-0-175">175</a></span>
+<span class="normal"><a href="#__codelineno-0-176">176</a></span>
+<span class="normal"><a href="#__codelineno-0-177">177</a></span>
+<span class="normal"><a href="#__codelineno-0-178">178</a></span>
+<span class="normal"><a href="#__codelineno-0-179">179</a></span>
+<span class="normal"><a href="#__codelineno-0-180">180</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_resource_manager</span><span class="p">(</span><span class="n">force_post_setup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<a id="__codelineno-0-137" name="__codelineno-0-137"></a>    <span class="k">global</span> <span class="n">_RESOURCE_MANAGER</span>
+<a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="k">if</span> <span class="n">_RESOURCE_MANAGER</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-139" name="__codelineno-0-139"></a>
+<a id="__codelineno-0-140" name="__codelineno-0-140"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">post_setup</span><span class="p">(</span><span class="n">manager</span><span class="p">:</span> <span class="n">ResourceManager</span><span class="p">):</span>
+<a id="__codelineno-0-141" name="__codelineno-0-141"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_IN_MULTIPROCESSING_CHILD&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">str2bool</span><span class="p">(</span>
+<a id="__codelineno-0-142" name="__codelineno-0-142"></a>                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MLSPACES_DOWNLOAD_EXTRACT_ALL_SCENES_OBJECTS_GRASPS&quot;</span><span class="p">,</span> <span class="s2">&quot;False&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-143" name="__codelineno-0-143"></a>            <span class="p">):</span>
+<a id="__codelineno-0-144" name="__codelineno-0-144"></a>                <span class="c1"># extract to cache only; link on demand (per-file for scenes)</span>
+<a id="__codelineno-0-145" name="__codelineno-0-145"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">skip_linking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-146" name="__codelineno-0-146"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;objects&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-147" name="__codelineno-0-147"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;grasps&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-148" name="__codelineno-0-148"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a>                <span class="n">to_install</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a>                <span class="k">for</span> <span class="n">scene_source</span> <span class="ow">in</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a>                    <span class="n">source_packages</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">find_all_packages_for_source</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">scene_source</span><span class="p">)</span>
+<a id="__codelineno-0-152" name="__codelineno-0-152"></a>                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_packages</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+<a id="__codelineno-0-153" name="__codelineno-0-153"></a>                        <span class="c1"># Fully install small scene datasets</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a>                        <span class="n">packages</span> <span class="o">=</span> <span class="n">source_packages</span>
+<a id="__codelineno-0-155" name="__codelineno-0-155"></a>                    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-156" name="__codelineno-0-156"></a>                        <span class="c1"># Install unindexed scene archives</span>
+<a id="__codelineno-0-157" name="__codelineno-0-157"></a>                        <span class="n">packages</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">unindexed_archives</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">scene_source</span><span class="p">)</span>
+<a id="__codelineno-0-158" name="__codelineno-0-158"></a>
+<a id="__codelineno-0-159" name="__codelineno-0-159"></a>                    <span class="k">if</span> <span class="n">packages</span><span class="p">:</span>
+<a id="__codelineno-0-160" name="__codelineno-0-160"></a>                        <span class="n">to_install</span><span class="p">[</span><span class="n">scene_source</span><span class="p">]</span> <span class="o">=</span> <span class="n">packages</span>
+<a id="__codelineno-0-161" name="__codelineno-0-161"></a>
+<a id="__codelineno-0-162" name="__codelineno-0-162"></a>                <span class="k">if</span> <span class="n">to_install</span><span class="p">:</span>
+<a id="__codelineno-0-163" name="__codelineno-0-163"></a>                    <span class="n">manager</span><span class="o">.</span><span class="n">install_packages</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">to_install</span><span class="p">)</span>
+<a id="__codelineno-0-164" name="__codelineno-0-164"></a>
+<a id="__codelineno-0-165" name="__codelineno-0-165"></a>        <span class="c1"># resource_manager_log_level()</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a>
+<a id="__codelineno-0-167" name="__codelineno-0-167"></a>        <span class="n">_RESOURCE_MANAGER</span> <span class="o">=</span> <span class="n">setup_resource_manager</span><span class="p">(</span>
+<a id="__codelineno-0-168" name="__codelineno-0-168"></a>            <span class="n">HFRemoteStorage</span><span class="p">(</span>
+<a id="__codelineno-0-169" name="__codelineno-0-169"></a>                <span class="s2">&quot;allenai/molmospaces&quot;</span><span class="p">,</span> <span class="n">repo_prefix</span><span class="o">=</span><span class="s2">&quot;mujoco&quot;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HF_TOKEN&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-170" name="__codelineno-0-170"></a>            <span class="p">)</span>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a>            <span class="k">if</span> <span class="n">USE_HUGGING_FACE</span>
+<a id="__codelineno-0-172" name="__codelineno-0-172"></a>            <span class="k">else</span> <span class="n">R2RemoteStorage</span><span class="p">(</span><span class="s2">&quot;mujoco-thor-resources&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-173" name="__codelineno-0-173"></a>            <span class="n">symlink_dir</span><span class="o">=</span><span class="n">ASSETS_DIR</span><span class="p">,</span>
+<a id="__codelineno-0-174" name="__codelineno-0-174"></a>            <span class="n">versions</span><span class="o">=</span><span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">,</span>
+<a id="__codelineno-0-175" name="__codelineno-0-175"></a>            <span class="n">cache_dir</span><span class="o">=</span><span class="n">DATA_CACHE_DIR</span><span class="p">,</span>
+<a id="__codelineno-0-176" name="__codelineno-0-176"></a>            <span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;MLSPACES&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-177" name="__codelineno-0-177"></a>            <span class="n">post_setup</span><span class="o">=</span><span class="n">post_setup</span><span class="p">,</span>
+<a id="__codelineno-0-178" name="__codelineno-0-178"></a>            <span class="n">force_post_setup</span><span class="o">=</span><span class="n">force_post_setup</span><span class="p">,</span>
+<a id="__codelineno-0-179" name="__codelineno-0-179"></a>        <span class="p">)</span>
+<a id="__codelineno-0-180" name="__codelineno-0-180"></a>    <span class="k">return</span> <span class="n">_RESOURCE_MANAGER</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_scenes_root" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_scenes_root</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_scenes_root" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_scenes_root</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-220">220</a></span>
+<span class="normal"><a href="#__codelineno-0-221">221</a></span>
+<span class="normal"><a href="#__codelineno-0-222">222</a></span>
+<span class="normal"><a href="#__codelineno-0-223">223</a></span>
+<span class="normal"><a href="#__codelineno-0-224">224</a></span>
+<span class="normal"><a href="#__codelineno-0-225">225</a></span>
+<span class="normal"><a href="#__codelineno-0-226">226</a></span>
+<span class="normal"><a href="#__codelineno-0-227">227</a></span>
+<span class="normal"><a href="#__codelineno-0-228">228</a></span>
+<span class="normal"><a href="#__codelineno-0-229">229</a></span>
+<span class="normal"><a href="#__codelineno-0-230">230</a></span>
+<span class="normal"><a href="#__codelineno-0-231">231</a></span>
+<span class="normal"><a href="#__codelineno-0-232">232</a></span>
+<span class="normal"><a href="#__codelineno-0-233">233</a></span>
+<span class="normal"><a href="#__codelineno-0-234">234</a></span>
+<span class="normal"><a href="#__codelineno-0-235">235</a></span>
+<span class="normal"><a href="#__codelineno-0-236">236</a></span>
+<span class="normal"><a href="#__codelineno-0-237">237</a></span>
+<span class="normal"><a href="#__codelineno-0-238">238</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scenes_root</span><span class="p">():</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="k">global</span> <span class="n">_SCENES_ROOT</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="k">if</span> <span class="n">_SCENES_ROOT</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="c1"># Ensure scenes dir under asset root exists</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">get_resource_manager</span><span class="p">()</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a>        <span class="k">if</span> <span class="p">(</span><span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a>            <span class="n">_SCENES_ROOT</span> <span class="o">=</span> <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>            <span class="n">_SCENES_ROOT</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>                    <span class="s2">&quot;MLSPACES_SCENES_ROOT&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>                    <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>                <span class="p">)</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>            <span class="p">)</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using SCENES_ROOT: </span><span class="si">{</span><span class="n">_SCENES_ROOT</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="k">return</span> <span class="n">_SCENES_ROOT</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_asset_id_to_object_type" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_asset_id_to_object_type</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_asset_id_to_object_type" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_asset_id_to_object_type</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#__codelineno-0-245">245</a></span>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span>
+<span class="normal"><a href="#__codelineno-0-247">247</a></span>
+<span class="normal"><a href="#__codelineno-0-248">248</a></span>
+<span class="normal"><a href="#__codelineno-0-249">249</a></span>
+<span class="normal"><a href="#__codelineno-0-250">250</a></span>
+<span class="normal"><a href="#__codelineno-0-251">251</a></span>
+<span class="normal"><a href="#__codelineno-0-252">252</a></span>
+<span class="normal"><a href="#__codelineno-0-253">253</a></span>
+<span class="normal"><a href="#__codelineno-0-254">254</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_asset_id_to_object_type</span><span class="p">():</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="k">global</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="k">if</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="n">ref_file</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;refs&quot;</span> <span class="o">/</span> <span class="s2">&quot;asset_id_to_object_type.json&quot;</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>            <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="o">=</span> <span class="n">compress_json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ref_file</span><span class="p">))</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to load asset_id_to_object_type.json: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>            <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="k">return</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_object_type_to_asset_ids" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_object_type_to_asset_ids</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_object_type_to_asset_ids" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_object_type_to_asset_ids</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_object_type_to_asset_ids</span><span class="p">():</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="k">global</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="k">if</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>        <span class="c1"># Group asset IDs by object type</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>        <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="k">for</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">get_asset_id_to_object_type</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>            <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asset_id</span><span class="p">)</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span><span class="p">)</span>  <span class="c1"># Convert back to regular dict</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="k">return</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_scenes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_scenes</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_scenes" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_scenes</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="n">return_version</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span> <span class="o">|</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="dict">dict</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#__codelineno-0-444">444</a></span>
+<span class="normal"><a href="#__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#__codelineno-0-450">450</a></span>
+<span class="normal"><a href="#__codelineno-0-451">451</a></span>
+<span class="normal"><a href="#__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#__codelineno-0-455">455</a></span>
+<span class="normal"><a href="#__codelineno-0-456">456</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scenes</span><span class="p">(</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>    <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">return_version</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">names2functions</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="s2">&quot;ithor&quot;</span><span class="p">:</span> <span class="n">get_ithor_houses</span><span class="p">,</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="s2">&quot;procthor-10k&quot;</span><span class="p">:</span> <span class="n">get_procthor_10k_houses</span><span class="p">,</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="s2">&quot;procthor-100k-debug&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_houses</span><span class="p">,</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="s2">&quot;procthor-objaverse-debug&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_debug_houses</span><span class="p">,</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="s2">&quot;procthor-objaverse&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_houses</span><span class="p">,</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a>        <span class="s2">&quot;holodeck-objaverse&quot;</span><span class="p">:</span> <span class="n">get_holodeck_objaverse_houses</span><span class="p">,</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a>    <span class="p">}</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a>    <span class="k">if</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names2functions</span><span class="p">:</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a>            <span class="sa">f</span><span class="s2">&quot;dataset_name was </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">, must be one of </span><span class="si">{</span><span class="n">names2functions</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a>        <span class="p">)</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">names2functions</span><span class="p">[</span><span class="n">dataset_name</span><span class="p">](</span><span class="n">split</span><span class="o">=</span><span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">return_version</span><span class="p">:</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a>        <span class="k">return</span> <span class="n">index_map</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a>        <span class="k">if</span> <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;procthor-10k&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;procthor-10k-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a>        <span class="k">elif</span> <span class="p">(</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a>            <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;procthor-objaverse&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a>            <span class="ow">and</span> <span class="n">dataset_name</span> <span class="o">!=</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="p">):</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;procthor-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="k">elif</span> <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;holodeck-objaverse&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;holodeck-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="k">elif</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Missing source for </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>            <span class="n">version</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="n">dataset_name</span><span class="p">]</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="k">return</span> <span class="n">index_map</span><span class="p">,</span> <span class="n">version</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.check_in_cache" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">check_in_cache</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.check_in_cache" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#__codelineno-0-460">460</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="k">return</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span> <span class="ow">and</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.populate_cache" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">populate_cache</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.populate_cache" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="k">def</span><span class="w"> </span><span class="nf">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">):</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">:</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="c1"># If we got val and test (we should), add those to the cache</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="k">for</span> <span class="n">rsplit</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">num_houses</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">]</span> <span class="k">if</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">])</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="k">if</span> <span class="n">num_houses</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>            <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">][</span><span class="n">rsplit</span><span class="p">]</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">]</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="c1"># If no houses available for split, make sure to still set it up in the cache</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">][</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_ithor_houses" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_ithor_houses</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_ithor_houses" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_ithor_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return {split: {index: xml_path_or_None}} for iTHOR houses.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#__codelineno-0-488">488</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_ithor_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for iTHOR houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;ithor&quot;</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;ithor&quot;</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_ithor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">)</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="k">return</span> <span class="n">index_map</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_procthor_10k_houses" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_procthor_10k_houses</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_procthor_10k_houses" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_procthor_10k_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return {split: {index: xml_path_or_None}} for ProcTHOR-10k houses.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_10k_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR-10k houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k&quot;</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="k">if</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-train&quot;</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="k">elif</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;val&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-val&quot;</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">elif</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;test&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-test&quot;</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="k">raise</span> <span class="ne">ValueError</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="n">location</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="k">return</span> <span class="n">index_map</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_debug_houses" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_procthor_objaverse_debug_houses</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_debug_houses" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_procthor_objaverse_debug_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-514">514</a></span>
+<span class="normal"><a href="#__codelineno-0-515">515</a></span>
+<span class="normal"><a href="#__codelineno-0-516">516</a></span>
+<span class="normal"><a href="#__codelineno-0-517">517</a></span>
+<span class="normal"><a href="#__codelineno-0-518">518</a></span>
+<span class="normal"><a href="#__codelineno-0-519">519</a></span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span>
+<span class="normal"><a href="#__codelineno-0-523">523</a></span>
+<span class="normal"><a href="#__codelineno-0-524">524</a></span>
+<span class="normal"><a href="#__codelineno-0-525">525</a></span>
+<span class="normal"><a href="#__codelineno-0-526">526</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_objaverse_debug_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="k">return</span> <span class="n">index_map</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_houses" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_procthor_objaverse_houses</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_procthor_objaverse_houses" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_procthor_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-529">529</a></span>
+<span class="normal"><a href="#__codelineno-0-530">530</a></span>
+<span class="normal"><a href="#__codelineno-0-531">531</a></span>
+<span class="normal"><a href="#__codelineno-0-532">532</a></span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span>
+<span class="normal"><a href="#__codelineno-0-535">535</a></span>
+<span class="normal"><a href="#__codelineno-0-536">536</a></span>
+<span class="normal"><a href="#__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#__codelineno-0-540">540</a></span>
+<span class="normal"><a href="#__codelineno-0-541">541</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-objaverse&quot;</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;procthor-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="k">return</span> <span class="n">index_map</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_holodeck_objaverse_houses" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_holodeck_objaverse_houses</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_holodeck_objaverse_houses" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_holodeck_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_holodeck_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;holodeck-objaverse&quot;</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;holodeck-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="k">return</span> <span class="n">index_map</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_robot_paths" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_robot_paths</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_robot_paths" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_robot_paths</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return {robot_name: Path} for all available robot files.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_robot_paths</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {robot_name: Path} for all available robot files.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>    <span class="n">robot_paths</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="k">for</span> <span class="n">robot_name</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ROBOTS_DIR</span><span class="p">):</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">robot_paths</span><span class="p">[</span><span class="n">robot_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>    <span class="k">return</span> <span class="n">robot_paths</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.get_robot_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_robot_path</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.get_robot_path" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_robot_path</span><span class="p">(</span><span class="n">robot_name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="pathlib.Path">Path</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_robot_path</span><span class="p">(</span><span class="n">robot_name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>    <span class="k">return</span> <span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.print_license_info" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">print_license_info</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.print_license_info" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">print_license_info</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span>
+<span class="normal"><a href="#__codelineno-0-577">577</a></span>
+<span class="normal"><a href="#__codelineno-0-578">578</a></span>
+<span class="normal"><a href="#__codelineno-0-579">579</a></span>
+<span class="normal"><a href="#__codelineno-0-580">580</a></span>
+<span class="normal"><a href="#__codelineno-0-581">581</a></span>
+<span class="normal"><a href="#__codelineno-0-582">582</a></span>
+<span class="normal"><a href="#__codelineno-0-583">583</a></span>
+<span class="normal"><a href="#__codelineno-0-584">584</a></span>
+<span class="normal"><a href="#__codelineno-0-585">585</a></span>
+<span class="normal"><a href="#__codelineno-0-586">586</a></span>
+<span class="normal"><a href="#__codelineno-0-587">587</a></span>
+<span class="normal"><a href="#__codelineno-0-588">588</a></span>
+<span class="normal"><a href="#__codelineno-0-589">589</a></span>
+<span class="normal"><a href="#__codelineno-0-590">590</a></span>
+<span class="normal"><a href="#__codelineno-0-591">591</a></span>
+<span class="normal"><a href="#__codelineno-0-592">592</a></span>
+<span class="normal"><a href="#__codelineno-0-593">593</a></span>
+<span class="normal"><a href="#__codelineno-0-594">594</a></span>
+<span class="normal"><a href="#__codelineno-0-595">595</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="k">def</span><span class="w"> </span><span class="nf">print_license_info</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">):</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.utils.license_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_license</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_identifiers</span><span class="p">():</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>        <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>            <span class="n">archive</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_source</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.tar.zst&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>            <span class="k">for</span> <span class="n">archive</span> <span class="ow">in</span> <span class="n">get_resource_manager</span><span class="p">()</span><span class="o">.</span><span class="n">find_all_packages_for_source</span><span class="p">(</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a>                <span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>            <span class="p">)</span>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a>        <span class="p">]</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a>    <span class="k">if</span> <span class="n">asset_or_tar_id</span> <span class="o">==</span> <span class="s2">&quot;--list_all&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible identifiers: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">get_identifiers</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a>        <span class="k">return</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="n">license_info</span> <span class="o">=</span> <span class="n">resolve_license</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">)</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">license_info</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a>    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a>        <span class="n">archives</span> <span class="o">=</span> <span class="n">get_identifiers</span><span class="p">()</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">formatted</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="n">archives</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">archives</span><span class="p">),</span> <span class="mi">10</span><span class="p">))))</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible identifiers:</span><span class="se">\n</span><span class="si">{</span><span class="n">formatted</span><span class="si">}{</span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">archives</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 28, 2026 18:30:44 UTC"><span class="timeago" datetime="2026-04-28T18:30:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 28, 2026 18:30:44 UTC">2026-04-28</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 28, 2026 18:30:44 UTC"><span class="timeago" datetime="2026-04-28T18:30:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 28, 2026 18:30:44 UTC">2026-04-28</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Allen Institute for Artificial Intelligence
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../js/timeago.min.js"></script>
+      
+        <script src="../../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>
