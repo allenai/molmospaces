@@ -103,6 +103,7 @@ class BaseRobotConfig(Config):
     gravcomp: bool = False  # apply gravity compensation to every body in the robot
     K_stiffness: list[float] | None = None  # if None use values from model
     K_damping: list[float] | None = None  # if None use values from model
+    force_limit: list[float] | None = None  # if None use values from model
 
     # Action noise configuration - applied per-robot in Robot.apply_action_noise()
     action_noise_config: ActionNoiseConfig | None = None
