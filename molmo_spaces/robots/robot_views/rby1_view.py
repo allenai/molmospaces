@@ -21,7 +21,8 @@ from molmo_spaces.robots.robot_views.abstract import (
     FreeJointRobotBaseGroup,
     GripperGroup,
     HoloJointsRobotBaseGroup,
-    MoveGroup,
+    SimplyActuatedMoveGroup,
+    SimpleMoveGroup,
     RobotBaseGroup,
     RobotView,
 )
@@ -29,7 +30,7 @@ from molmo_spaces.utils.linalg_utils import normalize_ang_error
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
 
 
-class RBY1ArmGroup(MoveGroup):
+class RBY1ArmGroup(SimpleMoveGroup):
     """Implementation of the RBY1's 7-DOF arm, excluding the gripper."""
 
     def __init__(
@@ -54,6 +55,10 @@ class RBY1ArmGroup(MoveGroup):
         self._ee_site_id = model.site(f"{namespace}ee_site_{side[0]}").id
         self._arm_root_id = model.body(f"{namespace}link_{side}_arm_0").id
         super().__init__(mj_data, joint_ids, act_ids, self._arm_root_id, base)
+
+    @property
+    def leaf_site_id(self) -> int:
+        return self._ee_site_id
 
     @property
     def noop_ctrl(self) -> np.ndarray:
@@ -174,7 +179,7 @@ class RBY1GripperGroup(GripperGroup):
         return J
 
 
-class RBY1TorsoGroup(MoveGroup):
+class RBY1TorsoGroup(SimplyActuatedMoveGroup):
     """Implementation of the RBY1's torso.
 
     The RBY1 torso has 6 degrees of freedom, allowing for full control of the
@@ -261,7 +266,7 @@ class RBY1HoloBaseGroup(HoloJointsRobotBaseGroup):
         super().__init__(mj_data, world_site_id, holo_base_site_id, joints, act, root_body_id)
 
 
-class RBY1HeadGroup(MoveGroup):
+class RBY1HeadGroup(SimplyActuatedMoveGroup):
     """Implementation of the RBY1's head.
 
     The RBY1 head has 2 degrees of freedom, allowing for pan and tilt motion

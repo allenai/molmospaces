@@ -14,7 +14,7 @@ from mujoco import MjData
 from molmo_spaces.robots.robot_views.abstract import (
     GripperGroup,
     MocapRobotBaseGroup,
-    MoveGroup,
+    SimpleMoveGroup,
     RobotView,
 )
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
@@ -33,7 +33,7 @@ class I2rtYamBaseGroup(MocapRobotBaseGroup):
         super().__init__(mj_data, body_id)
 
 
-class I2rtYamArmGroup(MoveGroup):
+class I2rtYamArmGroup(SimpleMoveGroup):
     """6-DOF arm group for the YAM robot."""
 
     def __init__(
@@ -69,6 +69,10 @@ class I2rtYamArmGroup(MoveGroup):
         J = np.zeros((6, self.mj_model.nv))
         mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
         return J
+
+    @property
+    def leaf_site_id(self) -> int:
+        return self._ee_site_id
 
 
 class I2rtYamGripperGroup(GripperGroup):

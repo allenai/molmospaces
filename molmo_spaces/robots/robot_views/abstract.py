@@ -282,6 +282,40 @@ class MoveGroup(ABC):
         raise NotImplementedError
 
 
+class SimplyActuatedMoveGroup(MoveGroup):
+    """
+    A SimplyActuatedMoveGroup is a move group with a 1:1 mapping between joints, actuators, and position/velocity addresses.
+    """
+
+    @property
+    def joint_ids(self):
+        return self._joint_ids
+
+    @property
+    def actuator_ids(self):
+        return self._actuator_ids
+
+    @property
+    def joint_posadr(self):
+        return self._joint_posadr
+
+    @property
+    def joint_veladr(self):
+        return self._joint_veladr
+
+
+class SimpleMoveGroup(SimplyActuatedMoveGroup):
+    """
+    A SimpleMoveGroup is a SimplyActuatedMoveGroup where the leaf frame is specified by a site.
+    """
+
+    @property
+    @abstractmethod
+    def leaf_site_id(self) -> int:
+        """The ID of the site that represents the leaf frame."""
+        raise NotImplementedError
+
+
 class GripperGroup(MoveGroup):
     @abstractmethod
     def set_gripper_ctrl_open(self, open: bool) -> None:
@@ -432,7 +466,7 @@ class FreeJointRobotBaseGroup(RobotBaseGroup):
         return J
 
 
-class HoloJointsRobotBaseGroup(RobotBaseGroup):
+class HoloJointsRobotBaseGroup(RobotBaseGroup, SimplyActuatedMoveGroup):
     """A RobotBase that uses virtual holonomic joints to represent its pose.
 
     Assumes three virtual holonomic joints for x, y, and theta control.

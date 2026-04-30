@@ -28,7 +28,8 @@ dependencies = [
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
-    "mujoco-mjx==3.4.0",
+    "mujoco-warp~=3.5.0",
+    "mujoco-mjx~=3.5.0",
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
     "numpy>=1.19.0,<3",
@@ -87,7 +88,7 @@ curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@417c995647fcb173a2bc094d1284b2a4f4b000ad",
 ]
 mujoco = [
-    "mujoco==3.4.0",
+    "mujoco~=3.5.0",
 ]
 mujoco-filament = [
     "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",

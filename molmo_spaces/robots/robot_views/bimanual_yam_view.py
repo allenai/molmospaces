@@ -18,7 +18,7 @@ from mujoco import MjData
 from molmo_spaces.robots.robot_views.abstract import (
     GripperGroup,
     MocapRobotBaseGroup,
-    MoveGroup,
+    SimpleMoveGroup,
     RobotView,
 )
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
@@ -37,7 +37,7 @@ class BimanualYamBaseGroup(MocapRobotBaseGroup):
         super().__init__(mj_data, body_id)
 
 
-class BimanualYamArmGroup(MoveGroup):
+class BimanualYamArmGroup(SimpleMoveGroup):
     """6-DOF arm group for one side of the bimanual YAM robot."""
 
     def __init__(
@@ -77,6 +77,10 @@ class BimanualYamArmGroup(MoveGroup):
     @property
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
+
+    @property
+    def leaf_site_id(self) -> int:
+        return self._ee_site_id
 
     def get_jacobian(self) -> np.ndarray:
         J = np.zeros((6, self.mj_model.nv))
