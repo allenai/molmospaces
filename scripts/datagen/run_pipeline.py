@@ -316,8 +316,7 @@ def main(args: argparse.ArgumentParser) -> None:
             exp_config.policy_dt_ms = 40  # More responsive for teleoperation
             exp_config.task_horizon = 1000
         exp_config.policy_config = get_policy_config(args.policy, robot=args.robot)
-        # policy constructor takes (config, task)
-        policy = exp_config.policy_config.policy_cls(exp_config, None)
+        policy = exp_config.policy_config.policy_cls(exp_config)
     elif args.policy == "planner":
         pass
     else:
