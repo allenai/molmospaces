@@ -348,6 +348,7 @@ class Robot:
                 "number of force limits cannot exceed number of actuators"
             )
             for i, actuator in enumerate(actuators[: len(force_limit)]):
+                actuator.forcelimited = 1
                 actuator.forcerange[:] = [-force_limit[i], force_limit[i]]
 
     @classmethod
