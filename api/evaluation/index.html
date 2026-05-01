@@ -32052,13 +32052,7 @@ print(f"Success rate: {results.success_rate:.1%}")</p>
 <span class="normal"><a href="#__codelineno-0-706">706</a></span>
 <span class="normal"><a href="#__codelineno-0-707">707</a></span>
 <span class="normal"><a href="#__codelineno-0-708">708</a></span>
-<span class="normal"><a href="#__codelineno-0-709">709</a></span>
-<span class="normal"><a href="#__codelineno-0-710">710</a></span>
-<span class="normal"><a href="#__codelineno-0-711">711</a></span>
-<span class="normal"><a href="#__codelineno-0-712">712</a></span>
-<span class="normal"><a href="#__codelineno-0-713">713</a></span>
-<span class="normal"><a href="#__codelineno-0-714">714</a></span>
-<span class="normal"><a href="#__codelineno-0-715">715</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-709">709</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation</span><span class="p">(</span>
 <a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="n">eval_config_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">MlSpacesExpConfig</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
 <a id="__codelineno-0-442" name="__codelineno-0-442"></a>    <span class="n">benchmark_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
 <a id="__codelineno-0-443" name="__codelineno-0-443"></a>    <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -32287,53 +32281,47 @@ print(f"Success rate: {results.success_rate:.1%}")</p>
 <a id="__codelineno-0-666" name="__codelineno-0-666"></a>            <span class="p">}</span>
 <a id="__codelineno-0-667" name="__codelineno-0-667"></a>        <span class="p">)</span>
 <a id="__codelineno-0-668" name="__codelineno-0-668"></a>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="c1"># Create or use provided policy</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="k">if</span> <span class="n">preloaded_policy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>        <span class="n">policy</span> <span class="o">=</span> <span class="n">preloaded_policy</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>        <span class="n">policy</span> <span class="o">=</span> <span class="n">exp_config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">policy_cls</span><span class="p">(</span><span class="n">exp_config</span><span class="p">,</span> <span class="n">exp_config</span><span class="o">.</span><span class="n">task_type</span><span class="p">)</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="c1"># # Run evaluation</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="c1"># runner = JsonEvalRunner(exp_config, benchmark_dir)</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>    <span class="c1"># success_count, total_count = runner.run(preloaded_policy=policy)</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="c1"># # Run evaluation</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="c1"># runner = JsonEvalRunner(exp_config, benchmark_dir)</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>    <span class="c1"># success_count, total_count = runner.run(preloaded_policy=policy)</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="c1"># Run evaluation</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="c1"># Only pass preloaded policy for single-worker mode. With multiple workers,</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="c1"># each worker must create its own connection (WebSocket/msgpack can&#39;t be pickled).</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="n">runner</span> <span class="o">=</span> <span class="n">JsonEvalRunner</span><span class="p">(</span><span class="n">exp_config</span><span class="p">,</span> <span class="n">benchmark_dir</span><span class="p">)</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>    <span class="n">success_count</span><span class="p">,</span> <span class="n">total_count</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">preloaded_policy</span><span class="o">=</span><span class="n">preloaded_policy</span><span class="p">)</span>
 <a id="__codelineno-0-678" name="__codelineno-0-678"></a>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a>    <span class="c1"># Run evaluation</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="c1"># Only pass preloaded policy for single-worker mode. With multiple workers,</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a>    <span class="c1"># each worker must create its own connection (WebSocket/msgpack can&#39;t be pickled).</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>    <span class="n">runner</span> <span class="o">=</span> <span class="n">JsonEvalRunner</span><span class="p">(</span><span class="n">exp_config</span><span class="p">,</span> <span class="n">benchmark_dir</span><span class="p">)</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="n">success_count</span><span class="p">,</span> <span class="n">total_count</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">preloaded_policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a>    <span class="c1"># Collect per-episode results</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>    <span class="n">episode_results</span> <span class="o">=</span> <span class="n">collect_episode_results</span><span class="p">(</span><span class="n">resolved_output_dir</span><span class="p">)</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>    <span class="c1"># Log to wandb if enabled</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="k">if</span> <span class="n">use_wandb</span><span class="p">:</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">wandb</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a>        <span class="n">camera_names</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exp_config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;camera_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>        <span class="k">if</span> <span class="n">camera_names</span><span class="p">:</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a>            <span class="n">success_status</span> <span class="o">=</span> <span class="n">build_success_status_map</span><span class="p">(</span><span class="n">episode_results</span><span class="p">)</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="n">compose_episode_videos</span><span class="p">(</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a>                <span class="n">eval_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a>                <span class="n">camera_names</span><span class="o">=</span><span class="n">camera_names</span><span class="p">,</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a>                <span class="n">success_status</span><span class="o">=</span><span class="n">success_status</span><span class="p">,</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>            <span class="p">)</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>    <span class="c1"># Collect per-episode results</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="n">episode_results</span> <span class="o">=</span> <span class="n">collect_episode_results</span><span class="p">(</span><span class="n">resolved_output_dir</span><span class="p">)</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>    <span class="c1"># Log to wandb if enabled</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="k">if</span> <span class="n">use_wandb</span><span class="p">:</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">wandb</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a>        <span class="n">camera_names</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exp_config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;camera_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>        <span class="k">if</span> <span class="n">camera_names</span><span class="p">:</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>            <span class="n">success_status</span> <span class="o">=</span> <span class="n">build_success_status_map</span><span class="p">(</span><span class="n">episode_results</span><span class="p">)</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="n">compose_episode_videos</span><span class="p">(</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>                <span class="n">eval_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>                <span class="n">camera_names</span><span class="o">=</span><span class="n">camera_names</span><span class="p">,</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>                <span class="n">success_status</span><span class="o">=</span><span class="n">success_status</span><span class="p">,</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>            <span class="p">)</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>        <span class="n">log_eval_results_to_wandb</span><span class="p">(</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>            <span class="n">results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>            <span class="n">composed_videos</span><span class="o">=</span><span class="n">composed_videos</span><span class="p">,</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>        <span class="p">)</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>        <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
 <a id="__codelineno-0-702" name="__codelineno-0-702"></a>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>        <span class="n">log_eval_results_to_wandb</span><span class="p">(</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a>            <span class="n">results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>            <span class="n">composed_videos</span><span class="o">=</span><span class="n">composed_videos</span><span class="p">,</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="p">)</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>    <span class="k">return</span> <span class="n">EvaluationResults</span><span class="p">(</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="n">success_count</span><span class="o">=</span><span class="n">success_count</span><span class="p">,</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="n">total_count</span><span class="o">=</span><span class="n">total_count</span><span class="p">,</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>        <span class="n">episode_results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="n">exp_config</span><span class="o">=</span><span class="n">exp_config</span><span class="p">,</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>    <span class="p">)</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>    <span class="k">return</span> <span class="n">EvaluationResults</span><span class="p">(</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>        <span class="n">success_count</span><span class="o">=</span><span class="n">success_count</span><span class="p">,</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="n">total_count</span><span class="o">=</span><span class="n">total_count</span><span class="p">,</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="n">episode_results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="n">exp_config</span><span class="o">=</span><span class="n">exp_config</span><span class="p">,</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -68641,7 +68629,13 @@ task_horizon_sec from the benchmark.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/eval_main.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-718">718</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-712">712</a></span>
+<span class="normal"><a href="#__codelineno-0-713">713</a></span>
+<span class="normal"><a href="#__codelineno-0-714">714</a></span>
+<span class="normal"><a href="#__codelineno-0-715">715</a></span>
+<span class="normal"><a href="#__codelineno-0-716">716</a></span>
+<span class="normal"><a href="#__codelineno-0-717">717</a></span>
+<span class="normal"><a href="#__codelineno-0-718">718</a></span>
 <span class="normal"><a href="#__codelineno-0-719">719</a></span>
 <span class="normal"><a href="#__codelineno-0-720">720</a></span>
 <span class="normal"><a href="#__codelineno-0-721">721</a></span>
@@ -68678,56 +68672,50 @@ task_horizon_sec from the benchmark.</p>
 <span class="normal"><a href="#__codelineno-0-752">752</a></span>
 <span class="normal"><a href="#__codelineno-0-753">753</a></span>
 <span class="normal"><a href="#__codelineno-0-754">754</a></span>
-<span class="normal"><a href="#__codelineno-0-755">755</a></span>
-<span class="normal"><a href="#__codelineno-0-756">756</a></span>
-<span class="normal"><a href="#__codelineno-0-757">757</a></span>
-<span class="normal"><a href="#__codelineno-0-758">758</a></span>
-<span class="normal"><a href="#__codelineno-0-759">759</a></span>
-<span class="normal"><a href="#__codelineno-0-760">760</a></span>
-<span class="normal"><a href="#__codelineno-0-761">761</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Command-line entry point for evaluation.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>    <span class="n">args</span> <span class="o">=</span> <span class="n">get_args</span><span class="p">()</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a>    <span class="c1"># Build eval camera config from CLI flags (None if --use_eval_cameras not passed)</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.utils.eval_camera_randomization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a>        <span class="n">build_eval_camera_config_from_args</span><span class="p">,</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a>    <span class="p">)</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>    <span class="n">eval_camera_config</span> <span class="o">=</span> <span class="n">build_eval_camera_config_from_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a>    <span class="c1"># Load benchmark to log summary info</span>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a>    <span class="n">benchmark_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">benchmark_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a>    <span class="n">episodes</span> <span class="o">=</span> <span class="n">load_all_episodes</span><span class="p">(</span><span class="n">benchmark_dir</span><span class="p">)</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a>    <span class="k">if</span> <span class="n">episodes</span><span class="p">:</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded benchmark: </span><span class="si">{</span><span class="n">benchmark_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Houses: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ep</span><span class="o">.</span><span class="n">house_index</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">ep</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">episodes</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total episodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">episodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  First episode task_cls: </span><span class="si">{</span><span class="n">episodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_task_cls</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a>
-<a id="__codelineno-0-738" name="__codelineno-0-738"></a>    <span class="c1"># Run evaluation using the programmatic API</span>
-<a id="__codelineno-0-739" name="__codelineno-0-739"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">run_evaluation</span><span class="p">(</span>
-<a id="__codelineno-0-740" name="__codelineno-0-740"></a>        <span class="n">eval_config_cls</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">exp_config_cls</span><span class="p">,</span>
-<a id="__codelineno-0-741" name="__codelineno-0-741"></a>        <span class="n">benchmark_dir</span><span class="o">=</span><span class="n">benchmark_dir</span><span class="p">,</span>
-<a id="__codelineno-0-742" name="__codelineno-0-742"></a>        <span class="n">checkpoint_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">checkpoint_path</span><span class="p">,</span>
-<a id="__codelineno-0-743" name="__codelineno-0-743"></a>        <span class="n">task_horizon_steps</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">task_horizon_steps</span><span class="p">,</span>
-<a id="__codelineno-0-744" name="__codelineno-0-744"></a>        <span class="n">task_horizon_sec</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">task_horizon_sec</span><span class="p">,</span>
-<a id="__codelineno-0-745" name="__codelineno-0-745"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-<a id="__codelineno-0-746" name="__codelineno-0-746"></a>        <span class="n">num_workers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">num_workers</span><span class="p">,</span>
-<a id="__codelineno-0-747" name="__codelineno-0-747"></a>        <span class="n">use_wandb</span><span class="o">=</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_wandb</span><span class="p">,</span>
-<a id="__codelineno-0-748" name="__codelineno-0-748"></a>        <span class="n">wandb_project</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">wandb_project</span><span class="p">,</span>
-<a id="__codelineno-0-749" name="__codelineno-0-749"></a>        <span class="n">max_episodes</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_episodes</span><span class="p">,</span>
-<a id="__codelineno-0-750" name="__codelineno-0-750"></a>        <span class="n">environment_light_intensity</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">environment_light_intensity</span><span class="p">,</span>
-<a id="__codelineno-0-751" name="__codelineno-0-751"></a>        <span class="n">camera_config_override</span><span class="o">=</span><span class="n">eval_camera_config</span><span class="p">,</span>
-<a id="__codelineno-0-752" name="__codelineno-0-752"></a>        <span class="n">camera_names_override</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">camera_names</span><span class="p">,</span>
-<a id="__codelineno-0-753" name="__codelineno-0-753"></a>        <span class="n">episode_idx</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">idx</span><span class="p">,</span>
-<a id="__codelineno-0-754" name="__codelineno-0-754"></a>        <span class="n">add_custom_object</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">add_custom_object</span><span class="p">,</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a>        <span class="n">custom_object_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">custom_object_path</span><span class="p">,</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a>        <span class="n">custom_object_name</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">custom_object_name</span><span class="p">,</span>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a>    <span class="p">)</span>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Evaluation complete: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">success_count</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">total_count</span><span class="si">}</span><span class="s2"> successful&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-760" name="__codelineno-0-760"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Success rate: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">success_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-761" name="__codelineno-0-761"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output directory: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-755">755</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Command-line entry point for evaluation.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>    <span class="n">args</span> <span class="o">=</span> <span class="n">get_args</span><span class="p">()</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>    <span class="c1"># Build eval camera config from CLI flags (None if --use_eval_cameras not passed)</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.utils.eval_camera_randomization_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>        <span class="n">build_eval_camera_config_from_args</span><span class="p">,</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>    <span class="p">)</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="n">eval_camera_config</span> <span class="o">=</span> <span class="n">build_eval_camera_config_from_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="c1"># Load benchmark to log summary info</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a>    <span class="n">benchmark_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">benchmark_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>    <span class="n">episodes</span> <span class="o">=</span> <span class="n">load_all_episodes</span><span class="p">(</span><span class="n">benchmark_dir</span><span class="p">)</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a>    <span class="k">if</span> <span class="n">episodes</span><span class="p">:</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded benchmark: </span><span class="si">{</span><span class="n">benchmark_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Houses: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ep</span><span class="o">.</span><span class="n">house_index</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">ep</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">episodes</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total episodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">episodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  First episode task_cls: </span><span class="si">{</span><span class="n">episodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_task_cls</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a>    <span class="c1"># Run evaluation using the programmatic API</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">run_evaluation</span><span class="p">(</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a>        <span class="n">eval_config_cls</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">exp_config_cls</span><span class="p">,</span>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a>        <span class="n">benchmark_dir</span><span class="o">=</span><span class="n">benchmark_dir</span><span class="p">,</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a>        <span class="n">checkpoint_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">checkpoint_path</span><span class="p">,</span>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a>        <span class="n">task_horizon_steps</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">task_horizon_steps</span><span class="p">,</span>
+<a id="__codelineno-0-738" name="__codelineno-0-738"></a>        <span class="n">task_horizon_sec</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">task_horizon_sec</span><span class="p">,</span>
+<a id="__codelineno-0-739" name="__codelineno-0-739"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+<a id="__codelineno-0-740" name="__codelineno-0-740"></a>        <span class="n">num_workers</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">num_workers</span><span class="p">,</span>
+<a id="__codelineno-0-741" name="__codelineno-0-741"></a>        <span class="n">use_wandb</span><span class="o">=</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_wandb</span><span class="p">,</span>
+<a id="__codelineno-0-742" name="__codelineno-0-742"></a>        <span class="n">wandb_project</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">wandb_project</span><span class="p">,</span>
+<a id="__codelineno-0-743" name="__codelineno-0-743"></a>        <span class="n">max_episodes</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_episodes</span><span class="p">,</span>
+<a id="__codelineno-0-744" name="__codelineno-0-744"></a>        <span class="n">environment_light_intensity</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">environment_light_intensity</span><span class="p">,</span>
+<a id="__codelineno-0-745" name="__codelineno-0-745"></a>        <span class="n">camera_config_override</span><span class="o">=</span><span class="n">eval_camera_config</span><span class="p">,</span>
+<a id="__codelineno-0-746" name="__codelineno-0-746"></a>        <span class="n">camera_names_override</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">camera_names</span><span class="p">,</span>
+<a id="__codelineno-0-747" name="__codelineno-0-747"></a>        <span class="n">episode_idx</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">idx</span><span class="p">,</span>
+<a id="__codelineno-0-748" name="__codelineno-0-748"></a>        <span class="n">add_custom_object</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">add_custom_object</span><span class="p">,</span>
+<a id="__codelineno-0-749" name="__codelineno-0-749"></a>        <span class="n">custom_object_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">custom_object_path</span><span class="p">,</span>
+<a id="__codelineno-0-750" name="__codelineno-0-750"></a>        <span class="n">custom_object_name</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">custom_object_name</span><span class="p">,</span>
+<a id="__codelineno-0-751" name="__codelineno-0-751"></a>    <span class="p">)</span>
+<a id="__codelineno-0-752" name="__codelineno-0-752"></a>
+<a id="__codelineno-0-753" name="__codelineno-0-753"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Evaluation complete: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">success_count</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">total_count</span><span class="si">}</span><span class="s2"> successful&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-754" name="__codelineno-0-754"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Success rate: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">success_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-755" name="__codelineno-0-755"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output directory: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -69394,13 +69382,7 @@ print(f"Success rate: {results.success_rate:.1%}")</p>
 <span class="normal"><a href="#__codelineno-0-706">706</a></span>
 <span class="normal"><a href="#__codelineno-0-707">707</a></span>
 <span class="normal"><a href="#__codelineno-0-708">708</a></span>
-<span class="normal"><a href="#__codelineno-0-709">709</a></span>
-<span class="normal"><a href="#__codelineno-0-710">710</a></span>
-<span class="normal"><a href="#__codelineno-0-711">711</a></span>
-<span class="normal"><a href="#__codelineno-0-712">712</a></span>
-<span class="normal"><a href="#__codelineno-0-713">713</a></span>
-<span class="normal"><a href="#__codelineno-0-714">714</a></span>
-<span class="normal"><a href="#__codelineno-0-715">715</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-709">709</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_evaluation</span><span class="p">(</span>
 <a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="n">eval_config_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">MlSpacesExpConfig</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
 <a id="__codelineno-0-442" name="__codelineno-0-442"></a>    <span class="n">benchmark_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
 <a id="__codelineno-0-443" name="__codelineno-0-443"></a>    <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -69629,53 +69611,47 @@ print(f"Success rate: {results.success_rate:.1%}")</p>
 <a id="__codelineno-0-666" name="__codelineno-0-666"></a>            <span class="p">}</span>
 <a id="__codelineno-0-667" name="__codelineno-0-667"></a>        <span class="p">)</span>
 <a id="__codelineno-0-668" name="__codelineno-0-668"></a>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="c1"># Create or use provided policy</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="k">if</span> <span class="n">preloaded_policy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>        <span class="n">policy</span> <span class="o">=</span> <span class="n">preloaded_policy</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>        <span class="n">policy</span> <span class="o">=</span> <span class="n">exp_config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">policy_cls</span><span class="p">(</span><span class="n">exp_config</span><span class="p">,</span> <span class="n">exp_config</span><span class="o">.</span><span class="n">task_type</span><span class="p">)</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="c1"># # Run evaluation</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="c1"># runner = JsonEvalRunner(exp_config, benchmark_dir)</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>    <span class="c1"># success_count, total_count = runner.run(preloaded_policy=policy)</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="c1"># # Run evaluation</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="c1"># runner = JsonEvalRunner(exp_config, benchmark_dir)</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>    <span class="c1"># success_count, total_count = runner.run(preloaded_policy=policy)</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="c1"># Run evaluation</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="c1"># Only pass preloaded policy for single-worker mode. With multiple workers,</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="c1"># each worker must create its own connection (WebSocket/msgpack can&#39;t be pickled).</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="n">runner</span> <span class="o">=</span> <span class="n">JsonEvalRunner</span><span class="p">(</span><span class="n">exp_config</span><span class="p">,</span> <span class="n">benchmark_dir</span><span class="p">)</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>    <span class="n">success_count</span><span class="p">,</span> <span class="n">total_count</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">preloaded_policy</span><span class="o">=</span><span class="n">preloaded_policy</span><span class="p">)</span>
 <a id="__codelineno-0-678" name="__codelineno-0-678"></a>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a>    <span class="c1"># Run evaluation</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="c1"># Only pass preloaded policy for single-worker mode. With multiple workers,</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a>    <span class="c1"># each worker must create its own connection (WebSocket/msgpack can&#39;t be pickled).</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>    <span class="n">runner</span> <span class="o">=</span> <span class="n">JsonEvalRunner</span><span class="p">(</span><span class="n">exp_config</span><span class="p">,</span> <span class="n">benchmark_dir</span><span class="p">)</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="n">success_count</span><span class="p">,</span> <span class="n">total_count</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">preloaded_policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a>    <span class="c1"># Collect per-episode results</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>    <span class="n">episode_results</span> <span class="o">=</span> <span class="n">collect_episode_results</span><span class="p">(</span><span class="n">resolved_output_dir</span><span class="p">)</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>    <span class="c1"># Log to wandb if enabled</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="k">if</span> <span class="n">use_wandb</span><span class="p">:</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">wandb</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a>        <span class="n">camera_names</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exp_config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;camera_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>        <span class="k">if</span> <span class="n">camera_names</span><span class="p">:</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a>            <span class="n">success_status</span> <span class="o">=</span> <span class="n">build_success_status_map</span><span class="p">(</span><span class="n">episode_results</span><span class="p">)</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="n">compose_episode_videos</span><span class="p">(</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a>                <span class="n">eval_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a>                <span class="n">camera_names</span><span class="o">=</span><span class="n">camera_names</span><span class="p">,</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a>                <span class="n">success_status</span><span class="o">=</span><span class="n">success_status</span><span class="p">,</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>            <span class="p">)</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>    <span class="c1"># Collect per-episode results</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="n">episode_results</span> <span class="o">=</span> <span class="n">collect_episode_results</span><span class="p">(</span><span class="n">resolved_output_dir</span><span class="p">)</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>    <span class="c1"># Log to wandb if enabled</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="k">if</span> <span class="n">use_wandb</span><span class="p">:</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">wandb</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a>        <span class="n">camera_names</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exp_config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;camera_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>        <span class="k">if</span> <span class="n">camera_names</span><span class="p">:</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>            <span class="n">success_status</span> <span class="o">=</span> <span class="n">build_success_status_map</span><span class="p">(</span><span class="n">episode_results</span><span class="p">)</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="n">compose_episode_videos</span><span class="p">(</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>                <span class="n">eval_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>                <span class="n">camera_names</span><span class="o">=</span><span class="n">camera_names</span><span class="p">,</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>                <span class="n">success_status</span><span class="o">=</span><span class="n">success_status</span><span class="p">,</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>            <span class="p">)</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>            <span class="n">composed_videos</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>        <span class="n">log_eval_results_to_wandb</span><span class="p">(</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>            <span class="n">results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>            <span class="n">composed_videos</span><span class="o">=</span><span class="n">composed_videos</span><span class="p">,</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>        <span class="p">)</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>        <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
 <a id="__codelineno-0-702" name="__codelineno-0-702"></a>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>        <span class="n">log_eval_results_to_wandb</span><span class="p">(</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a>            <span class="n">results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>            <span class="n">composed_videos</span><span class="o">=</span><span class="n">composed_videos</span><span class="p">,</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="p">)</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>    <span class="k">return</span> <span class="n">EvaluationResults</span><span class="p">(</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="n">success_count</span><span class="o">=</span><span class="n">success_count</span><span class="p">,</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="n">total_count</span><span class="o">=</span><span class="n">total_count</span><span class="p">,</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>        <span class="n">episode_results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="n">exp_config</span><span class="o">=</span><span class="n">exp_config</span><span class="p">,</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>    <span class="p">)</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>    <span class="k">return</span> <span class="n">EvaluationResults</span><span class="p">(</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>        <span class="n">success_count</span><span class="o">=</span><span class="n">success_count</span><span class="p">,</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="n">total_count</span><span class="o">=</span><span class="n">total_count</span><span class="p">,</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">resolved_output_dir</span><span class="p">,</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="n">episode_results</span><span class="o">=</span><span class="n">episode_results</span><span class="p">,</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="n">exp_config</span><span class="o">=</span><span class="n">exp_config</span><span class="p">,</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
