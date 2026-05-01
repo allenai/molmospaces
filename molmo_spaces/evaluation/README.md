@@ -8,9 +8,9 @@ Run learned policies on fixed, reproducible benchmarks.
 This README focuses on benchmark installation and running.
 
 ### Related documentation
-- Leaderboard documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g/export?format=pdf). 
+- Leaderboard documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g). 
 - Submitting results, see the GitHub issue in the repository [here](https://github.com/allenai/molmospaces/issues/8).
-- Theoretical notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts/export?format=pdf)
+- Theoretical notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts)
 
 ## Concepts
 
