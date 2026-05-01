@@ -11,6 +11,7 @@ from typing import cast
 
 import mujoco as mj
 import numpy as np
+import stl
 import tinyobjloader
 import usdex.core
 from pxr import Gf, Usd, UsdGeom, Vt
@@ -67,6 +68,11 @@ def convert_mesh(
 
     mesh_prim: UsdGeom.Mesh | None = None
     if mesh.content_type == "model/stl" or mesh_file.suffix.lower() == ".stl":
+        mesh_prim = create_mesh_stl(
+            prim,
+            mesh_file,
+            cast(np.ndarray, mesh.scale) if normalize_mesh_scale else np.ones(3, dtype=np.float64),
+        )
         pass
     elif mesh.content_type == "model/obj" or mesh_file.suffix.lower() == ".obj":
         mesh_prim = create_mesh_obj(
@@ -87,6 +93,14 @@ def convert_mesh(
         usdex.core.setLocalTransform(mesh_prim.GetPrim(), mesh_tf)
 
     return mesh_prim
+
+
+def create_mesh_stl(prim: Usd.Prim, filepath: Path, scale: np.ndarray) -> UsdGeom.Mesh:
+    stl_mesh = stl.mesh.Mesh.from_file(filepath.as_posix())
+
+    breakpoint()
+
+    pass
 
 
 def create_mesh_obj(prim: Usd.Prim, filepath: Path, scale: np.ndarray) -> UsdGeom.Mesh:
