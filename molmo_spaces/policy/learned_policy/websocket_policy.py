@@ -24,8 +24,7 @@ class WebsocketPolicy(InferencePolicy):
         port: int | None = None,
         connection_timeout: float | None = None,
     ):
-        task_type = getattr(config, "task_type", "pick_and_place")
-        super().__init__(config, task_type)
+        super().__init__(config)
         self.model_name = model_name
         self._last_prompt: str | None = None
 

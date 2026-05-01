@@ -30,10 +30,8 @@ class CAP_Policy(InferencePolicy):
     def __init__(
         self,
         exp_config: MlSpacesExpConfig,
-        task_type: str,
     ) -> None:
-        super().__init__(exp_config, exp_config.task_type)
-        self.task_type = task_type
+        super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
         self.grasping_type = exp_config.policy_config.grasping_type
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
@@ -97,7 +95,7 @@ class CAP_Policy(InferencePolicy):
                     object_name=self.task.config.task_config.referral_expressions[
                         "pickup_obj_name"
                     ],
-                    task=self.task_type,
+                    task=self.config.task_type,
                 )
                 if self.use_exo:
                     K = np.array(obs["sensor_param_exo_camera_1"]["intrinsic_cv"])

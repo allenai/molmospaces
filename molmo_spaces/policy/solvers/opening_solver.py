@@ -39,13 +39,8 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
     Inherits common motion planning functionality from CuroboPlannerPolicy.
     """
 
-    def __init__(
-        self,
-        config: MlSpacesExpConfig,
-        task: DoorOpeningTask | None = None,
-    ) -> None:
+    def __init__(self, config: MlSpacesExpConfig, task: DoorOpeningTask | None = None) -> None:
         super().__init__(config, task)
-        self.task = task  # Added to help IDE typing
 
         # This policy uses both planners (unlike pick-and-place which lazy-loads one)
         self.left_motion_planner = CuroboPlanner(

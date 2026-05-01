@@ -67,7 +67,7 @@ def generate_test_data_for_config(config_orig, config_name: str):
     print("\n=== Running policy and capturing observations after steps ===")
     policy_config = config.policy_config
     policy_cls = policy_config.policy_cls
-    policy = policy_cls(config, task)  # Policy takes (config, task)
+    policy = policy_cls(config, task)
     policy.reset()
 
     # Run policy for 10 steps using shared utility and capture observations

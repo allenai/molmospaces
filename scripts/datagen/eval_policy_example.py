@@ -64,7 +64,8 @@ def main(args: argparse.ArgumentParser) -> None:
         / datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     )
     # exp_config.policy_config = PiPolicyConfig()
-    # policy = exp_config.policy_config.policy_cls(exp_config)
+    # policy constructor takes (config, task)
+    # policy = exp_config.policy_config.policy_cls(exp_config, None)
     # policy.prepare_model()
     policy = None
     exp_config.save_config()

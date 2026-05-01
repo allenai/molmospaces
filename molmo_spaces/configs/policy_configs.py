@@ -29,7 +29,9 @@ except (ImportError, RuntimeError):
 class BasePolicyConfig(Config):
     """Base configuration for policies."""
 
-    policy_cls: type[BasePolicy]
+    policy_cls: type[
+        BasePolicy
+    ]  # unless pre-instantiated before eval/datagen, should take (config, task) in constructor
     policy_type: str  # Type of the policy, e.g., "planner", "teleop", "learned", etc.
 
 

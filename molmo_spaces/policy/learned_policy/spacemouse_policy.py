@@ -143,9 +143,8 @@ class SpaceMouse_Policy(InferencePolicy):
     def __init__(
         self,
         exp_config: MlSpacesExpConfig,
-        task_type: str,
     ) -> None:
-        super().__init__(exp_config, task_type)
+        super().__init__(exp_config)
         self.robot_type = exp_config.robot_config.name
         self.pos_sensitivity = exp_config.policy_config.pos_sensitivity
         self.rot_sensitivity = exp_config.policy_config.rot_sensitivity
