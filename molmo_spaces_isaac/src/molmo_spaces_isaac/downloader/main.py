@@ -47,6 +47,18 @@ SOURCE_TO_VERSION = {
             "holodeck-objaverse-val": "20260128",
         },
     },
+    "robots": {
+        "mjcf": {
+            "rby1": "20251224",
+            "rby1m": "20251224",
+            "franka_droid": "20260127",
+            "franka_cap": "20260213",
+            "floating_rum": "20251110",
+            "floating_robotiq": "20260208_retry4",
+            "franka_fr3": "20260303",
+            "i2rt_yam": "20260223",
+        }
+    },
 }
 
 TYPE_TO_PREFIX: dict[str, str] = {
@@ -78,6 +90,8 @@ class DownloadArgs:
         ]
     ] = field(default_factory=list)
 
+    robots: list[str] = field(default_factory=list)
+
     # Path to extract (versioned) downloaded data
     cache_dir: Path = DEFAULT_CACHE_DIR
 
@@ -100,17 +114,19 @@ def main() -> int:
     logger.info(f"Symlinking from directory '{args.install_dir}'")
     logger.info(f"Downloading '{args.type}' version of the assets")
 
-    sources_to_version = dict(objects=dict(), scenes=dict())
+    sources_to_version = dict(objects=dict(), scenes=dict(), robots=dict())
     sources_to_version["objects"]["thor"] = SOURCE_TO_VERSION["objects"][args.type]["thor"]
     for dataset_id in args.assets:
-        sources_to_version["objects"][dataset_id] = SOURCE_TO_VERSION["objects"][args.type][
-            dataset_id
-        ]
+        if source := SOURCE_TO_VERSION["objects"][args.type].get(dataset_id):
+            sources_to_version["objects"][dataset_id] = source
 
     for dataset_id in args.scenes:
-        sources_to_version["scenes"][dataset_id] = SOURCE_TO_VERSION["scenes"][args.type][
-            dataset_id
-        ]
+        if source := SOURCE_TO_VERSION["scenes"][args.type].get(dataset_id):
+            sources_to_version["scenes"][dataset_id] = source
+
+    for dataset_id in args.robots:
+        if source := SOURCE_TO_VERSION["robots"].get(args.type, {}).get(dataset_id):
+            sources_to_version["robots"][dataset_id] = source
 
     manager = ResourceManager(
         remote_storage=R2RemoteStorage(f"{TYPE_TO_PREFIX[args.type]}-thor-resources")
@@ -128,6 +144,7 @@ def main() -> int:
     manager.setup()
     enforce_scenes = len(args.scenes) > 0
     enforce_objects = len(args.assets) > 1
+    enforce_robots = len(args.robots) > 0
 
     if enforce_scenes:
         logger.info("Installing scenes...")
@@ -136,6 +153,10 @@ def main() -> int:
     if enforce_objects:
         logger.info("Installing objects...")
         manager.install_all_for_data_type("objects", skip_linking=False)
+
+    if enforce_robots:
+        logger.info("Installing robots...")
+        manager.install_all_for_data_type("robots", skip_linking=False)
 
     return 0
 

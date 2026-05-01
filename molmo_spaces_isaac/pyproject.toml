@@ -40,6 +40,7 @@ override-dependencies = [
     "pywin32==306; sys_platform == 'win32'",
     "torch>=2.9.0", # Change here for different CUDA version
     "torchvision>=0.24.0", # Change here for different CUDA version
+    "flatdict==4.0.0",
 ]
 
 [tool.uv.sources]
