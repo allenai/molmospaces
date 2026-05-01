@@ -666,12 +666,6 @@ def run_evaluation(
             }
         )
 
-    # Create or use provided policy
-    if preloaded_policy is not None:
-        policy = preloaded_policy
-    else:
-        policy = exp_config.policy_config.policy_cls(exp_config, exp_config.task_type)
-
     # # Run evaluation
     # runner = JsonEvalRunner(exp_config, benchmark_dir)
     # success_count, total_count = runner.run(preloaded_policy=policy)
@@ -680,7 +674,7 @@ def run_evaluation(
     # Only pass preloaded policy for single-worker mode. With multiple workers,
     # each worker must create its own connection (WebSocket/msgpack can't be pickled).
     runner = JsonEvalRunner(exp_config, benchmark_dir)
-    success_count, total_count = runner.run(preloaded_policy=policy)
+    success_count, total_count = runner.run(preloaded_policy=preloaded_policy)
 
     # Collect per-episode results
     episode_results = collect_episode_results(resolved_output_dir)

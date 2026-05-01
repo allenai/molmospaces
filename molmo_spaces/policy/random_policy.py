@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from molmo_spaces.policy.base_policy import BasePolicy
-from molmo_spaces.tasks.task import BaseMujocoTask
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -16,10 +15,9 @@ class RandomPolicy(BasePolicy):
     def type(self) -> str:
         return "random"
 
-    def __init__(self, config: "MlSpacesExpConfig", task: BaseMujocoTask | None = None) -> None:
+    def __init__(self, config: "MlSpacesExpConfig") -> None:
         raise NotImplementedError  # TODO(snehal): please fix
         self.config = config
-        self.task = task
         self.action_space = action_space
 
     def reset(self) -> None:

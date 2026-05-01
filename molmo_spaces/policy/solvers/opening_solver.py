@@ -12,7 +12,7 @@ from scipy.spatial.transform import Rotation as R
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.planner.curobo_planner import CuroboPlanner
 from molmo_spaces.policy.solvers.curobo_planner_policy import CuroboPlannerPolicy
-from molmo_spaces.tasks.opening_tasks import DoorOpeningTask
+from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.curobo_utils import MotionGenStatus
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms, geom_aabb
 from molmo_spaces.utils.pose import pose_mat_to_pos_quat
@@ -39,13 +39,8 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
     Inherits common motion planning functionality from CuroboPlannerPolicy.
     """
 
-    def __init__(
-        self,
-        config: MlSpacesExpConfig,
-        task: DoorOpeningTask | None = None,
-    ) -> None:
+    def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         super().__init__(config, task)
-        self.task = task  # Added to help IDE typing
 
         # This policy uses both planners (unlike pick-and-place which lazy-loads one)
         self.left_motion_planner = CuroboPlanner(

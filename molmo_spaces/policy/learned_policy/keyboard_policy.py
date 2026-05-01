@@ -16,9 +16,8 @@ class Keyboard_Policy(InferencePolicy):
     def __init__(
         self,
         exp_config: MlSpacesExpConfig,
-        task_type: str,
     ) -> None:
-        super().__init__(exp_config, task_type)
+        super().__init__(exp_config)
         from pynput import keyboard
 
         self.robot_type = exp_config.robot_config.name

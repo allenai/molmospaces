@@ -48,7 +48,7 @@ Some TODOs:
 
 
 class AStarPlannerPolicy(PlannerPolicy):
-    def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask | None = None) -> None:
+    def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         super().__init__(config, task)
 
         self._target_pos_quat = None
