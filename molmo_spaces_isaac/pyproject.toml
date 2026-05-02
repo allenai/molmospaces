@@ -16,6 +16,7 @@ dependencies = [
     "msgspec",
     "lmdb~=1.7.5",
     "zstandard~=0.25.0",
+    "molmospaces-resources==0.0.1b4",
 ]
 
 [build-system]

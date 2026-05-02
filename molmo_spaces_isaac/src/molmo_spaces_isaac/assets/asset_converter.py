@@ -151,8 +151,8 @@ def convert(model_path: Path) -> ConversionResult:  # noqa: PLR0915
     metadata: AssetGenMetadata | None = None
 
     is_articulated = False
-    try:
-        # if True:
+    # try:
+    if True:
         spec = mj.MjSpec.from_file(model_path.as_posix())
 
         modelname = spec.modelname
@@ -249,10 +249,10 @@ def convert(model_path: Path) -> ConversionResult:  # noqa: PLR0915
             if (bbox_size := compute_bbox_size(root_body_prim)) is not None:
                 metadata.bbox_size = bbox_size.tolist()
 
-    except Exception as e:
-        success = False
-        error_msg = f"Couldn't convert mjcf file '{model_path.stem}', error: {e}"
-        print(f"[ERROR]: {error_msg}")
+    # except Exception as e:
+    #     success = False
+    #     error_msg = f"Couldn't convert mjcf file '{model_path.stem}', error: {e}"
+    #     print(f"[ERROR]: {error_msg}")
 
     return ConversionResult(
         success=success,

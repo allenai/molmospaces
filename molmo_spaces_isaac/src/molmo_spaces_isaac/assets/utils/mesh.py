@@ -41,13 +41,16 @@ def convert_meshes(
     data.references[Tokens.GEOMETRY] = {}
 
     geo_scope = data.libraries[Tokens.GEOMETRY].GetDefaultPrim()
-    mesh_names = [f"{prefix}{mesh.name}" for mesh in data.spec.meshes]
+    mesh_names = [
+        f"{prefix}{mesh.name}" if mesh.name != "" else Path(mesh.file).stem
+        for mesh in data.spec.meshes
+    ]
     safe_names = data.name_cache.getPrimNames(geo_scope, mesh_names)
 
-    for mesh, safe_name in zip(data.spec.meshes, safe_names):
+    for mesh, mesh_name, safe_name in zip(data.spec.meshes, mesh_names, safe_names):
         assert isinstance(mesh, mj.MjsMesh)
         mesh_prim = usdex.core.defineXform(geo_scope, safe_name).GetPrim()
-        data.references[Tokens.GEOMETRY][mesh.name] = mesh_prim
+        data.references[Tokens.GEOMETRY][mesh_name] = mesh_prim
         convert_mesh(mesh_prim, mesh, data.spec, normalize_mesh_scale)
 
     usdex.core.saveStage(
@@ -73,7 +76,6 @@ def convert_mesh(
             mesh_file,
             cast(np.ndarray, mesh.scale) if normalize_mesh_scale else np.ones(3, dtype=np.float64),
         )
-        pass
     elif mesh.content_type == "model/obj" or mesh_file.suffix.lower() == ".obj":
         mesh_prim = create_mesh_obj(
             prim,
@@ -98,9 +100,33 @@ def convert_mesh(
 def create_mesh_stl(prim: Usd.Prim, filepath: Path, scale: np.ndarray) -> UsdGeom.Mesh:
     stl_mesh = stl.mesh.Mesh.from_file(filepath.as_posix())
 
-    breakpoint()
+    num_faces = len(stl_mesh.points)
 
-    pass
+    points: list[Gf.Vec3f] = []
+    for i_face in range(num_faces):
+        points.extend(
+            (
+                Gf.Vec3f(*(scale * stl_mesh.v0[i_face])),
+                Gf.Vec3f(*(scale * stl_mesh.v1[i_face])),
+                Gf.Vec3f(*(scale * stl_mesh.v2[i_face])),
+            )
+        )
+
+    face_vertex_counts = Vt.IntArray([3 for _ in range(num_faces)])
+    face_vertex_indices = Vt.IntArray(range(3 * num_faces))
+
+    usd_mesh = usdex.core.definePolyMesh(
+        prim.GetParent(),
+        prim.GetName(),
+        faceVertexCounts=face_vertex_counts,
+        faceVertexIndices=face_vertex_indices,
+        points=Vt.Vec3fArray(points),
+    )
+
+    if usd_mesh is None:
+        raise RuntimeError(f"Couldn't convert obj mesh from '{filepath}'")
+
+    return usd_mesh
 
 
 def create_mesh_obj(prim: Usd.Prim, filepath: Path, scale: np.ndarray) -> UsdGeom.Mesh:
@@ -120,6 +146,8 @@ def create_mesh_obj(prim: Usd.Prim, filepath: Path, scale: np.ndarray) -> UsdGeo
     vertices = attrib.vertices
     face_vertex_counts = Vt.IntArray(obj_mesh.num_face_vertices)
     face_vertex_indices = Vt.IntArray(obj_mesh.vertex_indices())
+
+    # breakpoint()
 
     points = [
         Gf.Vec3f(scale[0] * vertices[i], scale[1] * vertices[i + 1], scale[2] * vertices[i + 2])

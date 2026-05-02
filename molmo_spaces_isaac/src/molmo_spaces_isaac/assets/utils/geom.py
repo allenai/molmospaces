@@ -19,6 +19,7 @@ STRUCTURAL_WALL_CLASS = "__STRUCTURAL_WALL_MJT__"
 MJ_VISUAL_CLASSES = {VISUAL_CLASS, "visual"}
 
 MASS_TOLERANCE = 1e-12
+DENSITY_TOLERANCE = 1e-8
 
 VISUAL_GROUPS: tuple[int, ...] = (0, 1, 2)
 
@@ -99,8 +100,8 @@ def apply_physics(
     if is_visual(geom):
         return
 
-    if not np.isnan(geom.mass) and geom.mass < MASS_TOLERANCE:
-        return
+    # if not np.isnan(geom.mass) and geom.mass < MASS_TOLERANCE:
+    #     return
 
     geom_over: Usd.Prim = data.content[Tokens.PHYSICS].OverridePrim(geom_prim.GetPrim().GetPath())
 
@@ -117,9 +118,9 @@ def apply_physics(
             geom_over.AddAppliedSchema("PhysxSDFMeshCollisionAPI")
 
     geom_mass_api = UsdPhysics.MassAPI.Apply(geom_over)
-    if not np.isnan(geom.mass):
+    if not np.isnan(geom.mass) and geom.mass >= MASS_TOLERANCE:
         geom_mass_api.CreateMassAttr().Set(geom.mass)
-    else:
+    elif geom.density >= DENSITY_TOLERANCE:
         geom_mass_api.CreateDensityAttr().Set(geom.density)
 
     # TODO(wilbert): set material properties like friction

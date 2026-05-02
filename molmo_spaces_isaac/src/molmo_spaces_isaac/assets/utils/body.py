@@ -28,6 +28,32 @@ def get_tf_from_body(body: mj.MjsBody, fix_rotation: bool = True) -> Gf.Transfor
     return Gf.Transform(translation=body.pos.tolist(), rotation=Gf.Rotation(to_usd_quat(body.quat)))
 
 
+def extract_inertia(fullinertia: np.ndarray) -> tuple[Gf.Quatf, Gf.Vec3f]:
+    mat = np.zeros((3, 3))
+    mat[0, 0] = fullinertia[0]
+    mat[1, 1] = fullinertia[1]
+    mat[2, 2] = fullinertia[2]
+    mat[0, 1] = fullinertia[3]
+    mat[1, 0] = fullinertia[3]
+    mat[0, 2] = fullinertia[4]
+    mat[2, 0] = fullinertia[4]
+    mat[1, 2] = fullinertia[5]
+    mat[2, 1] = fullinertia[5]
+
+    # mju_eig3 expects flattened column-major matrix
+    flat_mat = mat.flatten("F")
+
+    eigval = np.zeros(3)
+    eigvec = np.zeros(9)
+    quat = np.zeros(4)
+
+    # Call mju_eig3 to get principal axes and diagonal inertia
+    mj.mju_eig3(eigval, eigvec, quat, flat_mat)
+    diag_inertia = Gf.Vec3f(*eigval)
+
+    return to_usd_quat(quat), diag_inertia
+
+
 @dataclass
 class GeomCollapsedInfo:
     geom_spec: mj.MjsGeom
@@ -109,7 +135,7 @@ def convert_bodies_flatten(
     root_prim = convert_body_flatten(
         body=data.spec.worldbody,
         root=geo_scope,
-        parent_tf=Gf.Transform().SetIdentity(),
+        parent_tf=np.eye(4),
         data=data,
         articulated=articulated,
         prefix=prefix,
@@ -185,7 +211,7 @@ def convert_bodies_flatten(
 def convert_body_flatten(  # noqa: PLR0915
     body: mj.MjsBody,
     root: Usd.Prim,
-    parent_tf: Gf.Transform,
+    parent_tf: np.ndarray,
     data: BaseConversionData,
     articulated: bool,
     prefix: str = "",
@@ -202,16 +228,17 @@ def convert_body_flatten(  # noqa: PLR0915
         body_xform = usdex.core.defineXform(root, safe_name)
         body_prim = body_xform.GetPrim()
 
-        usd_pos = Gf.Vec3d(body.pos.tolist())
-        usd_rot = Gf.Rotation(to_usd_quat(body.quat))
-        usd_scale = Gf.Vec3d(1.0)
+        # if body.name == "fr3_link5":
+        #     breakpoint()
 
-        local_tf = Gf.Transform(translation=usd_pos, rotation=usd_rot, scale=usd_scale)
+        local_tf = np.eye(4)
+        local_tf[:3, :3] = R.from_quat(body.quat, scalar_first=True).as_matrix()
+        local_tf[:3, 3] = body.pos
 
-        final_tf: Gf.Transform = local_tf * parent_tf
+        final_tf = local_tf @ parent_tf
 
-        final_usd_pos = final_tf.GetTranslation()
-        final_usd_rot = Gf.Quatf(final_tf.GetRotation().GetQuat())
+        final_usd_pos = Gf.Vec3d(*final_tf[:3, 3])
+        final_usd_rot = to_usd_quat(R.from_matrix(final_tf[:3, :3]).as_quat(scalar_first=True))
 
         usdex.core.setLocalTransform(
             body_prim, translation=final_usd_pos, orientation=final_usd_rot
@@ -235,7 +262,19 @@ def convert_body_flatten(  # noqa: PLR0915
         if start_sleep:
             rb_api.GetStartsAsleepAttr().Set(True)
 
-        if len(body.geoms) == 0 or all(is_visual(geom) for geom in body.geoms):
+        if body.explicitinertial:
+            mass_api = UsdPhysics.MassAPI.Apply(body_over)
+            mass_api.CreateMassAttr().Set(body.mass)
+            mass_api.CreateCenterOfMassAttr().Set(Gf.Vec3f(*body.ipos))
+            if np.isnan(body.fullinertia[0]):
+                quat = to_usd_quat(body.iquat)
+                inertia = Gf.Vec3f(*body.inertia)
+            else:
+                quat, inertia = extract_inertia(body.fullinertia)
+            if inertia != Gf.Vec3f(0, 0, 0):
+                mass_api.CreatePrincipalAxesAttr().Set(quat)
+                mass_api.CreateDiagonalInertiaAttr().Set(inertia)
+        elif len(body.geoms) == 0 or all(is_visual(geom) for geom in body.geoms):
             mass_api = UsdPhysics.MassAPI.Apply(body_over)
             mass_api.CreateMassAttr().Set(1e-8)
 
@@ -246,7 +285,7 @@ def convert_body_flatten(  # noqa: PLR0915
         body_spec=body,
         body_name=body.name,
         body_safename=safe_name,
-        body_tf=final_tf,
+        body_tf=Gf.Transform(Gf.Matrix4d(final_tf)),
         body_prim=body_prim,
     )
 
