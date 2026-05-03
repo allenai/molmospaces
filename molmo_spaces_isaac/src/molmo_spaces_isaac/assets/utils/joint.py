@@ -61,11 +61,9 @@ def convert_joint_flatten(  # noqa: PLR0915
 
     safe_name = data.name_cache.getPrimName(body_0_prim, f"{prefix}{joint.name}")
     limits = get_limits(joint, data)
-    axis = Gf.Vec3f((-joint.axis).tolist())
+    axis = Gf.Vec3f(*joint.axis)
     frame = usdex.core.JointFrame(
-        usdex.core.JointFrame.Space.Body0,
-        Gf.Vec3d(joint.pos.astype(np.float64).tolist()),
-        Gf.Quatd.GetIdentity(),
+        usdex.core.JointFrame.Space.Body0, Gf.Vec3d(*joint.pos), Gf.Quatd.GetIdentity()
     )
 
     usd_joint: UsdPhysics.Joint | None = None

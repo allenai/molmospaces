@@ -6,7 +6,13 @@ import usdex.core
 from pxr import Gf, Usd, UsdPhysics
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces_isaac.assets.utils.data import BaseConversionData, BodyData, Tokens, to_usd_quat
+from molmo_spaces_isaac.assets.utils.data import (
+    BaseConversionData,
+    BodyData,
+    Tokens,
+    to_usd_quat,
+    to_usd_quatd,
+)
 from molmo_spaces_isaac.assets.utils.geom import convert_geom, is_visual
 from molmo_spaces_isaac.assets.utils.joint import convert_joint_flatten
 
@@ -14,18 +20,14 @@ FIX_ROTATION = R.from_rotvec([90, 0, 0], degrees=True)
 COLLAPSE_NON_ARTICULATED = True
 
 
-def get_fixed_quat(quat: np.ndarray) -> Gf.Quatf:
-    curr_rot = R.from_quat(quat, scalar_first=True)
-    new_quat = (FIX_ROTATION * curr_rot).as_quat(scalar_first=True)
-    return to_usd_quat(new_quat)
-
-
-def get_tf_from_body(body: mj.MjsBody, fix_rotation: bool = True) -> Gf.Transform:
+def get_tf_from_body(body: mj.MjsBody, fix_rotation: bool = True) -> np.ndarray:
+    tf = np.eye(4)
+    tf[:3, 3] = body.pos
     if fix_rotation:
-        return Gf.Transform(
-            translation=body.pos.tolist(), rotation=Gf.Rotation(get_fixed_quat(body.quat))
-        )
-    return Gf.Transform(translation=body.pos.tolist(), rotation=Gf.Rotation(to_usd_quat(body.quat)))
+        tf[:3, :3] = (FIX_ROTATION * R.from_quat(body.quat, scalar_first=True)).as_matrix()
+    else:
+        tf[:3, :3] = R.from_quat(body.quat, scalar_first=True).as_matrix()
+    return tf
 
 
 def extract_inertia(fullinertia: np.ndarray) -> tuple[Gf.Quatf, Gf.Vec3f]:
@@ -57,7 +59,7 @@ def extract_inertia(fullinertia: np.ndarray) -> tuple[Gf.Quatf, Gf.Vec3f]:
 @dataclass
 class GeomCollapsedInfo:
     geom_spec: mj.MjsGeom
-    local_tf: Gf.Transform
+    local_tf: np.ndarray
 
 
 def convert_bodies_flatten_collapsed(
@@ -74,9 +76,9 @@ def convert_bodies_flatten_collapsed(
 
     collapsed_geoms: list[GeomCollapsedInfo] = []
 
-    def collect_collapsed_geoms(body: mj.MjsBody, parent_tf: Gf.Transform) -> None:
+    def collect_collapsed_geoms(body: mj.MjsBody, parent_tf: np.ndarray) -> None:
         local_body_tf = get_tf_from_body(body, fix_rotation=False)
-        local_tf = parent_tf * local_body_tf
+        local_tf = parent_tf @ local_body_tf
         for geom in body.geoms:
             assert isinstance(geom, mj.MjsGeom)
             collapsed_geoms.append(GeomCollapsedInfo(geom_spec=geom, local_tf=local_tf))
@@ -84,7 +86,7 @@ def convert_bodies_flatten_collapsed(
             assert isinstance(child_body, mj.MjsBody)
             collect_collapsed_geoms(child_body, local_tf)
 
-    collect_collapsed_geoms(root_body, Gf.Transform().SetIdentity())
+    collect_collapsed_geoms(root_body, np.eye(4))
 
     safe_name = data.name_cache.getPrimName(geo_scope, f"{prefix}{root_body.name}")
     body_xform = usdex.core.defineXform(geo_scope, safe_name)
@@ -188,8 +190,8 @@ def convert_bodies_flatten(
         if body_1_spec == data.spec.worldbody:
             body_1_prim = body_1_prim.GetStage().GetDefaultPrim()
 
-        usd_pos = Gf.Vec3d(body_0_spec.pos.tolist())
-        usd_quat = Gf.Quatd(*body_0_spec.quat.tolist())
+        usd_pos = Gf.Vec3d(*body_0_spec.pos)
+        usd_quat = to_usd_quatd(body_0_spec.quat)
 
         name = data.name_cache.getPrimName(body_0_prim, UsdPhysics.Tokens.PhysicsFixedJoint)
         frame = usdex.core.JointFrame(usdex.core.JointFrame.Space.Body0, usd_pos, usd_quat)
@@ -228,9 +230,6 @@ def convert_body_flatten(  # noqa: PLR0915
         body_xform = usdex.core.defineXform(root, safe_name)
         body_prim = body_xform.GetPrim()
 
-        # if body.name == "fr3_link5":
-        #     breakpoint()
-
         local_tf = np.eye(4)
         local_tf[:3, :3] = R.from_quat(body.quat, scalar_first=True).as_matrix()
         local_tf[:3, 3] = body.pos
@@ -239,6 +238,9 @@ def convert_body_flatten(  # noqa: PLR0915
 
         final_usd_pos = Gf.Vec3d(*final_tf[:3, 3])
         final_usd_rot = to_usd_quat(R.from_matrix(final_tf[:3, :3]).as_quat(scalar_first=True))
+
+        print(f"local_rot: {body.quat}")
+        print(f"final_rot: {final_usd_rot}")
 
         usdex.core.setLocalTransform(
             body_prim, translation=final_usd_pos, orientation=final_usd_rot
@@ -285,7 +287,7 @@ def convert_body_flatten(  # noqa: PLR0915
         body_spec=body,
         body_name=body.name,
         body_safename=safe_name,
-        body_tf=Gf.Transform(Gf.Matrix4d(final_tf)),
+        body_tf=final_tf,
         body_prim=body_prim,
     )
 
