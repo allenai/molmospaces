@@ -181,21 +181,20 @@ def convert_bodies_flatten(
             print(f"[WARN]: Couldn't create fixed joint for pair '({body_0_name}, {body_1_name})'")
             pass
 
-        body_0_prim = body_0_data.body_prim
-        body_1_prim = body_1_data.body_prim
+        body_0_prim = body_0_data.body_prim  # child
+        body_1_prim = body_1_data.body_prim  # parent
 
-        body_0_spec = body_0_data.body_spec
+        # body_0_spec = body_0_data.body_spec
         body_1_spec = body_1_data.body_spec
 
         if body_1_spec == data.spec.worldbody:
             body_1_prim = body_1_prim.GetStage().GetDefaultPrim()
 
-        usd_pos = Gf.Vec3d(*body_0_spec.pos)
-        usd_quat = to_usd_quatd(body_0_spec.quat)
-
         name = data.name_cache.getPrimName(body_0_prim, UsdPhysics.Tokens.PhysicsFixedJoint)
-        frame = usdex.core.JointFrame(usdex.core.JointFrame.Space.Body0, usd_pos, usd_quat)
-        usdex.core.definePhysicsFixedJoint(body_0_prim, name, body_0_prim, body_1_prim, frame)
+        frame = usdex.core.JointFrame(
+            usdex.core.JointFrame.Space.Body1, Gf.Vec3d(0, 0, 0), Gf.Quatd.GetIdentity()
+        )
+        usdex.core.definePhysicsFixedJoint(body_1_prim, name, body_0_prim, body_1_prim, frame)
 
     if data.root_rotation is not None:
         new_quat = R.from_matrix(data.root_rotation).as_quat(scalar_first=True)
@@ -234,13 +233,10 @@ def convert_body_flatten(  # noqa: PLR0915
         local_tf[:3, :3] = R.from_quat(body.quat, scalar_first=True).as_matrix()
         local_tf[:3, 3] = body.pos
 
-        final_tf = local_tf @ parent_tf
+        final_tf = parent_tf @ local_tf
 
         final_usd_pos = Gf.Vec3d(*final_tf[:3, 3])
         final_usd_rot = to_usd_quat(R.from_matrix(final_tf[:3, :3]).as_quat(scalar_first=True))
-
-        print(f"local_rot: {body.quat}")
-        print(f"final_rot: {final_usd_rot}")
 
         usdex.core.setLocalTransform(
             body_prim, translation=final_usd_pos, orientation=final_usd_rot
