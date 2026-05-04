@@ -3,11 +3,13 @@ import numpy as np
 import usdex.core
 from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 
+from scipy.spatial.transform import Rotation as R
+
 from molmo_spaces_isaac.assets.utils.data import (
     BaseConversionData,
     Tokens,
     to_usd_quat,
-    vec_to_quat,
+    vec_to_quat_np,
 )
 
 VISUAL_CLASS = "__VISUAL_MJT__"
@@ -19,6 +21,7 @@ STRUCTURAL_WALL_CLASS = "__STRUCTURAL_WALL_MJT__"
 MJ_VISUAL_CLASSES = {VISUAL_CLASS, "visual"}
 
 MASS_TOLERANCE = 1e-12
+DENSITY_TOLERANCE = 1e-8
 
 VISUAL_GROUPS: tuple[int, ...] = (0, 1, 2)
 
@@ -99,8 +102,8 @@ def apply_physics(
     if is_visual(geom):
         return
 
-    if not np.isnan(geom.mass) and geom.mass < MASS_TOLERANCE:
-        return
+    # if not np.isnan(geom.mass) and geom.mass < MASS_TOLERANCE:
+    #     return
 
     geom_over: Usd.Prim = data.content[Tokens.PHYSICS].OverridePrim(geom_prim.GetPrim().GetPath())
 
@@ -117,9 +120,9 @@ def apply_physics(
             geom_over.AddAppliedSchema("PhysxSDFMeshCollisionAPI")
 
     geom_mass_api = UsdPhysics.MassAPI.Apply(geom_over)
-    if not np.isnan(geom.mass):
+    if not np.isnan(geom.mass) and geom.mass >= MASS_TOLERANCE:
         geom_mass_api.CreateMassAttr().Set(geom.mass)
-    else:
+    elif geom.density >= DENSITY_TOLERANCE:
         geom_mass_api.CreateDensityAttr().Set(geom.density)
 
     # TODO(wilbert): set material properties like friction
@@ -167,14 +170,14 @@ def convert_geom(  # noqa: PLR0915
     geom: mj.MjsGeom,
     safe_name: str,
     data: BaseConversionData,
-    local_tf: Gf.Transform | None = None,
+    local_tf: np.ndarray | None = None,
     opt_col_collection: Usd.CollectionAPI | None = None,
     normalize_mesh_scale: bool = False,
     override_box_with_mesh: bool = False,
 ) -> UsdGeom.Gprim:
-    usd_pos = Gf.Vec3d(geom.pos.tolist())
-    usd_orient = to_usd_quat(geom.quat)
-    usd_scale = Gf.Vec3f(1.0)
+    geom_pos = geom.pos.copy()
+    geom_quat = geom.quat.copy()
+    geom_scale = np.ones(3)
 
     geom_prim: UsdGeom.Gprim | None = None
     match geom.type:
@@ -207,36 +210,43 @@ def convert_geom(  # noqa: PLR0915
                 )
             else:
                 geom_prim = create_prim_box(parent, geom, safe_name)
-                usd_scale = 2.0 * Gf.Vec3f(geom.size.tolist())
+                geom_scale = 2.0 * geom.size
         case mj.mjtGeom.mjGEOM_SPHERE:
             geom_prim = create_prim_sphere(parent, geom, safe_name)
         case mj.mjtGeom.mjGEOM_CYLINDER:
             geom_prim = create_prim_cylinder(parent, geom, safe_name)
             if not np.isnan(geom.fromto[0]):
                 start, end = Gf.Vec3d(geom.fromto[:3].tolist()), Gf.Vec3d(geom.fromto[3:].tolist())
-                usd_pos = (end + start) / 2
-                usd_orient = vec_to_quat(end - start)
+                geom_pos = (end + start) / 2
+                geom_quat = vec_to_quat_np(end - start)
         case mj.mjtGeom.mjGEOM_CAPSULE:
             geom_prim = create_prim_capsule(parent, geom, safe_name)
             if not np.isnan(geom.fromto[0]):
                 start, end = Gf.Vec3d(geom.fromto[:3].tolist()), Gf.Vec3d(geom.fromto[3:].tolist())
-                usd_pos = (end + start) / 2
-                usd_orient = vec_to_quat(end - start)
+                geom_pos = (end + start) / 2
+                geom_quat = vec_to_quat_np(end - start)
         case mj.mjtGeom.mjGEOM_MESH:
             geom_prim = create_prim_mesh(parent, geom, safe_name, data)
             mesh_spec = data.spec.mesh(geom.meshname)
             if not normalize_mesh_scale and mesh_spec is not None:
-                usd_scale = Gf.Vec3f(mesh_spec.scale.tolist())
+                geom_scale = mesh_spec.scale.copy()
         case _:
             raise RuntimeError(f"Geom '{geom.name}' has unsupported type '{geom.type}'")
 
     assert geom_prim is not None, f"Must have a valid prim by now for geom '{geom.name}'"
 
     if local_tf is not None:
-        usd_geom_tf = Gf.Transform(translation=usd_pos, rotation=Gf.Rotation(usd_orient))
-        total_tf = usd_geom_tf * local_tf
-        usd_pos = total_tf.GetTranslation()
-        usd_orient = Gf.Quatf(total_tf.GetRotation().GetQuat())
+        geom_tf = np.eye(4)
+        geom_tf[:3, :3] = R.from_quat(geom_quat, scalar_first=True).as_matrix()
+        geom_tf[:3, 3] = geom_pos
+        total_tf = geom_tf @ local_tf
+
+        geom_pos = total_tf[:3, 3].copy()
+        geom_quat = R.from_matrix(total_tf[:3, :3]).as_quat(scalar_first=True)
+
+    usd_pos = Gf.Vec3d(*geom_pos)
+    usd_orient = to_usd_quat(geom_quat)
+    usd_scale = Gf.Vec3f(*geom_scale)
 
     usdex.core.setLocalTransform(
         geom_prim, translation=usd_pos, orientation=usd_orient, scale=usd_scale

@@ -39,7 +39,7 @@ class BodyData:
     body_spec: mj.MjsBody
     body_name: str
     body_safename: str
-    body_tf: Gf.Transform
+    body_tf: np.ndarray
     body_prim: Usd.Prim
 
 
@@ -123,6 +123,8 @@ class SceneObjectInfo:
 def to_usd_quat(quat: np.ndarray) -> Gf.Quatf:
     return Gf.Quatf(quat[0], quat[1], quat[2], quat[3])
 
+def to_usd_quatd(quat: np.ndarray) -> Gf.Quatd:
+    return Gf.Quatd(quat[0], quat[1], quat[2], quat[3])
 
 def from_usd_quat(quat: Gf.Quatf | Gf.Quatd) -> np.ndarray:
     return np.array([quat.real, quat.imaginary[0], quat.imaginary[1], quat.imaginary[2]])
@@ -152,6 +154,36 @@ def vec_to_quat(vec: Gf.Vec3d) -> Gf.Quatf:
             cross[1] * np.sin(ang / 2.0),
             cross[2] * np.sin(ang / 2.0),
         ).GetNormalized()
+
+
+def vec_to_quat_np(vec: np.ndarray) -> np.ndarray:
+    z_axis = np.array([0, 0, 1], dtype=np.float32)
+    vec_norm = np.linalg.norm(vec)
+    vec /= vec_norm
+
+    # Cross product of z-axis and vector
+    cross = np.cross(z_axis, vec)
+    s = np.linalg.norm(cross)
+
+    if s < QUAT_TOLERANCE:
+        return np.array([0, 1, 0, 0], dtype=np.float32)
+    else:
+        # Normalize cross product
+        cross_norm = np.linalg.norm(cross)
+        cross /= cross_norm
+
+        # Calculate angle between z-axis and vector
+        ang = np.arctan2(s, vec[2]).item()
+
+        # Construct quaternion
+        return np.array(
+            [
+                np.cos(ang / 2.0),
+                cross[0] * np.sin(ang / 2.0),
+                cross[1] * np.sin(ang / 2.0),
+                cross[2] * np.sin(ang / 2.0),
+            ]
+        )
 
 
 def get_orientation(body_spec: mj.MjsBody) -> np.ndarray:

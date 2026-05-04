@@ -16,6 +16,7 @@ dependencies = [
     "msgspec",
     "lmdb~=1.7.5",
     "zstandard~=0.25.0",
+    "molmospaces-resources==0.0.1b4",
 ]
 
 [build-system]
@@ -40,6 +41,7 @@ override-dependencies = [
     "pywin32==306; sys_platform == 'win32'",
     "torch>=2.9.0", # Change here for different CUDA version
     "torchvision>=0.24.0", # Change here for different CUDA version
+    "flatdict==4.0.0",
 ]
 
 [tool.uv.sources]
