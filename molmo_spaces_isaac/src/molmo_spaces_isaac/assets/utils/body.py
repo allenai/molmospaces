@@ -229,11 +229,16 @@ def convert_body_flatten(  # noqa: PLR0915
         body_xform = usdex.core.defineXform(root, safe_name)
         body_prim = body_xform.GetPrim()
 
+        frame_tf = np.eye(4)
+        if body.frame:
+            frame_tf[:3, :3] = R.from_quat(body.frame.quat, scalar_first=True).as_matrix()
+            frame_tf[:3, 3] = body.frame.pos
+
         local_tf = np.eye(4)
         local_tf[:3, :3] = R.from_quat(body.quat, scalar_first=True).as_matrix()
         local_tf[:3, 3] = body.pos
 
-        final_tf = parent_tf @ local_tf
+        final_tf = parent_tf @ frame_tf @ local_tf
 
         final_usd_pos = Gf.Vec3d(*final_tf[:3, 3])
         final_usd_rot = to_usd_quat(R.from_matrix(final_tf[:3, :3]).as_quat(scalar_first=True))
