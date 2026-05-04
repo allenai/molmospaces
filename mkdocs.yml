@@ -41,6 +41,7 @@ nav:
       - Assets: assets.md
       - Data Format: data_format.md
       - Data Processing: data_processing.md
+      - Benchmark Evaluation: evaluation_guide.md
       - Code Structure: code_structure.md
       - Development: development.md
   - API Reference:
