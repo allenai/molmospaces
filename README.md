@@ -39,15 +39,24 @@
 
 Installing `molmospaces` is easy!
 
-First, set up a Python 3.11 environment. 
+First, clone the project. 
+
+```bash
+git clone git@github.com:allenai/molmospaces.git
+cd molmospaces
+```
+
+Then, set up the virtual environment and install.
 
 > Note: If you want to use the debug viewer on macOS you need to use conda or a Homebrew Python. This is because `mjpython` used by the debug viewer requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship.
+
 
 With conda:
 
 ```bash
 conda create -n mlspaces python=3.11
 conda activate mlspaces
+pip install -e ".[mujoco]"
 ```
 
 Or with `uv`:
@@ -55,18 +64,9 @@ Or with `uv`:
 ```bash
 uv venv --python 3.11 .venv
 source .venv/bin/activate
+uv pip install -e ".[mujoco]"
 ```
 
-Then, clone and install the project:
-
-```bash
-git clone git@github.com:allenai/molmospaces.git
-cd molmospaces
-```
-
-```bash
-pip install -e ".[mujoco]"
-```
 One of the following options must be provided:
 - `mujoco` to use the classic MuJoCo renderer
 - `mujoco-filament` to use the improved Filament renderer for MuJoCo
