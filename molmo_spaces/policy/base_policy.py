@@ -60,6 +60,7 @@ class BasePolicy(ABC):
     def add_auxiliary_objects(config: "MlSpacesExpConfig", spec: MjSpec) -> None:
         """
         Add auxiliary objects to the scene that might be required for the policy.
+
         Args:
             config: The configuration for the policy.
             spec: The experiment configuration.

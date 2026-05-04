@@ -1042,6 +1042,7 @@ def assert_python_types_equal(pfx: str, v1, v2, atol=0.001):
 def assert_obs_scene_match(g1: h5py.Group, g2: h5py.Group, atol=0.001):
     """
     Assert that the obs_scenes of two trajectory groups are equal.
+
     Args:
         g1: h5py.Group of the first trajectory
         g2: h5py.Group of the second trajectory

@@ -45,6 +45,7 @@ class StretchPickupTask(PickupTask):
         Update the internal observation history as a fixed-size queue.
         If the history is empty, populate it with new_obs repeated.
         Otherwise, append new_obs so that the oldest observation is automatically dropped.
+
         Returns:
             The updated list of observations (length == n_obs_steps).
         """
@@ -111,6 +112,7 @@ class StretchObjectNavTask(ObjectNavTask):
         Update the internal observation history as a fixed-size queue.
         If the history is empty, populate it with new_obs repeated.
         Otherwise, append new_obs so that the oldest observation is automatically dropped.
+
         Returns:
             The updated list of observations (length == n_obs_steps).
         """

@@ -809,6 +809,7 @@ class CameraManager:
             lookat_body_name: Optional body name to look at (used if lookat_target is None)
             camera_up: Optional desired up direction for camera (np.array in world coordinates)
                       If None, uses world Z-up [0, 0, 1]
+
         Returns:
             Tuple of (camera_pos_world, forward_vector, up_vector), each of shape (3,)
         """

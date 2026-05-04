@@ -60,6 +60,7 @@ class BasePoseController(Controller, ABC):
     def compute_ctrl_inputs(self):
         """
         Compute the control inputs based on the current state and the target set by the user.
+
         Returns:
             The control inputs to be applied to the robot actuators, in this case: positions
         """
@@ -88,6 +89,7 @@ class DiffDriveBasePoseController(BasePoseController):
     def __init__(self, robot_config, robot_move_group: RobotBaseGroup) -> None:
         """
         Differential drive base pose controller.
+
         Args:
             robot_config: The configuration of the robot, containing special information about the control
             robot_move_group: The move group of the robot base to be controlled
@@ -101,8 +103,10 @@ class DiffDriveBasePoseController(BasePoseController):
     def compute_base_velocities(self, target_base_pose):
         """
         Compute wheel velocities to drive the robot base to the target pose using a simple proportional controller.
+
         Args:
             target_base_pose: Target [x, y, theta] pose in world frame.
+
         Returns:
             np.ndarray: [left_wheel_velocity, right_wheel_velocity]
         """
@@ -142,6 +146,7 @@ class SwerveBasePoseController(BasePoseController):
     def __init__(self, robot_config, robot_move_group: RobotBaseGroup) -> None:
         """
         Swerve drive base pose controller.
+
         Args:
             robot_config: The configuration of the robot, containing special information about the control
             robot_move_group: The move group of the robot base to be controlled
@@ -159,8 +164,10 @@ class SwerveBasePoseController(BasePoseController):
     def compute_base_velocities(self, target_base_pose):
         """
         Compute wheel velocities and steer angles to drive the robot base to the target pose using a simple proportional controller.
+
         Args:
             target_base_pose: Target [x, y, theta] pose in world frame.
+
         Returns:
             np.ndarray: [front_left_steer_angle,   front_right_steer_angle,    back_left_steer_angle,    back_right_steer_angle,
                         front_left_wheel_velocity, front_right_wheel_velocity, back_left_wheel_velocity, back_right_wheel_velocity]

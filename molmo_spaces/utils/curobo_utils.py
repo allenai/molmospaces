@@ -26,6 +26,7 @@ def xml_to_world_cfg(xml_file: str, ignore_strings: list[str] = []) -> dict:
     """
     Parses a mujoco xml file for geometries and returns a world config dict expected by curobo.
     Currently supports collision types: "obb" ("cuboid"), "mesh", "capsule", "sphere", and "cylinder".
+
     Args:
         xml_file: Path to the mujoco xml file.
         ignore_strings: List of strings to ignore when parsing the xml file.

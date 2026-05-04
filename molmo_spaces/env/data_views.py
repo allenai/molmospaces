@@ -646,6 +646,7 @@ class Door(MlSpacesArticulationObject):
 
     def get_hinge_joint_index(self) -> int:
         """Get the index of the door hinge joint (the joint that does not have 'handle' in its name).
+
         Returns:
             int: Index of the hinge joint in self.joint_ids list (not the joint ID itself)
         Warns:
@@ -662,6 +663,7 @@ class Door(MlSpacesArticulationObject):
 
     def get_handle_joint_index(self) -> int:
         """Get the index of the handle joint (the joint that has 'handle' in its name).
+
         Returns:
             int: Index of the handle joint in self.joint_ids list
         """
@@ -676,6 +678,7 @@ class Door(MlSpacesArticulationObject):
 
     def _get_handle_leaf_body_ids(self) -> list[int]:
         """Get leaf body IDs in door hierarchy (assumed to be handles).
+
         Returns:
             list[int]: List of leaf body IDs (excluding the root door body)
         """
@@ -695,6 +698,7 @@ class Door(MlSpacesArticulationObject):
         """Get handle bounding boxes as an array.
         Finds leaf bodies in the door hierarchy (assumed to be handles) and
         returns their visual geom AABBs.
+
         Returns:
             np.ndarray: Array of AABBs (center, size) for handle visual geoms
         """
@@ -716,6 +720,7 @@ class Door(MlSpacesArticulationObject):
         """Get handle pose (position + quaternion) as a single array.
         Finds the first handle visual geom and returns its pose.
         If multiple handles exist, returns the first one.
+
         Returns:
             np.ndarray: Handle pose [x, y, z, qw, qx, qy, qz]
         """

@@ -98,6 +98,7 @@ docs = [
     "mkdocstrings[python]>=0.27.0",
     "mkdocs-autorefs>=1.2.0",
     "mkdocs-git-revision-date-localized-plugin",
+    "griffe-inherited-docstrings",
 ]
 
 [build-system]

@@ -39,7 +39,8 @@ jobs:
             "mkdocs-material>=9.5.0" \
             "mkdocstrings[python]>=0.27.0" \
             "mkdocs-autorefs>=1.2.0" \
-            "mkdocs-git-revision-date-localized-plugin"
+            "mkdocs-git-revision-date-localized-plugin" \
+            "griffe-inherited-docstrings"
 
       - name: Install package (no heavy deps, for static analysis)
         run: |

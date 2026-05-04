@@ -445,10 +445,12 @@ class DoorOpeningTask(BaseMujocoTask):
         return_both_poses: bool = False,
     ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Get the target ee pose for grasping or articulating the door handle.
+
         Args:
             offset_distance: The distance to offset the grasp position from the door handle position, Eg. for pre-grasping the handle.
             articulate_deltas: The deltas to articulate the door joints. If None, don't articulate the door joints.
             return_both_poses: If True, returns both symmetric poses (original and 180-degree flipped). If False, returns only the original pose.
+
         Returns:
             The target ee pose for grasping or articulating the door handle.
             If return_both_poses=True, returns a tuple of (original_pose, flipped_pose).

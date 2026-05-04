@@ -38,6 +38,7 @@ class Controller:
     def set_target(self, target):
         """
         Set the target state of the controller.
+
         Args:
             target: The target state to be set, e.g. a joint position, base velocity, or any other state.
         """
@@ -56,6 +57,7 @@ class Controller:
     def compute_ctrl_inputs(self):
         """
         Compute the control inputs based on the current state and the target set by the user.
+
         Returns:
             The control inputs to be applied to the robot actuators, eg. positions, torques etc.
         """

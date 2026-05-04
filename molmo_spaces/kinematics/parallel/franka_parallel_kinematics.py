@@ -208,6 +208,7 @@ class FrankaParallelKinematics(ParallelKinematics):
     ):
         """
         Finds joint positions that would place the end-effector at the target pose.
+
         Args:
             pose: The target pose(s) to reach. Shape: (batch_size, 4, 4) or (4, 4)
             q0_dicts: The initial joint positions.
@@ -220,6 +221,7 @@ class FrankaParallelKinematics(ParallelKinematics):
             damping: The damping factor for the solver.
             posture_weight: The weight for the posture constraint, relative to the error minimization.
                 If the solver frequently gets stuck in local minima, decreasing this value (or setting to 0) may help.
+
         Returns:
             A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.
             If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.

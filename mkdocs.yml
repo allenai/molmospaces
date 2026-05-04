@@ -67,6 +67,8 @@ plugins:
         python:
           paths: [.]
           options:
+            extensions:
+              - griffe_inherited_docstrings
             docstring_style: google
             docstring_section_style: table
             show_source: true
