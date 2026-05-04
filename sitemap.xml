@@ -2,70 +2,70 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://allenai.github.io/molmospaces/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/assets/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/code_structure/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/data_format/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/data_processing/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/development/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/controllers/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/env/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/evaluation/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/kinematics/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/molmo_spaces/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/policy/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/renderer/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/robots/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/tasks/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
     <url>
          <loc>https://allenai.github.io/molmospaces/api/utils/</loc>
-         <lastmod>2026-05-01</lastmod>
+         <lastmod>2026-05-04</lastmod>
     </url>
 </urlset>
