@@ -6,7 +6,7 @@ import numpy as np
 import usdex.core
 from pxr import Gf, Sdf, UsdPhysics
 
-from .data import AssetParameters, BaseConversionData, BodyData, Tokens
+from .data import AssetParameters, BaseConversionData, BodyData, Tokens, RobotParameters
 
 
 def setup_physx_parameters(usd_joint: UsdPhysics.Joint, params: AssetParameters) -> None:
@@ -41,6 +41,7 @@ def convert_joint_flatten(  # noqa: PLR0915
     prefix: str = "",
     asset_id: str = "",
     thor_parameters: dict[str, AssetParameters] = {},
+    robot_parameters: RobotParameters | None = None,
 ) -> None:
     body_0_name, body_1_name = joint.parent.name, ""
     if body_0_handle := data.spec.body(body_0_name):
@@ -110,6 +111,13 @@ def convert_joint_flatten(  # noqa: PLR0915
 
     if usd_joint is not None:
         data.references[Tokens.PHYSICS][joint.name] = usd_joint.GetPrim()
+        if robot_parameters is not None and (params := robot_parameters.joints.get(joint.name)):
+            jnt_prim = usd_joint.GetPrim()
+            for schema in params.schemas:
+                jnt_prim.AddAppliedSchema(schema)
+            for jnt_param in params.parameters:
+                jnt_attr = jnt_prim.CreateAttribute(jnt_param.name, Sdf.ValueTypeNames.Float)
+                jnt_attr.Set(jnt_param.value)
 
 
 def is_limited(joint: mj.MjsJoint, data: BaseConversionData) -> bool:

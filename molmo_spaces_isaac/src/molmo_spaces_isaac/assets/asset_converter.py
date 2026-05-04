@@ -25,6 +25,7 @@ from molmo_spaces_isaac.assets.utils.data import (
     AssetGenMetadata,
     AssetParameters,
     BaseConversionData,
+    RobotParameters,
     Tokens,
 )
 from molmo_spaces_isaac.assets.utils.flatten import export_flatten
@@ -90,6 +91,8 @@ class Args:
     use_physx: bool = False
 
     use_newton: bool = False
+
+    robot_params_file: Path | None = None
 
     verbose: bool = False
 
@@ -182,7 +185,13 @@ def convert(model_path: Path) -> ConversionResult:  # noqa: PLR0915
             thor_id_to_category=G_ASSET_ID_TO_CATEGORY,
             use_physx=G_ARGS.use_physx,
             use_newton=G_ARGS.use_newton,
+            fix_base=G_ARGS.fix_base,
         )
+
+        robot_parameters: RobotParameters | None = None
+        if G_ARGS.robot_params_file and G_ARGS.robot_params_file.is_file():
+            with open(G_ARGS.robot_params_file, "rb") as fr_handle:
+                robot_parameters = msgspec.yaml.decode(fr_handle.read(), type=RobotParameters)
 
         is_articulated = any(joint.type != mj.mjtJoint.mjJNT_FREE for joint in spec.joints)
 
@@ -229,25 +238,12 @@ def convert(model_path: Path) -> ConversionResult:  # noqa: PLR0915
                 prefix=prefix,
                 normalize_mesh_scale=G_ARGS.normalize_mesh_scale,
                 asset_id=asset_id,
+                robot_parameters=robot_parameters,
             )
         else:
             root_body_prim = convert_bodies_flatten_collapsed(
                 data, prefix=prefix, normalize_mesh_scale=G_ARGS.normalize_mesh_scale
             )
-
-        # if G_ARGS.fix_base:
-        #     fixed_joint = UsdPhysics.FixedJoint.Define(
-        #         data.content[Tokens.GEOMETRY],
-        #         root_body_prim.GetPath().AppendChild("FixedJointRoot"),
-        #     )
-        #     fixed_joint.GetBody1Rel().SetTargets([root_body_prim.GetPath()])
-        #     fixed_joint.GetBody0Rel().SetTargets(
-        #         [root_body_prim.GetStage().GetDefaultPrim().GetPath()]
-        #     )
-        #     fixed_joint.CreateLocalPos0Attr().Set(Gf.Vec3d(0, 0, 0))
-        #     fixed_joint.CreateLocalRot0Attr().Set(Gf.Quatf.GetIdentity())
-        #     fixed_joint.CreateLocalPos1Attr().Set(Gf.Vec3d(0, 0, 0))
-        #     fixed_joint.CreateLocalRot1Attr().Set(Gf.Quatf.GetIdentity())
 
         Usd.ModelAPI(root_body_prim).SetKind(Kind.Tokens.component)
 

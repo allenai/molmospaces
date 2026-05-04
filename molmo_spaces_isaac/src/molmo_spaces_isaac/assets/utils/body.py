@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 import mujoco as mj
 import numpy as np
@@ -9,9 +10,9 @@ from scipy.spatial.transform import Rotation as R
 from molmo_spaces_isaac.assets.utils.data import (
     BaseConversionData,
     BodyData,
+    RobotParameters,
     Tokens,
     to_usd_quat,
-    to_usd_quatd,
 )
 from molmo_spaces_isaac.assets.utils.geom import convert_geom, is_visual
 from molmo_spaces_isaac.assets.utils.joint import convert_joint_flatten
@@ -128,6 +129,7 @@ def convert_bodies_flatten(
     opt_col_collection: Usd.CollectionAPI | None = None,
     normalize_mesh_scale: bool = False,
     asset_id: str = "",
+    robot_parameters: RobotParameters | None = None,
 ) -> Usd.Prim:
     data.bodies_to_fix = []
 
@@ -172,6 +174,7 @@ def convert_bodies_flatten(
             prefix=prefix,
             asset_id=asset_id,
             thor_parameters=data.thor_parameters,
+            robot_parameters=robot_parameters,
         )
 
     for body_0_name, body_1_name in data.bodies_to_fix:
@@ -283,6 +286,11 @@ def convert_body_flatten(  # noqa: PLR0915
 
         if (body.parent == data.spec.worldbody) and articulated:
             UsdPhysics.ArticulationRootAPI.Apply(body_over)
+            if data.fix_base:
+                fixed_jnt = UsdPhysics.FixedJoint.Define(
+                    body_over.GetStage(), body_over.GetPath().AppendChild("root_jnt")
+                )
+                fixed_jnt.CreateBody0Rel().AddTarget(body_over.GetPath())
 
     data.bodies[body.name] = BodyData(
         body_spec=body,

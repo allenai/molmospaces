@@ -58,6 +58,18 @@ class AssetParameters(msgspec.Struct):
     core: AssetParametersCore
     physx: AssetParametersPhysx
 
+class RobotJointParam(msgspec.Struct):
+    name: str
+    value: float
+
+class RobotJointParameters(msgspec.Struct):
+    schemas: list[str] = msgspec.field(default_factory=list)
+    parameters: list[RobotJointParam] = msgspec.field(default_factory=list)
+
+
+class RobotParameters(msgspec.Struct):
+    joints: dict[str, RobotJointParameters] = msgspec.field(default_factory=dict)
+
 
 @dataclass
 class BaseConversionData:
@@ -77,6 +89,8 @@ class BaseConversionData:
     export_sites: bool = False
 
     root_rotation: np.ndarray | None = None
+
+    fix_base: bool = False
 
     start_sleep: bool = False
 
@@ -123,8 +137,10 @@ class SceneObjectInfo:
 def to_usd_quat(quat: np.ndarray) -> Gf.Quatf:
     return Gf.Quatf(quat[0], quat[1], quat[2], quat[3])
 
+
 def to_usd_quatd(quat: np.ndarray) -> Gf.Quatd:
     return Gf.Quatd(quat[0], quat[1], quat[2], quat[3])
+
 
 def from_usd_quat(quat: Gf.Quatf | Gf.Quatd) -> np.ndarray:
     return np.array([quat.real, quat.imaginary[0], quat.imaginary[1], quat.imaginary[2]])
