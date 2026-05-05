@@ -9,6 +9,8 @@ from isaaclab.app import AppLauncher
 class Args:
     franka_model: Path
 
+    cube_model: Path
+
 
 # launch omniverse app
 app_launcher = AppLauncher()
@@ -21,7 +23,7 @@ from gello.agents.gello_agent import DynamixelRobot
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaaclab.assets import Articulation, ArticulationCfg
+from isaaclab.assets import Articulation, ArticulationCfg, RigidObject, RigidObjectCfg
 from isaaclab.sim import SimulationContext
 
 
@@ -58,12 +60,13 @@ def main() -> int:
     franka_cfg = ArticulationCfg(
         spawn=sim_utils.UsdFileCfg(
             usd_path=args.franka_model.absolute().as_posix(),
+            activate_contact_sensors=True,
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 max_depenetration_velocity=5.0,
             ),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-                enabled_self_collisions=True,
+                enabled_self_collisions=False,
                 solver_position_iteration_count=8,
                 solver_velocity_iteration_count=0,
             ),
@@ -89,22 +92,50 @@ def main() -> int:
             "panda_shoulder": ImplicitActuatorCfg(
                 joint_names_expr=["fr3_joint[1-4]"],
                 effort_limit_sim=87.0,
-                stiffness=None,
-                damping=None,
+                stiffness=4000.0,
+                damping=450.0,
             ),
             "panda_forearm": ImplicitActuatorCfg(
                 joint_names_expr=["fr3_joint[5-7]"],
                 effort_limit_sim=12.0,
-                stiffness=None,
-                damping=None,
+                stiffness=2000.0,
+                damping=200.0,
             ),
             "gripper": ImplicitActuatorCfg(
                 joint_names_expr=["fr3_gripper_left_driver_joint"],
+                effort_limit_sim=200.0,
                 velocity_limit_sim=5.0,
-                stiffness=None,
-                damping=None,
+                stiffness=1.0,
+                damping=0.1,
             ),
         },
+    )
+
+    cube_cfg = RigidObjectCfg(
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=args.cube_model.absolute().as_posix(),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                disable_gravity=False,
+            ),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(0.5, 0.0, 0.025),
+        ),
+        prim_path="/World/cube",
+    )
+
+    prim_cfg = RigidObjectCfg(
+        spawn=sim_utils.CuboidCfg(
+            size=(0.04, 0.04, 0.04),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0)),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(0.45, 0.0, 0.025),
+        ),
+        prim_path="/World/prim",
     )
 
     sim_cfg = sim_utils.SimulationCfg(dt=1.0 / 120.0)
@@ -118,6 +149,9 @@ def main() -> int:
 
     franka_cfg.prim_path = "/World/robot"
     franka = Articulation(cfg=franka_cfg)
+
+    _ = RigidObject(cfg=cube_cfg)
+    _ = RigidObject(cfg=prim_cfg)
 
     sim_dt = sim_ctx.get_physics_dt()
 

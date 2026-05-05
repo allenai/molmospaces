@@ -130,11 +130,11 @@ joints:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
-        value: 0.0002
+        value: 0.01
       - name: drive:angular:physics:maxForce
         value: 26
       - name: drive:angular:physics:stiffness
-        value: 3
+        value: 1
       # - name: drive:angular:physics:targetPosition
       #   value: 0
       # - name: physics:JointEquivalentInertia
