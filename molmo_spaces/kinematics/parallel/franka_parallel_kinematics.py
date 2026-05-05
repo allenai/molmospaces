@@ -75,7 +75,7 @@ class FrankaParallelKinematics(ParallelKinematics):
     """
     A Levenberg-Marquardt-based parallel inverse kinematics solver for Franka robots.
 
-    This solver is optimized for parallel execution. For single robot IK, FrankaKinematics may be faster.
+    This solver is optimized for parallel execution. For single robot IK, MlSpacesKinematics may be faster.
     """
 
     def __init__(self, robot_config: "FrankaRobotConfig"):

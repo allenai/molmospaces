@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
-from molmo_spaces.kinematics.franka_kinematics import FrankaKinematics
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.franka_parallel_kinematics import (
     FrankaParallelKinematics,
 )
@@ -74,11 +74,7 @@ class FrankaRobot(Robot):
         self._robot_view = config.robot_config.robot_view_factory(
             mj_data, config.robot_config.robot_namespace
         )
-        self._kinematics = FrankaKinematics(
-            self.mj_model,
-            namespace=config.robot_config.robot_namespace,
-            robot_view_factory=config.robot_config.robot_view_factory,
-        )
+        self._kinematics = MlSpacesKinematics.create(config.robot_config)
 
         self._parallel_kinematics = FrankaParallelKinematics(config.robot_config)
         arm_controller_cls = (

@@ -1,25 +1,25 @@
 """
-This module provides forward and inverse kinematics functionality for robots in MuJoCo.
-It implements both forward kinematics (FK) and inverse kinematics (IK) solvers, as well as
-methods for converting between joint velocities and end-effector twists.
-
-The main class, MujocoKinematics, provides a general-purpose interface for computing
-kinematic quantities for any robot that can be represented in MuJoCo. It works with the
-RobotView abstraction to handle different types of robots and their move groups.
+General-purpose forward and inverse kinematics solver for robots in MuJoCo.
+This solver is not parallelizable and runs on the CPU. While fairly fast,
+this is not suitable for large batches.
 """
 
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 
 import mujoco
 import numpy as np
 from mujoco import MjData
 
+from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.robot_views.abstract import RobotView
 from molmo_spaces.utils.linalg_utils import (
     inverse_homogeneous_matrix,
     relative_to_global_transform,
     transform_to_twist,
 )
+
+if TYPE_CHECKING:
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig
 
 
 class MlSpacesKinematics:
@@ -47,6 +47,34 @@ class MlSpacesKinematics:
         self._mj_data = data
         self._robot_view = robot_view
         mujoco.mj_forward(self._mj_model, self._mj_data)
+
+    @classmethod
+    def create(cls, robot_config: "BaseRobotConfig") -> "MlSpacesKinematics":
+        """
+        Create a kinematics solver for a robot.
+
+        Args:
+            robot_config: The robot configuration.
+
+        Returns:
+            A MlSpacesKinematics instance.
+        """
+        spec = mujoco.MjSpec()
+        robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+        robot_spec = mujoco.MjSpec.from_file(str(robot_xml_path))
+
+        robot_config.robot_cls.add_robot_to_scene(
+            robot_config,
+            spec,
+            robot_spec,
+            "",
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0, 0.0],
+        )
+        mj_model = spec.compile()
+        mj_data = mujoco.MjData(mj_model)
+        robot_view = robot_config.robot_view_factory(mj_data, "")
+        return cls(mj_data, robot_view)
 
     def _constrain_state(self) -> None:
         """Constrain the current state to be within the joint limits.
@@ -234,3 +262,68 @@ class MlSpacesKinematics:
         if succ:
             return self._robot_view.get_qpos_dict()
         return None
+
+
+if __name__ == "__main__":
+    def main() -> None:
+        import argparse
+        import importlib
+        import time
+        from mujoco.viewer import launch_passive
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("config_class")
+        parser.add_argument("--config_module", default="molmo_spaces.configs.robot_configs")
+        args = parser.parse_args()
+
+        config_module = importlib.import_module(args.config_module)
+        config_class = getattr(config_module, args.config_class)
+        robot_config: "BaseRobotConfig" = config_class()
+        kinematics = MlSpacesKinematics.create(robot_config)
+
+        spec = mujoco.MjSpec()
+        robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+        robot_spec = mujoco.MjSpec.from_file(str(robot_xml_path))
+        robot_config.robot_cls.add_robot_to_scene(
+            robot_config,
+            spec,
+            robot_spec,
+            "",
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0, 0.0],
+        )
+        model = spec.compile()
+        data = mujoco.MjData(model)
+        robot_view = robot_config.robot_view_factory(data, "")
+
+        robot_view.set_qpos_dict(robot_config.init_qpos)
+        mujoco.mj_forward(model, data)
+
+        gripper_group_id = robot_view.get_gripper_movegroup_ids()[0]
+        gripper_group = robot_view.get_move_group(gripper_group_id)
+
+        pose0 = gripper_group.leaf_frame_to_world
+        pose1 = pose0.copy()
+        pose0[2, 3] += 0.05  # Move up 5cm
+        pose1[2, 3] -= 0.05  # Move down 5cm
+
+        groups = robot_view.move_group_ids()
+
+        with launch_passive(model, data) as viewer:
+            viewer.sync()
+            i = 0
+            while viewer.is_running():
+                # Alternate between two target poses
+                target_pose = pose1 if i % 2 == 0 else pose0
+                ret = kinematics.ik(
+                    gripper_group_id, target_pose, groups, robot_view.get_qpos_dict(), robot_view.base.pose
+                )
+                print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")
+                i += 1
+                if ret is not None:
+                    robot_view.set_qpos_dict(ret)
+                mujoco.mj_forward(model, data)
+                viewer.sync()
+                time.sleep(2)
+
+    main()

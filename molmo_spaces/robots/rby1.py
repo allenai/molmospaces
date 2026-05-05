@@ -15,7 +15,7 @@ from molmo_spaces.controllers.base_pose import DiffDriveBasePoseController
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.controllers.torso_height import TorsoHeightJointPosController
-from molmo_spaces.kinematics.rby1_kinematics import RBY1Kinematics
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
 
 
@@ -48,9 +48,7 @@ class RBY1(Robot):
         self._robot_view = RBY1RobotView(mj_data, self.namespace, holo_base=self._use_holo_base)
 
         # Create kinematic solver:
-        self._kinematics = RBY1Kinematics(
-            self.mj_model, namespace=self.namespace, holo_base=self._use_holo_base
-        )
+        self._kinematics = MlSpacesKinematics.create(self.exp_config.robot_config)
 
         # Create controllers:
 
