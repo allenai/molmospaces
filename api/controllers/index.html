@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../assets/" class="md-tabs__link">
+        <a href="../../concepts/" class="md-tabs__link">
           
   
   
@@ -377,6 +377,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -421,6 +425,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -493,6 +525,34 @@
     
   
     Data Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../evaluation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Evaluation
   
 
     
@@ -4281,28 +4341,50 @@ when the robot has to be stopped at a certain position and not drift.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, eg. positions, torques etc.</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, eg. positions, torques etc.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/abstract.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-56">56</a></span>
 <span class="normal"><a href="#__codelineno-0-57">57</a></span>
 <span class="normal"><a href="#__codelineno-0-58">58</a></span>
 <span class="normal"><a href="#__codelineno-0-59">59</a></span>
 <span class="normal"><a href="#__codelineno-0-60">60</a></span>
 <span class="normal"><a href="#__codelineno-0-61">61</a></span>
-<span class="normal"><a href="#__codelineno-0-62">62</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">        The control inputs to be applied to the robot actuators, eg. positions, torques etc.</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="k">pass</span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        The control inputs to be applied to the robot actuators, eg. positions, torques etc.</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4331,13 +4413,13 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/abstract.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#__codelineno-0-67">67</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="k">pass</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4361,9 +4443,37 @@ Returns:
 
     <div class="doc doc-contents ">
 
-        <p>Set the target state of the controller.
-Args:
-    target: The target state to be set, e.g. a joint position, base velocity, or any other state.</p>
+        <p>Set the target state of the controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>target</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The target state to be set, e.g. a joint position, base velocity, or any other state.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -4375,14 +4485,16 @@ Args:
 <span class="normal"><a href="#__codelineno-0-41">41</a></span>
 <span class="normal"><a href="#__codelineno-0-42">42</a></span>
 <span class="normal"><a href="#__codelineno-0-43">43</a></span>
-<span class="normal"><a href="#__codelineno-0-44">44</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    Set the target state of the controller.</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">        target: The target state to be set, e.g. a joint position, base velocity, or any other state.</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="k">pass</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">        target: The target state to be set, e.g. a joint position, base velocity, or any other state.</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4410,21 +4522,21 @@ NOTE: If the controller is already stationary, it does not change the target.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/abstract.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-47">47</a></span>
 <span class="normal"><a href="#__codelineno-0-48">48</a></span>
 <span class="normal"><a href="#__codelineno-0-49">49</a></span>
 <span class="normal"><a href="#__codelineno-0-50">50</a></span>
 <span class="normal"><a href="#__codelineno-0-51">51</a></span>
 <span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_to_stationary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">    This method sets the robot to stationary mode and computes the targets to hold the</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    robot stationary.</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    This is useful when the robot needs to be stopped at a certain position and not drift.</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    NOTE: If the controller is already stationary, it does not change the target.</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="k">pass</span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_to_stationary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    This method sets the robot to stationary mode and computes the targets to hold the</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    robot stationary.</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    This is useful when the robot needs to be stopped at a certain position and not drift.</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    NOTE: If the controller is already stationary, it does not change the target.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4745,28 +4857,50 @@ when the robot has to be stopped at a certain position and not drift.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, eg. positions, torques etc.</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, eg. positions, torques etc.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/abstract.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-56">56</a></span>
 <span class="normal"><a href="#__codelineno-0-57">57</a></span>
 <span class="normal"><a href="#__codelineno-0-58">58</a></span>
 <span class="normal"><a href="#__codelineno-0-59">59</a></span>
 <span class="normal"><a href="#__codelineno-0-60">60</a></span>
 <span class="normal"><a href="#__codelineno-0-61">61</a></span>
-<span class="normal"><a href="#__codelineno-0-62">62</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">        The control inputs to be applied to the robot actuators, eg. positions, torques etc.</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="k">pass</span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        The control inputs to be applied to the robot actuators, eg. positions, torques etc.</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4795,13 +4929,13 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/abstract.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#__codelineno-0-67">67</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="k">pass</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4825,9 +4959,37 @@ Returns:
 
     <div class="doc doc-contents ">
 
-        <p>Set the target state of the controller.
-Args:
-    target: The target state to be set, e.g. a joint position, base velocity, or any other state.</p>
+        <p>Set the target state of the controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>target</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The target state to be set, e.g. a joint position, base velocity, or any other state.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -4839,14 +5001,16 @@ Args:
 <span class="normal"><a href="#__codelineno-0-41">41</a></span>
 <span class="normal"><a href="#__codelineno-0-42">42</a></span>
 <span class="normal"><a href="#__codelineno-0-43">43</a></span>
-<span class="normal"><a href="#__codelineno-0-44">44</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    Set the target state of the controller.</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">        target: The target state to be set, e.g. a joint position, base velocity, or any other state.</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="k">pass</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">        target: The target state to be set, e.g. a joint position, base velocity, or any other state.</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4874,21 +5038,21 @@ NOTE: If the controller is already stationary, it does not change the target.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/abstract.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-47">47</a></span>
 <span class="normal"><a href="#__codelineno-0-48">48</a></span>
 <span class="normal"><a href="#__codelineno-0-49">49</a></span>
 <span class="normal"><a href="#__codelineno-0-50">50</a></span>
 <span class="normal"><a href="#__codelineno-0-51">51</a></span>
 <span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_to_stationary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">    This method sets the robot to stationary mode and computes the targets to hold the</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    robot stationary.</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    This is useful when the robot needs to be stopped at a certain position and not drift.</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    NOTE: If the controller is already stationary, it does not change the target.</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="k">pass</span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_to_stationary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    This method sets the robot to stationary mode and computes the targets to hold the</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    robot stationary.</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    This is useful when the robot needs to be stopped at a certain position and not drift.</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    NOTE: If the controller is already stationary, it does not change the target.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5008,6 +5172,38 @@ Computes velocities for the robot base's actuators based on target pose, and cli
 NOTE: Assumes base actuators (eg. wheels) use velocity inputs.</p>
 <p>This class cannot be instantiated directly and must be subclassed with an implementation
 of the "compute_base_velocities" method.</p>
+
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_move_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            MoveGroup (molmo_spaces.robots.robot_views.abstract.MoveGroup)" href="../robots/#molmo_spaces.robots.robot_views.abstract.MoveGroup">MoveGroup</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The move group of the robot to be controlled</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -5347,21 +5543,21 @@ Methods could include: Differential-drive, Ackermann steering, Omni-wheel contro
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-73">73</a></span>
-<span class="normal"><a href="#__codelineno-0-74">74</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-74">74</a></span>
 <span class="normal"><a href="#__codelineno-0-75">75</a></span>
 <span class="normal"><a href="#__codelineno-0-76">76</a></span>
 <span class="normal"><a href="#__codelineno-0-77">77</a></span>
 <span class="normal"><a href="#__codelineno-0-78">78</a></span>
 <span class="normal"><a href="#__codelineno-0-79">79</a></span>
-<span class="normal"><a href="#__codelineno-0-80">80</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="nd">@abstractmethod</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_base_pose</span><span class="p">):</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    Abstract method to compute base velocities to achieve the target pose.</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    Must be implemented by subclasses.</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    Methods could include: Differential-drive, Ackermann steering, Omni-wheel control etc.</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="k">pass</span>
+<span class="normal"><a href="#__codelineno-0-80">80</a></span>
+<span class="normal"><a href="#__codelineno-0-81">81</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="nd">@abstractmethod</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_base_pose</span><span class="p">):</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    Abstract method to compute base velocities to achieve the target pose.</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    Must be implemented by subclasses.</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">    Methods could include: Differential-drive, Ackermann steering, Omni-wheel control etc.</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5381,9 +5577,29 @@ Methods could include: Differential-drive, Ackermann steering, Omni-wheel contro
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, in this case: positions</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, in this case: positions</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -5399,18 +5615,20 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-68">68</a></span>
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
 <span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="c1"># velocity control inputs: compute base velocities to achieve target pose</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="c1"># Clip to control limits</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="c1"># velocity control inputs: compute base velocities to achieve target pose</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="c1"># Clip to control limits</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5435,11 +5653,11 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#__codelineno-0-84">84</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5550,10 +5768,53 @@ This is useful when the robot needs to be stopped at a certain position and not 
 
 
 
-        <p>Differential drive base pose controller.
-Args:
-    robot_config: The configuration of the robot, containing special information about the control
-    robot_move_group: The move group of the robot base to be controlled</p>
+        <p>Differential drive base pose controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_config</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The configuration of the robot, containing special information about the control</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_move_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            RobotBaseGroup (molmo_spaces.robots.robot_views.abstract.RobotBaseGroup)" href="../robots/#molmo_spaces.robots.robot_views.abstract.RobotBaseGroup">RobotBaseGroup</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The move group of the robot base to be controlled</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -5756,29 +6017,31 @@ Args:
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-88">88</a></span>
-<span class="normal"><a href="#__codelineno-0-89">89</a></span>
-<span class="normal"><a href="#__codelineno-0-90">90</a></span>
-<span class="normal"><a href="#__codelineno-0-91">91</a></span>
-<span class="normal"><a href="#__codelineno-0-92">92</a></span>
-<span class="normal"><a href="#__codelineno-0-93">93</a></span>
-<span class="normal"><a href="#__codelineno-0-94">94</a></span>
-<span class="normal"><a href="#__codelineno-0-95">95</a></span>
-<span class="normal"><a href="#__codelineno-0-96">96</a></span>
-<span class="normal"><a href="#__codelineno-0-97">97</a></span>
-<span class="normal"><a href="#__codelineno-0-98">98</a></span>
-<span class="normal"><a href="#__codelineno-0-99">99</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robot_config</span><span class="p">,</span> <span class="n">robot_move_group</span><span class="p">:</span> <span class="n">RobotBaseGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">    Differential drive base pose controller.</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        robot_config: The configuration of the robot, containing special information about the control</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        robot_move_group: The move group of the robot base to be controlled</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span> <span class="o">=</span> <span class="n">robot_config</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_base</span>  <span class="c1"># Distance between the wheels</span>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_radius</span>  <span class="c1"># Radius of the wheels</span>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">robot_move_group</span><span class="p">)</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
+<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
+<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
+<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
+<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
+<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#__codelineno-0-101">101</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robot_config</span><span class="p">,</span> <span class="n">robot_move_group</span><span class="p">:</span> <span class="n">RobotBaseGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    Differential drive base pose controller.</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">        robot_config: The configuration of the robot, containing special information about the control</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">        robot_move_group: The move group of the robot base to be controlled</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span> <span class="o">=</span> <span class="n">robot_config</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_base</span>  <span class="c1"># Distance between the wheels</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_radius</span>  <span class="c1"># Radius of the wheels</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">robot_move_group</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -5988,18 +6251,64 @@ Args:
 
     <div class="doc doc-contents ">
 
-        <p>Compute wheel velocities to drive the robot base to the target pose using a simple proportional controller.
-Args:
-    target_base_pose: Target [x, y, theta] pose in world frame.
-Returns:
-    np.ndarray: [left_wheel_velocity, right_wheel_velocity]</p>
+        <p>Compute wheel velocities to drive the robot base to the target pose using a simple proportional controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>target_base_pose</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target [x, y, theta] pose in world frame.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>np.ndarray: [left_wheel_velocity, right_wheel_velocity]</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
-<span class="normal"><a href="#__codelineno-0-102">102</a></span>
-<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-103">103</a></span>
 <span class="normal"><a href="#__codelineno-0-104">104</a></span>
 <span class="normal"><a href="#__codelineno-0-105">105</a></span>
 <span class="normal"><a href="#__codelineno-0-106">106</a></span>
@@ -6034,44 +6343,50 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-135">135</a></span>
 <span class="normal"><a href="#__codelineno-0-136">136</a></span>
 <span class="normal"><a href="#__codelineno-0-137">137</a></span>
-<span class="normal"><a href="#__codelineno-0-138">138</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_base_pose</span><span class="p">):</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">    Compute wheel velocities to drive the robot base to the target pose using a simple proportional controller.</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">        target_base_pose: Target [x, y, theta] pose in world frame.</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">        np.ndarray: [left_wheel_velocity, right_wheel_velocity]</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a>    <span class="c1"># TODO: Test this controller</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="c1"># TODO: Handle case where base_pose frame is not in the center of the wheels</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="c1"># Current pose</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="n">current_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_move_group</span><span class="o">.</span><span class="n">pose</span>  <span class="c1"># [x, y, theta]</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">current_pose</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>    <span class="n">x_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">theta_t</span> <span class="o">=</span> <span class="n">target_base_pose</span>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="c1"># Compute pose error in world frame</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">dx</span> <span class="o">=</span> <span class="n">x_t</span> <span class="o">-</span> <span class="n">x</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="n">dy</span> <span class="o">=</span> <span class="n">y_t</span> <span class="o">-</span> <span class="n">y</span>
+<span class="normal"><a href="#__codelineno-0-138">138</a></span>
+<span class="normal"><a href="#__codelineno-0-139">139</a></span>
+<span class="normal"><a href="#__codelineno-0-140">140</a></span>
+<span class="normal"><a href="#__codelineno-0-141">141</a></span>
+<span class="normal"><a href="#__codelineno-0-142">142</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_base_pose</span><span class="p">):</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">    Compute wheel velocities to drive the robot base to the target pose using a simple proportional controller.</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        target_base_pose: Target [x, y, theta] pose in world frame.</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        np.ndarray: [left_wheel_velocity, right_wheel_velocity]</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="c1"># TODO: Test this controller</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>    <span class="c1"># TODO: Handle case where base_pose frame is not in the center of the wheels</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="c1"># Current pose</span>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="n">current_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_move_group</span><span class="o">.</span><span class="n">pose</span>  <span class="c1"># [x, y, theta]</span>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">current_pose</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="n">x_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">theta_t</span> <span class="o">=</span> <span class="n">target_base_pose</span>
 <a id="__codelineno-0-120" name="__codelineno-0-120"></a>
-<a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="c1"># Transform error to robot frame</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a>    <span class="n">error_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a>    <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a>    <span class="n">error_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="c1"># Proportional gains</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="n">k_rho</span> <span class="o">=</span> <span class="mf">1.0</span>
-<a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="n">k_alpha</span> <span class="o">=</span> <span class="mf">2.0</span>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="c1"># Compute pose error in world frame</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a>    <span class="n">dx</span> <span class="o">=</span> <span class="n">x_t</span> <span class="o">-</span> <span class="n">x</span>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a>    <span class="n">dy</span> <span class="o">=</span> <span class="n">y_t</span> <span class="o">-</span> <span class="n">y</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="c1"># Transform error to robot frame</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="n">error_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
+<a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="n">error_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span>
 <a id="__codelineno-0-129" name="__codelineno-0-129"></a>
-<a id="__codelineno-0-130" name="__codelineno-0-130"></a>    <span class="c1"># Compute control signals</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131"></a>    <span class="n">v</span> <span class="o">=</span> <span class="n">k_rho</span> <span class="o">*</span> <span class="n">error_x</span>
-<a id="__codelineno-0-132" name="__codelineno-0-132"></a>    <span class="n">omega</span> <span class="o">=</span> <span class="n">k_alpha</span> <span class="o">*</span> <span class="n">error_theta</span>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a>    <span class="c1"># Proportional gains</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a>    <span class="n">k_rho</span> <span class="o">=</span> <span class="mf">1.0</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>    <span class="n">k_alpha</span> <span class="o">=</span> <span class="mf">2.0</span>
 <a id="__codelineno-0-133" name="__codelineno-0-133"></a>
-<a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="c1"># Convert (v, omega) to wheel velocities</span>
-<a id="__codelineno-0-135" name="__codelineno-0-135"></a>    <span class="n">v_l</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">omega</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span>
-<a id="__codelineno-0-136" name="__codelineno-0-136"></a>    <span class="n">v_r</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">omega</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span>
+<a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="c1"># Compute control signals</span>
+<a id="__codelineno-0-135" name="__codelineno-0-135"></a>    <span class="n">v</span> <span class="o">=</span> <span class="n">k_rho</span> <span class="o">*</span> <span class="n">error_x</span>
+<a id="__codelineno-0-136" name="__codelineno-0-136"></a>    <span class="n">omega</span> <span class="o">=</span> <span class="n">k_alpha</span> <span class="o">*</span> <span class="n">error_theta</span>
 <a id="__codelineno-0-137" name="__codelineno-0-137"></a>
-<a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">v_l</span><span class="p">,</span> <span class="n">v_r</span><span class="p">])</span>
+<a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="c1"># Convert (v, omega) to wheel velocities</span>
+<a id="__codelineno-0-139" name="__codelineno-0-139"></a>    <span class="n">v_l</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">omega</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span>
+<a id="__codelineno-0-140" name="__codelineno-0-140"></a>    <span class="n">v_r</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">omega</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span>
+<a id="__codelineno-0-141" name="__codelineno-0-141"></a>
+<a id="__codelineno-0-142" name="__codelineno-0-142"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">v_l</span><span class="p">,</span> <span class="n">v_r</span><span class="p">])</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6091,9 +6406,29 @@ Returns:
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, in this case: positions</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, in this case: positions</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -6109,18 +6444,20 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-68">68</a></span>
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
 <span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="c1"># velocity control inputs: compute base velocities to achieve target pose</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="c1"># Clip to control limits</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="c1"># velocity control inputs: compute base velocities to achieve target pose</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="c1"># Clip to control limits</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6145,11 +6482,11 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#__codelineno-0-84">84</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6260,10 +6597,53 @@ This is useful when the robot needs to be stopped at a certain position and not 
 
 
 
-        <p>Swerve drive base pose controller.
-Args:
-    robot_config: The configuration of the robot, containing special information about the control
-    robot_move_group: The move group of the robot base to be controlled</p>
+        <p>Swerve drive base pose controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_config</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The configuration of the robot, containing special information about the control</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_move_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            RobotBaseGroup (molmo_spaces.robots.robot_views.abstract.RobotBaseGroup)" href="../robots/#molmo_spaces.robots.robot_views.abstract.RobotBaseGroup">RobotBaseGroup</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The move group of the robot base to be controlled</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -6526,11 +6906,7 @@ Args:
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-142">142</a></span>
-<span class="normal"><a href="#__codelineno-0-143">143</a></span>
-<span class="normal"><a href="#__codelineno-0-144">144</a></span>
-<span class="normal"><a href="#__codelineno-0-145">145</a></span>
-<span class="normal"><a href="#__codelineno-0-146">146</a></span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-146">146</a></span>
 <span class="normal"><a href="#__codelineno-0-147">147</a></span>
 <span class="normal"><a href="#__codelineno-0-148">148</a></span>
 <span class="normal"><a href="#__codelineno-0-149">149</a></span>
@@ -6541,22 +6917,28 @@ Args:
 <span class="normal"><a href="#__codelineno-0-154">154</a></span>
 <span class="normal"><a href="#__codelineno-0-155">155</a></span>
 <span class="normal"><a href="#__codelineno-0-156">156</a></span>
-<span class="normal"><a href="#__codelineno-0-157">157</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robot_config</span><span class="p">,</span> <span class="n">robot_move_group</span><span class="p">:</span> <span class="n">RobotBaseGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">    Swerve drive base pose controller.</span>
-<a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">        robot_config: The configuration of the robot, containing special information about the control</span>
-<a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="sd">        robot_move_group: The move group of the robot base to be controlled</span>
-<a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-149" name="__codelineno-0-149"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span> <span class="o">=</span> <span class="n">robot_config</span>
-<a id="__codelineno-0-150" name="__codelineno-0-150"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">steer_track</span>
-<a id="__codelineno-0-151" name="__codelineno-0-151"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_base</span>  <span class="c1"># Distance between the wheels</span>
-<a id="__codelineno-0-152" name="__codelineno-0-152"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_radius</span>  <span class="c1"># Radius of the wheels</span>
-<a id="__codelineno-0-153" name="__codelineno-0-153"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">steer_angle_range</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">steer_angle_range</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_wheel_speed</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">max_wheel_speed</span>
-<a id="__codelineno-0-155" name="__codelineno-0-155"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_steer_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-156" name="__codelineno-0-156"></a>
-<a id="__codelineno-0-157" name="__codelineno-0-157"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">robot_move_group</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-157">157</a></span>
+<span class="normal"><a href="#__codelineno-0-158">158</a></span>
+<span class="normal"><a href="#__codelineno-0-159">159</a></span>
+<span class="normal"><a href="#__codelineno-0-160">160</a></span>
+<span class="normal"><a href="#__codelineno-0-161">161</a></span>
+<span class="normal"><a href="#__codelineno-0-162">162</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">robot_config</span><span class="p">,</span> <span class="n">robot_move_group</span><span class="p">:</span> <span class="n">RobotBaseGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">    Swerve drive base pose controller.</span>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">        robot_config: The configuration of the robot, containing special information about the control</span>
+<a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">        robot_move_group: The move group of the robot base to be controlled</span>
+<a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span> <span class="o">=</span> <span class="n">robot_config</span>
+<a id="__codelineno-0-155" name="__codelineno-0-155"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">steer_track</span>
+<a id="__codelineno-0-156" name="__codelineno-0-156"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_base</span>  <span class="c1"># Distance between the wheels</span>
+<a id="__codelineno-0-157" name="__codelineno-0-157"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">wheel_radius</span>  <span class="c1"># Radius of the wheels</span>
+<a id="__codelineno-0-158" name="__codelineno-0-158"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">steer_angle_range</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">steer_angle_range</span>
+<a id="__codelineno-0-159" name="__codelineno-0-159"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_wheel_speed</span> <span class="o">=</span> <span class="n">robot_config</span><span class="o">.</span><span class="n">max_wheel_speed</span>
+<a id="__codelineno-0-160" name="__codelineno-0-160"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_steer_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-161" name="__codelineno-0-161"></a>
+<a id="__codelineno-0-162" name="__codelineno-0-162"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">robot_move_group</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -6854,13 +7236,61 @@ Args:
 
     <div class="doc doc-contents ">
 
-        <p>Compute wheel velocities and steer angles to drive the robot base to the target pose using a simple proportional controller.
-Args:
-    target_base_pose: Target [x, y, theta] pose in world frame.
-Returns:
-    np.ndarray: [front_left_steer_angle,   front_right_steer_angle,    back_left_steer_angle,    back_right_steer_angle,
-                front_left_wheel_velocity, front_right_wheel_velocity, back_left_wheel_velocity, back_right_wheel_velocity]</p>
-<p>Assert local frame defination:</p>
+        <p>Compute wheel velocities and steer angles to drive the robot base to the target pose using a simple proportional controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>target_base_pose</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target [x, y, theta] pose in world frame.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>np.ndarray: [front_left_steer_angle,   front_right_steer_angle,    back_left_steer_angle,    back_right_steer_angle,
+        front_left_wheel_velocity, front_right_wheel_velocity, back_left_wheel_velocity, back_right_wheel_velocity]</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>Assert local frame defination:</p>
 <div class="highlight"><pre><span></span><code>               ↑  x
                |
        fl      |       fr
@@ -6881,12 +7311,7 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-159">159</a></span>
-<span class="normal"><a href="#__codelineno-0-160">160</a></span>
-<span class="normal"><a href="#__codelineno-0-161">161</a></span>
-<span class="normal"><a href="#__codelineno-0-162">162</a></span>
-<span class="normal"><a href="#__codelineno-0-163">163</a></span>
-<span class="normal"><a href="#__codelineno-0-164">164</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-164">164</a></span>
 <span class="normal"><a href="#__codelineno-0-165">165</a></span>
 <span class="normal"><a href="#__codelineno-0-166">166</a></span>
 <span class="normal"><a href="#__codelineno-0-167">167</a></span>
@@ -6978,104 +7403,113 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-253">253</a></span>
 <span class="normal"><a href="#__codelineno-0-254">254</a></span>
 <span class="normal"><a href="#__codelineno-0-255">255</a></span>
-<span class="normal"><a href="#__codelineno-0-256">256</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-159" name="__codelineno-0-159"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_base_pose</span><span class="p">):</span>
-<a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">    Compute wheel velocities and steer angles to drive the robot base to the target pose using a simple proportional controller.</span>
-<a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">        target_base_pose: Target [x, y, theta] pose in world frame.</span>
-<a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">        np.ndarray: [front_left_steer_angle,   front_right_steer_angle,    back_left_steer_angle,    back_right_steer_angle,</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">                    front_left_wheel_velocity, front_right_wheel_velocity, back_left_wheel_velocity, back_right_wheel_velocity]</span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span>
+<span class="normal"><a href="#__codelineno-0-258">258</a></span>
+<span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_base_pose</span><span class="p">):</span>
+<a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">    Compute wheel velocities and steer angles to drive the robot base to the target pose using a simple proportional controller.</span>
 <a id="__codelineno-0-167" name="__codelineno-0-167"></a>
-<a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">    Assert local frame defination:</span>
-<a id="__codelineno-0-169" name="__codelineno-0-169"></a>
-<a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">                       ↑  x</span>
-<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">                       |</span>
-<a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">               fl      |       fr</span>
-<a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">                o------|------o</span>
-<a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">                |      |      |</span>
-<a id="__codelineno-0-175" name="__codelineno-0-175"></a><span class="sd">                |      |      |</span>
-<a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="sd">                |      |      |</span>
-<a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">                |      |      |</span>
-<a id="__codelineno-0-178" name="__codelineno-0-178"></a><span class="sd">          y &lt;----------o      |</span>
-<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">                |             |</span>
-<a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">                |             |</span>
-<a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">                |             |</span>
-<a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">                |             |</span>
-<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">                o-------------o</span>
-<a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">               rl              rr</span>
-<a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-186" name="__codelineno-0-186"></a>    <span class="c1"># TODO: Test this controller</span>
-<a id="__codelineno-0-187" name="__codelineno-0-187"></a>    <span class="c1"># TODO: Handle case where base_pose frame is not in the center of the wheels</span>
-<a id="__codelineno-0-188" name="__codelineno-0-188"></a>
-<a id="__codelineno-0-189" name="__codelineno-0-189"></a>    <span class="c1"># Current pose</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a>    <span class="n">current_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_move_group</span><span class="o">.</span><span class="n">pose</span>  <span class="c1"># [x, y, theta]</span>
-<a id="__codelineno-0-191" name="__codelineno-0-191"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">current_pose</span>
-<a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="n">x_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">theta_t</span> <span class="o">=</span> <span class="n">target_base_pose</span>
-<a id="__codelineno-0-193" name="__codelineno-0-193"></a>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="c1"># Compute pose error in world frame</span>
-<a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="n">dx</span> <span class="o">=</span> <span class="n">x_t</span> <span class="o">-</span> <span class="n">x</span>
-<a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="n">dy</span> <span class="o">=</span> <span class="n">y_t</span> <span class="o">-</span> <span class="n">y</span>
-<a id="__codelineno-0-197" name="__codelineno-0-197"></a>
-<a id="__codelineno-0-198" name="__codelineno-0-198"></a>    <span class="c1"># Transform error to robot frame</span>
-<a id="__codelineno-0-199" name="__codelineno-0-199"></a>    <span class="n">error_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
-<a id="__codelineno-0-200" name="__codelineno-0-200"></a>    <span class="n">error_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
-<a id="__codelineno-0-201" name="__codelineno-0-201"></a>    <span class="n">error_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span>
-<a id="__codelineno-0-202" name="__codelineno-0-202"></a>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a>    <span class="c1"># Proportional gains</span>
-<a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="n">k_rho</span> <span class="o">=</span> <span class="mf">1.0</span>
-<a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="n">k_alpha</span> <span class="o">=</span> <span class="mf">2.0</span>
-<a id="__codelineno-0-206" name="__codelineno-0-206"></a>
-<a id="__codelineno-0-207" name="__codelineno-0-207"></a>    <span class="c1"># Compute control signals</span>
-<a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="n">v_lin_x</span> <span class="o">=</span> <span class="n">k_rho</span> <span class="o">*</span> <span class="n">error_x</span>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a>    <span class="n">v_lin_y</span> <span class="o">=</span> <span class="n">k_rho</span> <span class="o">*</span> <span class="n">error_y</span>
-<a id="__codelineno-0-210" name="__codelineno-0-210"></a>    <span class="n">v_yaw</span> <span class="o">=</span> <span class="n">k_alpha</span> <span class="o">*</span> <span class="n">error_theta</span>
-<a id="__codelineno-0-211" name="__codelineno-0-211"></a>
-<a id="__codelineno-0-212" name="__codelineno-0-212"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a>        <span class="n">v_lin_y</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a>        <span class="n">v_lin_x</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_yaw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a>        <span class="n">v_yaw</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_yaw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">v_lin_x</span><span class="p">,</span> <span class="n">v_lin_y</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">:</span>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a>        <span class="n">v_lin_x</span><span class="p">,</span> <span class="n">v_lin_y</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="n">v_yaw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">v_yaw</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="c1"># Kinematic model: convert vx, vy, vw to steer angles and wheel velocities</span>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a>    <span class="n">wheel_coords</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a>        <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># fl</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a>        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># fr</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># rl</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># rr</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a>    <span class="p">]</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="n">steer_ang</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>    <span class="n">drive_vel</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>    <span class="k">for</span> <span class="n">wx</span><span class="p">,</span> <span class="n">wy</span> <span class="ow">in</span> <span class="n">wheel_coords</span><span class="p">:</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="n">vix</span> <span class="o">=</span> <span class="n">v_lin_x</span> <span class="o">+</span> <span class="n">wx</span> <span class="o">*</span> <span class="n">v_yaw</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="n">viy</span> <span class="o">=</span> <span class="n">v_lin_y</span> <span class="o">+</span> <span class="n">wy</span> <span class="o">*</span> <span class="n">v_yaw</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">viy</span><span class="p">,</span> <span class="n">vix</span><span class="p">)</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="n">speed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">viy</span><span class="p">,</span> <span class="n">vix</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="n">steer_ang</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="n">drive_vel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="n">steer_ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steer_ang</span><span class="p">)</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="n">drive_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">drive_vel</span><span class="p">)</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="c1"># Optimize steer angle and wheel speed to find nearest equivalent angle and speed</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="n">optimized_steer_ang</span><span class="p">,</span> <span class="n">optimized_drive_vel</span> <span class="o">=</span> <span class="n">optimize_all_steer_and_drive</span><span class="p">(</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">current_steer_angles</span><span class="p">,</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="n">steer_ang</span><span class="p">,</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>        <span class="n">drive_vel</span><span class="p">,</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">steer_angle_range</span><span class="p">,</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_wheel_speed</span><span class="p">,</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>    <span class="p">)</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_steer_angles</span> <span class="o">=</span> <span class="n">optimized_steer_ang</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="c1"># Update the joint velocity and position.</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">optimized_steer_ang</span><span class="p">,</span> <span class="n">optimized_drive_vel</span><span class="p">])</span>
+<a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-169" name="__codelineno-0-169"></a><span class="sd">        target_base_pose: Target [x, y, theta] pose in world frame.</span>
+<a id="__codelineno-0-170" name="__codelineno-0-170"></a>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">        np.ndarray: [front_left_steer_angle,   front_right_steer_angle,    back_left_steer_angle,    back_right_steer_angle,</span>
+<a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">                    front_left_wheel_velocity, front_right_wheel_velocity, back_left_wheel_velocity, back_right_wheel_velocity]</span>
+<a id="__codelineno-0-174" name="__codelineno-0-174"></a>
+<a id="__codelineno-0-175" name="__codelineno-0-175"></a><span class="sd">    Assert local frame defination:</span>
+<a id="__codelineno-0-176" name="__codelineno-0-176"></a>
+<a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">                       ↑  x</span>
+<a id="__codelineno-0-178" name="__codelineno-0-178"></a><span class="sd">                       |</span>
+<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">               fl      |       fr</span>
+<a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">                o------|------o</span>
+<a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">                |      |      |</span>
+<a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">                |      |      |</span>
+<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">                |      |      |</span>
+<a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">                |      |      |</span>
+<a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">          y &lt;----------o      |</span>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">                |             |</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">                |             |</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">                |             |</span>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">                |             |</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">                o-------------o</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">               rl              rr</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="c1"># TODO: Test this controller</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="c1"># TODO: Handle case where base_pose frame is not in the center of the wheels</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="c1"># Current pose</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>    <span class="n">current_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_move_group</span><span class="o">.</span><span class="n">pose</span>  <span class="c1"># [x, y, theta]</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">current_pose</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a>    <span class="n">x_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">theta_t</span> <span class="o">=</span> <span class="n">target_base_pose</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a>
+<a id="__codelineno-0-201" name="__codelineno-0-201"></a>    <span class="c1"># Compute pose error in world frame</span>
+<a id="__codelineno-0-202" name="__codelineno-0-202"></a>    <span class="n">dx</span> <span class="o">=</span> <span class="n">x_t</span> <span class="o">-</span> <span class="n">x</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a>    <span class="n">dy</span> <span class="o">=</span> <span class="n">y_t</span> <span class="o">-</span> <span class="n">y</span>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a>
+<a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="c1"># Transform error to robot frame</span>
+<a id="__codelineno-0-206" name="__codelineno-0-206"></a>    <span class="n">error_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a>    <span class="n">error_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="n">error_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_t</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a>    <span class="c1"># Proportional gains</span>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a>    <span class="n">k_rho</span> <span class="o">=</span> <span class="mf">1.0</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a>    <span class="n">k_alpha</span> <span class="o">=</span> <span class="mf">2.0</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a>    <span class="c1"># Compute control signals</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a>    <span class="n">v_lin_x</span> <span class="o">=</span> <span class="n">k_rho</span> <span class="o">*</span> <span class="n">error_x</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a>    <span class="n">v_lin_y</span> <span class="o">=</span> <span class="n">k_rho</span> <span class="o">*</span> <span class="n">error_y</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a>    <span class="n">v_yaw</span> <span class="o">=</span> <span class="n">k_alpha</span> <span class="o">*</span> <span class="n">error_theta</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a>        <span class="n">v_lin_y</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a>        <span class="n">v_lin_x</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_yaw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">v_yaw</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_lin_x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_yaw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">v_lin_x</span><span class="p">,</span> <span class="n">v_lin_y</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">:</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="n">v_lin_x</span><span class="p">,</span> <span class="n">v_lin_y</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="n">v_yaw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">v_yaw</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">2</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="c1"># Kinematic model: convert vx, vy, vw to steer angles and wheel velocities</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="n">wheel_coords</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># fl</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># fr</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># rl</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wheel_base</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">steer_track</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># rr</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="p">]</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="n">steer_ang</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="n">drive_vel</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="k">for</span> <span class="n">wx</span><span class="p">,</span> <span class="n">wy</span> <span class="ow">in</span> <span class="n">wheel_coords</span><span class="p">:</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="n">vix</span> <span class="o">=</span> <span class="n">v_lin_x</span> <span class="o">+</span> <span class="n">wx</span> <span class="o">*</span> <span class="n">v_yaw</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="n">viy</span> <span class="o">=</span> <span class="n">v_lin_y</span> <span class="o">+</span> <span class="n">wy</span> <span class="o">*</span> <span class="n">v_yaw</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">viy</span><span class="p">,</span> <span class="n">vix</span><span class="p">)</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="n">speed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="n">viy</span><span class="p">,</span> <span class="n">vix</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wheel_radius</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="n">steer_ang</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="n">drive_vel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>    <span class="n">steer_ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">steer_ang</span><span class="p">)</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="n">drive_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">drive_vel</span><span class="p">)</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>    <span class="c1"># Optimize steer angle and wheel speed to find nearest equivalent angle and speed</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="n">optimized_steer_ang</span><span class="p">,</span> <span class="n">optimized_drive_vel</span> <span class="o">=</span> <span class="n">optimize_all_steer_and_drive</span><span class="p">(</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">current_steer_angles</span><span class="p">,</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>        <span class="n">steer_ang</span><span class="p">,</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>        <span class="n">drive_vel</span><span class="p">,</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">steer_angle_range</span><span class="p">,</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_wheel_speed</span><span class="p">,</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="p">)</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_steer_angles</span> <span class="o">=</span> <span class="n">optimized_steer_ang</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="c1"># Update the joint velocity and position.</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">optimized_steer_ang</span><span class="p">,</span> <span class="n">optimized_drive_vel</span><span class="p">])</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7095,9 +7529,29 @@ Returns:
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, in this case: positions</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, in this case: positions</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -7113,18 +7567,20 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-68">68</a></span>
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
 <span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="c1"># velocity control inputs: compute base velocities to achieve target pose</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="c1"># Clip to control limits</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="c1"># velocity control inputs: compute base velocities to achieve target pose</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_base_velocities</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="c1"># Clip to control limits</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7149,11 +7605,11 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/base_pose.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#__codelineno-0-84">84</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7336,6 +7792,38 @@ NOTE: Assumes joint actuators use position inputs.</p>
 
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_move_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            MoveGroup (molmo_spaces.robots.robot_views.abstract.MoveGroup)" href="../robots/#molmo_spaces.robots.robot_views.abstract.MoveGroup">MoveGroup</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The move group of the robot to be controlled</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
 
 
 
@@ -7474,7 +7962,7 @@ NOTE: Assumes joint actuators use position inputs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The target state of the controller, set by the user of the controller.</p>
               </div>
             </td>
           </tr>
@@ -7490,7 +7978,7 @@ NOTE: Assumes joint actuators use position inputs.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The target absolute position of the controller, set by the user of the controller.</p>
               </div>
             </td>
           </tr>
@@ -7646,6 +8134,8 @@ NOTE: Assumes joint actuators use position inputs.</p>
 
     <div class="doc doc-contents ">
 
+        <p>The target state of the controller, set by the user of the controller.</p>
+
     </div>
 
 </div>
@@ -7668,6 +8158,8 @@ NOTE: Assumes joint actuators use position inputs.</p>
 
     <div class="doc doc-contents ">
 
+        <p>The target absolute position of the controller, set by the user of the controller.</p>
+
     </div>
 
 </div>
@@ -7688,9 +8180,29 @@ NOTE: Assumes joint actuators use position inputs.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, in this case: positions</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, in this case: positions</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -7702,14 +8214,16 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-65">65</a></span>
 <span class="normal"><a href="#__codelineno-0-66">66</a></span>
 <span class="normal"><a href="#__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#__codelineno-0-68">68</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="c1"># position control inputs: just pass through the target joint positions</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="c1"># position control inputs: just pass through the target joint positions</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7734,11 +8248,11 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/joint_pos.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7918,6 +8432,38 @@ Computes delta joint position targets for the joint's actuators, and clips to co
 
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_move_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            MoveGroup (molmo_spaces.robots.robot_views.abstract.MoveGroup)" href="../robots/#molmo_spaces.robots.robot_views.abstract.MoveGroup">MoveGroup</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The move group of the robot to be controlled</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
 
 
 
@@ -8071,7 +8617,7 @@ Computes delta joint position targets for the joint's actuators, and clips to co
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The target state of the controller, set by the user of the controller.</p>
               </div>
             </td>
           </tr>
@@ -8087,7 +8633,7 @@ Computes delta joint position targets for the joint's actuators, and clips to co
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The target absolute position of the controller, set by the user of the controller.</p>
               </div>
             </td>
           </tr>
@@ -8263,6 +8809,8 @@ Computes delta joint position targets for the joint's actuators, and clips to co
 
     <div class="doc doc-contents ">
 
+        <p>The target state of the controller, set by the user of the controller.</p>
+
     </div>
 
 </div>
@@ -8285,6 +8833,8 @@ Computes delta joint position targets for the joint's actuators, and clips to co
 
     <div class="doc doc-contents ">
 
+        <p>The target absolute position of the controller, set by the user of the controller.</p>
+
     </div>
 
 </div>
@@ -8305,9 +8855,29 @@ Computes delta joint position targets for the joint's actuators, and clips to co
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, in this case: positions</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, in this case: positions</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -8318,13 +8888,15 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-76">76</a></span>
 <span class="normal"><a href="#__codelineno-0-77">77</a></span>
 <span class="normal"><a href="#__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#__codelineno-0-79">79</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-79">79</a></span>
+<span class="normal"><a href="#__codelineno-0-80">80</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">desired_joint_positions</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">desired_joint_positions</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8349,11 +8921,11 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/joint_rel_pos.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-81">81</a></span>
-<span class="normal"><a href="#__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#__codelineno-0-83">83</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8974,9 +9546,29 @@ robot_move_group: The move group of the robot to be controlled</p>
 
     <div class="doc doc-contents ">
 
-        <p>Compute the control inputs based on the current state and the target set by the user.
-Returns:
-    The control inputs to be applied to the robot actuators, in this case: positions</p>
+        <p>Compute the control inputs based on the current state and the target set by the user.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The control inputs to be applied to the robot actuators, in this case: positions</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -8992,18 +9584,20 @@ Returns:
 <span class="normal"><a href="#__codelineno-0-70">70</a></span>
 <span class="normal"><a href="#__codelineno-0-71">71</a></span>
 <span class="normal"><a href="#__codelineno-0-72">72</a></span>
-<span class="normal"><a href="#__codelineno-0-73">73</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_ctrl_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Compute the control inputs based on the current state and the target set by the user.</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="c1"># position control inputs: perform euler integration on the target velocities</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_move_group</span><span class="o">.</span><span class="n">joint_pos</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">euler_dt</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="c1"># Clip the control inputs to the actuator limits</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">        The control inputs to be applied to the robot actuators, in this case: positions</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="c1"># position control inputs: perform euler integration on the target velocities</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_move_group</span><span class="o">.</span><span class="n">joint_pos</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">euler_dt</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="c1"># Clip the control inputs to the actuator limits</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="n">ctrl_inputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ctrl_inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctrl_range</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="k">return</span> <span class="n">ctrl_inputs</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9028,11 +9622,11 @@ Returns:
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/joint_vel.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-75">75</a></span>
-<span class="normal"><a href="#__codelineno-0-76">76</a></span>
-<span class="normal"><a href="#__codelineno-0-77">77</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the controller to its initial state, clearing any internal state or targets&quot;&quot;&quot;</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">set_to_stationary</span><span class="p">()</span>  <span class="c1"># Explicit reset to stationary mode</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9212,6 +9806,38 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
 
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>robot_move_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            MoveGroup (molmo_spaces.robots.robot_views.abstract.MoveGroup)" href="../robots/#molmo_spaces.robots.robot_views.abstract.MoveGroup">MoveGroup</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The move group of the robot to be controlled</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
 
 
 
@@ -9276,7 +9902,7 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
               <td><code><a class="autorefs autorefs-internal" title="            reset (molmo_spaces.controllers.torso_height.TorsoHeightJointPosController.reset)" href="#molmo_spaces.controllers.torso_height.TorsoHeightJointPosController.reset">reset</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  
+                  <p>Reset the controller to its initial state, clearing any internal state or targets.</p>
                 </div>
               </td>
             </tr>
@@ -9284,7 +9910,7 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
               <td><code><a class="autorefs autorefs-internal" title="            set_target (molmo_spaces.controllers.torso_height.TorsoHeightJointPosController.set_target)" href="#molmo_spaces.controllers.torso_height.TorsoHeightJointPosController.set_target">set_target</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  
+                  <p>Set the target state of the controller.</p>
                 </div>
               </td>
             </tr>
@@ -9292,7 +9918,7 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
               <td><code><a class="autorefs autorefs-internal" title="            set_to_stationary (molmo_spaces.controllers.torso_height.TorsoHeightJointPosController.set_to_stationary)" href="#molmo_spaces.controllers.torso_height.TorsoHeightJointPosController.set_to_stationary">set_to_stationary</a></code></td>
               <td>
                 <div class="doc-md-description">
-                  
+                  <p>This method sets the robot to stationary mode and computes the targets to hold the</p>
                 </div>
               </td>
             </tr>
@@ -9354,7 +9980,7 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>Whether the controller is set to hold the robot stationary, for e.g.</p>
               </div>
             </td>
           </tr>
@@ -9370,7 +9996,7 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The target state of the controller, set by the user of the controller.</p>
               </div>
             </td>
           </tr>
@@ -9386,7 +10012,7 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The target absolute position of the controller, set by the user of the controller.</p>
               </div>
             </td>
           </tr>
@@ -9479,6 +10105,9 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
 
     <div class="doc doc-contents ">
 
+        <p>Whether the controller is set to hold the robot stationary, for e.g.
+when the robot has to be stopped at a certain position and not drift.</p>
+
     </div>
 
 </div>
@@ -9501,6 +10130,8 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
 
     <div class="doc doc-contents ">
 
+        <p>The target state of the controller, set by the user of the controller.</p>
+
     </div>
 
 </div>
@@ -9522,6 +10153,8 @@ torso_1 = torso_3 = h, torso_2 = -2*h.</p>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>The target absolute position of the controller, set by the user of the controller.</p>
 
     </div>
 
@@ -9706,6 +10339,8 @@ maintain this height rather than drifting to the current joint position.</p>
 
     <div class="doc doc-contents ">
 
+        <p>Reset the controller to its initial state, clearing any internal state or targets.</p>
+
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/controllers/torso_height.py</code></summary>
@@ -9730,6 +10365,38 @@ maintain this height rather than drifting to the current joint position.</p>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>Set the target state of the controller.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>target</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The target state to be set, e.g. a joint position, base velocity, or any other state.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
@@ -9757,6 +10424,11 @@ maintain this height rather than drifting to the current joint position.</p>
 </code></pre></div>
 
     <div class="doc doc-contents ">
+
+        <p>This method sets the robot to stationary mode and computes the targets to hold the
+robot stationary.
+This is useful when the robot needs to be stopped at a certain position and not drift.
+NOTE: If the controller is already stationary, it does not change the target.</p>
 
 
             <details class="mkdocstrings-source">

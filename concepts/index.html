@@ -1,0 +1,1800 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Large scale assets and benchmarks for vision language policies">
+      
+      
+      
+        <link rel="canonical" href="https://allenai.github.io/molmospaces/concepts/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../assets/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Key Concepts - MolmoSpaces</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/timeago.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#key-concepts" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="MolmoSpaces" class="md-header__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MolmoSpaces
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Key Concepts
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="MolmoSpaces" class="md-nav__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    MolmoSpaces
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Concepts
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#robot-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#move-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Move Group
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Move Group">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frames
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot View
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-they-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How they compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-tasks-and-task-samplers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment, Tasks, and Task Samplers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment, Tasks, and Task Samplers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Task">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-sampler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task Sampler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#episode-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Episode lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/molmo_spaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    molmo_spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    env
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/robots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    robots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/controllers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    controllers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kinematics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/renderer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#robot-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#move-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Move Group
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Move Group">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frames
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot View
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Robot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-they-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How they compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-tasks-and-task-samplers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment, Tasks, and Task Samplers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment, Tasks, and Task Samplers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Task">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-sampler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task Sampler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#episode-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Episode lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/allenai/molmospaces/edit/main/docs/concepts.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h1>
+<p>This page explains the core abstractions in MolmoSpaces and how they compose.</p>
+<h2 id="robot-system">Robot System<a class="headerlink" href="#robot-system" title="Permanent link">&para;</a></h2>
+<p>The robot abstraction is a three-layer hierarchy: <strong>Move Groups</strong> are assembled into a <strong>Robot View</strong>, which is held by a <strong>Robot</strong>.</p>
+<h3 id="move-group">Move Group<a class="headerlink" href="#move-group" title="Permanent link">&para;</a></h3>
+<p>A <strong>move group</strong> is the atomic unit of robot control: a named collection of MuJoCo joints and actuators that move together.
+Each move group knows its joint/actuator IDs, its slice of <code>qpos</code>/<code>qvel</code>/<code>ctrl</code>, and can compute its own frame transforms and Jacobian.</p>
+<p>Crucially, move groups <strong>abstract away the underlying MuJoCo actuators and joint names</strong>.
+The number of joints and actuators in a group may differ — for example, a gripper may have 2 joints but only 1 actuator (mirrored/coupled), or a free joint has 7 DoF in <code>qpos</code> but 6 in <code>qvel</code>.
+Some groups have passive (unactuated) joints.
+In extreme cases, actuators can be entirely "faked" — <code>FloatingRUMBaseGroup</code> reports 7 actuators and a working <code>ctrl</code> property, but has no corresponding MuJoCo actuators at all; it reads and writes a mocap body pose instead.
+The rest of the system doesn't need to know any of this: it interacts with move groups through <code>joint_pos</code>, <code>ctrl</code>, and <code>noop_ctrl</code> regardless of what's happening underneath.</p>
+<p><strong>Base class:</strong> <a class="autorefs autorefs-internal" title="            MoveGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.MoveGroup"><code>MoveGroup</code></a></p>
+<p><strong>Specializations:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            GripperGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.GripperGroup"><code>GripperGroup</code></a></td>
+<td>Adds gripper-specific controls (<code>set_gripper_ctrl_open</code>, <code>is_open</code>, <code>inter_finger_dist</code>)</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            RobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.RobotBaseGroup"><code>RobotBaseGroup</code></a></td>
+<td>Represents the robot's pose in the world</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            ImmobileRobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.ImmobileRobotBaseGroup"><code>ImmobileRobotBaseGroup</code></a></td>
+<td>Fixed base (e.g. tabletop Franka)</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            FreeJointRobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.FreeJointRobotBaseGroup"><code>FreeJointRobotBaseGroup</code></a></td>
+<td>Full 6-DoF free joint base</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            HoloJointsRobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.HoloJointsRobotBaseGroup"><code>HoloJointsRobotBaseGroup</code></a></td>
+<td>Virtual x, y, theta (holonomic)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key interface:</strong></p>
+<ul>
+<li><strong>State:</strong> <code>joint_pos</code>, <code>joint_vel</code>, <code>ctrl</code> (get/set numpy arrays)</li>
+<li><strong>Limits:</strong> <code>joint_pos_limits</code>, <code>ctrl_limits</code></li>
+<li><strong>Frames:</strong> <code>leaf_frame_to_world</code>, <code>root_frame_to_world</code>, <code>leaf_frame_to_root</code></li>
+<li><strong>Control:</strong> <code>noop_ctrl</code>, <code>get_jacobian()</code></li>
+</ul>
+<h4 id="frames">Frames<a class="headerlink" href="#frames" title="Permanent link">&para;</a></h4>
+<p>Each move group represents a kinematic chain between two frames: a <strong>root frame</strong> and a <strong>leaf frame</strong>.
+For an arm, the root frame is typically the shoulder/base of the arm and the leaf frame is the end-effector.
+For a gripper or a fixed base, the root and leaf frames may be the same.</p>
+<p>The move group provides transforms between these frames and the world:</p>
+<ul>
+<li><code>leaf_frame_to_world</code> — the leaf frame's 4×4 pose in world coordinates (e.g. end-effector pose)</li>
+<li><code>root_frame_to_world</code> — the root frame's 4×4 pose in world coordinates (e.g. arm base mount)</li>
+<li><code>leaf_frame_to_root</code> — the leaf frame relative to the root (computed from the above two)</li>
+<li><code>leaf_frame_to_robot</code> / <code>root_frame_to_robot</code> — relative to the robot's base frame (uses <code>robot_base_group</code> if available)</li>
+</ul>
+<p>The Jacobian returned by <code>get_jacobian()</code> maps joint velocities to spatial velocity of the <strong>leaf frame</strong>.</p>
+<h3 id="robot-view">Robot View<a class="headerlink" href="#robot-view" title="Permanent link">&para;</a></h3>
+<p>A <strong>robot view</strong> assembles a set of named move groups into a single coherent robot interface.
+It provides bulk state queries (<code>get_qpos_dict</code>, <code>get_ctrl_dict</code>), Jacobian column masking across groups, and gripper lookups.</p>
+<p><strong>Base class:</strong> <a class="autorefs autorefs-internal" title="            RobotView" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.RobotView"><code>RobotView</code></a></p>
+<p>A <code>RobotView</code> is constructed from an <code>MjData</code> handle and a <code>dict[str, MoveGroup]</code>.
+The string keys (e.g. <code>"arm"</code>, <code>"gripper"</code>, <code>"base"</code>) are the <strong>move group IDs</strong> used throughout the codebase — in configs, action dicts, and policy outputs.</p>
+<p><strong>Key interface:</strong></p>
+<ul>
+<li><code>move_group_ids()</code> — list of all group names</li>
+<li><code>get_move_group(mg_id)</code> — look up a single group</li>
+<li><code>get_qpos_dict(mg_ids)</code> / <code>set_qpos_dict(qpos_dict)</code> — bulk joint position access</li>
+<li><code>get_ctrl_dict(mg_ids)</code> / <code>get_noop_ctrl_dict()</code> — bulk control access</li>
+<li><code>get_jacobian(move_group_id, input_move_group_ids)</code> — Jacobian for one group's frame, with columns restricted to the listed input groups</li>
+</ul>
+<h3 id="robot">Robot<a class="headerlink" href="#robot" title="Permanent link">&para;</a></h3>
+<p>The <strong>robot</strong> is the top-level abstraction that composes a <code>RobotView</code> with controllers and kinematics.
+It handles the control loop: receiving action commands keyed by move group ID, dispatching them to controllers, and writing MuJoCo <code>ctrl</code>.</p>
+<p><strong>Base class:</strong> <a class="autorefs autorefs-internal" title="            Robot" href="../api/robots/#molmo_spaces.robots.abstract.Robot"><code>Robot</code></a></p>
+<p><strong>What it holds:</strong></p>
+<ul>
+<li><code>robot_view</code> — the assembled <code>RobotView</code></li>
+<li><code>controllers</code> — <code>dict[str, Controller]</code>, typically one per commanded move group</li>
+<li><code>kinematics</code> / <code>parallel_kinematics</code> — FK/IK solvers</li>
+</ul>
+<p><strong>Key interface:</strong></p>
+<ul>
+<li><code>update_control(action_command_dict)</code> — feed per-group action arrays to controllers</li>
+<li><code>compute_control()</code> — run controllers and write <code>ctrl</code> to MuJoCo</li>
+<li><code>set_world_pose(pose)</code> — set the robot base pose (e.g. via mocap)</li>
+<li><code>reset()</code> — reset controllers and internal state</li>
+</ul>
+<p><strong>Action format:</strong> Actions throughout the codebase are <code>dict[str, np.ndarray]</code> mapping move group IDs to command arrays, e.g. <code>{"arm": np.array([...]), "gripper": np.array([...])}</code>.</p>
+<h4 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h4>
+<p>Robot configs (<code>BaseRobotConfig</code>) reference move group IDs as dictionary keys:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BaseRobotConfig</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">init_qpos</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>      <span class="c1"># e.g. {&quot;arm&quot;: [...], &quot;gripper&quot;: [...]}</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">command_mode</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>            <span class="c1"># e.g. {&quot;arm&quot;: &quot;joint_position&quot;, &quot;gripper&quot;: &quot;joint_position&quot;}</span>
+</code></pre></div>
+<p>These keys must match the names of the robot's move groups.</p>
+<p>The <strong>command mode</strong> determines what the action arrays for each move group mean and which controller is used:</p>
+<ul>
+<li><code>"joint_position"</code> — action values are target joint positions (absolute)</li>
+<li><code>"joint_rel_position"</code> — action values are deltas added to the current joint positions</li>
+</ul>
+<p>Each command mode maps to a different <code>Controller</code> subclass that translates the action into MuJoCo <code>ctrl</code> signals.
+Controllers run at the <strong>control timestep</strong> (<code>ctrl_dt</code>), which is typically much slower than the MuJoCo <strong>simulation timestep</strong> (<code>sim_dt</code>).
+On each control step, the controller updates <code>ctrl</code> once and MuJoCo simulates multiple sub-steps at <code>sim_dt</code> before the next control update.
+This separation is handled by the task layer (see <a href="#timing">Timing</a> below).</p>
+<h3 id="how-they-compose">How they compose<a class="headerlink" href="#how-they-compose" title="Permanent link">&para;</a></h3>
+<p>For example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Robot
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── robot_view: RobotView
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│   └── move_groups: dict[str, MoveGroup]
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│       ├── &quot;arm&quot;     → MoveGroup (7 DoF)
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│       ├── &quot;gripper&quot; → GripperGroup (1 DoF)
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│       └── &quot;base&quot;    → ImmobileRobotBaseGroup (0 DoF)
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>├── controllers: dict[str, Controller]
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   ├── &quot;arm&quot;     → JointPosController
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│   └── &quot;gripper&quot; → JointPosController
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>└── kinematics: MlSpacesKinematics
+</code></pre></div>
+<h2 id="environment-tasks-and-task-samplers">Environment, Tasks, and Task Samplers<a class="headerlink" href="#environment-tasks-and-task-samplers" title="Permanent link">&para;</a></h2>
+<p>The simulation lifecycle is a three-layer stack: <strong>Env</strong> runs physics, <strong>Task</strong> wraps it for episodic interaction, and <strong>Task Sampler</strong> generates randomized task instances.</p>
+<h3 id="env">Env<a class="headerlink" href="#env" title="Permanent link">&para;</a></h3>
+<p>The <strong>environment</strong> is the MuJoCo-backed physics and rendering substrate.
+It owns the compiled model, batched simulation data, robots, cameras, and object managers.</p>
+<p><strong>Base class:</strong> <a class="autorefs autorefs-internal" title="            BaseMujocoEnv" href="../api/env/#molmo_spaces.env.env.BaseMujocoEnv"><code>BaseMujocoEnv</code></a> / <a class="autorefs autorefs-internal" title="            CPUMujocoEnv" href="../api/env/#molmo_spaces.env.env.CPUMujocoEnv"><code>CPUMujocoEnv</code></a></p>
+<p><strong>What it manages:</strong></p>
+<ul>
+<li><code>MjModel</code> and one <code>MjData</code> per batch slot</li>
+<li>Robot instances (created via factory from config)</li>
+<li>Rendering (Filament or OpenGL)</li>
+<li><code>CameraManager</code> and <code>ObjectManager</code> per batch row</li>
+<li>Collision checks, segmentation, visibility queries</li>
+</ul>
+<p><strong>Key interface:</strong></p>
+<ul>
+<li><code>reset(idxs)</code> — <code>mj_resetData</code> + <code>mj_forward</code> for selected batch indices</li>
+<li><code>step(n_steps)</code> — <code>mj_step</code> across all batch data</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Batched environments</p>
+<p>The env API is nominally batched (multiple <code>MjData</code> slots, per-index reset, etc.), but in practice batch sizes greater than 1 are not well tested and have sharp edges throughout the stack. Assume <code>n_batch=1</code> for now; broader batching support may be improved in the future.</p>
+</div>
+<h3 id="task">Task<a class="headerlink" href="#task" title="Permanent link">&para;</a></h3>
+<p>A <strong>task</strong> wraps (but does not own!) an env for Gymnasium-style episodic interaction.
+It defines timing (control dt vs sim dt vs policy dt), aggregates sensors into observations, implements reward/success semantics, and manages the step counter.
+Note that the lifecycle of an env is generally longer than that of a task.</p>
+<p><strong>Base class:</strong> <a class="autorefs autorefs-internal" title="            BaseMujocoTask" href="../api/tasks/#molmo_spaces.tasks.task.BaseMujocoTask"><code>BaseMujocoTask</code></a></p>
+<p><strong>Key interface:</strong></p>
+<ul>
+<li><code>reset()</code> → <code>(observation, info)</code> — clears episode state, resets sensors and policy, returns first observation</li>
+<li><code>step(action)</code> → <code>(obs, reward, terminated, truncated, info)</code> — applies action, runs nested physics steps, polls sensors</li>
+<li><code>is_done()</code> — <code>is_terminal() or is_timed_out()</code></li>
+<li><code>judge_success()</code> — abstract, implemented by subclasses</li>
+<li><code>get_task_description()</code> — natural language instruction for the episode</li>
+</ul>
+<h4 id="timing">Timing<a class="headerlink" href="#timing" title="Permanent link">&para;</a></h4>
+<p>The task manages three nested timestep rates:</p>
+<ul>
+<li><strong>Simulation dt</strong> (<code>sim_dt</code>) — the MuJoCo physics timestep (e.g. 2ms). This is set in the MuJoCo model and determines numerical integration accuracy.</li>
+<li><strong>Control dt</strong> (<code>ctrl_dt_ms</code>) — how often robot controllers update <code>ctrl</code> (e.g. 20ms). Each control step runs <code>ctrl_dt / sim_dt</code> simulation sub-steps.</li>
+<li><strong>Policy dt</strong> (<code>policy_dt_ms</code>) — how often the policy is queried for a new action (e.g. 200ms). Each policy step runs <code>policy_dt / ctrl_dt</code> control steps.</li>
+</ul>
+<p>A single call to <code>task.step(action)</code> corresponds to <strong>one policy step</strong>: it sets the action on the controllers, then loops over <code>n_ctrl_steps_per_policy</code> control ticks. On each control tick, the controllers write <code>ctrl</code> and the env advances <code>n_sim_steps_per_ctrl</code> simulation sub-steps. This means the physics is simulated at high frequency for stability while the policy and controllers operate at their own (slower) rates.</p>
+<p><strong>Important:</strong> <code>task.reset()</code> does <strong>not</strong> call <code>env.reset()</code>.
+The task assumes the environment is already in the desired physical state (set up by the sampler).
+It only resets its own bookkeeping: step counter, caches, sensors, and registered policy.</p>
+<p><strong>Concrete example:</strong> <a class="autorefs autorefs-internal" title="            PickTask" href="../api/tasks/#molmo_spaces.tasks.pick_task.PickTask"><code>PickTask</code></a> adds lift-based rewards, success checking via object height, and task-specific sensor configuration.</p>
+<h3 id="task-sampler">Task Sampler<a class="headerlink" href="#task-sampler" title="Permanent link">&para;</a></h3>
+<p>A <strong>task sampler</strong> owns the environment lifecycle and generates randomized task instances.
+It loads scenes (houses), places robots and objects, configures cameras, and constructs a concrete <code>Task</code>.</p>
+<p><strong>Base class:</strong> <a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler" href="../api/tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler"><code>BaseMujocoTaskSampler</code></a></p>
+<p><strong>What it does that a task doesn't:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Task Sampler</th>
+<th>Task</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Owns the env</td>
+<td>Yes (creates and closes it)</td>
+<td>Holds a reference</td>
+</tr>
+<tr>
+<td>Loads/compiles scenes</td>
+<td>Yes (MjSpec, assets, houses)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Randomizes placement</td>
+<td>Yes (robot pose, objects, lighting)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Implements <code>reset</code>/<code>step</code></td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Defines reward/success</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key interface:</strong></p>
+<ul>
+<li><code>sample_task()</code> → <code>BaseMujocoTask | None</code> — the main entry point; loads or reuses a scene (an env), randomizes it, and returns a ready-to-use task</li>
+<li><code>randomize_scene(env, robot_view)</code> — abstract; subclass randomizes lighting, textures, dynamics, joint noise</li>
+<li><code>_sample_task(env)</code> — abstract; subclass selects objects, places the robot, configures the task, and returns a <code>Task</code> instance</li>
+</ul>
+<p><strong>Concrete example:</strong> <code>PickTaskSampler</code> selects a graspable object from candidates, places the robot within reach, generates referral expressions, and returns a <code>PickTask</code>.</p>
+<h3 id="episode-lifecycle">Episode lifecycle<a class="headerlink" href="#episode-lifecycle" title="Permanent link">&para;</a></h3>
+<p>A typical episode flows through these layers:</p>
+<ol>
+<li>
+<p><strong>Construct sampler</strong> — <code>PickTaskSampler(config)</code> seeds RNG; env is <code>None</code> until the first scene loads.</p>
+</li>
+<li>
+<p><strong><code>task = sampler.sample_task()</code></strong> — Loads or reuses a house scene (an env), randomizes object/robot placement, and constructs a <code>PickTask</code>. The env is now in a specific physical state.</p>
+</li>
+<li>
+<p><strong><code>obs, info = task.reset()</code></strong> — Clears episode bookkeeping (step counter, caches). Resets sensors and the registered policy. Returns the first observation. The MuJoCo state is <strong>not</strong> reset here.</p>
+</li>
+<li>
+<p><strong><code>obs, reward, terminated, truncated, info = task.step(action)</code></strong> — The action dict (keyed by move group ID) is dispatched to robot controllers. The env steps MuJoCo forward. Sensors produce the next observation.</p>
+</li>
+<li>
+<p><strong>Termination</strong> — <code>task.is_done()</code> returns <code>True</code> when the task succeeds, a "done" action is sent, or the horizon is reached.</p>
+</li>
+<li>
+<p><strong>Next episode</strong> — Call <code>sampler.sample_task()</code> again. The sampler may reuse the same compiled scene or load a new house.</p>
+</li>
+</ol>
+<p><strong>Ownership:</strong> The sampler owns and closes the env. Closing a task only clears its env reference without shutting down the simulator.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 5, 2026 00:27:06 UTC"><span class="timeago" datetime="2026-05-05T00:27:06+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 5, 2026 00:27:06 UTC">2026-05-05</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 5, 2026 00:27:06 UTC"><span class="timeago" datetime="2026-05-05T00:27:06+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 5, 2026 00:27:06 UTC">2026-05-05</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Allen Institute for Artificial Intelligence
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../js/timeago.min.js"></script>
+      
+        <script src="../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>
