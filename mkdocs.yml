@@ -38,6 +38,7 @@ theme:
 nav:
   - Home: index.md
   - Guides:
+      - Key Concepts: concepts.md
       - Assets: assets.md
       - Data Format: data_format.md
       - Data Processing: data_processing.md

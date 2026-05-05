@@ -23,6 +23,11 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class MoveSegment:
+    """
+    A move segment is a single movement in a MoveSequence,
+    i.e. moving from a point to another point.
+    """
+
     name: str
 
     @property
@@ -32,6 +37,11 @@ class MoveSegment:
 
 @dataclass
 class TCPMoveSegment(MoveSegment):
+    """
+    A move segment that moves the robot TCP to a target pose.
+    The movement is a straight line in task space.
+    """
+
     start_pose: np.ndarray
     end_pose: np.ndarray
     speed: float
@@ -44,6 +54,11 @@ class TCPMoveSegment(MoveSegment):
 
 @dataclass
 class JointMoveSegment(MoveSegment):
+    """
+    A move segment that moves the robot joints to a target configuration.
+    The movement is a straight line in joint space.
+    """
+
     start_qpos: (
         dict[str, np.ndarray | list[float]] | None
     )  # if None, use the qpos at the start of the segment
@@ -56,6 +71,11 @@ class JointMoveSegment(MoveSegment):
 
 
 class ActionPrimitive(ABC):
+    """
+    Abstract base class for action primitives.
+    An action primitive is a single action that can be executed by the robot.
+    """
+
     def __init__(self, robot_view: RobotView, duration: float):
         self.robot_view = robot_view
         self.duration = duration
@@ -83,6 +103,12 @@ class ActionPrimitive(ABC):
 
 
 class MoveSequence(ActionPrimitive):
+    """
+    A sequence of (TCP or joint) move segments executed sequentially without pauses.
+    The sequence is terminated when the last move segment is completed, after
+    a settling period.
+    """
+
     def __init__(
         self,
         robot_view: RobotView,
@@ -167,6 +193,13 @@ class MoveSequence(ActionPrimitive):
 
 
 class TCPMoveSequence(MoveSequence):
+    """
+    Action primitive that tracks a trajectory in task space.
+    Waypoints are interpolated linearly in task space.
+    The sequence is terminated after the cumulative duration of the move segments,
+    plus the settling period.
+    """
+
     def __init__(
         self,
         robot_view: RobotView,
@@ -234,6 +267,13 @@ class TCPMoveSequence(MoveSequence):
 
 
 class JointMoveSequence(MoveSequence):
+    """
+    Action primitive that tracks a trajectory in joint space.
+    Waypoints are interpolated linearly in joint space.
+    The sequence is terminated after the cumulative duration of the move segments,
+    plus the settling period.
+    """
+
     def __init__(
         self,
         robot_view: RobotView,
@@ -288,6 +328,10 @@ class JointMoveSequence(MoveSequence):
 
 
 class GripperAction(ActionPrimitive):
+    """
+    Action primitive that opens or closes the gripper.
+    """
+
     def __init__(self, robot_view: RobotView, target_open: bool, duration: float) -> None:
         super().__init__(robot_view, duration)
         self.target_open = target_open
@@ -317,6 +361,10 @@ class GripperAction(ActionPrimitive):
 
 
 class NoopAction(ActionPrimitive):
+    """
+    Action primitive that does nothing for a given duration.
+    """
+
     def __init__(self, robot_view: RobotView, duration: float) -> None:
         super().__init__(robot_view, duration)
         self._action = None
@@ -333,6 +381,12 @@ class NoopAction(ActionPrimitive):
 
 
 class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
+    """
+    Base class for object manipulation (open/close/pick/pick-place) planner policies.
+    This class provides common functionality for object manipulation planner policies,
+    including concatenating multiple action primitives into a single trajectory.
+    """
+
     def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         assert isinstance(config.policy_config, ObjectManipulationPlannerPolicyConfig)
         super().__init__(config, task)
@@ -428,27 +482,6 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
     @abstractmethod
     def _compute_trajectory(self) -> list[ActionPrimitive]:
         raise NotImplementedError
-
-    # def _trajectory_to_phases(self, trajectory) -> dict[str, int]:
-    #     policy_phases = {"unknown": 0}
-    #     phase_idx = len(policy_phases)
-
-    #     for traj_element in trajectory:
-    #         if isinstance(traj_element, GripperAction):
-    #             phase_name = traj_element.get_current_phase()
-    #             if phase_name not in policy_phases:
-    #                 policy_phases[phase_name] = phase_idx
-    #                 phase_idx += 1
-
-    #         elif isinstance(traj_element, MoveSequence):
-    #             # iterate over all segments
-    #             for move_element in traj_element.move_segments:
-    #                 phase_name = move_element.name
-    #                 if phase_name not in policy_phases:
-    #                     policy_phases[phase_name] = phase_idx
-    #                     phase_idx += 1
-
-    #     return policy_phases
 
     def _check_for_failures(self) -> bool:
         # TODO(abhayd): check for collision with other objects
