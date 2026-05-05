@@ -28,7 +28,7 @@ from isaaclab.sim import SimulationContext
 
 
 class DynamixelConfigSpec(msgspec.Struct):
-    port: str = "/dev/ttyUSB1"
+    port: str = "/dev/ftdi"
     joint_ids: list[int] = msgspec.field(default_factory=lambda: [1, 2, 3, 4, 5, 6, 7])
     joint_offsets: list[float] = msgspec.field(
         default_factory=lambda: [4.712, 3.142, 3.142, 4.712, 3.142, 4.712, 2.357]
