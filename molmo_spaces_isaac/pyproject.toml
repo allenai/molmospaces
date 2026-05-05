@@ -30,6 +30,7 @@ dev = [
     "ruff",
     "ty",
     "ipython",
+    "ipdb",
     "types-usd",
 ]
 sim = [
