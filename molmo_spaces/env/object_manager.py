@@ -1463,6 +1463,7 @@ class ObjectManager:
 
     def get_door_bboxes_array(self, object_or_name_or_id: ObjectOrNameOrIdType) -> np.ndarray:
         """Get door collision geometry bounding boxes as an array.
+
         Returns:
             np.ndarray: Array of AABBs (center, size) for door collision geoms
         """

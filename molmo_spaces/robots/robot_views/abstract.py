@@ -192,6 +192,7 @@ class MoveGroup(ABC):
         Args:
             joint_pos: Joint positions at the start of the integration
             joint_vel: Joint velocities to integrate
+
         Returns:
             Joint positions at the end of the integration
         """
@@ -657,6 +658,7 @@ class RobotView(ABC):
         Args:
             move_group_ids: The IDs of the move groups to get the joint positions of.
                             If None, all move groups will be included.
+
         Returns:
             A dictionary mapping move group IDs to their joint positions.
         """
@@ -670,6 +672,7 @@ class RobotView(ABC):
         Args:
             move_group_ids: The IDs of the move groups to get the joint velocities of.
                             If None, all move groups will be included.
+
         Returns:
             A dictionary mapping move group IDs to their joint velocities.
         """
@@ -716,6 +719,7 @@ class RobotView(ABC):
         Args:
             move_group_id: The ID of the move group to get the jacobian of
             input_move_group_ids: The IDs of the move groups to use as input
+
         Returns:
             The (6, N) jacobian of the move group, where N is the total number of degrees
             of freedom of the input move groups.

@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class DummyParallelKinematics(ParallelKinematics):
+    """
+    Dummy parallel kinematics wrapper that sequentially calls :class:`MlSpacesKinematics` internally.
+    """
+
     def __init__(
         self,
         robot_config: "BaseRobotConfig",

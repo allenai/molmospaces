@@ -68,10 +68,12 @@ class ParallelKinematics(ABC):
     ) -> list[dict[str, np.ndarray]] | dict[str, np.ndarray]:
         """
         Compute forward kinematics for all move groups.
+
         Args:
             qpos_dicts: The joint positions.
             base_pose: The base pose(s) of the robots. Shape: (batch_size, 4, 4) or (4, 4)
             rel_to_base: Whether the returned pose(s) should be relative to the base frame.
+
         Returns:
             A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.
         """
@@ -85,17 +87,19 @@ class ParallelKinematics(ABC):
         base_poses: np.ndarray,
         rel_to_base: bool = False,
         **kwargs: Any,
-    ):
+    ) -> list[dict[str, np.ndarray] | None] | dict[str, np.ndarray] | None:
         """
         Finds joint positions that would place the end-effector at the target pose.
+
         Args:
             pose: The target pose(s) to reach. Shape: (batch_size, 4, 4) or (4, 4)
             q0_dicts: The initial joint positions.
             base_pose: The base pose(s) of the robots. Shape: (batch_size, 4, 4) or (4, 4)
             rel_to_base: Whether the pose(s) are relative to the base frame.
             **kwargs: Additional keyword arguments for the IK solver, defined by the concrete implementation.
+
         Returns:
             A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.
-            If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.
+                If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.
         """
         raise NotImplementedError

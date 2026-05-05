@@ -934,6 +934,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
         Returns:
             dict with keys: pickup_obj_name, receptacle_name, placement_region, robot_base_pose
+
         Raises:
             RobotPlacementError
         """

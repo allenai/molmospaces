@@ -205,6 +205,7 @@ def get_rby1_door_opening_sensors(exp_config):
 
     Args:
         exp_config: Experiment configuration object with sensor parameters
+
     Returns:
         List of initialized sensors
     """

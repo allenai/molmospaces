@@ -6,9 +6,11 @@ import numpy as np
 def mujoco_depth_to_pointcloud(depth, fovx=58.0, fovy=None, aspect=None, scalingFactor=1):
     """
     Convert a depth image to a point cloud using the camera intrinsic matrix.
+
     Args:
         depth_image: np.ndarray, depth image
         camera_info: dict, camera information # TODO: add to arguments
+
     Returns:
         pointcloud: np.ndarray, point cloud
 

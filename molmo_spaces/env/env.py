@@ -789,6 +789,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
             excluded_positions: List of positions to avoid (e.g. previously used positions)
             exclusion_threshold: Minimum distance from any excluded position
             save_visibility_frames_dir: Optional directory to save camera frames during visibility check
+
         Returns:
             bool: True if placement was successful, False otherwise
         """

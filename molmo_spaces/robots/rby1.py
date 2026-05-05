@@ -349,6 +349,7 @@ class RBY1(Robot):
 
     def update_control(self, action_command_dict: dict[str, Any]) -> None:
         """Update the control inputs to the robot based on the provided action commands.
+
         Args:
         action_command_dict: Dictionary containing action commands for the robot
                              based on the move groups ids to be used.
@@ -377,6 +378,7 @@ class RBY1(Robot):
 
     def set_joint_pos(self, robot_joint_pos_dict) -> None:
         """Set all the robot's joint positions to the specified values.
+
         Args:
             robot_joint_pos_dict: Dictionary or SimpleNamespace containing joint positions for the robot
             based on the move groups ids.
@@ -399,6 +401,7 @@ class RBY1(Robot):
 
     def get_world_pose_tf_mat(self):
         """Get the robot's world pose transformation matrix.
+
         Returns:
             np.ndarray: 4x4 transformation matrix for the robot base pose in world frame
         """

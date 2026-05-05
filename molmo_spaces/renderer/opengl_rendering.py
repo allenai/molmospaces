@@ -74,6 +74,7 @@ class MjOpenGLRenderer(MjAbstractRenderer):
           max_geom: Optional integer specifying the maximum number of geoms that can
             be rendered in the same scene. If None this will be chosen automatically
             based on the estimated maximum number of renderable geoms in the model_bindings.
+
         Raises:
           ValueError: If `camera_id` is outside the valid range, or if `width` or
             `height` exceed the dimensions of MuJoCo's offscreen framebuffer.

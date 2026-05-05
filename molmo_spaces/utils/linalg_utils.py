@@ -199,6 +199,7 @@ def obb_2d(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     Compute the oriented bounding box (OBB) of a set of 2D points.
     Parameters:
     points (np.ndarray): A 2D numpy array of shape (N, 2) representing the coordinates of the points.
+
     Returns:
     tuple[np.ndarray, np.ndarray, np.ndarray]: A tuple containing:
         - pos (np.ndarray): The center position of the OBB.

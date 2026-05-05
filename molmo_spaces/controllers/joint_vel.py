@@ -62,6 +62,7 @@ class JointVelController(Controller):
     def compute_ctrl_inputs(self):
         """
         Compute the control inputs based on the current state and the target set by the user.
+
         Returns:
             The control inputs to be applied to the robot actuators, in this case: positions
         """
