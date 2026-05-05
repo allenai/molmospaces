@@ -34,6 +34,7 @@ from molmo_spaces.molmo_spaces_constants import (
     DATA_TYPE_TO_SOURCE_TO_VERSION,
     get_robot_path,
     get_scenes,
+    get_scenes_root,
 )
 
 MJC_VERSION = tuple(map(int, mujoco.__version__.split(".")))
@@ -288,8 +289,8 @@ class BaseMujocoTaskSampler:
 
         self._house_inds = exp_config.task_sampler_config.house_inds
         if self._house_inds is None or self._house_inds == []:
-            mapping = get_scenes(exp_config.scene_dataset, exp_config.data_split)
-            self._house_inds = list(
+            mapping = self._get_dataset_index_map()
+            self._house_inds = sorted(
                 [k for k, v in mapping[exp_config.data_split].items() if v is not None]
             )
 
@@ -717,32 +718,36 @@ class BaseMujocoTaskSampler:
         if scene_path is None:
             scene_path = self._current_house_scene_path(variant=variant)
 
-        # Track asset installation time (fetching/extracting scene, objects, grasps)
-        # Use detailed profiling to identify which asset type is slow
-        if self._datagen_profiler is not None:
-            self._datagen_profiler.start("scene_asset_install")
-            from molmo_spaces.utils.lazy_loading_utils import (
-                install_grasps_for_scene,
-                install_objects_for_scene,
-                install_scene_from_path,
-            )
+        # If using a MolmoSpaces scene, install it
+        if get_scenes_root().resolve() in Path(scene_path).resolve().parents:
+            # Track asset installation time (fetching/extracting scene, objects, grasps)
+            # Use detailed profiling to identify which asset type is slow
+            if self._datagen_profiler is not None:
+                self._datagen_profiler.start("scene_asset_install")
+                from molmo_spaces.utils.lazy_loading_utils import (
+                    install_grasps_for_scene,
+                    install_objects_for_scene,
+                    install_scene_from_path,
+                )
 
-            self._datagen_profiler.start("asset_install_scene")
-            install_scene_from_path(scene_path)
-            self._datagen_profiler.end("asset_install_scene")
+                self._datagen_profiler.start("asset_install_scene")
+                install_scene_from_path(scene_path)
+                self._datagen_profiler.end("asset_install_scene")
 
-            self._datagen_profiler.start("asset_install_objects")
-            install_objects_for_scene(scene_path, exclude_thor=True)
-            self._datagen_profiler.end("asset_install_objects")
+                self._datagen_profiler.start("asset_install_objects")
+                install_objects_for_scene(scene_path, exclude_thor=True)
+                self._datagen_profiler.end("asset_install_objects")
 
-            self._datagen_profiler.start("asset_install_grasps")
-            for grasp_source in ("droid_objaverse",):
-                install_grasps_for_scene(scene_path, grasp_source=grasp_source, exclude_thor=True)
-            self._datagen_profiler.end("asset_install_grasps")
+                self._datagen_profiler.start("asset_install_grasps")
+                for grasp_source in ("droid_objaverse",):
+                    install_grasps_for_scene(
+                        scene_path, grasp_source=grasp_source, exclude_thor=True
+                    )
+                self._datagen_profiler.end("asset_install_grasps")
 
-            self._datagen_profiler.end("scene_asset_install")
-        else:
-            install_scene_with_objects_and_grasps_from_path(scene_path)
+                self._datagen_profiler.end("scene_asset_install")
+            else:
+                install_scene_with_objects_and_grasps_from_path(scene_path)
 
         # Track scene compilation time (XML processing + MuJoCo spec.compile())
         if self._datagen_profiler is not None:
@@ -881,23 +886,24 @@ class BaseMujocoTaskSampler:
                 inertia_perturbation_ratio=0.2,
             )
 
-    # Dataset utilities (optional)
-    def _get_dataset_index_map(self) -> dict | None:
+    def _get_dataset_index_map(self) -> dict:
         if self._dataset_index_map is not None:
             return self._dataset_index_map
         name = self.config.scene_dataset
-        if not name:
-            return None
 
-        if isinstance(name, str) and not os.path.isabs(name):
+        if name != "user":
             mapping = get_scenes(name, self.config.data_split)
+            assert isinstance(mapping, dict)
         else:
-            current_idx = self._house_inds[0] if self._house_inds else 0
-            # Create new format with variant structure, defaulting to "base"
             mapping = {
-                "train": {current_idx: {"ceiling": None, "map": None, "base": name}},
-                "val": {current_idx: {"ceiling": None, "map": None, "base": name}},
+                self.config.data_split: {
+                    i: {"base": scene_xml_path}
+                    for i, scene_xml_path in enumerate(
+                        self.config.task_sampler_config.scene_xml_paths
+                    )
+                }
             }
+
         self._dataset_index_map = mapping
 
         return mapping

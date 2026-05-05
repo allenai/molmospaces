@@ -1083,17 +1083,20 @@ class GraspPoseSensor(Sensor):
     def __init__(self, uuid: str = "grasp_pose") -> None:
         observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
         super().__init__(uuid=uuid, observation_space=observation_space)
+        self._logged_warning = False
 
     def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
         """Get grasp pose (using current TCP pose as proxy)."""
-        if task._registered_policy is None:
-            log.warning("No registered policy, cannot get grasp pose.")
-            return np.zeros(7, dtype=np.float32)
-        else:
+        if task._registered_policy is not None and hasattr(task._registered_policy, "target_poses"):
             return np.array(
                 pose_mat_to_7d(task._registered_policy.target_poses["grasp"]),
                 dtype=np.float32,
             )
+        else:
+            if not self._logged_warning:
+                log.warning("Policy is not registered or does not support grasp pose sensing.")
+                self._logged_warning = True
+            return np.zeros(7, dtype=np.float32)
 
 
 def get_core_sensors(exp_config):
@@ -1148,22 +1151,24 @@ def get_core_sensors(exp_config):
     sensors.append(EnvStateSensor(uuid="env_states"))
 
     # Task pose sensors
-    sensors.append(
-        ObjectStartPoseSensor(
-            object_name=exp_config.task_config.pickup_obj_name, uuid="obj_start_pose"
+    if hasattr(exp_config.task_config, "pickup_obj_name"):
+        sensors.append(
+            ObjectStartPoseSensor(
+                object_name=exp_config.task_config.pickup_obj_name, uuid="obj_start_pose"
+            )
         )
-    )
-    sensors.append(
-        ObjectEndPoseSensor(
-            object_name=exp_config.task_config.place_target_name, uuid="obj_end_pose"
+        sensors.append(
+            GraspStateSensor(
+                object_name=exp_config.task_config.pickup_obj_name,
+                uuid="grasp_state_pickup_obj",
+            )
         )
-    )
-    sensors.append(
-        GraspStateSensor(
-            object_name=exp_config.task_config.pickup_obj_name,
-            uuid="grasp_state_pickup_obj",
+    if hasattr(exp_config.task_config, "place_target_name"):
+        sensors.append(
+            ObjectEndPoseSensor(
+                object_name=exp_config.task_config.place_target_name, uuid="obj_end_pose"
+            )
         )
-    )
     # TODO: this kind of hacky hardcoded conditionals should be refactored.
     # Tasks should register their own task-specific sensors.
     if (
@@ -1203,16 +1208,6 @@ def get_core_sensors(exp_config):
 
     # Object tracking sensors
     sensors.append(ObjectImagePointsSensor(exp_config=exp_config))
-
-    # Legacy sensors for debugging
-    sensors.append(RobotStateSensor(uuid="robot_state"))
-    sensors.append(
-        ObjectPoseSensor(
-            object_names=exp_config.task_config.tracked_object_names
-            or [exp_config.task_config.pickup_obj_name, exp_config.task_config.place_target_name],
-            uuid="object_poses",
-        )
-    )
 
     return sensors
 

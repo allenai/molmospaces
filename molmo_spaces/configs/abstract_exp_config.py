@@ -56,7 +56,7 @@ class MlSpacesExpConfig(Config, ABC):
     collision_free_pose_limit: int = 3
 
     # Scene configuration
-    scene_dataset: str  # Scenes to use, e.g. ithor, procthor-10k, procthor-objaverse
+    scene_dataset: str  # Scenes to use, e.g. ithor, procthor-10k, procthor-objaverse. If "user", use the scene_xml_paths in task_sampler_config.
     data_split: str = "train"  # Data split to use, e.g. train, val, test
 
     @property

@@ -319,6 +319,7 @@ class Robot:
                 body: mujoco.MjsBody
                 body.gravcomp = 1.0
 
+        # TODO: control overrides will break if non-robot actuators are present
         stiffness, damping = robot_config.K_stiffness, robot_config.K_damping
         if stiffness is not None and damping is not None:
             assert len(stiffness) == len(damping), (
@@ -341,6 +342,16 @@ class Robot:
             )
             for i, actuator in enumerate(actuators[: len(damping)]):
                 actuator.biasprm[2] = -damping[i]
+
+        force_limit = robot_config.force_limit
+        if force_limit is not None:
+            log.debug(f"Applying force limits to robot {cls.robot_model_root_name()}")
+            assert len(force_limit) <= len(actuators), (
+                "number of force limits cannot exceed number of actuators"
+            )
+            for i, actuator in enumerate(actuators[: len(force_limit)]):
+                actuator.forcelimited = 1
+                actuator.forcerange[:] = [-force_limit[i], force_limit[i]]
 
     @classmethod
     def add_robot_to_scene(

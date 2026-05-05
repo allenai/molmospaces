@@ -1230,14 +1230,15 @@ class ObjectManager:
         """Return of list of all task relevant bodies i.e. not robots/policy objects"""
 
         task_objects = []
-        for object_name, object_dict in self.scene_metadata["objects"].items():
-            if not object_dict["is_static"]:
-                try:
-                    task_object = create_mlspaces_body(self.data, object_name)
-                except KeyError:
-                    log.warning("Could not find object %s in scene", object_name)
-                    continue
-                task_objects.append(task_object)
+        if self.scene_metadata is not None:
+            for object_name, object_dict in self.scene_metadata["objects"].items():
+                if not object_dict["is_static"]:
+                    try:
+                        task_object = create_mlspaces_body(self.data, object_name)
+                    except KeyError:
+                        log.warning("Could not find object %s in scene", object_name)
+                        continue
+                    task_objects.append(task_object)
 
         # TODO(Abhay): do we want this?
         for object_name in self._env.config.task_config.added_objects:

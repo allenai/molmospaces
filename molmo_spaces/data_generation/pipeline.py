@@ -520,11 +520,18 @@ class ParallelRolloutRunner:
 
         # don't have houses specified, use all, need to find out which ones those are
         if self.house_indices is None:
-            # For normal datagen: use all houses from scene mapping
-            mapping = get_scenes(exp_config.scene_dataset, exp_config.data_split)
-            self.house_indices = [
-                k for k, v in mapping[exp_config.data_split].items() if v is not None
-            ]
+            # if user-specified scene xml paths, use all of them
+            if exp_config.task_sampler_config.scene_xml_paths:
+                assert exp_config.scene_dataset == "user"
+                self.house_indices = list(
+                    range(len(exp_config.task_sampler_config.scene_xml_paths))
+                )
+            else:
+                # For normal datagen: use all houses from scene mapping
+                mapping = get_scenes(exp_config.scene_dataset, exp_config.data_split)
+                self.house_indices = [
+                    k for k, v in mapping[exp_config.data_split].items() if v is not None
+                ]
 
         self.total_houses = len(self.house_indices)
 
