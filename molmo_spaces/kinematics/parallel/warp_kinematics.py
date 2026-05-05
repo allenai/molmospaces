@@ -5,6 +5,7 @@ from collections import OrderedDict
 import logging
 
 import numpy as np
+import mujoco
 from mujoco import MjSpec, MjModel, MjData
 import mujoco_warp as mjw
 import warp as wp
@@ -20,8 +21,20 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class IKBuffers:
+    """Preallocated buffers for the IK solver"""
+    pos_err: wp.array(dtype=wp.vec3f)
+    rot_err: wp.array(dtype=wp.vec3f)
+    jacp: wp.array3d(dtype=float)
+    jacr: wp.array3d(dtype=float)
+    q_dot: wp.array2d(dtype=float)
+    dq: wp.array2d(dtype=float)
+
+
+@dataclass
 class SolverData:
     data: mjw.Data
+    ik_buffers: IKBuffers
     ik_capture: wp.ScopedCapture | None = None
 
 
@@ -187,7 +200,17 @@ class SimpleWarpKinematics(ParallelKinematics):
     @cache
     def _get_data(self, batch_size: int) -> SolverData:
         data = mjw.make_data(self._mj_model, nworld=batch_size)
-        return SolverData(data)
+        return SolverData(
+            data,
+            IKBuffers(
+                pos_err=wp.zeros(batch_size, dtype=wp.vec3f),
+                rot_err=wp.zeros(batch_size, dtype=wp.vec3f),
+                jacp=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
+                jacr=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
+                q_dot=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
+                dq=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
+            ),
+        )
 
     def _dicts_to_qpos_arr(self, qpos_dicts: list[dict[str, np.ndarray]]) -> np.ndarray:
         ret = np.empty((len(qpos_dicts), self._mj_model.nq), dtype=np.float32)
@@ -206,11 +229,20 @@ class SimpleWarpKinematics(ParallelKinematics):
         return ret
 
     def warmup_ik(self, batch_size: int):
-        data = self._get_data(batch_size)
+        self._get_data(batch_size)
 
-        if self._device == "cuda" and data.ik_capture is None:
-            # TODO: scoped capture
-            pass
+        mj_data = MjData(self._mj_model)
+        robot_view = self._robot_config.robot_view_factory(mj_data, "")
+        for mg_id, qpos in self._robot_config.init_qpos.items():
+            robot_view.get_move_group(mg_id).joint_pos = qpos
+        mujoco.mj_forward(self._mj_model, mj_data)
+
+        mg_id = next(name for name, mg in self._actuated_move_groups.items() if isinstance(mg, SimpleMoveGroup))
+        pose = np.broadcast_to(
+            robot_view.get_move_group(mg_id).leaf_frame_to_robot[None], (batch_size, 4, 4)
+        )
+
+        self.ik(pose, robot_view.get_qpos_dict(), np.eye(4), rel_to_base=True, max_iter=1, move_group_id=mg_id)
 
     def fk(
         self,
@@ -257,13 +289,56 @@ class SimpleWarpKinematics(ParallelKinematics):
             ret.append(d)
         return ret if is_batch else ret[0]
 
+    def _ik_solve_step(
+        self,
+        solver_data: SolverData,
+        batch_size: int,
+        leaf_site_id: int,
+        poses: wp.array(dtype=wp.mat44f),
+        damping: float,
+        dt: float,
+    ):
+        data = solver_data.data
+        ik_buffers = solver_data.ik_buffers
+        mjw.fwd_position(self._mjw_model, data)
+
+        # calculate error
+        pos_err, rot_err = ik_buffers.pos_err, ik_buffers.rot_err
+        wp.launch(
+            get_err,
+            dim=batch_size,
+            inputs=[data.site_xpos, data.site_xmat, leaf_site_id, poses, pos_err, rot_err],
+            device=self._device,
+        )
+
+        # calculate Jacobian
+        jacp, jacr = ik_buffers.jacp, ik_buffers.jacr
+        site_pos = data.site_xpos[:, leaf_site_id]
+        site_bodyid = wp.full(batch_size, self._mj_model.site_bodyid[leaf_site_id], dtype=int)
+        mjw.jac(self._mjw_model, data, jacp, jacr, site_pos, site_bodyid)
+
+        # solve for joint velocities
+        q_dot = ik_buffers.q_dot
+        wp.launch(
+            lm_step,
+            dim=batch_size,
+            inputs=[jacp, jacr, pos_err, rot_err, damping, self._mjw_model.nv],
+            outputs=[q_dot],
+            device=self._device,
+        )
+        dq = q_dot * dt
+        wp.copy(ik_buffers.dq, dq)
+
+        # update joint positions
+        wp.copy(data.qpos, data.qpos + dq)
+
     def ik(
         self,
-        move_group_id: str,
         poses: np.ndarray,
         q0_dicts: list[dict[str, np.ndarray]] | dict[str, np.ndarray],
         base_poses: np.ndarray,
         rel_to_base: bool = False,
+        move_group_id: str | None = None,
         unlocked_move_group_ids: list[str] | None = None,
         converge_eps: float = 1e-3,
         success_eps: float = 5e-4,
@@ -271,7 +346,14 @@ class SimpleWarpKinematics(ParallelKinematics):
         damping: float = 1e-12,
         dt: float = 1.0,
     ):
-        if not isinstance(self._actuated_move_groups[move_group_id], SimpleMoveGroup):
+        if move_group_id is None:
+            simple_move_groups = [name for name, mg in self._actuated_move_groups.items() if isinstance(mg, SimpleMoveGroup)]
+            if len(simple_move_groups) == 0:
+                raise ValueError("Robot does not contain any simple move groups!")
+            move_group_id = simple_move_groups[0]
+            if len(simple_move_groups) > 1:
+                logger.warning(f"Multiple simple move groups found, using the first one as target move group: {move_group_id}")
+        elif not isinstance(self._actuated_move_groups[move_group_id], SimpleMoveGroup):
             raise ValueError(f"Move group {move_group_id} is not a SimpleMoveGroup")
 
         if unlocked_move_group_ids is None:
@@ -296,40 +378,17 @@ class SimpleWarpKinematics(ParallelKinematics):
         assert isinstance(ee_mg, SimpleMoveGroup)
 
         for i in range(max_iter):
-            mjw.fwd_position(self._mjw_model, data)
+            if solver_data.ik_capture is not None:
+                wp.capture_launch(solver_data.ik_capture.graph)
+            elif self._device == "cuda":
+                with wp.ScopedCapture(device=self._device) as capture:
+                    self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
+                solver_data.ik_capture = capture
+            else:
+                self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
+            wp.synchronize()
 
-            # calculate error
-            pos_err = wp.zeros(batch_size, dtype=wp.vec3f)
-            rot_err = wp.zeros(batch_size, dtype=wp.vec3f)
-            wp.launch(
-                get_err,
-                dim=batch_size,
-                inputs=[data.site_xpos, data.site_xmat, ee_mg.leaf_site_id, poses, pos_err, rot_err],
-                device=self._device,
-            )
-
-            # calculate Jacobian
-            jacp = wp.zeros((batch_size, 3, self._mjw_model.nv), dtype=wp.float32)
-            jacr = wp.zeros((batch_size, 3, self._mjw_model.nv), dtype=wp.float32)
-            site_pos = data.site_xpos[:, ee_mg.leaf_site_id]
-            site_bodyid = wp.full(batch_size, self._mj_model.site_bodyid[ee_mg.leaf_site_id], dtype=int)
-            mjw.jac(self._mjw_model, data, jacp, jacr, site_pos, site_bodyid)
-
-            # solve for joint velocities
-            q_dot = wp.zeros((batch_size, self._mjw_model.nv), dtype=wp.float32)
-            wp.launch(
-                lm_step,
-                dim=batch_size,
-                inputs=[jacp, jacr, pos_err, rot_err, damping, self._mjw_model.nv],
-                outputs=[q_dot],
-                device=self._device,
-            )
-            dq = q_dot * dt
-
-            # update joint positions
-            wp.copy(data.qpos, data.qpos + dq)
-
-            if np.all(np.linalg.norm(dq.numpy(), axis=-1) < converge_eps):
+            if np.all(np.linalg.norm(solver_data.ik_buffers.dq.numpy(), axis=-1) < converge_eps):
                 logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} converged in {i} iterations")
                 break
         else:
@@ -414,11 +473,12 @@ if __name__ == "__main__":
                 np.eye(4)
             ))
 
+        wp_kinematics.warmup_ik(len(init_qpos))
         wp_ret = wp_kinematics.ik(
-            "arm",
             pose,
             init_qpos,
             np.eye(4),
+            move_group_id="arm",
         )
 
         for wp_val, ml_val in zip(wp_ret, ml_ret):
