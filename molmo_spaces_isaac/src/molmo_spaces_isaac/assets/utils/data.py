@@ -65,6 +65,8 @@ class RobotJointParam(msgspec.Struct):
 class RobotJointParameters(msgspec.Struct):
     schemas: list[str] = msgspec.field(default_factory=list)
     parameters: list[RobotJointParam] = msgspec.field(default_factory=list)
+    mimic: str | None = None
+    mimic_axis: str | None = None
 
 
 class RobotParameters(msgspec.Struct):

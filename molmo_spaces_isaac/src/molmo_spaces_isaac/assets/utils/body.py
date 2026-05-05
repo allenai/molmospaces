@@ -4,7 +4,7 @@ from typing import Any
 import mujoco as mj
 import numpy as np
 import usdex.core
-from pxr import Gf, Usd, UsdPhysics
+from pxr import Gf, Sdf, Usd, UsdPhysics
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces_isaac.assets.utils.data import (
@@ -160,6 +160,8 @@ def convert_bodies_flatten(
 
     collect_mj_joints(data.spec.worldbody.first_body(), joints_per_body)
 
+    joints_info: list[tuple[str, Usd.Prim]] = []
+    joints_name_map: dict[str, Sdf.Path] = {}
     for b_name, joints_of_body in joints_per_body.items():
         if len(joints_of_body) < 1:
             continue
@@ -168,7 +170,7 @@ def convert_bodies_flatten(
 
         # TODO(wilbert): for now we're not setting stiffness and damping, bc the ranges from MuJoCo
         # and PhysX don't match (we get weird behavior with those values in isaac)
-        convert_joint_flatten(
+        jnt_prim = convert_joint_flatten(
             joints_of_body[0],
             data,
             prefix=prefix,
@@ -176,6 +178,18 @@ def convert_bodies_flatten(
             thor_parameters=data.thor_parameters,
             robot_parameters=robot_parameters,
         )
+        if jnt_prim:
+            joints_info.append((joints_of_body[0].name, jnt_prim))
+            joints_name_map[joints_of_body[0].name] = jnt_prim.GetPath()
+
+    if robot_parameters is not None:
+        for jnt_name, jnt_prim in joints_info:
+            if jnt_params := robot_parameters.joints.get(jnt_name):
+                if jnt_params.mimic and jnt_params.mimic_axis:
+                    rel = jnt_prim.CreateRelationship(
+                        f"physxMimicJoint:{jnt_params.mimic_axis}:referenceJoint", custom=False
+                    )
+                    rel.AddTarget(joints_name_map[jnt_params.mimic])
 
     for body_0_name, body_1_name in data.bodies_to_fix:
         body_0_data = data.bodies[body_0_name]

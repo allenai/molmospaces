@@ -1,0 +1,286 @@
+joints:
+  fr3_joint1:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 87
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.2371411
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 150.11493
+
+  fr3_joint2:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 87
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.40375608
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 150.11493
+
+  fr3_joint3:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 87
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.92727023
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 150.11493
+
+  fr3_joint4:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 87
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.6227596
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 150.11493
+
+  fr3_joint5:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 12
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.5212694
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 301.3758
+
+  fr3_joint6:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 12
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.08369748
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 239.49634
+
+  fr3_joint7:
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 1.7453293
+      - name: drive:angular:physics:maxForce
+        value: 12
+      - name: drive:angular:physics:stiffness
+        value: 17.453293
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      - name: physics:JointEquivalentInertia
+        value: 0.053654663
+      - name: physxJoint:jointFriction
+        value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 301.3758
+
+  # This is the main joint that links to the actuation
+  "gripper/left_driver_joint":
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 0.0002
+      - name: drive:angular:physics:maxForce
+        value: 26
+      - name: drive:angular:physics:stiffness
+        value: 3
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      # - name: physics:JointEquivalentInertia
+      #   value: 0.053654663
+      # - name: physxJoint:jointFriction
+      #   value: 0.2
+      - name: physxJoint:armature
+        value: 0.0001
+      - name: physxJoint:maxJointVelocity
+        value: 146.46
+
+  "gripper/left_spring_link_joint":
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 0
+      - name: drive:angular:physics:maxForce
+        value: 0
+      - name: drive:angular:physics:stiffness
+        value: 0
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      # - name: physics:JointEquivalentInertia
+      #   value: 0.053654663
+      # - name: physxJoint:jointFriction
+      #   value: 0.2
+      - name: physxJoint:armature
+        value: 0.0001
+      - name: physxJoint:maxJointVelocity
+        value: 1000
+      - name: physxMimicJoint:rotZ:dampingRatio
+        value: 0
+      - name: physxMimicJoint:rotZ:gearing
+        value: -1
+      - name: physxMimicJoint:rotZ:naturalFrequency
+        value: 0
+    mimic: "gripper/left_driver_joint"
+    mimic_axis: "rotZ"
+
+
+  "gripper/left_follower_joint":
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 0
+      - name: drive:angular:physics:maxForce
+        value: 0
+      - name: drive:angular:physics:stiffness
+        value: 0
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      # - name: physics:JointEquivalentInertia
+      #   value: 0.053654663
+      # - name: physxJoint:jointFriction
+      #   value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 1000
+      - name: physxMimicJoint:rotZ:dampingRatio
+        value: 0
+      - name: physxMimicJoint:rotZ:gearing
+        value: -1
+      - name: physxMimicJoint:rotZ:naturalFrequency
+        value: 0
+    mimic: "gripper/left_driver_joint"
+    mimic_axis: "rotZ"
+
+
+  "gripper/right_driver_joint":
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 0
+      - name: drive:angular:physics:maxForce
+        value: 0
+      - name: drive:angular:physics:stiffness
+        value: 0
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      # - name: physics:JointEquivalentInertia
+      #   value: 0.053654663
+      # - name: physxJoint:jointFriction
+      #   value: 0.2
+      - name: physxJoint:armature
+        value: 0.0001
+      - name: physxJoint:maxJointVelocity
+        value: 1000
+      - name: physxMimicJoint:rotZ:dampingRatio
+        value: 0
+      - name: physxMimicJoint:rotZ:gearing
+        value: -1
+      - name: physxMimicJoint:rotZ:naturalFrequency
+        value: 0
+    mimic: "gripper/left_driver_joint"
+    mimic_axis: "rotZ"
+  
+
+  "gripper/right_spring_link_joint":
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 0
+      - name: drive:angular:physics:maxForce
+        value: 0
+      - name: drive:angular:physics:stiffness
+        value: 0
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      # - name: physics:JointEquivalentInertia
+      #   value: 0.053654663
+      # - name: physxJoint:jointFriction
+      #   value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 1000
+      - name: physxMimicJoint:rotZ:dampingRatio
+        value: 0
+      - name: physxMimicJoint:rotZ:gearing
+        value: -1
+      - name: physxMimicJoint:rotZ:naturalFrequency
+        value: 0
+    mimic: "gripper/left_driver_joint"
+    mimic_axis: "rotZ"
+
+
+  "gripper/right_follower_joint":
+    schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
+    parameters:
+      - name: drive:angular:physics:damping
+        value: 0
+      - name: drive:angular:physics:maxForce
+        value: 0
+      - name: drive:angular:physics:stiffness
+        value: 0
+      # - name: drive:angular:physics:targetPosition
+      #   value: 0
+      # - name: physics:JointEquivalentInertia
+      #   value: 0.053654663
+      # - name: physxJoint:jointFriction
+      #   value: 0.2
+      - name: physxJoint:maxJointVelocity
+        value: 1000
+      - name: physxMimicJoint:rotZ:dampingRatio
+        value: 0
+      - name: physxMimicJoint:rotZ:gearing
+        value: -1
+      - name: physxMimicJoint:rotZ:naturalFrequency
+        value: 0
+    mimic: "gripper/left_driver_joint"
+    mimic_axis: "rotZ"
+

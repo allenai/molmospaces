@@ -4,7 +4,7 @@ import re
 import mujoco as mj
 import numpy as np
 import usdex.core
-from pxr import Gf, Sdf, UsdPhysics
+from pxr import Usd, Gf, Sdf, UsdPhysics
 
 from .data import AssetParameters, BaseConversionData, BodyData, Tokens, RobotParameters
 
@@ -42,7 +42,7 @@ def convert_joint_flatten(  # noqa: PLR0915
     asset_id: str = "",
     thor_parameters: dict[str, AssetParameters] = {},
     robot_parameters: RobotParameters | None = None,
-) -> None:
+) -> Usd.Prim | None:
     body_0_name, body_1_name = joint.parent.name, ""
     if body_0_handle := data.spec.body(body_0_name):
         body_1_name = body_0_handle.parent.name
@@ -52,7 +52,7 @@ def convert_joint_flatten(  # noqa: PLR0915
 
     if body_data_0 is None or body_data_1 is None:
         print(f"[WARN]: Couldn't create joint '{joint.name}'")
-        return
+        return None
 
     body_0_prim = body_data_0.body_prim
     body_1_prim = body_data_1.body_prim
@@ -116,8 +116,13 @@ def convert_joint_flatten(  # noqa: PLR0915
             for schema in params.schemas:
                 jnt_prim.AddAppliedSchema(schema)
             for jnt_param in params.parameters:
-                jnt_attr = jnt_prim.CreateAttribute(jnt_param.name, Sdf.ValueTypeNames.Float)
+                jnt_attr = jnt_prim.CreateAttribute(
+                    jnt_param.name, Sdf.ValueTypeNames.Float, custom=False
+                )
                 jnt_attr.Set(jnt_param.value)
+        return usd_joint.GetPrim()
+
+    return None
 
 
 def is_limited(joint: mj.MjsJoint, data: BaseConversionData) -> bool:
