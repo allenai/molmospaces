@@ -321,10 +321,8 @@ class SimpleWarpKinematics(ParallelKinematics):
     def _qpos_arr_to_dicts(self, qpos_arr: np.ndarray) -> list[dict[str, np.ndarray]]:
         ret = [{} for _ in range(qpos_arr.shape[0])]
         for i, qpos_dict in enumerate(ret):
-            idx = 0
             for mg_id, mg in self._actuated_move_groups.items():
-                qpos_dict[mg_id] = qpos_arr[i, idx : idx + mg.n_joints]
-                idx += mg.n_joints
+                qpos_dict[mg_id] = qpos_arr[i, mg.joint_posadr]
         return ret
 
     def warmup_ik(self, batch_size: int):
@@ -558,10 +556,15 @@ class SimpleWarpKinematics(ParallelKinematics):
                 else mujoco.mjtObj.mjOBJ_SITE
             )
 
-            if not rel_to_base:
+            if isinstance(self._robot_view.base, SimplyActuatedMoveGroup):
+                # if the base is actuated, the solving happens in world frame so ensure targets are in world frame
+                if rel_to_base:
+                    poses = base_poses @ poses
+            elif not rel_to_base:
+                # if the base is unactuated, the solving happens in base frame so ensure targets are in base frame
                 poses = np.linalg.solve(base_poses, poses)
-            poses = wp.from_numpy(poses.astype(np.float32), dtype=wp.mat44f)
-            wp.copy(ik_args.poses, poses)
+
+            wp.copy(ik_args.poses, wp.from_numpy(poses.astype(np.float32), dtype=wp.mat44f))
             ik_args.leaf_frame_id.fill_(leaf_frame_id)
             ik_args.leaf_frame_type.fill_(leaf_frame_type.value)
             ik_args.damping.fill_(damping)
