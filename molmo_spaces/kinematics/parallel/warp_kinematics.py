@@ -1,3 +1,7 @@
+"""
+Provides a general-purpose, robot-agnostic, vectorized (and optionally GPU accelerated) kinematics solver.
+"""
+
 from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING

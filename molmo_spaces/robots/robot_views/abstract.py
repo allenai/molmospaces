@@ -277,6 +277,8 @@ class MoveGroup(ABC):
 
 
 class MJCFFrameMixin(ABC):
+    """Mixin for move groups that represent the leaf frame as a body or site in the MJCF model."""
+
     @property
     @abstractmethod
     def leaf_frame_id(self) -> int:
