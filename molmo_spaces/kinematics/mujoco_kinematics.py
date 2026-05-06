@@ -271,6 +271,7 @@ class MlSpacesKinematics:
 
 
 if __name__ == "__main__":
+
     def main() -> None:
         import argparse
         import importlib
@@ -322,7 +323,11 @@ if __name__ == "__main__":
                 # Alternate between two target poses
                 target_pose = pose1 if i % 2 == 0 else pose0
                 ret = kinematics.ik(
-                    gripper_group_id, target_pose, groups, robot_view.get_qpos_dict(), robot_view.base.pose
+                    gripper_group_id,
+                    target_pose,
+                    groups,
+                    robot_view.get_qpos_dict(),
+                    robot_view.base.pose,
                 )
                 print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")
                 i += 1

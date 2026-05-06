@@ -300,7 +300,9 @@ class MJCFFrameMixin(ABC):
 
         See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
-        assert isinstance(self, MoveGroup), f"{self.__class__.__name__} must be used with a MoveGroup"
+        assert isinstance(self, MoveGroup), (
+            f"{self.__class__.__name__} must be used with a MoveGroup"
+        )
 
         J = np.zeros((6, self.mj_model.nv))
         if self.leaf_frame_type == "site":

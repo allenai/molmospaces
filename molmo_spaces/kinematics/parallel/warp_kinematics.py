@@ -12,7 +12,11 @@ import warp as wp
 
 from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
 from molmo_spaces.molmo_spaces_constants import get_robot_path
-from molmo_spaces.robots.robot_views.abstract import GripperGroup, SimplyActuatedMoveGroup, MJCFFrameMixin
+from molmo_spaces.robots.robot_views.abstract import (
+    GripperGroup,
+    MJCFFrameMixin,
+    SimplyActuatedMoveGroup,
+)
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.robot_configs import BaseRobotConfig
@@ -23,6 +27,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IKBuffers:
     """Preallocated buffers for the IK solver state"""
+
     pos_err: wp.array(dtype=wp.vec3f)
     rot_err: wp.array(dtype=wp.vec3f)
     jacp: wp.array3d(dtype=wp.float32)
@@ -36,6 +41,7 @@ class IKBuffers:
 @dataclass
 class IKArgs:
     """Preallocated buffers for the IK solver arguments"""
+
     poses: wp.array(dtype=wp.mat44f)
     leaf_frame_id: wp.array(dtype=int)  # single-element array (needed for pass-by-reference)
     leaf_frame_type: wp.array(dtype=int)  # single-element array (needed for pass-by-reference)
@@ -67,19 +73,23 @@ def get_err(
     frame_rotmat = xmat[i]
     target_pose = poses[i]
 
+    # fmt: off
     site_pose = wp.mat44(
         frame_rotmat[0, 0], frame_rotmat[0, 1], frame_rotmat[0, 2], frame_pos[0],
         frame_rotmat[1, 0], frame_rotmat[1, 1], frame_rotmat[1, 2], frame_pos[1],
         frame_rotmat[2, 0], frame_rotmat[2, 1], frame_rotmat[2, 2], frame_pos[2],
         0.0,       0.0,       0.0,       1.0,
     )
+    # fmt: on
     err_trf = wp.inverse(site_pose) @ target_pose
 
+    # fmt: off
     rotmat = wp.mat33(
         err_trf[0, 0], err_trf[0, 1], err_trf[0, 2],
         err_trf[1, 0], err_trf[1, 1], err_trf[1, 2],
         err_trf[2, 0], err_trf[2, 1], err_trf[2, 2],
     )
+    # fmt: on
     q = wp.quat_from_matrix(rotmat)
     axis, angle = wp.quat_to_axis_angle(q)
     t = wp.vec3f(err_trf[0, 3], err_trf[1, 3], err_trf[2, 3])
@@ -139,7 +149,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     L = mat66f()
     for i in range(6):
         for j in range(i + 1):
-            s = 0.0
+            s = float(0.0)
             for k in range(j):
                 s += L[i, k] * L[j, k]
             if i == j:
@@ -150,7 +160,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     # Forward substitution: L @ y = b
     y = vec6f()
     for i in range(6):
-        s = 0.0
+        s = float(0.0)
         for k in range(i):
             s += L[i, k] * y[k]
         y[i] = (b[i] - s) / L[i, i]
@@ -158,7 +168,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     # Backward substitution: L^T @ x = y
     x = vec6f()
     for i in range(5, -1, -1):
-        s = 0.0
+        s = float(0.0)
         for k in range(i + 1, 6):
             s += L[k, i] * x[k]
         x[i] = (y[i] - s) / L[i, i]
@@ -184,15 +194,19 @@ def lm_step(
     i = wp.tid()
 
     err = vec6f(
-        pos_err[i][0], pos_err[i][1], pos_err[i][2],
-        rot_err[i][0], rot_err[i][1], rot_err[i][2],
+        pos_err[i][0],
+        pos_err[i][1],
+        pos_err[i][2],
+        rot_err[i][0],
+        rot_err[i][1],
+        rot_err[i][2],
     )
 
     # H = J @ J^T + damping * I, where J = [jacp; jacr] is (6, nv)
     H = mat66f()
     for a in range(6):
         for b in range(6):
-            val = 0.0
+            val = float(0.0)
             for k in range(nv):
                 Ja = jacp[i, a, k] if a < 3 else jacr[i, a - 3, k]
                 Jb = jacp[i, b, k] if b < 3 else jacr[i, b - 3, k]
@@ -206,7 +220,7 @@ def lm_step(
 
     # q_dot = J^T @ x, dq = q_dot * dt
     for k in range(nv):
-        val = 0.0
+        val = float(0.0)
         for a in range(3):
             val += jacp[i, a, k] * x[a]
             val += jacr[i, a, k] * x[a + 3]
@@ -220,6 +234,7 @@ class SimpleWarpKinematics(ParallelKinematics):
     This solver only supports optimizing `SimplyActuatedMoveGroups` to reach a target pose for a given `MJCFFrameMixin` move group.
     Most robots satisfy this assumption, but more complicated robots may need custom kinematics implementations.
     """
+
     def __init__(self, robot_config: "BaseRobotConfig", device: str = "cpu"):
         """
         Args:
@@ -252,14 +267,20 @@ class SimpleWarpKinematics(ParallelKinematics):
         self._frame_move_groups: dict[str, MJCFFrameMixin] = {}
         for mg_id in self._robot_view.move_group_ids():
             mg = self._robot_view.get_move_group(mg_id)
-            assert mg.n_joints == 0 or isinstance(mg, SimplyActuatedMoveGroup) or isinstance(mg, GripperGroup)
+            assert (
+                mg.n_joints == 0
+                or isinstance(mg, SimplyActuatedMoveGroup)
+                or isinstance(mg, GripperGroup)
+            )
             if isinstance(mg, SimplyActuatedMoveGroup):
                 self._actuated_move_groups[mg_id] = mg
             if isinstance(mg, MJCFFrameMixin):
                 self._frame_move_groups[mg_id] = mg
 
         if self._mj_model.nq != self._mj_model.nv:
-            raise ValueError("Number of position variables (nq) must equal number of velocity variables (nv) for warp-based IK solver")
+            raise ValueError(
+                "Number of position variables (nq) must equal number of velocity variables (nv) for warp-based IK solver"
+            )
 
     @cache
     def _get_data(self, batch_size: int) -> SolverData:
@@ -298,7 +319,7 @@ class SimpleWarpKinematics(ParallelKinematics):
         for i, qpos_dict in enumerate(ret):
             idx = 0
             for mg_id, mg in self._actuated_move_groups.items():
-                qpos_dict[mg_id] = qpos_arr[i, idx:idx+mg.n_joints]
+                qpos_dict[mg_id] = qpos_arr[i, idx : idx + mg.n_joints]
                 idx += mg.n_joints
         return ret
 
@@ -316,7 +337,14 @@ class SimpleWarpKinematics(ParallelKinematics):
             robot_view.get_move_group(mg_id).leaf_frame_to_robot[None], (batch_size, 4, 4)
         )
 
-        self.ik(pose, robot_view.get_qpos_dict(), np.eye(4), rel_to_base=True, max_iter=1, move_group_id=mg_id)
+        self.ik(
+            pose,
+            robot_view.get_qpos_dict(),
+            np.eye(4),
+            rel_to_base=True,
+            max_iter=1,
+            move_group_id=mg_id,
+        )
 
     def fk(
         self,
@@ -348,7 +376,11 @@ class SimpleWarpKinematics(ParallelKinematics):
         dol = {}
         for mg_id, mg in self._frame_move_groups.items():
             trf = np.repeat(np.expand_dims(np.eye(4), axis=0), batch_size, axis=0)
-            xpos, xmat = (data.xpos, data.xmat) if mg.leaf_frame_type == "body" else (data.site_xpos, data.site_xmat)
+            xpos, xmat = (
+                (data.xpos, data.xmat)
+                if mg.leaf_frame_type == "body"
+                else (data.site_xpos, data.site_xmat)
+            )
             trf[:, :3, 3] = xpos[:, mg.leaf_frame_id].numpy()
             trf[:, :3, :3] = xmat[:, mg.leaf_frame_id].numpy()
             if rel_to_base:
@@ -363,11 +395,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             ret.append(d)
         return ret if is_batch else ret[0]
 
-    def _ik_solve_step(
-        self,
-        solver_data: SolverData,
-        batch_size: int
-    ):
+    def _ik_solve_step(self, solver_data: SolverData, batch_size: int):
         data = solver_data.data
         ik_buffers = solver_data.ik_buffers
         ik_args = solver_data.ik_args
@@ -451,9 +479,11 @@ class SimpleWarpKinematics(ParallelKinematics):
             device=self._device,
         )
 
-        err = np.sqrt(np.linalg.norm(pos_err.numpy(), axis=-1)**2 + np.linalg.norm(rot_err.numpy(), axis=-1)**2)
+        err = np.sqrt(
+            np.linalg.norm(pos_err.numpy(), axis=-1) ** 2
+            + np.linalg.norm(rot_err.numpy(), axis=-1) ** 2
+        )
         return err
-
 
     def ik(
         self,
@@ -492,9 +522,11 @@ class SimpleWarpKinematics(ParallelKinematics):
         if move_group_id is None:
             if len(self._frame_move_groups) == 0:
                 raise ValueError("Robot does not contain any MJCFFrameMixin move groups!")
-            move_group_id =  next(iter(self._frame_move_groups.keys()))
+            move_group_id = next(iter(self._frame_move_groups.keys()))
             if len(self._frame_move_groups) > 1:
-                logger.warning(f"Multiple MJCFFrameMixin move groups found, using the first one as target move group: {move_group_id}")
+                logger.warning(
+                    f"Multiple MJCFFrameMixin move groups found, using the first one as target move group: {move_group_id}"
+                )
         elif move_group_id not in self._frame_move_groups:
             raise ValueError(f"Move group {move_group_id} is not a MJCFFrameMixin")
 
@@ -505,7 +537,9 @@ class SimpleWarpKinematics(ParallelKinematics):
                 if mg_id not in self._actuated_move_groups:
                     raise ValueError(f"Move group {mg_id} is not a simply actuated move group!")
 
-        is_batch, batch_size, q0_dicts, base_poses, poses = self._batchify(q0_dicts, base_poses, poses)
+        is_batch, batch_size, q0_dicts, base_poses, poses = self._batchify(
+            q0_dicts, base_poses, poses
+        )
         solver_data = self._get_data(batch_size)
         data = solver_data.data
         ik_args = solver_data.ik_args
@@ -514,7 +548,11 @@ class SimpleWarpKinematics(ParallelKinematics):
             ee_mg = self._frame_move_groups[move_group_id]
             assert isinstance(ee_mg, MJCFFrameMixin)
             leaf_frame_id = ee_mg.leaf_frame_id
-            leaf_frame_type = mujoco.mjtObj.mjOBJ_BODY if ee_mg.leaf_frame_type == "body" else mujoco.mjtObj.mjOBJ_SITE
+            leaf_frame_type = (
+                mujoco.mjtObj.mjOBJ_BODY
+                if ee_mg.leaf_frame_type == "body"
+                else mujoco.mjtObj.mjOBJ_SITE
+            )
 
             if not rel_to_base:
                 poses = np.linalg.solve(base_poses, poses)
@@ -539,11 +577,16 @@ class SimpleWarpKinematics(ParallelKinematics):
                     self._ik_solve_step(solver_data, batch_size)
                 wp.synchronize()
 
-                if np.all(np.linalg.norm(solver_data.ik_buffers.q_dot.numpy(), axis=-1) < converge_eps):
-                    logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} converged in {i} iterations")
+                q_dot = solver_data.ik_buffers.q_dot.numpy()
+                if np.all(np.linalg.norm(q_dot, axis=-1) < converge_eps):
+                    logger.debug(
+                        f"[SimpleWarpKinematics] Batch of size {batch_size} converged in {i} iterations"
+                    )
                     break
             else:
-                logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} failed to converge in {max_iter} iterations")
+                logger.debug(
+                    f"[SimpleWarpKinematics] Batch of size {batch_size} failed to converge in {max_iter} iterations"
+                )
 
             mjw.kinematics(self._mjw_model, data)
             err_norm = self._get_err_norm(solver_data, batch_size)
@@ -607,13 +650,7 @@ if __name__ == "__main__":
 
         ml_ret = []
         for q in init_qpos:
-            ml_ret.append(ml_kinematics.ik(
-                "gripper",
-                pose,
-                ["arm"],
-                q,
-                np.eye(4)
-            ))
+            ml_ret.append(ml_kinematics.ik("gripper", pose, ["arm"], q, np.eye(4)))
 
         wp_kinematics.warmup_ik(len(init_qpos))
         wp_ret = wp_kinematics.ik(
@@ -629,7 +666,7 @@ if __name__ == "__main__":
                     breakpoint()
 
         print("IK test passed")
-    
+
     test_fk()
     test_ik()
 
