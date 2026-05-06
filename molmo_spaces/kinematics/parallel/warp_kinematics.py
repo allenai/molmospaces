@@ -22,42 +22,49 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IKBuffers:
-    """Preallocated buffers for the IK solver"""
+    """Preallocated buffers for the IK solver state"""
     pos_err: wp.array(dtype=wp.vec3f)
     rot_err: wp.array(dtype=wp.vec3f)
-    jacp: wp.array3d(dtype=float)
-    jacr: wp.array3d(dtype=float)
-    q_dot: wp.array2d(dtype=float)
-    dq: wp.array2d(dtype=float)
+    jacp: wp.array3d(dtype=wp.float32)
+    jacr: wp.array3d(dtype=wp.float32)
+    q_dot: wp.array2d(dtype=wp.float32)
+    frame_pos: wp.array(dtype=wp.vec3f)
+    frame_mat: wp.array(dtype=wp.mat33f)
+    frame_bodyid: wp.array(dtype=int)
+
+
+@dataclass
+class IKArgs:
+    """Preallocated buffers for the IK solver arguments"""
+    poses: wp.array(dtype=wp.mat44f)
+    leaf_frame_id: wp.array(dtype=int)  # single-element array (needed for pass-by-reference)
+    leaf_frame_type: wp.array(dtype=int)  # single-element array (needed for pass-by-reference)
+    damping: wp.array(dtype=wp.float32)  # single-element array (needed for pass-by-reference)
+    dt: wp.array(dtype=wp.float32)  # single-element array (needed for pass-by-reference)
 
 
 @dataclass
 class SolverData:
     data: mjw.Data
     ik_buffers: IKBuffers
+    ik_args: IKArgs
     ik_capture: wp.ScopedCapture | None = None
 
 
 @wp.kernel
 def get_err(
-    xpos: wp.array2d(dtype=wp.vec3),
-    xmat: wp.array2d(dtype=wp.mat33),
-    frame_id: int,
-    frame_type: mujoco.mjtObj,
+    # inputs
+    xpos: wp.array(dtype=wp.vec3f),
+    xmat: wp.array(dtype=wp.mat33f),
     poses: wp.array(dtype=wp.mat44f),
+    # outputs
     pos_err: wp.array(dtype=wp.vec3f),
     rot_err: wp.array(dtype=wp.vec3f),
 ):
     """Calculate the body-frame position and rotation error between the current and target poses"""
     i = wp.tid()
-    if frame_type == mujoco.mjtObj.mjOBJ_SITE:
-        frame_pos = xpos[i, frame_id]
-        frame_rotmat = xmat[i, frame_id]
-    elif frame_type == mujoco.mjtObj.mjOBJ_BODY:
-        frame_pos = xpos[i, frame_id]
-        frame_rotmat = xmat[i, frame_id]
-    else:
-        raise ValueError(f"Invalid frame type: {frame_type}")
+    frame_pos = xpos[i]
+    frame_rotmat = xmat[i]
     target_pose = poses[i]
 
     site_pose = wp.mat44(
@@ -92,6 +99,35 @@ def get_err(
         rot_err[i] = frame_rotmat @ w
 
 
+@wp.kernel
+def get_jac_frame_info(
+    # inputs
+    frame_id_: wp.array(dtype=int),  # single-element array
+    frame_type_: wp.array(dtype=int),  # single-element array
+    xpos: wp.array2d(dtype=wp.vec3f),
+    xmat: wp.array2d(dtype=wp.mat33f),
+    site_xpos: wp.array2d(dtype=wp.vec3f),
+    site_xmat: wp.array2d(dtype=wp.mat33f),
+    site_bodyid: wp.array(dtype=int),
+    # outputs
+    frame_pos: wp.array(dtype=wp.vec3f),
+    frame_mat: wp.array(dtype=wp.mat33f),
+    frame_bodyid: wp.array(dtype=int),
+):
+    """Get the position and body ID of the frame"""
+    i = wp.tid()
+    frame_id = frame_id_[0]
+    frame_type = frame_type_[0]
+    if frame_type == wp.static(mujoco.mjtObj.mjOBJ_SITE.value):
+        frame_pos[i] = site_xpos[i, frame_id]
+        frame_mat[i] = site_xmat[i, frame_id]
+        frame_bodyid[i] = site_bodyid[frame_id]
+    elif frame_type == wp.static(mujoco.mjtObj.mjOBJ_BODY.value):
+        frame_pos[i] = xpos[i, frame_id]
+        frame_mat[i] = xmat[i, frame_id]
+        frame_bodyid[i] = frame_id
+
+
 mat66f = wp.types.matrix(shape=(6, 6), dtype=wp.float32)
 vec6f = wp.types.vector(length=6, dtype=wp.float32)
 
@@ -103,7 +139,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     L = mat66f()
     for i in range(6):
         for j in range(i + 1):
-            s = float(0.0)
+            s = 0.0
             for k in range(j):
                 s += L[i, k] * L[j, k]
             if i == j:
@@ -114,7 +150,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     # Forward substitution: L @ y = b
     y = vec6f()
     for i in range(6):
-        s = float(0.0)
+        s = 0.0
         for k in range(i):
             s += L[i, k] * y[k]
         y[i] = (b[i] - s) / L[i, i]
@@ -122,7 +158,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     # Backward substitution: L^T @ x = y
     x = vec6f()
     for i in range(5, -1, -1):
-        s = float(0.0)
+        s = 0.0
         for k in range(i + 1, 6):
             s += L[k, i] * x[k]
         x[i] = (y[i] - s) / L[i, i]
@@ -132,13 +168,17 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
 
 @wp.kernel
 def lm_step(
-    jacp: wp.array3d(dtype=float),
-    jacr: wp.array3d(dtype=float),
+    # inputs
+    jacp: wp.array3d(dtype=wp.float32),
+    jacr: wp.array3d(dtype=wp.float32),
     pos_err: wp.array(dtype=wp.vec3f),
     rot_err: wp.array(dtype=wp.vec3f),
-    damping: float,
+    damping: wp.array(dtype=wp.float32),  # single-element array
+    dt: wp.array(dtype=wp.float32),  # single-element array
     nv: int,
-    dq: wp.array2d(dtype=float),
+    # outputs
+    qpos: wp.array2d(dtype=wp.float32),
+    q_dot: wp.array2d(dtype=wp.float32),
 ):
     """Single step of the Levenberg-Marquardt solver."""
     i = wp.tid()
@@ -152,25 +192,26 @@ def lm_step(
     H = mat66f()
     for a in range(6):
         for b in range(6):
-            val = float(0.0)
+            val = 0.0
             for k in range(nv):
                 Ja = jacp[i, a, k] if a < 3 else jacr[i, a - 3, k]
                 Jb = jacp[i, b, k] if b < 3 else jacr[i, b - 3, k]
                 val += Ja * Jb
             if a == b:
-                val += damping
+                val += damping[0]
             H[a, b] = val
 
     # x = H^{-1} @ err
     x = cholesky_solve6(H, err)
 
-    # q_dot = J^T @ x * dt
+    # q_dot = J^T @ x, dq = q_dot * dt
     for k in range(nv):
-        val = float(0.0)
+        val = 0.0
         for a in range(3):
             val += jacp[i, a, k] * x[a]
             val += jacr[i, a, k] * x[a + 3]
-        dq[i, k] = val
+        q_dot[i, k] = val
+        qpos[i, k] += val * dt[0]
 
 
 class SimpleWarpKinematics(ParallelKinematics):
@@ -208,11 +249,14 @@ class SimpleWarpKinematics(ParallelKinematics):
         self._robot_view = robot_config.robot_view_factory(mj_data, "")
 
         self._actuated_move_groups: OrderedDict[str, SimplyActuatedMoveGroup] = OrderedDict()
+        self._frame_move_groups: dict[str, MJCFFrameMixin] = {}
         for mg_id in self._robot_view.move_group_ids():
             mg = self._robot_view.get_move_group(mg_id)
             assert mg.n_joints == 0 or isinstance(mg, SimplyActuatedMoveGroup) or isinstance(mg, GripperGroup)
             if isinstance(mg, SimplyActuatedMoveGroup):
                 self._actuated_move_groups[mg_id] = mg
+            if isinstance(mg, MJCFFrameMixin):
+                self._frame_move_groups[mg_id] = mg
 
         if self._mj_model.nq != self._mj_model.nv:
             raise ValueError("Number of position variables (nq) must equal number of velocity variables (nv) for warp-based IK solver")
@@ -222,14 +266,23 @@ class SimpleWarpKinematics(ParallelKinematics):
         with wp.ScopedDevice(self._device):
             data = mjw.make_data(self._mj_model, nworld=batch_size)
             return SolverData(
-                data,
-                IKBuffers(
+                data=data,
+                ik_buffers=IKBuffers(
                     pos_err=wp.zeros(batch_size, dtype=wp.vec3f),
                     rot_err=wp.zeros(batch_size, dtype=wp.vec3f),
                     jacp=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
                     jacr=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
                     q_dot=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
-                    dq=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
+                    frame_pos=wp.zeros(batch_size, dtype=wp.vec3f),
+                    frame_mat=wp.zeros(batch_size, dtype=wp.mat33f),
+                    frame_bodyid=wp.zeros(batch_size, dtype=int),
+                ),
+                ik_args=IKArgs(
+                    poses=wp.zeros(batch_size, dtype=wp.mat44f),
+                    leaf_frame_id=wp.zeros(1, dtype=int),
+                    leaf_frame_type=wp.zeros(1, dtype=int),
+                    damping=wp.zeros(1, dtype=wp.float32),
+                    dt=wp.zeros(1, dtype=wp.float32),
                 ),
             )
 
@@ -258,7 +311,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             robot_view.get_move_group(mg_id).joint_pos = qpos
         mujoco.mj_forward(self._mj_model, mj_data)
 
-        mg_id = next(name for name, mg in self._actuated_move_groups.items() if isinstance(mg, MJCFFrameMixin))
+        mg_id = next(iter(self._frame_move_groups.keys()))
         pose = np.broadcast_to(
             robot_view.get_move_group(mg_id).leaf_frame_to_robot[None], (batch_size, 4, 4)
         )
@@ -288,20 +341,19 @@ class SimpleWarpKinematics(ParallelKinematics):
         data = solver_data.data
 
         qpos_arr = self._dicts_to_qpos_arr(qpos_dicts)
-        wp.copy(data.qpos, wp.from_numpy(qpos_arr, device=self._device))
-
-        mjw.fwd_position(self._mjw_model, data)
+        with wp.ScopedDevice(self._device):
+            wp.copy(data.qpos, wp.from_numpy(qpos_arr))
+            mjw.fwd_position(self._mjw_model, data)
 
         dol = {}
-        for mg_id, mg in self._actuated_move_groups.items():
-            if isinstance(mg, MJCFFrameMixin):
-                trf = np.repeat(np.expand_dims(np.eye(4), axis=0), batch_size, axis=0)
-                xpos, xmat = (data.xpos, data.xmat) if mg.leaf_frame_type == "body" else (data.site_xpos, data.site_xmat)
-                trf[:, :3, 3] = xpos[:, mg.leaf_frame_id].numpy()
-                trf[:, :3, :3] = xmat[:, mg.leaf_frame_id].numpy()
-                if rel_to_base:
-                    trf = base_poses @ trf
-                dol[mg_id] = trf
+        for mg_id, mg in self._frame_move_groups.items():
+            trf = np.repeat(np.expand_dims(np.eye(4), axis=0), batch_size, axis=0)
+            xpos, xmat = (data.xpos, data.xmat) if mg.leaf_frame_type == "body" else (data.site_xpos, data.site_xmat)
+            trf[:, :3, 3] = xpos[:, mg.leaf_frame_id].numpy()
+            trf[:, :3, :3] = xmat[:, mg.leaf_frame_id].numpy()
+            if rel_to_base:
+                trf = base_poses @ trf
+            dol[mg_id] = trf
 
         ret = []
         for i in range(batch_size):
@@ -314,53 +366,94 @@ class SimpleWarpKinematics(ParallelKinematics):
     def _ik_solve_step(
         self,
         solver_data: SolverData,
-        batch_size: int,
-        leaf_frame_id: int,
-        leaf_frame_type: mujoco.mjtObj,
-        poses: wp.array(dtype=wp.mat44f),
-        damping: float,
-        dt: float,
+        batch_size: int
     ):
         data = solver_data.data
         ik_buffers = solver_data.ik_buffers
+        ik_args = solver_data.ik_args
         mjw.fwd_position(self._mjw_model, data)
 
+        frame_pos = ik_buffers.frame_pos
+        frame_mat = ik_buffers.frame_mat
+        frame_bodyid = ik_buffers.frame_bodyid
+        wp.launch(
+            get_jac_frame_info,
+            dim=batch_size,
+            inputs=[
+                ik_args.leaf_frame_id,
+                ik_args.leaf_frame_type,
+                data.xpos,
+                data.xmat,
+                data.site_xpos,
+                data.site_xmat,
+                self._mjw_model.site_bodyid,
+            ],
+            outputs=[frame_pos, frame_mat, frame_bodyid],
+            device=self._device,
+        )
+
         # calculate error
-        pos_err, rot_err = ik_buffers.pos_err, ik_buffers.rot_err
-        xpos, xmat = (data.xpos, data.xmat) if leaf_frame_type == mujoco.mjtObj.mjOBJ_BODY else (data.site_xpos, data.site_xmat)
+        pos_err = ik_buffers.pos_err
+        rot_err = ik_buffers.rot_err
         wp.launch(
             get_err,
             dim=batch_size,
-            inputs=[xpos, xmat, leaf_frame_id, leaf_frame_type, poses, pos_err, rot_err],
+            inputs=[frame_pos, frame_mat, ik_args.poses],
+            outputs=[ik_buffers.pos_err, ik_buffers.rot_err],
             device=self._device,
         )
 
         # calculate Jacobian
         jacp, jacr = ik_buffers.jacp, ik_buffers.jacr
-        if leaf_frame_type == mujoco.mjtObj.mjOBJ_SITE:
-            frame_pos = data.site_xpos[:, leaf_frame_id]
-            frame_bodyid = wp.full(batch_size, self._mj_model.site_bodyid[leaf_frame_id], dtype=int)
-        elif leaf_frame_type == mujoco.mjtObj.mjOBJ_BODY:
-            frame_pos = data.xpos[:, leaf_frame_id]
-            frame_bodyid = wp.full(batch_size, leaf_frame_id, dtype=int)
-        else:
-            raise ValueError(f"Invalid leaf frame type: {leaf_frame_type}")
         mjw.jac(self._mjw_model, data, jacp, jacr, frame_pos, frame_bodyid)
 
-        # solve for joint velocities
-        q_dot = ik_buffers.q_dot
+        # solve for joint velocities and update joint positions
         wp.launch(
             lm_step,
             dim=batch_size,
-            inputs=[jacp, jacr, pos_err, rot_err, damping, self._mjw_model.nv],
-            outputs=[q_dot],
+            inputs=[jacp, jacr, pos_err, rot_err, ik_args.damping, ik_args.dt, self._mjw_model.nv],
+            outputs=[data.qpos, ik_buffers.q_dot],
             device=self._device,
         )
-        dq = q_dot * dt
-        wp.copy(ik_buffers.dq, dq)
 
-        # update joint positions
-        wp.copy(data.qpos, data.qpos + dq)
+    def _get_err_norm(self, solver_data: SolverData, batch_size: int) -> np.ndarray:
+        data = solver_data.data
+        ik_buffers = solver_data.ik_buffers
+        ik_args = solver_data.ik_args
+
+        frame_pos = wp.zeros(batch_size, dtype=wp.vec3f)
+        frame_mat = wp.zeros(batch_size, dtype=wp.mat33f)
+        frame_bodyid = ik_buffers.frame_bodyid
+        wp.launch(
+            get_jac_frame_info,
+            dim=batch_size,
+            inputs=[
+                ik_args.leaf_frame_id,
+                ik_args.leaf_frame_type,
+                data.xpos,
+                data.xmat,
+                data.site_xpos,
+                data.site_xmat,
+                self._mjw_model.site_bodyid,
+            ],
+            outputs=[frame_pos, frame_mat, frame_bodyid],
+            device=self._device,
+        )
+
+        # calculate error
+        pos_err = wp.zeros(batch_size, dtype=wp.vec3f)
+        rot_err = wp.zeros(batch_size, dtype=wp.vec3f)
+        wp.launch(
+            get_err,
+            dim=batch_size,
+            inputs=[frame_pos, frame_mat, ik_args.poses],
+            outputs=[pos_err, rot_err],
+            device=self._device,
+        )
+
+        err = np.sqrt(np.linalg.norm(pos_err.numpy(), axis=-1)**2 + np.linalg.norm(rot_err.numpy(), axis=-1)**2)
+        return err
+
 
     def ik(
         self,
@@ -397,13 +490,12 @@ class SimpleWarpKinematics(ParallelKinematics):
                 If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.
         """
         if move_group_id is None:
-            frame_move_groups = [name for name, mg in self._actuated_move_groups.items() if isinstance(mg, MJCFFrameMixin)]
-            if len(frame_move_groups) == 0:
+            if len(self._frame_move_groups) == 0:
                 raise ValueError("Robot does not contain any MJCFFrameMixin move groups!")
-            move_group_id = frame_move_groups[0]
-            if len(frame_move_groups) > 1:
+            move_group_id =  next(iter(self._frame_move_groups.keys()))
+            if len(self._frame_move_groups) > 1:
                 logger.warning(f"Multiple MJCFFrameMixin move groups found, using the first one as target move group: {move_group_id}")
-        elif not isinstance(self._actuated_move_groups[move_group_id], MJCFFrameMixin):
+        elif move_group_id not in self._frame_move_groups:
             raise ValueError(f"Move group {move_group_id} is not a MJCFFrameMixin")
 
         if unlocked_move_group_ids is None:
@@ -416,50 +508,46 @@ class SimpleWarpKinematics(ParallelKinematics):
         is_batch, batch_size, q0_dicts, base_poses, poses = self._batchify(q0_dicts, base_poses, poses)
         solver_data = self._get_data(batch_size)
         data = solver_data.data
+        ik_args = solver_data.ik_args
 
         with wp.ScopedDevice(self._device):
-            if not rel_to_base:
-                poses = np.linalg.solve(base_poses, poses)
-            poses = wp.from_numpy(poses.astype(np.float32), dtype=wp.mat44f)
-
-            q0_arr = self._dicts_to_qpos_arr(q0_dicts)
-            wp.copy(data.qpos, wp.from_numpy(q0_arr))
-
-            ee_mg = self._actuated_move_groups[move_group_id]
+            ee_mg = self._frame_move_groups[move_group_id]
             assert isinstance(ee_mg, MJCFFrameMixin)
             leaf_frame_id = ee_mg.leaf_frame_id
             leaf_frame_type = mujoco.mjtObj.mjOBJ_BODY if ee_mg.leaf_frame_type == "body" else mujoco.mjtObj.mjOBJ_SITE
 
+            if not rel_to_base:
+                poses = np.linalg.solve(base_poses, poses)
+            poses = wp.from_numpy(poses.astype(np.float32), dtype=wp.mat44f)
+            wp.copy(ik_args.poses, poses)
+            ik_args.leaf_frame_id.fill_(leaf_frame_id)
+            ik_args.leaf_frame_type.fill_(leaf_frame_type.value)
+            ik_args.damping.fill_(damping)
+            ik_args.dt.fill_(dt)
+
+            q0_arr = self._dicts_to_qpos_arr(q0_dicts)
+            wp.copy(data.qpos, wp.from_numpy(q0_arr))
+
             for i in range(max_iter):
-                if solver_data.ik_capture is not None:
+                if self._device == "cuda":
+                    if solver_data.ik_capture is None:
+                        with wp.ScopedCapture(device=self._device) as capture:
+                            self._ik_solve_step(solver_data, batch_size)
+                        solver_data.ik_capture = capture
                     wp.capture_launch(solver_data.ik_capture.graph)
-                elif self._device == "cuda":
-                    with wp.ScopedCapture(device=self._device) as capture:
-                        self._ik_solve_step(solver_data, batch_size, leaf_frame_id, leaf_frame_type, poses, damping, dt)
-                    solver_data.ik_capture = capture
                 else:
-                    self._ik_solve_step(solver_data, batch_size, leaf_frame_id, leaf_frame_type, poses, damping, dt)
+                    self._ik_solve_step(solver_data, batch_size)
                 wp.synchronize()
 
-                if np.all(np.linalg.norm(solver_data.ik_buffers.dq.numpy(), axis=-1) < converge_eps):
+                if np.all(np.linalg.norm(solver_data.ik_buffers.q_dot.numpy(), axis=-1) < converge_eps):
                     logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} converged in {i} iterations")
                     break
             else:
                 logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} failed to converge in {max_iter} iterations")
 
             mjw.kinematics(self._mjw_model, data)
-            pos_err = wp.zeros(batch_size, dtype=wp.vec3f)
-            rot_err = wp.zeros(batch_size, dtype=wp.vec3f)
-            xpos, xmat = (data.xpos, data.xmat) if leaf_frame_type == mujoco.mjtObj.mjOBJ_BODY else (data.site_xpos, data.site_xmat)
-            wp.launch(
-                get_err,
-                dim=batch_size,
-                inputs=[xpos, xmat, leaf_frame_id, leaf_frame_type, poses, pos_err, rot_err],
-                device=self._device,
-            )
-
-            err = np.sqrt(np.linalg.norm(pos_err.numpy(), axis=-1)**2 + np.linalg.norm(rot_err.numpy(), axis=-1)**2)
-            success = np.array(err < success_eps)
+            err_norm = self._get_err_norm(solver_data, batch_size)
+            success = np.array(err_norm < success_eps)
 
         ret_q_arr = data.qpos.numpy()
         ret_q_dicts = self._qpos_arr_to_dicts(ret_q_arr)
@@ -477,7 +565,7 @@ if __name__ == "__main__":
     from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 
     robot_config = FrankaRobotConfig()
-    wp_kinematics = SimpleWarpKinematics(robot_config)
+    wp_kinematics = SimpleWarpKinematics(robot_config, device="cuda")
     ml_kinematics = MlSpacesKinematics.create(robot_config)
 
     logging.basicConfig(level=logging.DEBUG)
@@ -507,9 +595,9 @@ if __name__ == "__main__":
 
     def test_ik():
         pose = ml_kinematics.fk(robot_config.init_qpos, np.eye(4))["gripper"]
-        # pose[0, 3] += 0.05
-        # pose[1, 3] += 0.05
-        # pose[2, 3] += 0.05
+        pose[0, 3] += 0.05
+        pose[1, 3] += 0.05
+        pose[2, 3] += 0.15
 
         init_qpos = []
         for _ in range(10):
@@ -520,7 +608,7 @@ if __name__ == "__main__":
         ml_ret = []
         for q in init_qpos:
             ml_ret.append(ml_kinematics.ik(
-                "arm",
+                "gripper",
                 pose,
                 ["arm"],
                 q,
@@ -532,7 +620,7 @@ if __name__ == "__main__":
             pose,
             init_qpos,
             np.eye(4),
-            move_group_id="arm",
+            move_group_id="gripper",
         )
 
         for wp_val, ml_val in zip(wp_ret, ml_ret):
