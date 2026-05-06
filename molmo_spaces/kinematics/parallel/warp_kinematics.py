@@ -173,16 +173,22 @@ class SimpleWarpKinematics(ParallelKinematics):
     def __init__(self, robot_config: "BaseRobotConfig", device: str = "cpu"):
         super().__init__(robot_config)
         self._device = device
-        self._datas: dict[int, SolverData] = {}
 
         spec = MjSpec()
         robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
         robot_spec = MjSpec.from_file(str(robot_xml_path))
+        for body in robot_spec.bodies:
+            body: mujoco.MjsBody
+            for geom in body.geoms:
+                geom: mujoco.MjsGeom
+                if geom.type == mujoco.mjtGeom.mjGEOM_MESH:
+                    robot_spec.delete(geom)
         robot_config.robot_cls.add_robot_to_scene(
             robot_config, spec, robot_spec, "", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]
         )
         self._mj_model: MjModel = spec.compile()
-        self._mjw_model = mjw.put_model(self._mj_model)
+        with wp.ScopedDevice(self._device):
+            self._mjw_model = mjw.put_model(self._mj_model)
 
         mj_data = MjData(self._mj_model)
         self._robot_view = robot_config.robot_view_factory(mj_data, "")
@@ -199,18 +205,19 @@ class SimpleWarpKinematics(ParallelKinematics):
 
     @cache
     def _get_data(self, batch_size: int) -> SolverData:
-        data = mjw.make_data(self._mj_model, nworld=batch_size)
-        return SolverData(
-            data,
-            IKBuffers(
-                pos_err=wp.zeros(batch_size, dtype=wp.vec3f),
-                rot_err=wp.zeros(batch_size, dtype=wp.vec3f),
-                jacp=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
-                jacr=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
-                q_dot=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
-                dq=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
-            ),
-        )
+        with wp.ScopedDevice(self._device):
+            data = mjw.make_data(self._mj_model, nworld=batch_size)
+            return SolverData(
+                data,
+                IKBuffers(
+                    pos_err=wp.zeros(batch_size, dtype=wp.vec3f),
+                    rot_err=wp.zeros(batch_size, dtype=wp.vec3f),
+                    jacp=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
+                    jacr=wp.zeros((batch_size, 3, self._mj_model.nv), dtype=wp.float32),
+                    q_dot=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
+                    dq=wp.zeros((batch_size, self._mj_model.nv), dtype=wp.float32),
+                ),
+            )
 
     def _dicts_to_qpos_arr(self, qpos_dicts: list[dict[str, np.ndarray]]) -> np.ndarray:
         ret = np.empty((len(qpos_dicts), self._mj_model.nq), dtype=np.float32)
@@ -267,7 +274,7 @@ class SimpleWarpKinematics(ParallelKinematics):
         data = solver_data.data
 
         qpos_arr = self._dicts_to_qpos_arr(qpos_dicts)
-        wp.copy(data.qpos, wp.from_numpy(qpos_arr))
+        wp.copy(data.qpos, wp.from_numpy(qpos_arr, device=self._device))
 
         mjw.fwd_position(self._mjw_model, data)
 
@@ -342,7 +349,7 @@ class SimpleWarpKinematics(ParallelKinematics):
         unlocked_move_group_ids: list[str] | None = None,
         converge_eps: float = 1e-3,
         success_eps: float = 5e-4,
-        max_iter: int = 1000,
+        max_iter: int = 50,
         damping: float = 1e-12,
         dt: float = 1.0,
     ):
@@ -367,45 +374,46 @@ class SimpleWarpKinematics(ParallelKinematics):
         solver_data = self._get_data(batch_size)
         data = solver_data.data
 
-        if not rel_to_base:
-            poses = np.linalg.solve(base_poses, poses)
-        poses = wp.from_numpy(poses.astype(np.float32), dtype=wp.mat44f)
+        with wp.ScopedDevice(self._device):
+            if not rel_to_base:
+                poses = np.linalg.solve(base_poses, poses)
+            poses = wp.from_numpy(poses.astype(np.float32), dtype=wp.mat44f)
 
-        q0_arr = self._dicts_to_qpos_arr(q0_dicts)
-        wp.copy(data.qpos, wp.from_numpy(q0_arr))
+            q0_arr = self._dicts_to_qpos_arr(q0_dicts)
+            wp.copy(data.qpos, wp.from_numpy(q0_arr))
 
-        ee_mg = self._actuated_move_groups[move_group_id]
-        assert isinstance(ee_mg, SimpleMoveGroup)
+            ee_mg = self._actuated_move_groups[move_group_id]
+            assert isinstance(ee_mg, SimpleMoveGroup)
 
-        for i in range(max_iter):
-            if solver_data.ik_capture is not None:
-                wp.capture_launch(solver_data.ik_capture.graph)
-            elif self._device == "cuda":
-                with wp.ScopedCapture(device=self._device) as capture:
+            for i in range(max_iter):
+                if solver_data.ik_capture is not None:
+                    wp.capture_launch(solver_data.ik_capture.graph)
+                elif self._device == "cuda":
+                    with wp.ScopedCapture(device=self._device) as capture:
+                        self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
+                    solver_data.ik_capture = capture
+                else:
                     self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
-                solver_data.ik_capture = capture
+                wp.synchronize()
+
+                if np.all(np.linalg.norm(solver_data.ik_buffers.dq.numpy(), axis=-1) < converge_eps):
+                    logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} converged in {i} iterations")
+                    break
             else:
-                self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
-            wp.synchronize()
+                logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} failed to converge in {max_iter} iterations")
 
-            if np.all(np.linalg.norm(solver_data.ik_buffers.dq.numpy(), axis=-1) < converge_eps):
-                logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} converged in {i} iterations")
-                break
-        else:
-            logger.debug(f"[SimpleWarpKinematics] Batch of size {batch_size} failed to converge in {max_iter} iterations")
+            mjw.kinematics(self._mjw_model, data)
+            pos_err = wp.zeros(batch_size, dtype=wp.vec3f)
+            rot_err = wp.zeros(batch_size, dtype=wp.vec3f)
+            wp.launch(
+                get_err,
+                dim=batch_size,
+                inputs=[data.site_xpos, data.site_xmat, ee_mg.leaf_site_id, poses, pos_err, rot_err],
+                device=self._device,
+            )
 
-        mjw.kinematics(self._mjw_model, data)
-        pos_err = wp.zeros(batch_size, dtype=wp.vec3f)
-        rot_err = wp.zeros(batch_size, dtype=wp.vec3f)
-        wp.launch(
-            get_err,
-            dim=batch_size,
-            inputs=[data.site_xpos, data.site_xmat, ee_mg.leaf_site_id, poses, pos_err, rot_err],
-            device=self._device,
-        )
-
-        err = np.sqrt(np.linalg.norm(pos_err.numpy(), axis=-1)**2 + np.linalg.norm(rot_err.numpy(), axis=-1)**2)
-        success = np.array(err < success_eps)
+            err = np.sqrt(np.linalg.norm(pos_err.numpy(), axis=-1)**2 + np.linalg.norm(rot_err.numpy(), axis=-1)**2)
+            success = np.array(err < success_eps)
 
         ret_q_arr = data.qpos.numpy()
         ret_q_dicts = self._qpos_arr_to_dicts(ret_q_arr)

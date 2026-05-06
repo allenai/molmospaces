@@ -12,12 +12,13 @@ from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyPara
 
 def benchmark_parallel_kinematics(min_time: float, kinematics: ParallelKinematics, ik_kwargs: dict):
     start_time = time.perf_counter()
-    n_iter = 0
+    times = []
     while time.perf_counter() - start_time < min_time:
+        s = time.perf_counter()
         kinematics.ik(**ik_kwargs)
-        n_iter += 1
-    end_time = time.perf_counter()
-    return (end_time - start_time) / n_iter
+        e = time.perf_counter()
+        times.append(e - s)
+    return min(times)
 
 def main():
     robot_config = FrankaRobotConfig()
@@ -25,20 +26,22 @@ def main():
     cpu_kinematics = MlSpacesKinematics.create(robot_config)
 
     kinematics_solvers: dict[str, ParallelKinematics] = {
-        # "dummy": DummyParallelKinematics(robot_config, cpu_kinematics, "arm", ["arm"]),
-        # "jax": FrankaParallelKinematics(robot_config),
+        "dummy": DummyParallelKinematics(robot_config, cpu_kinematics, "arm", ["arm"]),
+        "jax": FrankaParallelKinematics(robot_config),
         "warp": SimpleWarpKinematics(robot_config),
+        "warp_cuda": SimpleWarpKinematics(robot_config, device="cuda"),
     }
 
-    batch_sizes = [1, 4, 16, 64]
+    batch_sizes = [1, 4, 16, 64, 256, 1024]
     max_batch_size = max(batch_sizes)
 
     q0s = [robot_config.init_qpos.copy()] * max_batch_size
     poses = np.repeat(cpu_kinematics.fk(robot_config.init_qpos, np.eye(4))["arm"][None], max_batch_size, axis=0)
+    np.random.seed(42)
     for i, q0_dict in enumerate(q0s):
-        q0_dict["arm"] = q0_dict["arm"] + np.random.randn(len(q0_dict["arm"])) * 0.5
+        q0_dict["arm"] = q0_dict["arm"] + np.random.randn(len(q0_dict["arm"])) * 0.3
         q0_dict["base"] = []
-        poses[i, :3, :3] = poses[i, :3, :3] @ R.from_rotvec(np.random.randn(3) * np.radians(30)).as_matrix()
+        poses[i, :3, :3] = poses[i, :3, :3] @ R.from_rotvec(np.random.randn(3) * np.radians(15)).as_matrix()
         poses[i, :3, 3] = poses[i, :3, 3] + np.random.randn(3) * 0.07
 
 
@@ -50,6 +53,8 @@ def main():
                 "poses": poses[:batch_size],
                 "q0_dicts": q0s[:batch_size],
                 "base_poses": np.eye(4),
+                "max_iter": 50,
+                "dt": 1.0,
             }
             time = benchmark_parallel_kinematics(5.0, kinematics, ik_kwargs)
             print(f"{kinematics_name},{batch_size},{time}")

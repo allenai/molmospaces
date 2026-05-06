@@ -62,6 +62,12 @@ class MlSpacesKinematics:
         spec = mujoco.MjSpec()
         robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
         robot_spec = mujoco.MjSpec.from_file(str(robot_xml_path))
+        for body in robot_spec.bodies:
+            body: mujoco.MjsBody
+            for geom in body.geoms:
+                geom: mujoco.MjsGeom
+                if geom.type == mujoco.mjtGeom.mjGEOM_MESH:
+                    robot_spec.delete(geom)
 
         robot_config.robot_cls.add_robot_to_scene(
             robot_config,
