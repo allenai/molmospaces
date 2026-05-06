@@ -8,13 +8,14 @@ from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.robots.robot_views.abstract import (
     FreeJointRobotBaseGroup,
     GripperGroup,
+    MJCFFrameMixin,
     RobotView,
 )
 from molmo_spaces.robots.robot_views.franka_fr3_view import FrankaFR3ArmGroup, FrankaFR3BaseGroup
 from molmo_spaces.utils.mj_model_and_data_utils import site_pose
 
 
-class RobotIQGripperGroup(GripperGroup):
+class RobotIQGripperGroup(MJCFFrameMixin, GripperGroup):
     def __init__(
         self, mj_data: MjData, base_group: FrankaFR3BaseGroup, namespace: str = ""
     ) -> None:
@@ -30,6 +31,14 @@ class RobotIQGripperGroup(GripperGroup):
         self._ee_site_id = model.site(f"{namespace}gripper/grasp_site").id
         self._finger_1_geom_id = model.geom(f"{namespace}gripper/left_pad2").id
         self._finger_2_geom_id = model.geom(f"{namespace}gripper/right_pad2").id
+
+    @property
+    def leaf_frame_id(self) -> int:
+        return self._ee_site_id
+
+    @property
+    def leaf_frame_type(self):
+        return "site"
 
     def set_gripper_ctrl_open(self, open: bool) -> None:
         self.ctrl = [0 if open else 255]
@@ -52,11 +61,6 @@ class RobotIQGripperGroup(GripperGroup):
     @property
     def root_frame_to_world(self) -> np.ndarray:
         return self.leaf_frame_to_world
-
-    def get_jacobian(self) -> np.ndarray:
-        J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
-        return J
 
 
 class FrankaDroidRobotView(RobotView):

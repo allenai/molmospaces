@@ -12,7 +12,7 @@ import warp as wp
 
 from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
 from molmo_spaces.molmo_spaces_constants import get_robot_path
-from molmo_spaces.robots.robot_views.abstract import GripperGroup, SimplyActuatedMoveGroup, SimpleMoveGroup
+from molmo_spaces.robots.robot_views.abstract import GripperGroup, SimplyActuatedMoveGroup, MJCFFrameMixin
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.robot_configs import BaseRobotConfig
@@ -40,23 +40,30 @@ class SolverData:
 
 @wp.kernel
 def get_err(
-    site_xpos: wp.array2d(dtype=wp.vec3),
-    site_xmat: wp.array2d(dtype=wp.mat33),
-    site_id: int,
+    xpos: wp.array2d(dtype=wp.vec3),
+    xmat: wp.array2d(dtype=wp.mat33),
+    frame_id: int,
+    frame_type: mujoco.mjtObj,
     poses: wp.array(dtype=wp.mat44f),
     pos_err: wp.array(dtype=wp.vec3f),
     rot_err: wp.array(dtype=wp.vec3f),
 ):
     """Calculate the body-frame position and rotation error between the current and target poses"""
     i = wp.tid()
-    site_pos = site_xpos[i, site_id]
-    site_rotmat = site_xmat[i, site_id]
+    if frame_type == mujoco.mjtObj.mjOBJ_SITE:
+        frame_pos = xpos[i, frame_id]
+        frame_rotmat = xmat[i, frame_id]
+    elif frame_type == mujoco.mjtObj.mjOBJ_BODY:
+        frame_pos = xpos[i, frame_id]
+        frame_rotmat = xmat[i, frame_id]
+    else:
+        raise ValueError(f"Invalid frame type: {frame_type}")
     target_pose = poses[i]
 
     site_pose = wp.mat44(
-        site_rotmat[0, 0], site_rotmat[0, 1], site_rotmat[0, 2], site_pos[0],
-        site_rotmat[1, 0], site_rotmat[1, 1], site_rotmat[1, 2], site_pos[1],
-        site_rotmat[2, 0], site_rotmat[2, 1], site_rotmat[2, 2], site_pos[2],
+        frame_rotmat[0, 0], frame_rotmat[0, 1], frame_rotmat[0, 2], frame_pos[0],
+        frame_rotmat[1, 0], frame_rotmat[1, 1], frame_rotmat[1, 2], frame_pos[1],
+        frame_rotmat[2, 0], frame_rotmat[2, 1], frame_rotmat[2, 2], frame_pos[2],
         0.0,       0.0,       0.0,       1.0,
     )
     err_trf = wp.inverse(site_pose) @ target_pose
@@ -71,7 +78,7 @@ def get_err(
     t = wp.vec3f(err_trf[0, 3], err_trf[1, 3], err_trf[2, 3])
 
     if wp.abs(angle) < 1e-6:
-        pos_err[i] = site_rotmat @ t
+        pos_err[i] = frame_rotmat @ t
         rot_err[i] = wp.vec3f()
     else:
         w = axis * angle
@@ -81,8 +88,8 @@ def get_err(
             + (angle - wp.sin(angle)) / angle**3.0 * wp.skew(w) @ wp.skew(w)
         )
         t = wp.inverse(V) @ t
-        pos_err[i] = site_rotmat @ t
-        rot_err[i] = site_rotmat @ w
+        pos_err[i] = frame_rotmat @ t
+        rot_err[i] = frame_rotmat @ w
 
 
 mat66f = wp.types.matrix(shape=(6, 6), dtype=wp.float32)
@@ -92,6 +99,7 @@ vec6f = wp.types.vector(length=6, dtype=wp.float32)
 @wp.func
 def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     """Solve Hx=b via Cholesky decomposition for 6x6 symmetric positive-definite matrix"""
+    # Cholesky decomposition: H = L @ L^T
     L = mat66f()
     for i in range(6):
         for j in range(i + 1):
@@ -168,7 +176,7 @@ def lm_step(
 class SimpleWarpKinematics(ParallelKinematics):
     """
     A warp-based general-purpose parallel inverse kinematics solver for robots.
-    This solver only supports optimizing `SimplyActuatedMoveGroups` to reach a target pose for a given `SimpleMoveGroup`.
+    This solver only supports optimizing `SimplyActuatedMoveGroups` to reach a target pose for a given `MJCFFrameMixin` move group.
     Most robots satisfy this assumption, but more complicated robots may need custom kinematics implementations.
     """
     def __init__(self, robot_config: "BaseRobotConfig", device: str = "cpu"):
@@ -250,7 +258,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             robot_view.get_move_group(mg_id).joint_pos = qpos
         mujoco.mj_forward(self._mj_model, mj_data)
 
-        mg_id = next(name for name, mg in self._actuated_move_groups.items() if isinstance(mg, SimpleMoveGroup))
+        mg_id = next(name for name, mg in self._actuated_move_groups.items() if isinstance(mg, MJCFFrameMixin))
         pose = np.broadcast_to(
             robot_view.get_move_group(mg_id).leaf_frame_to_robot[None], (batch_size, 4, 4)
         )
@@ -286,10 +294,11 @@ class SimpleWarpKinematics(ParallelKinematics):
 
         dol = {}
         for mg_id, mg in self._actuated_move_groups.items():
-            if isinstance(mg, SimpleMoveGroup):
+            if isinstance(mg, MJCFFrameMixin):
                 trf = np.repeat(np.expand_dims(np.eye(4), axis=0), batch_size, axis=0)
-                trf[:, :3, 3] = data.site_xpos[:, mg.leaf_site_id].numpy()
-                trf[:, :3, :3] = data.site_xmat[:, mg.leaf_site_id].numpy()
+                xpos, xmat = (data.xpos, data.xmat) if mg.leaf_frame_type == "body" else (data.site_xpos, data.site_xmat)
+                trf[:, :3, 3] = xpos[:, mg.leaf_frame_id].numpy()
+                trf[:, :3, :3] = xmat[:, mg.leaf_frame_id].numpy()
                 if rel_to_base:
                     trf = base_poses @ trf
                 dol[mg_id] = trf
@@ -306,7 +315,8 @@ class SimpleWarpKinematics(ParallelKinematics):
         self,
         solver_data: SolverData,
         batch_size: int,
-        leaf_site_id: int,
+        leaf_frame_id: int,
+        leaf_frame_type: mujoco.mjtObj,
         poses: wp.array(dtype=wp.mat44f),
         damping: float,
         dt: float,
@@ -317,18 +327,25 @@ class SimpleWarpKinematics(ParallelKinematics):
 
         # calculate error
         pos_err, rot_err = ik_buffers.pos_err, ik_buffers.rot_err
+        xpos, xmat = (data.xpos, data.xmat) if leaf_frame_type == mujoco.mjtObj.mjOBJ_BODY else (data.site_xpos, data.site_xmat)
         wp.launch(
             get_err,
             dim=batch_size,
-            inputs=[data.site_xpos, data.site_xmat, leaf_site_id, poses, pos_err, rot_err],
+            inputs=[xpos, xmat, leaf_frame_id, leaf_frame_type, poses, pos_err, rot_err],
             device=self._device,
         )
 
         # calculate Jacobian
         jacp, jacr = ik_buffers.jacp, ik_buffers.jacr
-        site_pos = data.site_xpos[:, leaf_site_id]
-        site_bodyid = wp.full(batch_size, self._mj_model.site_bodyid[leaf_site_id], dtype=int)
-        mjw.jac(self._mjw_model, data, jacp, jacr, site_pos, site_bodyid)
+        if leaf_frame_type == mujoco.mjtObj.mjOBJ_SITE:
+            frame_pos = data.site_xpos[:, leaf_frame_id]
+            frame_bodyid = wp.full(batch_size, self._mj_model.site_bodyid[leaf_frame_id], dtype=int)
+        elif leaf_frame_type == mujoco.mjtObj.mjOBJ_BODY:
+            frame_pos = data.xpos[:, leaf_frame_id]
+            frame_bodyid = wp.full(batch_size, leaf_frame_id, dtype=int)
+        else:
+            raise ValueError(f"Invalid leaf frame type: {leaf_frame_type}")
+        mjw.jac(self._mjw_model, data, jacp, jacr, frame_pos, frame_bodyid)
 
         # solve for joint velocities
         q_dot = ik_buffers.q_dot
@@ -380,14 +397,14 @@ class SimpleWarpKinematics(ParallelKinematics):
                 If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.
         """
         if move_group_id is None:
-            simple_move_groups = [name for name, mg in self._actuated_move_groups.items() if isinstance(mg, SimpleMoveGroup)]
-            if len(simple_move_groups) == 0:
-                raise ValueError("Robot does not contain any simple move groups!")
-            move_group_id = simple_move_groups[0]
-            if len(simple_move_groups) > 1:
-                logger.warning(f"Multiple simple move groups found, using the first one as target move group: {move_group_id}")
-        elif not isinstance(self._actuated_move_groups[move_group_id], SimpleMoveGroup):
-            raise ValueError(f"Move group {move_group_id} is not a SimpleMoveGroup")
+            frame_move_groups = [name for name, mg in self._actuated_move_groups.items() if isinstance(mg, MJCFFrameMixin)]
+            if len(frame_move_groups) == 0:
+                raise ValueError("Robot does not contain any MJCFFrameMixin move groups!")
+            move_group_id = frame_move_groups[0]
+            if len(frame_move_groups) > 1:
+                logger.warning(f"Multiple MJCFFrameMixin move groups found, using the first one as target move group: {move_group_id}")
+        elif not isinstance(self._actuated_move_groups[move_group_id], MJCFFrameMixin):
+            raise ValueError(f"Move group {move_group_id} is not a MJCFFrameMixin")
 
         if unlocked_move_group_ids is None:
             unlocked_move_group_ids = list(self._actuated_move_groups.keys())
@@ -409,17 +426,19 @@ class SimpleWarpKinematics(ParallelKinematics):
             wp.copy(data.qpos, wp.from_numpy(q0_arr))
 
             ee_mg = self._actuated_move_groups[move_group_id]
-            assert isinstance(ee_mg, SimpleMoveGroup)
+            assert isinstance(ee_mg, MJCFFrameMixin)
+            leaf_frame_id = ee_mg.leaf_frame_id
+            leaf_frame_type = mujoco.mjtObj.mjOBJ_BODY if ee_mg.leaf_frame_type == "body" else mujoco.mjtObj.mjOBJ_SITE
 
             for i in range(max_iter):
                 if solver_data.ik_capture is not None:
                     wp.capture_launch(solver_data.ik_capture.graph)
                 elif self._device == "cuda":
                     with wp.ScopedCapture(device=self._device) as capture:
-                        self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
+                        self._ik_solve_step(solver_data, batch_size, leaf_frame_id, leaf_frame_type, poses, damping, dt)
                     solver_data.ik_capture = capture
                 else:
-                    self._ik_solve_step(solver_data, batch_size, ee_mg.leaf_site_id, poses, damping, dt)
+                    self._ik_solve_step(solver_data, batch_size, leaf_frame_id, leaf_frame_type, poses, damping, dt)
                 wp.synchronize()
 
                 if np.all(np.linalg.norm(solver_data.ik_buffers.dq.numpy(), axis=-1) < converge_eps):
@@ -431,10 +450,11 @@ class SimpleWarpKinematics(ParallelKinematics):
             mjw.kinematics(self._mjw_model, data)
             pos_err = wp.zeros(batch_size, dtype=wp.vec3f)
             rot_err = wp.zeros(batch_size, dtype=wp.vec3f)
+            xpos, xmat = (data.xpos, data.xmat) if leaf_frame_type == mujoco.mjtObj.mjOBJ_BODY else (data.site_xpos, data.site_xmat)
             wp.launch(
                 get_err,
                 dim=batch_size,
-                inputs=[data.site_xpos, data.site_xmat, ee_mg.leaf_site_id, poses, pos_err, rot_err],
+                inputs=[xpos, xmat, leaf_frame_id, leaf_frame_type, poses, pos_err, rot_err],
                 device=self._device,
             )
 

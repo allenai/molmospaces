@@ -11,15 +11,15 @@ by the BimanualYamRobotView class.
 
 from typing import Literal
 
-import mujoco
 import numpy as np
 from mujoco import MjData
 
 from molmo_spaces.robots.robot_views.abstract import (
     GripperGroup,
+    MJCFFrameMixin,
     MocapRobotBaseGroup,
-    SimpleMoveGroup,
     RobotView,
+    SimplyActuatedMoveGroup,
 )
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
 
@@ -37,7 +37,7 @@ class BimanualYamBaseGroup(MocapRobotBaseGroup):
         super().__init__(mj_data, body_id)
 
 
-class BimanualYamArmGroup(SimpleMoveGroup):
+class BimanualYamArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
     """6-DOF arm group for one side of the bimanual YAM robot."""
 
     def __init__(
@@ -63,6 +63,14 @@ class BimanualYamArmGroup(SimpleMoveGroup):
         super().__init__(mj_data, joint_ids, act_ids, self._arm_root_id, base_group)
 
     @property
+    def leaf_frame_id(self) -> int:
+        return self._ee_site_id
+
+    @property
+    def leaf_frame_type(self):
+        return "site"
+
+    @property
     def side(self) -> str:
         return self._side
 
@@ -78,17 +86,8 @@ class BimanualYamArmGroup(SimpleMoveGroup):
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
 
-    @property
-    def leaf_site_id(self) -> int:
-        return self._ee_site_id
 
-    def get_jacobian(self) -> np.ndarray:
-        J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
-        return J
-
-
-class BimanualYamGripperGroup(GripperGroup):
+class BimanualYamGripperGroup(MJCFFrameMixin, GripperGroup):
     """Parallel gripper group for one side of the bimanual YAM robot.
 
     The YAM gripper has two coupled fingers (left_finger and right_finger)
@@ -119,6 +118,14 @@ class BimanualYamGripperGroup(GripperGroup):
         root_body_id = model.body(f"{self._gripper_prefix}link_6").id
         super().__init__(mj_data, joint_ids, act_ids, root_body_id, base_group)
         self._ee_site_id = model.site(f"{self._gripper_prefix}grasp_site").id
+
+    @property
+    def leaf_frame_id(self) -> int:
+        return self._ee_site_id
+
+    @property
+    def leaf_frame_type(self):
+        return "site"
 
     @property
     def side(self) -> str:
@@ -161,11 +168,6 @@ class BimanualYamGripperGroup(GripperGroup):
     @property
     def root_frame_to_world(self) -> np.ndarray:
         return self.leaf_frame_to_world
-
-    def get_jacobian(self) -> np.ndarray:
-        J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
-        return J
 
 
 class BimanualYamRobotView(RobotView):

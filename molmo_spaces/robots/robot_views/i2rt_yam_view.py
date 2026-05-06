@@ -7,15 +7,15 @@ Each component is implemented as a MoveGroup, with the overall robot structure
 managed by the I2rtYamRobotView class.
 """
 
-import mujoco
 import numpy as np
 from mujoco import MjData
 
 from molmo_spaces.robots.robot_views.abstract import (
     GripperGroup,
+    MJCFFrameMixin,
     MocapRobotBaseGroup,
-    SimpleMoveGroup,
     RobotView,
+    SimplyActuatedMoveGroup,
 )
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
 
@@ -33,7 +33,7 @@ class I2rtYamBaseGroup(MocapRobotBaseGroup):
         super().__init__(mj_data, body_id)
 
 
-class I2rtYamArmGroup(SimpleMoveGroup):
+class I2rtYamArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
     """6-DOF arm group for the YAM robot."""
 
     def __init__(
@@ -54,6 +54,14 @@ class I2rtYamArmGroup(SimpleMoveGroup):
         super().__init__(mj_data, joint_ids, act_ids, self._arm_root_id, base_group)
 
     @property
+    def leaf_frame_id(self) -> int:
+        return self._ee_site_id
+
+    @property
+    def leaf_frame_type(self):
+        return "site"
+
+    @property
     def noop_ctrl(self) -> np.ndarray:
         return self.joint_pos.copy()
 
@@ -65,17 +73,8 @@ class I2rtYamArmGroup(SimpleMoveGroup):
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
 
-    def get_jacobian(self) -> np.ndarray:
-        J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
-        return J
 
-    @property
-    def leaf_site_id(self) -> int:
-        return self._ee_site_id
-
-
-class I2rtYamGripperGroup(GripperGroup):
+class I2rtYamGripperGroup(MJCFFrameMixin, GripperGroup):
     """Parallel gripper group for the YAM robot.
 
     The YAM gripper has two coupled fingers (left_finger and right_finger)
@@ -96,6 +95,14 @@ class I2rtYamGripperGroup(GripperGroup):
         root_body_id = model.body(f"{namespace}link_6").id
         super().__init__(mj_data, joint_ids, act_ids, root_body_id, base_group)
         self._ee_site_id = model.site(f"{namespace}grasp_site").id
+
+    @property
+    def leaf_frame_id(self) -> int:
+        return self._ee_site_id
+
+    @property
+    def leaf_frame_type(self):
+        return "site"
 
     def set_gripper_ctrl_open(self, open: bool) -> None:
         """Set gripper to fully open or closed.
@@ -134,11 +141,6 @@ class I2rtYamGripperGroup(GripperGroup):
     @property
     def root_frame_to_world(self) -> np.ndarray:
         return self.leaf_frame_to_world
-
-    def get_jacobian(self) -> np.ndarray:
-        J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
-        return J
 
 
 class I2rtYamRobotView(RobotView):

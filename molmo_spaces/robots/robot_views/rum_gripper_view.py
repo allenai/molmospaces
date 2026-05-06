@@ -9,13 +9,14 @@ from molmo_spaces.molmo_spaces_constants import get_robot_paths
 from molmo_spaces.robots.robot_views.abstract import (
     FreeJointRobotBaseGroup,
     GripperGroup,
+    MJCFFrameMixin,
     RobotBaseGroup,
     RobotView,
 )
 from molmo_spaces.utils.mj_model_and_data_utils import site_pose
 
 
-class RUMGripperGroup(GripperGroup):
+class RUMGripperGroup(MJCFFrameMixin, GripperGroup):
     def __init__(self, mj_data: MjData, base_group: RobotBaseGroup, namespace: str = ""):
         model = mj_data.model
         self._namespace = namespace
@@ -28,6 +29,14 @@ class RUMGripperGroup(GripperGroup):
         self._ee_site_id = model.site(f"{namespace}grasp_site").id
         self._left_fingertip_geom_id = model.geom(f"{namespace}left_fingertip").id
         self._right_fingertip_geom_id = model.geom(f"{namespace}right_fingertip").id
+
+    @property
+    def leaf_frame_id(self) -> int:
+        return self._ee_site_id
+
+    @property
+    def leaf_frame_type(self):
+        return "site"
 
     def set_gripper_ctrl_open(self, open: bool):
         self.ctrl = [0 if open else -255]
@@ -55,11 +64,6 @@ class RUMGripperGroup(GripperGroup):
     @property
     def root_frame_to_world(self) -> np.ndarray:
         return self.leaf_frame_to_world
-
-    def get_jacobian(self) -> np.ndarray:
-        J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._ee_site_id)
-        return J
 
 
 class FloatingRUMBaseGroup(FreeJointRobotBaseGroup):
