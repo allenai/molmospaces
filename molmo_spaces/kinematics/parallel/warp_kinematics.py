@@ -524,3 +524,5 @@ if __name__ == "__main__":
     
     test_fk()
     test_ik()
+
+    # TODO: add simple test similar to mujoco_kinematics.py
