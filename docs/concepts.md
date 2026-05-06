@@ -23,11 +23,19 @@ The rest of the system doesn't need to know any of this: it interacts with move 
 
 | Class | Purpose |
 |-------|---------|
+| [`SimplyActuatedMoveGroup`][molmo_spaces.robots.robot_views.abstract.SimplyActuatedMoveGroup] | 1:1 mapping between joints, actuators, and position/velocity addresses |
+| [`SimpleMoveGroup`][molmo_spaces.robots.robot_views.abstract.SimpleMoveGroup] | `SimplyActuatedMoveGroup` whose leaf frame is a MuJoCo site |
 | [`GripperGroup`][molmo_spaces.robots.robot_views.abstract.GripperGroup] | Adds gripper-specific controls (`set_gripper_ctrl_open`, `is_open`, `inter_finger_dist`) |
 | [`RobotBaseGroup`][molmo_spaces.robots.robot_views.abstract.RobotBaseGroup] | Represents the robot's pose in the world |
-| [`ImmobileRobotBaseGroup`][molmo_spaces.robots.robot_views.abstract.ImmobileRobotBaseGroup] | Fixed base (e.g. tabletop Franka) |
+| [`MocapRobotBaseGroup`][molmo_spaces.robots.robot_views.abstract.MocapRobotBaseGroup] | Fixed teleportable base (e.g. tabletop Franka) |
 | [`FreeJointRobotBaseGroup`][molmo_spaces.robots.robot_views.abstract.FreeJointRobotBaseGroup] | Full 6-DoF free joint base |
 | [`HoloJointsRobotBaseGroup`][molmo_spaces.robots.robot_views.abstract.HoloJointsRobotBaseGroup] | Virtual x, y, theta (holonomic) |
+
+#### SimplyActuatedMoveGroup and SimpleMoveGroup
+
+The base `MoveGroup` makes no assumptions about the relationship between joints and actuators — a group can have more joints than actuators (e.g. a mirrored gripper), or joints whose `qpos` dimension differs from their `qvel` dimension (free and ball joints). `SimplyActuatedMoveGroup` narrows this: every joint is a simple 1-DoF hinge or slide, and there is exactly one actuator per joint. This means `n_joints == pos_dim == vel_dim == n_actuators`, and the internal ID/address lists can be safely exposed as public properties (`joint_ids`, `actuator_ids`, `joint_posadr`, `joint_veladr`). Groups like the RBY1 torso and head extend `SimplyActuatedMoveGroup` directly, providing their own `leaf_frame_to_world` and `get_jacobian` implementations.
+
+`SimpleMoveGroup` goes one step further: it requires that the leaf frame is defined by a MuJoCo **site** (via the abstract `leaf_site_id` property). This is the most common pattern for robot arms — the end-effector pose comes from `site_pose(data, leaf_site_id)` and the Jacobian from `mj_jacSite`. All standard arm groups (Franka FR3, YAM, RBY1 arms) extend `SimpleMoveGroup`.
 
 **Key interface:**
 

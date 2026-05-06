@@ -169,8 +169,14 @@ class SimpleWarpKinematics(ParallelKinematics):
     """
     A warp-based general-purpose parallel inverse kinematics solver for robots.
     This solver only supports optimizing `SimplyActuatedMoveGroups` to reach a target pose for a given `SimpleMoveGroup`.
+    Most robots satisfy this assumption, but more complicated robots may need custom kinematics implementations.
     """
     def __init__(self, robot_config: "BaseRobotConfig", device: str = "cpu"):
+        """
+        Args:
+            robot_config: The robot configuration.
+            device: The warp device to use for the solver.
+        """
         super().__init__(robot_config)
         self._device = device
 
@@ -353,6 +359,26 @@ class SimpleWarpKinematics(ParallelKinematics):
         damping: float = 1e-12,
         dt: float = 1.0,
     ):
+        """
+        Solve inverse kinematics to reach a target pose.
+
+        Args:
+            poses: The target poses. Shape: (batch_size, 4, 4) or (4, 4)
+            q0_dicts: The initial joint positions.
+            base_poses: The base poses. Shape: (batch_size, 4, 4) or (4, 4)
+            rel_to_base: Whether the target poses are relative to the base frame.
+            move_group_id: The ID of the move group to solve for.
+            unlocked_move_group_ids: The IDs of the move groups that are not locked. If none, all move groups are unlocked.
+            converge_eps: The convergence threshold in joint space.
+            success_eps: The success threshold in twist space.
+            max_iter: The maximum number of iterations.
+            damping: The damping factor for the Levenberg-Marquardt solver.
+            dt: The time step for velocity integration.
+
+        Returns:
+            A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.
+                If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.
+        """
         if move_group_id is None:
             simple_move_groups = [name for name, mg in self._actuated_move_groups.items() if isinstance(mg, SimpleMoveGroup)]
             if len(simple_move_groups) == 0:
