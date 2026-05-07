@@ -39,12 +39,10 @@ def get_error(mjx_model, q0, target_se3: SE3, site_id: int):
 
 def solve_step(
     mjx_model: mjx.Model,
-    q0: jnp.ndarray,
     q: jnp.ndarray,
     target_se3: SE3,
     site_id: int,
     dt: jnp.ndarray,
-    posture_weight: jnp.ndarray,
     damping: jnp.ndarray,
 ):
     jac_fn = jax.jacobian(get_error, 1)
@@ -57,16 +55,6 @@ def solve_step(
     q_dot = -jnp.linalg.solve(H, J.T @ err)
     q_dot = jnp.where(singular, jnp.zeros_like(q_dot), q_dot)
 
-    # try to keep the solution near the original joint positions
-    # we do this by moving within the nullspace of the error Jacobian towards the original joint positions
-    U, S, Vt = jnp.linalg.svd(J)
-    # we assume a redundant manipulator, so the nullspace is the last columns of V
-    null_space = Vt[J.shape[0] :].T
-    r = q0 - q
-    # null_space has orthonormal columns, so this is equivalent to solving least-squares
-    q_dot_posture = null_space @ null_space.T @ r
-
-    q_dot = q_dot + posture_weight * q_dot_posture
     next_q = mjx._src.forward._integrate_pos(mjx_model.jnt_type, q, q_dot, dt)
     return next_q
 
@@ -120,7 +108,7 @@ class FrankaParallelKinematics(ParallelKinematics):
             raise ValueError("Could not infer grasp site name from model")
 
         self._solve_step_jit = jax.jit(
-            jax.vmap(solve_step, in_axes=(None, 0, 0, 0, None, None, None, None)),
+            jax.vmap(solve_step, in_axes=(None, 0, 0, None, None, None)),
             device=self.jax_device,
         )
         self._get_error_jit = jax.jit(
@@ -172,23 +160,19 @@ class FrankaParallelKinematics(ParallelKinematics):
 
     def _solve_step(
         self,
-        q0_batch: jnp.ndarray,
         q_batch: jnp.ndarray,
         target_se3: SE3,
         dt: jnp.ndarray,
-        posture_weight: jnp.ndarray,
         damping: jnp.ndarray,
     ):
         # block_until_ready makes profiling more accurate, no real effect on performance since sync is necessary anyway
         return jax.block_until_ready(
             self._solve_step_jit(
                 self._mjx_model,
-                q0_batch,
                 q_batch,
                 target_se3,
                 self._site_id,
                 dt,
-                posture_weight,
                 damping,
             )
         )
@@ -204,7 +188,7 @@ class FrankaParallelKinematics(ParallelKinematics):
         converge_eps: float = 1e-3,
         success_eps: float = 5e-4,
         damping: float = 1e-12,
-        posture_weight: float = 1.0,
+        **kwargs,
     ):
         """
         Finds joint positions that would place the end-effector at the target pose.
@@ -219,8 +203,6 @@ class FrankaParallelKinematics(ParallelKinematics):
             converge_eps: The threshold for convergence, in joint space.
             success_eps: The threshold for success, in twist space.
             damping: The damping factor for the solver.
-            posture_weight: The weight for the posture constraint, relative to the error minimization.
-                If the solver frequently gets stuck in local minima, decreasing this value (or setting to 0) may help.
 
         Returns:
             A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.
@@ -237,7 +219,6 @@ class FrankaParallelKinematics(ParallelKinematics):
                 for mg_id, q0 in q0_dict.items():
                     q_batch[i, self._robot_view.get_move_group(mg_id)._joint_posadr] = q0
             q_batch = jnp.array(q_batch, device=self.jax_device)
-            q0_batch = q_batch
 
             if not rel_to_base:
                 poses = np.linalg.inv(base_poses) @ poses
@@ -246,11 +227,9 @@ class FrankaParallelKinematics(ParallelKinematics):
 
             for n_iter in range(max_iter):
                 next_q_batch = self._solve_step(
-                    q0_batch,
                     q_batch,
                     target_se3,
                     jnp.array(dt, device=self.jax_device),
-                    jnp.array(posture_weight, device=self.jax_device),
                     jnp.array(damping, device=self.jax_device),
                 )
                 q_vel = joint_difference(self._mjx_model, q_batch, next_q_batch) / dt

@@ -21,13 +21,9 @@ class DummyParallelKinematics(ParallelKinematics):
         self,
         robot_config: "BaseRobotConfig",
         kinematics: MlSpacesKinematics,
-        mg_id: str,
-        unlocked_mg_ids: list[str],
     ):
         super().__init__(robot_config)
         self._kinematics = kinematics
-        self._mg_id = mg_id
-        self._unlocked_mg_ids = unlocked_mg_ids
 
     def warmup_ik(self, batch_size: int):
         pass
@@ -49,7 +45,9 @@ class DummyParallelKinematics(ParallelKinematics):
 
     def ik(
         self,
+        move_group_id: str,
         poses: np.ndarray,
+        unlocked_move_group_ids: list[str] | None,
         q0_dicts: list[dict[str, np.ndarray]] | dict[str, np.ndarray],
         base_poses: np.ndarray,
         rel_to_base: bool = False,
@@ -72,9 +70,9 @@ class DummyParallelKinematics(ParallelKinematics):
 
             ret.append(
                 self._kinematics.ik(
-                    self._mg_id,
+                    move_group_id,
                     pose,
-                    self._unlocked_mg_ids,
+                    unlocked_move_group_ids,
                     q0_dict,
                     base_pose,
                     rel_to_base,

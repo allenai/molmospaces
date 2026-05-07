@@ -11,7 +11,7 @@ from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
-from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyParallelKinematics
+from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.abstract import Robot
 
@@ -35,13 +35,7 @@ class MobileFrankaRobot(Robot):
         )
         self._kinematics = MlSpacesKinematics.create(config.robot_config)
 
-        # TODO: implement vectorized parallel kinematics
-        self._parallel_kinematics = DummyParallelKinematics(
-            config.robot_config,
-            self._kinematics,
-            mg_id="arm",
-            unlocked_mg_ids=["arm", "base"],
-        )
+        self._parallel_kinematics = SimpleWarpKinematics(config.robot_config)
         arm_controller_cls = (
             JointPosController
             if config.robot_config.command_mode == {}

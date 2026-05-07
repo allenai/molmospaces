@@ -13,9 +13,7 @@ from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
-from molmo_spaces.kinematics.parallel.franka_parallel_kinematics import (
-    FrankaParallelKinematics,
-)
+from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.abstract import Robot
 
@@ -76,7 +74,7 @@ class FrankaRobot(Robot):
         )
         self._kinematics = MlSpacesKinematics.create(config.robot_config)
 
-        self._parallel_kinematics = FrankaParallelKinematics(config.robot_config)
+        self._parallel_kinematics = SimpleWarpKinematics(config.robot_config)
         arm_controller_cls = (
             JointPosController
             if config.robot_config.command_mode == {}

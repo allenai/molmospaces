@@ -546,13 +546,15 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                 pose = np.concatenate([pose, np.broadcast_to(pose[-1:], (n_pad, 4, 4))])
 
             robot_view = self.task.env.current_robot.robot_view
-            parallel_kinematics = self.task._env.robots[0].parallel_kinematics
+            parallel_kinematics = self.task.env.current_robot.parallel_kinematics
+            gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
             jp_dicts = parallel_kinematics.ik(
+                gripper_mg_id,
                 pose,
+                None,
                 robot_view.get_qpos_dict(),
                 robot_view.base.pose,
                 rel_to_base=False,
-                posture_weight=0.0,
             )
             return np.array([jp_dict is not None for jp_dict in jp_dicts[:batch_size]])
         else:

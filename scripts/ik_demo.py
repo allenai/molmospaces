@@ -107,12 +107,12 @@ def main():
 
                     move_groups = unlocked_move_groups[name][move_group_id]
                     rets = kin.ik(
+                        move_group_id,
                         target_poses,
+                        move_groups,
                         robot_configs[name].init_qpos,
                         robot_views[name][0].base.pose,
                         rel_to_base=True,
-                        move_group_id=move_group_id,
-                        unlocked_move_group_ids=move_groups,
                     )
 
                     for i, view in enumerate(robot_views[name]):

@@ -33,8 +33,6 @@ class FloatingRUMRobot(Robot):
         self._parallel_kinematics = DummyParallelKinematics(
             config.robot_config,
             self._kinematics,
-            "gripper",
-            ["base"],
         )
         self._last_cmd_action: dict[str, np.ndarray] | None = None
 

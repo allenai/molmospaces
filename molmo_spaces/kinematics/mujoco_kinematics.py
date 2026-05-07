@@ -188,7 +188,7 @@ class MlSpacesKinematics:
         self,
         move_group_id: str,
         pose: np.ndarray,
-        unlocked_move_group_ids: list[str],
+        unlocked_move_group_ids: list[str] | None,
         q0: dict[str, np.ndarray],
         base_pose: np.ndarray,
         rel_to_base: bool = False,
@@ -225,6 +225,10 @@ class MlSpacesKinematics:
             raise ValueError(
                 f"q0 keys must match move group ids: {set(q0.keys())} != {set(self._robot_view.move_group_ids())}"
             )
+
+        if unlocked_move_group_ids is None:
+            unlocked_move_group_ids = self._robot_view.move_group_ids()
+
         self._robot_view.base.pose = base_pose
         self._robot_view.set_qpos_dict(q0)
         if rel_to_base:

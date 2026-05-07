@@ -355,12 +355,13 @@ class SimpleWarpKinematics(ParallelKinematics):
         )
 
         self.ik(
+            mg_id,
             pose,
+            None,
             robot_view.get_qpos_dict(),
             np.eye(4),
             rel_to_base=True,
             max_iter=1,
-            move_group_id=mg_id,
         )
 
     def fk(
@@ -525,12 +526,12 @@ class SimpleWarpKinematics(ParallelKinematics):
 
     def ik(
         self,
+        move_group_id: str,
         poses: np.ndarray,
+        unlocked_move_group_ids: list[str] | None,
         q0_dicts: list[dict[str, np.ndarray]] | dict[str, np.ndarray],
         base_poses: np.ndarray,
         rel_to_base: bool = False,
-        move_group_id: str | None = None,
-        unlocked_move_group_ids: list[str] | None = None,
         converge_eps: float = 1e-3,
         success_eps: float = 5e-4,
         max_iter: int = 50,
@@ -541,12 +542,12 @@ class SimpleWarpKinematics(ParallelKinematics):
         Solve inverse kinematics to reach a target pose.
 
         Args:
+            move_group_id: The ID of the move group to solve for.
             poses: The target poses. Shape: (batch_size, 4, 4) or (4, 4)
+            unlocked_move_group_ids: The IDs of the move groups that are not locked. If None, all move groups are unlocked.
             q0_dicts: The initial joint positions.
             base_poses: The base poses. Shape: (batch_size, 4, 4) or (4, 4)
             rel_to_base: Whether the target poses are relative to the base frame.
-            move_group_id: The ID of the move group to solve for.
-            unlocked_move_group_ids: The IDs of the move groups that are not locked. If none, all move groups are unlocked.
             converge_eps: The convergence threshold in joint space.
             success_eps: The success threshold in twist space.
             max_iter: The maximum number of iterations.
@@ -557,15 +558,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.
                 If the solver fails to converge for a given robot, the corresponding qpos dictionary is None.
         """
-        if move_group_id is None:
-            if len(self._frame_move_groups) == 0:
-                raise ValueError("Robot does not contain any MJCFFrameMixin move groups!")
-            move_group_id = next(iter(self._frame_move_groups.keys()))
-            if len(self._frame_move_groups) > 1:
-                logger.warning(
-                    f"Multiple MJCFFrameMixin move groups found, using the first one as target move group: {move_group_id}"
-                )
-        elif move_group_id not in self._frame_move_groups:
+        if move_group_id not in self._frame_move_groups:
             raise ValueError(f"Move group {move_group_id} is not a MJCFFrameMixin")
 
         if unlocked_move_group_ids is None:

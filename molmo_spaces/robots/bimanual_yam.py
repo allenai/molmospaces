@@ -36,8 +36,6 @@ class BimanualYamRobot(Robot):
         self._parallel_kinematics = DummyParallelKinematics(
             config.robot_config,
             self._kinematics,
-            mg_id="left_arm",
-            unlocked_mg_ids=["left_arm", "right_arm"],
         )
 
         # Determine controller classes based on command mode

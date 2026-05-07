@@ -82,7 +82,9 @@ class ParallelKinematics(ABC):
     @abstractmethod
     def ik(
         self,
+        move_group_id: str,
         poses: np.ndarray,
+        unlocked_move_group_ids: list[str] | None,
         q0_dicts: list[dict[str, np.ndarray]] | dict[str, np.ndarray],
         base_poses: np.ndarray,
         rel_to_base: bool = False,
