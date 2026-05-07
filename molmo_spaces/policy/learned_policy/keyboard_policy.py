@@ -20,12 +20,13 @@ class Keyboard_Policy(InferencePolicy):
         super().__init__(exp_config)
         from pynput import keyboard
 
+        self._keyboard = keyboard
         self.robot_type = exp_config.robot_config.name
         self.step_size = exp_config.policy_config.step_size
         self.rot_step = exp_config.policy_config.rot_step
         self._pressed = set()
         self._gripper_open = True
-        self._listener = keyboard.Listener(
+        self._listener = self._keyboard.Listener(
             on_press=self._on_press,
             on_release=self._on_release,
         )
@@ -39,24 +40,24 @@ class Keyboard_Policy(InferencePolicy):
 
     def _on_press(self, key):
         self._pressed.add(key)
-        if key == keyboard.Key.space:
+        if key == self._keyboard.Key.space:
             self._gripper_open = not self._gripper_open
 
     def _on_release(self, key):
         self._pressed.discard(key)
 
     def _key(self, char):
-        return keyboard.KeyCode.from_char(char) in self._pressed
+        return self._keyboard.KeyCode.from_char(char) in self._pressed
 
     def _get_delta_position(self):
         dx, dy, dz = 0.0, 0.0, 0.0
-        if keyboard.Key.up in self._pressed:
+        if self._keyboard.Key.up in self._pressed:
             dx += self.step_size
-        if keyboard.Key.down in self._pressed:
+        if self._keyboard.Key.down in self._pressed:
             dx -= self.step_size
-        if keyboard.Key.left in self._pressed:
+        if self._keyboard.Key.left in self._pressed:
             dy += self.step_size
-        if keyboard.Key.right in self._pressed:
+        if self._keyboard.Key.right in self._pressed:
             dy -= self.step_size
         if self._key("w"):
             dz -= self.step_size
@@ -82,6 +83,9 @@ class Keyboard_Policy(InferencePolicy):
 
     def _is_paused(self):
         return self._key("q")
+
+    def prepare_model(self):
+        pass
 
     def reset(self):
         self.init_robot_pose = None
@@ -134,6 +138,8 @@ class Keyboard_Policy(InferencePolicy):
             cv2.waitKey(1)
 
     def obs_to_model_input(self, obs):
+        if isinstance(obs, list):
+            obs = obs[0]
         self.render(obs)
 
         robot_pose = obs["robot_base_pose"]
