@@ -401,7 +401,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             trf[:, :3, 3] = xpos[:, mg.leaf_frame_id].numpy()
             trf[:, :3, :3] = xmat[:, mg.leaf_frame_id].numpy()
             if rel_to_base:
-                trf = base_poses @ trf
+                trf = np.linalg.solve(base_poses, trf)
             dol[mg_id] = trf
 
         ret = []
@@ -648,70 +648,74 @@ class SimpleWarpKinematics(ParallelKinematics):
 
 
 if __name__ == "__main__":
-    from molmo_spaces.configs.robot_configs import FrankaRobotConfig
-    from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 
-    robot_config = FrankaRobotConfig()
-    wp_kinematics = SimpleWarpKinematics(robot_config, device="cuda")
-    ml_kinematics = MlSpacesKinematics.create(robot_config)
+    def main() -> None:
+        import argparse
+        import importlib
+        import time
+        from mujoco.viewer import launch_passive
 
-    logging.basicConfig(level=logging.DEBUG)
+        parser = argparse.ArgumentParser()
+        parser.add_argument("config_class")
+        parser.add_argument("--config_module", default="molmo_spaces.configs.robot_configs")
+        parser.add_argument("--move-group")
+        parser.add_argument("--unlocked-move-groups", nargs="+")
+        args = parser.parse_args()
 
-    np.set_printoptions(precision=4, linewidth=100, suppress=True)
+        config_module = importlib.import_module(args.config_module)
+        config_class = getattr(config_module, args.config_class)
+        robot_config: "BaseRobotConfig" = config_class()
+        kinematics = SimpleWarpKinematics(robot_config)
 
-    def test_fk():
-        init_qpos = []
-        for _ in range(10):
-            d = {}
-            for mg_id, q in robot_config.init_qpos.items():
-                d[mg_id] = q + np.random.randn(len(q)) * 0.1
-            init_qpos.append(d)
-
-        wp_ret = wp_kinematics.fk(init_qpos, np.eye(4))
-        assert isinstance(wp_ret, list)
-
-        ml_ret = []
-        for d in init_qpos:
-            ml_ret.append(ml_kinematics.fk(d, np.eye(4)))
-
-        for wp_val, ml_val in zip(wp_ret, ml_ret):
-            for mg_id in wp_val.keys():
-                assert np.allclose(wp_val[mg_id], ml_val[mg_id], atol=1e-4)
-
-        print("FK test passed")
-
-    def test_ik():
-        pose = ml_kinematics.fk(robot_config.init_qpos, np.eye(4))["gripper"]
-        pose[0, 3] += 0.05
-        pose[1, 3] += 0.05
-        pose[2, 3] += 0.15
-
-        init_qpos = []
-        for _ in range(10):
-            d = robot_config.init_qpos.copy()
-            d["arm"] = d["arm"] + np.random.randn(len(d["arm"])) * 0.1
-            init_qpos.append({**d, "base": []})
-
-        ml_ret = []
-        for q in init_qpos:
-            ml_ret.append(ml_kinematics.ik("gripper", pose, ["arm"], q, np.eye(4)))
-
-        wp_kinematics.warmup_ik(len(init_qpos))
-        wp_ret = wp_kinematics.ik(
-            pose,
-            init_qpos,
-            np.eye(4),
-            move_group_id="gripper",
+        spec = mujoco.MjSpec()
+        robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+        robot_spec = mujoco.MjSpec.from_file(str(robot_xml_path))
+        robot_config.robot_cls.add_robot_to_scene(
+            robot_config,
+            spec,
+            robot_spec,
+            "",
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0, 0.0],
         )
+        model = spec.compile()
+        data = mujoco.MjData(model)
+        robot_view = robot_config.robot_view_factory(data, "")
 
-        for wp_val, ml_val in zip(wp_ret, ml_ret):
-            for mg_id in wp_val.keys():
-                if not np.allclose(wp_val[mg_id], ml_val[mg_id], atol=1e-2):
-                    breakpoint()
+        robot_view.set_qpos_dict(robot_config.init_qpos)
+        mujoco.mj_forward(model, data)
 
-        print("IK test passed")
+        if args.move_group is None:
+            move_group_id = robot_view.get_gripper_movegroup_ids()[0]
+            move_group = robot_view.get_move_group(move_group_id)
+        else:
+            move_group_id = args.move_group
+            move_group = robot_view.get_move_group(move_group_id)
 
-    test_fk()
-    test_ik()
+        pose0 = move_group.leaf_frame_to_world.copy()
+        pose1 = pose0.copy()
+        pose0[2, 3] += 0.05  # Move up 5cm
+        pose1[2, 3] -= 0.05  # Move down 5cm
 
-    # TODO: add simple test similar to mujoco_kinematics.py
+        with launch_passive(model, data) as viewer:
+            viewer.sync()
+            i = 0
+            while viewer.is_running():
+                # Alternate between two target poses
+                target_pose = pose1 if i % 2 == 0 else pose0
+                ret = kinematics.ik(
+                    target_pose,
+                    robot_config.init_qpos,
+                    robot_view.base.pose,
+                    move_group_id=move_group_id,
+                    unlocked_move_group_ids=args.unlocked_move_groups,
+                )
+                print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")
+                i += 1
+                if ret is not None:
+                    robot_view.set_qpos_dict(ret)
+                mujoco.mj_forward(model, data)
+                viewer.sync()
+                time.sleep(2)
+
+    main()
