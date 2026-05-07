@@ -14,7 +14,6 @@ TODO: Future test improvements
 import datetime
 from pathlib import Path
 
-import jax
 import numpy as np
 import pytest
 
@@ -51,8 +50,6 @@ DEBUG_IMAGES_DIR = Path(__file__).resolve().parent / "test_debug_images"
 @pytest.fixture(scope="session", autouse=True)
 def setup_env(tmp_path_factory):
     """Set up environment variables for all tests."""
-    jax_cache = tmp_path_factory.mktemp("jax_cache")
-    jax.config.update("jax_compilation_cache_dir", str(jax_cache))
     yield
 
 

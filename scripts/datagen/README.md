@@ -122,4 +122,3 @@ Other useful scripts in `scripts/datagen/`:
 1. **Start small** — use a debug config (e.g. `DoorOpeningDebugConfig`) before scaling up.
 2. **Check outputs** — inspect a few houses to confirm trajectories and videos look correct.
 4. **WandB logging** — configs can enable WandB tracking; set `use_wandb=True` and configure `wandb_project` in your config.
-5. **JAX caching** — set `JAX_COMPILATION_CACHE_DIR` to speed up initialization across runs.

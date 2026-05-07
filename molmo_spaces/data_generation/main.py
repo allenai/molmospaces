@@ -20,7 +20,6 @@ To run:
   - python -m molmo_spaces.data_generation.main DoorOpeningDebugConfig
   - python -m molmo_spaces.data_generation.main DoorOpeningDataGenConfig
 - You may also pass additional experiment config arguments for your experiment config class as command line arguments.
-- You can also set JAX_COMPILATION_CACHE_DIR to cache compiled jax functions between runs, which could speed up initialization.
 
 Config classes are auto-discovered from the config_registry. To add a new config:
 1. Create your config class in any file under config/

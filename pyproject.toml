@@ -23,7 +23,6 @@ dependencies = [
     "hidapi",
     "imageio[ffmpeg]",
     "jax~=0.6.2",
-    "jaxlie~=1.5.0",
     "lxml>=5.0.0",
     "moviepy",
     "msgpack>=1.0.6",
