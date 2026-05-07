@@ -29,7 +29,7 @@ class BimanualYamRobot(Robot):
         self._robot_view = config.robot_config.robot_view_factory(
             mj_data, config.robot_config.robot_namespace
         )
-        self._kinematics = MlSpacesKinematics.create(config.robot_config)
+        self._kinematics = MlSpacesKinematics(config.robot_config)
 
         # Use DummyParallelKinematics for batch IK (wraps the MlSpacesKinematics)
         # Default to left arm for parallel kinematics

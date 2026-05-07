@@ -33,7 +33,7 @@ class MobileFrankaRobot(Robot):
         self._robot_view = config.robot_config.robot_view_factory(
             mj_data, config.robot_config.robot_namespace
         )
-        self._kinematics = MlSpacesKinematics.create(config.robot_config)
+        self._kinematics = MlSpacesKinematics(config.robot_config)
 
         self._parallel_kinematics = SimpleWarpKinematics(config.robot_config)
         arm_controller_cls = (

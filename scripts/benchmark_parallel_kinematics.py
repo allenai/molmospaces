@@ -23,7 +23,7 @@ def benchmark_parallel_kinematics(min_time: float, kinematics: ParallelKinematic
 def main():
     robot_config = FrankaRobotConfig()
 
-    cpu_kinematics = MlSpacesKinematics.create(robot_config)
+    cpu_kinematics = MlSpacesKinematics(robot_config)
 
     kinematics_solvers: dict[str, ParallelKinematics] = {
         "sequential": DummyParallelKinematics(robot_config, cpu_kinematics),

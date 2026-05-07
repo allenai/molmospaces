@@ -48,7 +48,7 @@ class RBY1(Robot):
         self._robot_view = RBY1RobotView(mj_data, self.namespace, holo_base=self._use_holo_base)
 
         # Create kinematic solver:
-        self._kinematics = MlSpacesKinematics.create(self.exp_config.robot_config)
+        self._kinematics = MlSpacesKinematics(self.exp_config.robot_config)
 
         # Create controllers:
 

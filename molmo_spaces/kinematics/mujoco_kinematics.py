@@ -33,31 +33,12 @@ class MlSpacesKinematics:
     making it flexible for different use cases.
     """
 
-    def __init__(self, data: MjData, robot_view: RobotView) -> None:
-        """Initialize the kinematics solver.
-        This constructor will directly use the data and robot_view objects for internal computations.
-        Subclasses can copy the passed-in data before invoking this super constructor to maintain
-        a private copy of the data, so as to not conflict with client code.
-
-        Args:
-            data: The simulation state. This object is directly used internally for kinematics computations.
-            robot_view: A RobotView instance bound to data representing the robot to compute kinematics for
-        """
-        self._mj_model = data.model
-        self._mj_data = data
-        self._robot_view = robot_view
-        mujoco.mj_forward(self._mj_model, self._mj_data)
-
-    @classmethod
-    def create(cls, robot_config: "BaseRobotConfig") -> "MlSpacesKinematics":
+    def __init__(self, robot_config: "BaseRobotConfig") -> None:
         """
         Create a kinematics solver for a robot.
 
         Args:
             robot_config: The robot configuration.
-
-        Returns:
-            A MlSpacesKinematics instance.
         """
         spec = mujoco.MjSpec()
         robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
@@ -77,10 +58,11 @@ class MlSpacesKinematics:
             [0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0, 0.0],
         )
-        mj_model = spec.compile()
-        mj_data = mujoco.MjData(mj_model)
-        robot_view = robot_config.robot_view_factory(mj_data, "")
-        return cls(mj_data, robot_view)
+
+        self._mj_model = spec.compile()
+        self._mj_data = mujoco.MjData(self._mj_model)
+        self._robot_view = robot_config.robot_view_factory(self._mj_data, "")
+        mujoco.mj_forward(self._mj_model, self._mj_data)
 
     def _constrain_state(self) -> None:
         """Constrain the current state to be within the joint limits.
@@ -290,7 +272,7 @@ if __name__ == "__main__":
         config_module = importlib.import_module(args.config_module)
         config_class = getattr(config_module, args.config_class)
         robot_config: "BaseRobotConfig" = config_class()
-        kinematics = MlSpacesKinematics.create(robot_config)
+        kinematics = MlSpacesKinematics(robot_config)
 
         spec = mujoco.MjSpec()
         robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path

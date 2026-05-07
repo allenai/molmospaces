@@ -62,12 +62,12 @@ def rby1m_config():
 
 @pytest.fixture(scope="module")
 def franka_mujoco_kin(franka_config):
-    return MlSpacesKinematics.create(franka_config)
+    return MlSpacesKinematics(franka_config)
 
 
 @pytest.fixture(scope="module")
 def rby1m_mujoco_kin(rby1m_config):
-    return MlSpacesKinematics.create(rby1m_config)
+    return MlSpacesKinematics(rby1m_config)
 
 
 @pytest.fixture(scope="module", params=_WARP_DEVICES)
