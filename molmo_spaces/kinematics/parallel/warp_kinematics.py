@@ -51,6 +51,7 @@ class IKArgs:
     leaf_frame_type: wp.array(dtype=int)  # single-element array (needed for pass-by-reference)
     damping: wp.array(dtype=wp.float32)  # single-element array (needed for pass-by-reference)
     dt: wp.array(dtype=wp.float32)  # single-element array (needed for pass-by-reference)
+    jacobian_mask: wp.array2d(dtype=int)
 
 
 @dataclass
@@ -140,6 +141,19 @@ def get_jac_frame_info(
         frame_pos[i] = xpos[i, frame_id]
         frame_mat[i] = xmat[i, frame_id]
         frame_bodyid[i] = frame_id
+
+
+@wp.kernel
+def mask_jacobian(
+    J: wp.array3d(dtype=wp.float32),
+    mask: wp.array2d(dtype=int),
+    nv: int,
+):
+    """Apply a column-wise mask to a (3, nv) Jacobian matrix"""
+    i = wp.tid()
+    for j in range(3):
+        for k in range(nv):
+            J[i, j, k] = J[i, j, k] * float(mask[i, k])
 
 
 mat66f = wp.types.matrix(shape=(6, 6), dtype=wp.float32)
@@ -308,6 +322,7 @@ class SimpleWarpKinematics(ParallelKinematics):
                     leaf_frame_type=wp.zeros(1, dtype=int),
                     damping=wp.zeros(1, dtype=wp.float32),
                     dt=wp.zeros(1, dtype=wp.float32),
+                    jacobian_mask=wp.ones((batch_size, self._mj_model.nv), dtype=int),
                 ),
             )
 
@@ -437,6 +452,20 @@ class SimpleWarpKinematics(ParallelKinematics):
         jacp, jacr = ik_buffers.jacp, ik_buffers.jacr
         mjw.jac(self._mjw_model, data, jacp, jacr, frame_pos, frame_bodyid)
 
+        # apply Jacobian mask to lock move groups
+        wp.launch(
+            mask_jacobian,
+            dim=batch_size,
+            inputs=[jacp, ik_args.jacobian_mask, self._mjw_model.nv],
+            device=self._device,
+        )
+        wp.launch(
+            mask_jacobian,
+            dim=batch_size,
+            inputs=[jacr, ik_args.jacobian_mask, self._mjw_model.nv],
+            device=self._device,
+        )
+
         # solve for joint velocities and update joint positions
         wp.launch(
             lm_step,
@@ -486,6 +515,13 @@ class SimpleWarpKinematics(ParallelKinematics):
             + np.linalg.norm(rot_err.numpy(), axis=-1) ** 2
         )
         return err
+
+    def _create_jacobian_mask(self, batch_size: int, unlocked_move_group_ids: list[str]) -> np.ndarray:
+        mask = np.zeros(self._mj_model.nv, dtype=np.int32)
+        for mg_id in unlocked_move_group_ids:
+            mg = self._actuated_move_groups[mg_id]
+            mask[mg.joint_posadr] = 1
+        return np.repeat(np.expand_dims(mask, axis=0), batch_size, axis=0)
 
     def ik(
         self,
@@ -569,6 +605,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             ik_args.leaf_frame_type.fill_(leaf_frame_type.value)
             ik_args.damping.fill_(damping)
             ik_args.dt.fill_(dt)
+            wp.copy(ik_args.jacobian_mask, wp.from_numpy(self._create_jacobian_mask(batch_size, unlocked_move_group_ids)))
 
             q0_arr = self._dicts_to_qpos_arr(q0_dicts)
             wp.copy(data.qpos, wp.from_numpy(q0_arr))
