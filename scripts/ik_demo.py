@@ -83,14 +83,14 @@ def main():
         ("rby1m", "right_gripper"),
     ]
     unlocked_move_groups = {
-        "rby1m": {"left_gripper": ["left_arm"], "right_gripper": ["right_arm"]},
+        "rby1m": {"left_gripper": ["left_arm", "base"], "right_gripper": ["right_arm"]},
         "franka_droid": {"gripper": ["arm"]},
         "i2rt_yam": {"gripper": ["arm"]},
     }
 
     gripper_init_poses: dict[str, dict[str, np.ndarray]] = defaultdict(dict)
     for name, move_group_id in robot_grippers:
-        gripper_init_poses[name][move_group_id] = robot_views[name][0].get_move_group(move_group_id).leaf_frame_to_robot
+        gripper_init_poses[name][move_group_id] = robot_views[name][0].get_move_group(move_group_id).leaf_frame_to_world
 
     kinematics = {name: SimpleWarpKinematics(rc) for name, rc in robot_configs.items()}
 
@@ -98,10 +98,15 @@ def main():
     t_offsets = np.linspace(0, 2*np.pi, N_ROBOTS, endpoint=False)
     with launch_passive(model, data) as viewer:
         while viewer.is_running():
+            for name, views in robot_views.items():
+                for view in views:
+                    view.set_qpos_dict(robot_configs[name].init_qpos)
+
             for name in gripper_init_poses:
                 kin = kinematics[name]
                 for move_group_id, init_pose in gripper_init_poses[name].items():
                     target_poses = np.repeat(init_pose[None], N_ROBOTS, axis=0)
+                    target_poses[:, 0, 3] += RADIUS * 1.5 * np.sin(t * 2 * np.pi / PERIOD / 4 + t_offsets)
                     target_poses[:, 1, 3] += RADIUS * np.sin(t * 2 * np.pi / PERIOD + t_offsets)
                     target_poses[:, 2, 3] += RADIUS * np.cos(t * 2 * np.pi / PERIOD + t_offsets)
 
@@ -110,9 +115,9 @@ def main():
                         move_group_id,
                         target_poses,
                         move_groups,
-                        robot_configs[name].init_qpos,
+                        [view.get_qpos_dict() for view in robot_views[name]],
                         robot_views[name][0].base.pose,
-                        rel_to_base=True,
+                        rel_to_base=False,
                     )
 
                     for i, view in enumerate(robot_views[name]):
