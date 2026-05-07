@@ -115,9 +115,7 @@ class TestMlSpacesKinematicsFranka:
         fk_rel = franka_mujoco_kin.fk(franka_q0, base_pose, rel_to_base=True)
 
         # world = base @ rel
-        np.testing.assert_allclose(
-            fk_world["gripper"], base_pose @ fk_rel["gripper"], atol=1e-6
-        )
+        np.testing.assert_allclose(fk_world["gripper"], base_pose @ fk_rel["gripper"], atol=1e-6)
         # rel_to_base is invariant to base_pose
         fk_identity_rel = franka_mujoco_kin.fk(franka_q0, np.eye(4), rel_to_base=True)
         np.testing.assert_allclose(fk_rel["gripper"], fk_identity_rel["gripper"], atol=1e-6)
@@ -176,7 +174,15 @@ class TestMlSpacesKinematicsRBY1M:
     def test_fk_returns_valid_transforms(self, rby1m_mujoco_kin, rby1m_q0):
         base_pose = rby1m_base_qpos_to_pose(rby1m_q0["base"])
         result = rby1m_mujoco_kin.fk(rby1m_q0, base_pose)
-        expected = {"base", "torso", "left_arm", "right_arm", "left_gripper", "right_gripper", "head"}
+        expected = {
+            "base",
+            "torso",
+            "left_arm",
+            "right_arm",
+            "left_gripper",
+            "right_gripper",
+            "head",
+        }
         assert expected.issubset(set(result.keys()))
         for pose in result.values():
             _assert_valid_transform(pose)
@@ -187,7 +193,9 @@ class TestMlSpacesKinematicsRBY1M:
         dist = np.linalg.norm(result["left_gripper"][:3, 3] - result["right_gripper"][:3, 3])
         assert dist > 0.1
 
-    @pytest.mark.parametrize("gripper,arm", [("left_gripper", "left_arm"), ("right_gripper", "right_arm")])
+    @pytest.mark.parametrize(
+        "gripper,arm", [("left_gripper", "left_arm"), ("right_gripper", "right_arm")]
+    )
     def test_ik_converges(self, rby1m_mujoco_kin, rby1m_q0, gripper, arm):
         base_pose = rby1m_base_qpos_to_pose(rby1m_q0["base"])
         fk_result = rby1m_mujoco_kin.fk(rby1m_q0, base_pose)
@@ -270,9 +278,7 @@ class TestMlSpacesKinematicsRBY1M:
         )
         assert result is not None
         fk_check = rby1m_mujoco_kin.fk(result, moved_bp, rel_to_base=True)
-        np.testing.assert_allclose(
-            fk_check["left_gripper"][:3, 3], target_rel[:3, 3], atol=1e-3
-        )
+        np.testing.assert_allclose(fk_check["left_gripper"][:3, 3], target_rel[:3, 3], atol=1e-3)
 
 
 # --- SimpleWarpKinematics: FrankaDroid ---
@@ -407,10 +413,13 @@ class TestSimpleWarpKinematicsRBY1M:
         batch = rby1m_warp_kin.fk([rby1m_q0, rby1m_q0, rby1m_q0], base_pose)
         assert len(batch) == 3
 
-    @pytest.mark.parametrize("gripper,unlocked", [
-        ("left_gripper", ["left_arm", "base"]),
-        ("right_gripper", ["right_arm"]),
-    ])
+    @pytest.mark.parametrize(
+        "gripper,unlocked",
+        [
+            ("left_gripper", ["left_arm", "base"]),
+            ("right_gripper", ["right_arm"]),
+        ],
+    )
     def test_ik_converges(self, rby1m_warp_kin, rby1m_q0, gripper, unlocked):
         base_pose = rby1m_base_qpos_to_pose(rby1m_q0["base"])
         fk_result = rby1m_warp_kin.fk(rby1m_q0, base_pose)
@@ -447,7 +456,9 @@ class TestSimpleWarpKinematicsRBY1M:
 
         target = np.eye(4)
         target[:3, 3] = [10.0, 10.0, 10.0]
-        result = rby1m_warp_kin.ik(target_key, target, ["left_arm"], rby1m_q0, base_pose, max_iter=50)
+        result = rby1m_warp_kin.ik(
+            target_key, target, ["left_arm"], rby1m_q0, base_pose, max_iter=50
+        )
         assert result is None
 
     def test_fk_changes_with_base_qpos(self, rby1m_warp_kin, rby1m_q0, rby1m_config):
@@ -457,21 +468,19 @@ class TestSimpleWarpKinematicsRBY1M:
         fk_origin = rby1m_warp_kin.fk(rby1m_q0, rby1m_base_qpos_to_pose(rby1m_q0["base"]))
         fk_moved = rby1m_warp_kin.fk(q0_moved, rby1m_base_qpos_to_pose(q0_moved["base"]))
         target_key = "left_gripper" if "left_gripper" in fk_origin else "left_arm"
-        assert not np.allclose(
-            fk_origin[target_key][:3, 3], fk_moved[target_key][:3, 3], atol=0.1
-        )
+        assert not np.allclose(fk_origin[target_key][:3, 3], fk_moved[target_key][:3, 3], atol=0.1)
 
     def test_fk_rel_to_base_invariant_to_base_qpos(self, rby1m_warp_kin, rby1m_q0, rby1m_config):
         q0_moved = {k: np.array(v) for k, v in rby1m_config.init_qpos.items()}
         q0_moved["base"] = np.array([1.0, 0.5, np.pi / 6])
         moved_bp = rby1m_base_qpos_to_pose(q0_moved["base"])
 
-        fk_origin_rel = rby1m_warp_kin.fk(rby1m_q0, rby1m_base_qpos_to_pose(rby1m_q0["base"]), rel_to_base=True)
+        fk_origin_rel = rby1m_warp_kin.fk(
+            rby1m_q0, rby1m_base_qpos_to_pose(rby1m_q0["base"]), rel_to_base=True
+        )
         fk_moved_rel = rby1m_warp_kin.fk(q0_moved, moved_bp, rel_to_base=True)
         target_key = "left_gripper" if "left_gripper" in fk_origin_rel else "left_arm"
-        np.testing.assert_allclose(
-            fk_origin_rel[target_key], fk_moved_rel[target_key], atol=1e-4
-        )
+        np.testing.assert_allclose(fk_origin_rel[target_key], fk_moved_rel[target_key], atol=1e-4)
 
     def test_ik_with_moved_base(self, rby1m_warp_kin, rby1m_config):
         q0_moved = {k: np.array(v) for k, v in rby1m_config.init_qpos.items()}
@@ -571,7 +580,9 @@ class TestCrossSolverConsistency:
         target = fk[target_key].copy()
         target[:3, 3] += [0.02, 0.0, 0.02]
 
-        mujoco_r = rby1m_mujoco_kin.ik(target_key, target, ["left_arm", "base"], rby1m_q0, base_pose)
+        mujoco_r = rby1m_mujoco_kin.ik(
+            target_key, target, ["left_arm", "base"], rby1m_q0, base_pose
+        )
         warp_r = rby1m_warp_kin.ik(target_key, target, ["left_arm", "base"], rby1m_q0, base_pose)
         assert mujoco_r is not None and warp_r is not None
 
@@ -580,7 +591,9 @@ class TestCrossSolverConsistency:
         np.testing.assert_allclose(mujoco_fk[target_key][:3, 3], target[:3, 3], atol=1e-3)
         np.testing.assert_allclose(warp_fk[target_key][:3, 3], target[:3, 3], atol=2e-3)
 
-    def test_rby1m_fk_agreement_with_moved_base(self, rby1m_mujoco_kin, rby1m_warp_kin, rby1m_config):
+    def test_rby1m_fk_agreement_with_moved_base(
+        self, rby1m_mujoco_kin, rby1m_warp_kin, rby1m_config
+    ):
         q0_moved = {k: np.array(v, dtype=np.float64) for k, v in rby1m_config.init_qpos.items()}
         q0_moved["base"] = np.array([1.0, 0.5, np.pi / 6])
         moved_bp = rby1m_base_qpos_to_pose(q0_moved["base"])
