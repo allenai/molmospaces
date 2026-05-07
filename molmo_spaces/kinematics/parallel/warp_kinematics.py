@@ -372,7 +372,7 @@ class SimpleWarpKinematics(ParallelKinematics):
     ) -> list[dict[str, np.ndarray]] | dict[str, np.ndarray]:
         """
         Compute forward kinematics for all simple move groups.
-        Non simple move groups (e.g. grippers) are not included in the output.
+        Non MJCFFrameMixin move groups (e.g. bases) are not included in the output.
 
         Args:
             qpos_dicts: The joint positions.
@@ -401,8 +401,13 @@ class SimpleWarpKinematics(ParallelKinematics):
             )
             trf[:, :3, 3] = xpos[:, mg.leaf_frame_id].numpy()
             trf[:, :3, :3] = xmat[:, mg.leaf_frame_id].numpy()
-            if rel_to_base:
-                trf = np.linalg.solve(base_poses, trf)
+            if isinstance(self._robot_view.base, SimplyActuatedMoveGroup):
+                # if the base is actuated, trf is in world frame so we need to convert to base frame if necessary
+                if rel_to_base:
+                    trf = np.linalg.solve(base_poses, trf)
+            elif not rel_to_base:
+                # if the base is unactuated, trf is in the base frame so we need to convert to world frame if necessary
+                trf = base_poses @ trf
             dol[mg_id] = trf
 
         ret = []
@@ -517,7 +522,9 @@ class SimpleWarpKinematics(ParallelKinematics):
         )
         return err
 
-    def _create_jacobian_mask(self, batch_size: int, unlocked_move_group_ids: list[str]) -> np.ndarray:
+    def _create_jacobian_mask(
+        self, batch_size: int, unlocked_move_group_ids: list[str]
+    ) -> np.ndarray:
         mask = np.zeros(self._mj_model.nv, dtype=np.int32)
         for mg_id in unlocked_move_group_ids:
             mg = self._actuated_move_groups[mg_id]
@@ -598,13 +605,16 @@ class SimpleWarpKinematics(ParallelKinematics):
             ik_args.leaf_frame_type.fill_(leaf_frame_type.value)
             ik_args.damping.fill_(damping)
             ik_args.dt.fill_(dt)
-            wp.copy(ik_args.jacobian_mask, wp.from_numpy(self._create_jacobian_mask(batch_size, unlocked_move_group_ids)))
+            wp.copy(
+                ik_args.jacobian_mask,
+                wp.from_numpy(self._create_jacobian_mask(batch_size, unlocked_move_group_ids)),
+            )
 
             q0_arr = self._dicts_to_qpos_arr(q0_dicts)
             wp.copy(data.qpos, wp.from_numpy(q0_arr))
 
             for i in range(max_iter):
-                if self._device == "cuda":
+                if self._device.startswith("cuda"):
                     if solver_data.ik_capture is None:
                         with wp.ScopedCapture(device=self._device) as capture:
                             self._ik_solve_step(solver_data, batch_size)
