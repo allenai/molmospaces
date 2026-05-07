@@ -583,7 +583,7 @@ class RBY1(Robot):
 
     @staticmethod
     def robot_model_root_name() -> str:
-        return "base"
+        return "robot_0/base"
 
     @classmethod
     def add_robot_to_scene(
@@ -599,6 +599,8 @@ class RBY1(Robot):
         super().add_robot_to_scene(
             robot_config, spec, robot_spec, prefix, pos, quat, randomize_textures
         )
+
+        prefix += "robot_0/"
 
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int
@@ -622,27 +624,3 @@ class RBY1(Robot):
             add_slider_act("base_x_act", 25, 25000, [0, -25000, 0.5], 0)
             add_slider_act("base_y_act", 25, 25000, [0, -25000, 0.5], 1)
             add_slider_act("base_theta_act", np.pi, 5000, [0, -5000, 0.5], 5)
-
-        # TODO(snehal): don't use bodies in the MJCF, just use visual geoms to render these
-        # add target ee pose bodies
-        ee_viz_right = spec.worldbody.add_body(
-            name="target_ee_pose_right", pos=[0, 0, 0], quat=[1, 0, 0, 0], mocap=True
-        )
-        ee_viz_right.add_site(
-            name="target_ee_pose_right",
-            type=mujoco.mjtGeom.mjGEOM_BOX,
-            size=[0.05, 0.05, 0.05],
-            rgba=[0, 0, 1, 0.3],
-            group=1,
-        )
-
-        ee_viz_left = spec.worldbody.add_body(
-            name="target_ee_pose_left", pos=[0, 0, 0], quat=[1, 0, 0, 0], mocap=True
-        )
-        ee_viz_left.add_site(
-            name="target_ee_pose_left",
-            type=mujoco.mjtGeom.mjGEOM_BOX,
-            size=[0.05, 0.05, 0.05],
-            rgba=[1, 0, 0, 0.3],
-            group=1,
-        )
