@@ -25,11 +25,7 @@ class FloatingRUMRobot(Robot):
         self._robot_view = config.robot_config.robot_view_factory(
             mj_data, config.robot_config.robot_namespace
         )
-        self._kinematics = FloatingRUMKinematics(
-            self.mj_model,
-            namespace=config.robot_config.robot_namespace,
-            robot_view_factory=config.robot_config.robot_view_factory,
-        )
+        self._kinematics = FloatingRUMKinematics(config.robot_config)
         self._parallel_kinematics = DummyParallelKinematics(
             config.robot_config,
             self._kinematics,

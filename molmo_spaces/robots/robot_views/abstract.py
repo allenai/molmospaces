@@ -277,7 +277,12 @@ class MoveGroup(ABC):
 
 
 class MJCFFrameMixin(ABC):
-    """Mixin for move groups that represent the leaf frame as a body or site in the MJCF model."""
+    """
+    Mixin for move groups that represent the leaf frame as a body or site in the MJCF model.
+
+    Note: Since this mixin provides a `get_jacobian()` implementation, inheriting classes must
+        put this mixin first in the inheritance chain to satisfy the MRO.
+    """
 
     @property
     @abstractmethod
