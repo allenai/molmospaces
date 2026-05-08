@@ -273,4 +273,8 @@ def convert_geom(  # noqa: PLR0915
     if geom.group not in VISUAL_GROUPS and opt_col_collection is not None:
         opt_col_collection.GetIncludesRel().AddTarget(geom_prim.GetPath())
 
+    parent_prim = geom_prim.GetPrim().GetParent()
+    if parent_prim and not parent_prim.IsInstance():
+        parent_prim.SetInstanceable(True)
+
     return geom_prim

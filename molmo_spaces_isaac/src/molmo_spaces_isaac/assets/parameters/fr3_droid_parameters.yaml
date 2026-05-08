@@ -1,5 +1,5 @@
 joints:
-  fr3_joint1:
+  panda_joint1:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -17,7 +17,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 150.11493
 
-  fr3_joint2:
+  panda_joint2:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -35,7 +35,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 150.11493
 
-  fr3_joint3:
+  panda_joint3:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -53,7 +53,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 150.11493
 
-  fr3_joint4:
+  panda_joint4:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -71,7 +71,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 150.11493
 
-  fr3_joint5:
+  panda_joint5:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -89,7 +89,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 301.3758
 
-  fr3_joint6:
+  panda_joint6:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -107,7 +107,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 239.49634
 
-  fr3_joint7:
+  panda_joint7:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -126,7 +126,7 @@ joints:
         value: 301.3758
 
   # This is the main joint that links to the actuation
-  fr3_gripper_left_driver_joint:
+  finger_joint:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -146,7 +146,7 @@ joints:
       - name: physxJoint:maxJointVelocity
         value: 146.46
 
-  fr3_gripper_left_spring_link_joint:
+  left_inner_finger_joint:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -171,11 +171,11 @@ joints:
         value: -1
       - name: physxMimicJoint:rotZ:naturalFrequency
         value: 0
-    mimic: "fr3_gripper_left_driver_joint"
+    mimic: "finger_joint"
     mimic_axis: "rotZ"
 
 
-  fr3_gripper_left_follower_joint:
+  left_inner_knuckle_joint:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -198,11 +198,11 @@ joints:
         value: -1
       - name: physxMimicJoint:rotZ:naturalFrequency
         value: 0
-    mimic: "fr3_gripper_left_driver_joint"
+    mimic: "finger_joint"
     mimic_axis: "rotZ"
 
 
-  fr3_gripper_right_driver_joint:
+  right_outer_knuckle_joint:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -227,11 +227,11 @@ joints:
         value: -1
       - name: physxMimicJoint:rotZ:naturalFrequency
         value: 0
-    mimic: "fr3_gripper_left_driver_joint"
+    mimic: "finger_joint"
     mimic_axis: "rotZ"
   
 
-  fr3_gripper_right_spring_link_joint:
+  right_inner_finger_joint:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -254,11 +254,11 @@ joints:
         value: -1
       - name: physxMimicJoint:rotZ:naturalFrequency
         value: 0
-    mimic: "fr3_gripper_left_driver_joint"
+    mimic: "finger_joint"
     mimic_axis: "rotZ"
 
 
-  fr3_gripper_right_follower_joint:
+  right_inner_knuckle_joint:
     schemas: ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysxMimicJointAPI:rotZ", "IsaacJointAPI"]
     parameters:
       - name: drive:angular:physics:damping
@@ -281,6 +281,6 @@ joints:
         value: -1
       - name: physxMimicJoint:rotZ:naturalFrequency
         value: 0
-    mimic: "fr3_gripper_left_driver_joint"
+    mimic: "finger_joint"
     mimic_axis: "rotZ"
 
