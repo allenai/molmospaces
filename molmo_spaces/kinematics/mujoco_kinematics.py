@@ -267,6 +267,8 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
         parser.add_argument("config_class")
         parser.add_argument("--config_module", default="molmo_spaces.configs.robot_configs")
+        parser.add_argument("--move-group")
+        parser.add_argument("--unlocked-move-groups", nargs="+")
         args = parser.parse_args()
 
         config_module = importlib.import_module(args.config_module)
@@ -292,15 +294,17 @@ if __name__ == "__main__":
         robot_view.set_qpos_dict(robot_config.init_qpos)
         mujoco.mj_forward(model, data)
 
-        gripper_group_id = robot_view.get_gripper_movegroup_ids()[0]
-        gripper_group = robot_view.get_move_group(gripper_group_id)
+        if args.move_group is None:
+            move_group_id = robot_view.get_gripper_movegroup_ids()[0]
+            move_group = robot_view.get_move_group(move_group_id)
+        else:
+            move_group_id = args.move_group
+            move_group = robot_view.get_move_group(move_group_id)
 
-        pose0 = gripper_group.leaf_frame_to_world
+        pose0 = move_group.leaf_frame_to_world.copy()
         pose1 = pose0.copy()
         pose0[2, 3] += 0.05  # Move up 5cm
         pose1[2, 3] -= 0.05  # Move down 5cm
-
-        groups = robot_view.move_group_ids()
 
         with launch_passive(model, data) as viewer:
             viewer.sync()
@@ -309,10 +313,10 @@ if __name__ == "__main__":
                 # Alternate between two target poses
                 target_pose = pose1 if i % 2 == 0 else pose0
                 ret = kinematics.ik(
-                    gripper_group_id,
+                    move_group_id,
                     target_pose,
-                    groups,
-                    robot_view.get_qpos_dict(),
+                    args.unlocked_move_groups,
+                    robot_config.init_qpos,
                     robot_view.base.pose,
                 )
                 print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")

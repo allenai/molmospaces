@@ -707,11 +707,11 @@ if __name__ == "__main__":
                 # Alternate between two target poses
                 target_pose = pose1 if i % 2 == 0 else pose0
                 ret = kinematics.ik(
+                    move_group_id,
                     target_pose,
+                    args.unlocked_move_groups,
                     robot_config.init_qpos,
                     robot_view.base.pose,
-                    move_group_id=move_group_id,
-                    unlocked_move_group_ids=args.unlocked_move_groups,
                 )
                 print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")
                 i += 1
