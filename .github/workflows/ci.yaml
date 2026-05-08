@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  install-project:
+  unit-tests:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -25,10 +25,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Configure Git credentials for private repos
-        run: |
-          git config --global url."https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
@@ -44,6 +40,11 @@ jobs:
         run: |
           source .venv/bin/activate
           uv pip install -e .[dev,mujoco]
+
+      - name: Run component tests
+        run: |
+          source .venv/bin/activate
+          python -m pytest mlspaces_tests/component_tests/ -v --tb=short
 
   ruff-checks:
     runs-on: ubuntu-latest
