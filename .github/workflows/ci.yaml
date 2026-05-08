@@ -36,10 +36,15 @@ jobs:
           uv venv --python ${{ matrix.python-version }}
           source .venv/bin/activate
 
-      - name: Install mujoco-thor package
+      - name: Install package
         run: |
           source .venv/bin/activate
           uv pip install -e .[dev,mujoco]
+
+      - name: Download assets
+        run: |
+          source .venv/bin/activate
+          python -m molmo_spaces.molmo_spaces_constants
 
       - name: Run component tests
         run: |
