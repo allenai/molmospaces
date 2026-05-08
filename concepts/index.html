@@ -522,6 +522,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#simplyactuatedmovegroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SimplyActuatedMoveGroup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mjcfframemixin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MJCFFrameMixin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#frames" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1279,6 +1301,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#simplyactuatedmovegroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SimplyActuatedMoveGroup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mjcfframemixin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MJCFFrameMixin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#frames" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1475,6 +1519,10 @@ The rest of the system doesn't need to know any of this: it interacts with move 
 </thead>
 <tbody>
 <tr>
+<td><a class="autorefs autorefs-internal" title="            SimplyActuatedMoveGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.SimplyActuatedMoveGroup"><code>SimplyActuatedMoveGroup</code></a></td>
+<td>1:1 mapping between joints, actuators, and position/velocity addresses</td>
+</tr>
+<tr>
 <td><a class="autorefs autorefs-internal" title="            GripperGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.GripperGroup"><code>GripperGroup</code></a></td>
 <td>Adds gripper-specific controls (<code>set_gripper_ctrl_open</code>, <code>is_open</code>, <code>inter_finger_dist</code>)</td>
 </tr>
@@ -1483,8 +1531,8 @@ The rest of the system doesn't need to know any of this: it interacts with move 
 <td>Represents the robot's pose in the world</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="            ImmobileRobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.ImmobileRobotBaseGroup"><code>ImmobileRobotBaseGroup</code></a></td>
-<td>Fixed base (e.g. tabletop Franka)</td>
+<td><a class="autorefs autorefs-internal" title="            MocapRobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.MocapRobotBaseGroup"><code>MocapRobotBaseGroup</code></a></td>
+<td>Fixed teleportable base (e.g. tabletop Franka)</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="            FreeJointRobotBaseGroup" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.FreeJointRobotBaseGroup"><code>FreeJointRobotBaseGroup</code></a></td>
@@ -1496,6 +1544,25 @@ The rest of the system doesn't need to know any of this: it interacts with move 
 </tr>
 </tbody>
 </table>
+<p><strong>Mixin:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            MJCFFrameMixin" href="../api/robots/#molmo_spaces.robots.robot_views.abstract.MJCFFrameMixin"><code>MJCFFrameMixin</code></a></td>
+<td>A move group whose leaf frame is represented by a body or site in the MJCF model</td>
+</tr>
+</tbody>
+</table>
+<h4 id="simplyactuatedmovegroup">SimplyActuatedMoveGroup<a class="headerlink" href="#simplyactuatedmovegroup" title="Permanent link">&para;</a></h4>
+<p>The base <code>MoveGroup</code> makes no assumptions about the relationship between joints and actuators — a group can have more joints than actuators (e.g. a mirrored gripper), or joints whose <code>qpos</code> dimension differs from their <code>qvel</code> dimension (free and ball joints). <code>SimplyActuatedMoveGroup</code> narrows this: every joint is a simple 1-DoF hinge or slide, and there is exactly one actuator per joint. This means <code>n_joints == pos_dim == vel_dim == n_actuators</code>, and the internal ID/address lists can be safely exposed as public properties (<code>joint_ids</code>, <code>actuator_ids</code>, <code>joint_posadr</code>, <code>joint_veladr</code>). Groups like the RBY1 torso or Franka FR3 arm extend <code>SimplyActuatedMoveGroup</code> directly.</p>
+<h4 id="mjcfframemixin">MJCFFrameMixin<a class="headerlink" href="#mjcfframemixin" title="Permanent link">&para;</a></h4>
+<p>Most move groups define their leaf frame as a specific element in the MJCF model — either a MuJoCo <strong>site</strong> or <strong>body</strong>. <code>MJCFFrameMixin</code> captures this pattern: subclasses implement <code>leaf_frame_id</code> (the integer ID) and <code>leaf_frame_type</code> (<code>"site"</code> or <code>"body"</code>), and the mixin provides a default <code>get_jacobian()</code> that dispatches to <code>mj_jacSite</code> or <code>mj_jacBody</code> accordingly. All arm groups, gripper groups, and the RBY1 torso/head use this mixin. The base groups (<code>FreeJointRobotBaseGroup</code>, <code>HoloJointsRobotBaseGroup</code>) do <strong>not</strong> use it, since their leaf frame is derived from joint state rather than a fixed MJCF element.</p>
 <p><strong>Key interface:</strong></p>
 <ul>
 <li><strong>State:</strong> <code>joint_pos</code>, <code>joint_vel</code>, <code>ctrl</code> (get/set numpy arrays)</li>
@@ -1717,7 +1784,7 @@ It loads scenes (houses), places robots and objects, configures cameras, and con
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 5, 2026 00:27:06 UTC"><span class="timeago" datetime="2026-05-05T00:27:06+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 5, 2026 00:27:06 UTC">2026-05-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 8, 2026 22:31:05 UTC"><span class="timeago" datetime="2026-05-08T22:31:05+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 8, 2026 22:31:05 UTC">2026-05-08</span>
   </span>
 
     

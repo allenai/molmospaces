@@ -40305,9 +40305,7 @@ including concatenating multiple action primitives into a single trajectory.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -40318,20 +40316,22 @@ including concatenating multiple action primitives into a single trajectory.</p>
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -40390,7 +40390,9 @@ including concatenating multiple action primitives into a single trajectory.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -40405,28 +40407,30 @@ including concatenating multiple action primitives into a single trajectory.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -46353,9 +46357,7 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -46366,20 +46368,22 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -46667,7 +46671,9 @@ the same server.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -46682,28 +46688,30 @@ the same server.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -49519,9 +49527,7 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -49532,20 +49538,22 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -49856,7 +49864,9 @@ request to avoid races when multiple workers share the same server.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -49871,28 +49881,30 @@ request to avoid races when multiple workers share the same server.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -51916,9 +51928,7 @@ Must be json serializable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -51929,20 +51939,22 @@ Must be json serializable.</p>
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -52001,7 +52013,9 @@ Must be json serializable.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -52016,28 +52030,30 @@ Must be json serializable.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -53159,9 +53175,7 @@ It is typically called at the beginning of each episode or task.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -53172,20 +53186,22 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -53244,7 +53260,9 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -53259,28 +53277,30 @@ It is typically called at the beginning of each episode or task.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -54402,9 +54422,7 @@ It is typically called at the beginning of each episode or task.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -54415,20 +54433,22 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -54487,7 +54507,9 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -54502,28 +54524,30 @@ It is typically called at the beginning of each episode or task.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -55694,9 +55718,7 @@ It is typically called at the beginning of each episode or task.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -55707,20 +55729,22 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -55779,7 +55803,9 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -55794,28 +55820,30 @@ It is typically called at the beginning of each episode or task.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -56986,9 +57014,7 @@ It is typically called at the beginning of each episode or task.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/base_object_manipulation_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
@@ -56999,20 +57025,22 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-632">632</a></span>
 <span class="normal"><a href="#__codelineno-0-633">633</a></span>
 <span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@staticmethod</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">spec</span><span class="p">,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="nd">@staticmethod</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MjSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">PlannerPolicy</span><span class="o">.</span><span class="n">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">policy_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">policy_config</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="n">ObjectManipulationPlannerPolicyConfig</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">filter_colliding_grasps</span><span class="p">:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">add_grasp_collision_bodies</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="n">spec</span><span class="p">,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_collision_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_width</span><span class="p">,</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_length</span><span class="p">,</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_height</span><span class="p">,</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">policy_config</span><span class="o">.</span><span class="n">grasp_base_pos</span><span class="p">),</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -57071,7 +57099,9 @@ It is typically called at the beginning of each episode or task.</p>
 <span class="normal"><a href="#__codelineno-0-567">567</a></span>
 <span class="normal"><a href="#__codelineno-0-568">568</a></span>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_feasible_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="n">pose</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -57086,28 +57116,30 @@ It is typically called at the beginning of each episode or task.</p>
 <a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pose</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">pose</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">n_pad</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">))])</span>
 <a id="__codelineno-0-547" name="__codelineno-0-547"></a>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">robots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">parallel_kinematics</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">posture_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="p">)</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="p">)</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="n">parallel_kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">parallel_kinematics</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="n">jp_dicts</span> <span class="o">=</span> <span class="n">parallel_kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">rel_to_base</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">jp_dict</span> <span class="ow">in</span> <span class="n">jp_dicts</span><span class="p">[:</span><span class="n">batch_size</span><span class="p">]])</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">assert</span> <span class="n">pose</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="n">robot_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">kinematics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">kinematics</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="n">gripper_mg_id</span> <span class="o">=</span> <span class="n">robot_view</span><span class="o">.</span><span class="n">get_gripper_movegroup_ids</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="n">jp_dict</span> <span class="o">=</span> <span class="n">kinematics</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">gripper_mg_id</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">move_group_ids</span><span class="p">(),</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="n">robot_view</span><span class="o">.</span><span class="n">get_qpos_dict</span><span class="p">(),</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="n">base_pose</span><span class="o">=</span><span class="n">robot_view</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">jp_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
