@@ -235,45 +235,6 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
 
 
-# class FrankaFloatingRobotConfig(BaseRobotConfig):
-#     """Configuration for Franka FR3 robot."""
-
-#     robot_cls: type[FrankaRobot] | None = FrankaRobot
-#     robot_factory: Callable[[MjData, Any], Robot] | None = FrankaRobot
-#     robot_namespace: str = "robot_0/"
-#     robot_view_factory: RobotViewFactory | None = FrankaDroidRobotView
-#     default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
-#     name: str = "franka_droid"
-#     robot_xml_path: Path = Path("model.xml")
-#     base_size: list[float] | None = [0.5, 0.5, 0.58]
-#     init_qpos: dict[str, list[float]] = {
-#         "base": np.array([0.0, 0.0, 0.0]),  # x, y, theta
-#         "arm": [0, -0.7853, 0, -2.35619, 0, 1.57079, 0.0],
-#         "gripper": [0.00296, 0.00296],
-#     }
-#     init_qpos_noise_range: dict[str, list[float]] | None = {
-#         # selected to allow for more displacement in later joints and keep TCP displacement <=10cm
-#         # joint_weights = [1, ..., 7] (allow more movement in later joints)
-#         # J_p is 3x7 Jacobian of TCP position wrt arm joints
-#         # dq = joint_weights * 0.1 / ||J_p @ joint_weights||
-#         "arm": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175],
-#         "base": np.array([0.0, 0.0, 0.0]),
-#     }
-#     command_mode: dict[str, str | None] = {
-#         "arm": "joint_position",  # e.g., "joint_position", "joint_velocity", "ee_position", "ee_velocity"
-#         "gripper": "joint_position",
-#         "base": "holo_joint_planar_position",  # e.g., "planar_position", "planar_velocity", "wheel_velocity"
-#     }
-#     gravcomp: bool = True
-
-#     def model_post_init(self, __context):
-#         super().model_post_init(__context)
-#         if "gripper" in self.command_mode:
-#             assert self.command_mode["gripper"] == "joint_position"
-#         if "arm" in self.command_mode:
-#             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
-
-
 class RBY1Config(BaseRobotConfig):
     """Configuration for RBY1 robot."""
 
