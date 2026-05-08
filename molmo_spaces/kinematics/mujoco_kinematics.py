@@ -8,10 +8,8 @@ from typing import Literal, TYPE_CHECKING
 
 import mujoco
 import numpy as np
-from mujoco import MjData
 
 from molmo_spaces.molmo_spaces_constants import get_robot_path
-from molmo_spaces.robots.robot_views.abstract import RobotView
 from molmo_spaces.utils.linalg_utils import (
     inverse_homogeneous_matrix,
     relative_to_global_transform,
@@ -254,77 +252,3 @@ class MlSpacesKinematics:
         if succ:
             return self._robot_view.get_qpos_dict()
         return None
-
-
-if __name__ == "__main__":
-
-    def main() -> None:
-        import argparse
-        import importlib
-        import time
-        from mujoco.viewer import launch_passive
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument("config_class")
-        parser.add_argument("--config_module", default="molmo_spaces.configs.robot_configs")
-        parser.add_argument("--move-group")
-        parser.add_argument("--unlocked-move-groups", nargs="+")
-        args = parser.parse_args()
-
-        config_module = importlib.import_module(args.config_module)
-        config_class = getattr(config_module, args.config_class)
-        robot_config: "BaseRobotConfig" = config_class()
-        kinematics = MlSpacesKinematics(robot_config)
-
-        spec = mujoco.MjSpec()
-        robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
-        robot_spec = mujoco.MjSpec.from_file(str(robot_xml_path))
-        robot_config.robot_cls.add_robot_to_scene(
-            robot_config,
-            spec,
-            robot_spec,
-            "",
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0],
-        )
-        model = spec.compile()
-        data = mujoco.MjData(model)
-        robot_view = robot_config.robot_view_factory(data, "")
-
-        robot_view.set_qpos_dict(robot_config.init_qpos)
-        mujoco.mj_forward(model, data)
-
-        if args.move_group is None:
-            move_group_id = robot_view.get_gripper_movegroup_ids()[0]
-            move_group = robot_view.get_move_group(move_group_id)
-        else:
-            move_group_id = args.move_group
-            move_group = robot_view.get_move_group(move_group_id)
-
-        pose0 = move_group.leaf_frame_to_world.copy()
-        pose1 = pose0.copy()
-        pose0[2, 3] += 0.05  # Move up 5cm
-        pose1[2, 3] -= 0.05  # Move down 5cm
-
-        with launch_passive(model, data) as viewer:
-            viewer.sync()
-            i = 0
-            while viewer.is_running():
-                # Alternate between two target poses
-                target_pose = pose1 if i % 2 == 0 else pose0
-                ret = kinematics.ik(
-                    move_group_id,
-                    target_pose,
-                    args.unlocked_move_groups,
-                    robot_config.init_qpos,
-                    robot_view.base.pose,
-                )
-                print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")
-                i += 1
-                if ret is not None:
-                    robot_view.set_qpos_dict(ret)
-                mujoco.mj_forward(model, data)
-                viewer.sync()
-                time.sleep(2)
-
-    main()

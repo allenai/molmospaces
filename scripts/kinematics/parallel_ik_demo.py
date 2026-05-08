@@ -1,3 +1,9 @@
+"""
+Demo script that demonstrates the parallel IK solver for multiple robots simultaneously.
+
+On mac, run with mjpython.
+"""
+
 from collections import defaultdict
 
 import numpy as np
@@ -39,10 +45,13 @@ MJCF = """
 </mujoco>
 """
 
+
 def main():
     spec = MjSpec.from_string(MJCF)
 
-    robot_configs: dict[str, BaseRobotConfig] = {str(rc.name): rc for rc in [I2rtYamRobotConfig(), FrankaRobotConfig(), RBY1MConfig()]}
+    robot_configs: dict[str, BaseRobotConfig] = {
+        str(rc.name): rc for rc in [I2rtYamRobotConfig(), FrankaRobotConfig(), RBY1MConfig()]
+    }
     robot_configs["rby1m"].init_qpos["base"] = [0.0, 2.0, 0.0]
 
     for robot_config in robot_configs.values():
@@ -90,12 +99,14 @@ def main():
 
     gripper_init_poses: dict[str, dict[str, np.ndarray]] = defaultdict(dict)
     for name, move_group_id in robot_grippers:
-        gripper_init_poses[name][move_group_id] = robot_views[name][0].get_move_group(move_group_id).leaf_frame_to_world
+        gripper_init_poses[name][move_group_id] = (
+            robot_views[name][0].get_move_group(move_group_id).leaf_frame_to_world
+        )
 
     kinematics = {name: SimpleWarpKinematics(rc) for name, rc in robot_configs.items()}
 
     t = 0.0
-    t_offsets = np.linspace(0, 2*np.pi, N_ROBOTS, endpoint=False)
+    t_offsets = np.linspace(0, 2 * np.pi, N_ROBOTS, endpoint=False)
     with launch_passive(model, data) as viewer:
         while viewer.is_running():
             for name, views in robot_views.items():
@@ -106,7 +117,9 @@ def main():
                 kin = kinematics[name]
                 for move_group_id, init_pose in gripper_init_poses[name].items():
                     target_poses = np.repeat(init_pose[None], N_ROBOTS, axis=0)
-                    target_poses[:, 0, 3] += RADIUS * 1.5 * np.sin(t * 2 * np.pi / PERIOD / 4 + t_offsets)
+                    target_poses[:, 0, 3] += (
+                        RADIUS * 1.5 * np.sin(t * 2 * np.pi / PERIOD / 4 + t_offsets)
+                    )
                     target_poses[:, 1, 3] += RADIUS * np.sin(t * 2 * np.pi / PERIOD + t_offsets)
                     target_poses[:, 2, 3] += RADIUS * np.cos(t * 2 * np.pi / PERIOD + t_offsets)
 
@@ -126,6 +139,7 @@ def main():
             mujoco.mj_kinematics(model, data)
             viewer.sync()
             t += 1 / FPS
+
 
 if __name__ == "__main__":
     main()
