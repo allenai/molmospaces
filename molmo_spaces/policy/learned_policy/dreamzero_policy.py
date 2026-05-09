@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import websockets.exceptions
 import websockets.sync.client
-from openpi_client import msgpack_numpy
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
@@ -24,6 +23,8 @@ class DreamZeroWebsocketClient:
     """Websocket client that adds endpoint field for DreamZero server."""
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8000) -> None:
+        from openpi_client import msgpack_numpy
+
         self._uri = f"ws://{host}:{port}"
         self._packer = msgpack_numpy.Packer()
         self._ws, self._server_metadata = self._wait_for_server()
@@ -31,6 +32,8 @@ class DreamZeroWebsocketClient:
         self._connected_uri = self._uri
 
     def _connect_once(self, uri: str) -> tuple[websockets.sync.client.ClientConnection, dict]:
+        from openpi_client import msgpack_numpy
+
         conn = websockets.sync.client.connect(
             uri,
             compression=None,
@@ -69,6 +72,8 @@ class DreamZeroWebsocketClient:
                 time.sleep(retry_delay)
 
     def infer(self, obs: dict) -> dict:
+        from openpi_client import msgpack_numpy
+
         obs["endpoint"] = "infer"
         data = self._packer.pack(obs)
         try:
@@ -110,6 +115,7 @@ class DreamZero_Policy(InferencePolicy):
             task_type=exp_config.task_type,
             prompt_templates=exp_config.policy_config.prompt_templates,
             prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            prompt_level=exp_config.policy_config.prompt_level,
         )
         self.checkpoint_path = exp_config.policy_config.checkpoint_path
         self.grasping_type = exp_config.policy_config.grasping_type

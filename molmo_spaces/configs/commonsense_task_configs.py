@@ -33,3 +33,4 @@ class SemanticGraspPickTaskConfig(PickTaskConfig):
     task_cls: type | None = None  # Will be set to SemanticGraspPickTask
     k_nearest_grasps: int = 5  # k for KNN majority vote
     require_no_receptacle_contact: bool = False  # If True, require object is not in contact with receptacle (can be unreliable for wide objects)
+    succ_pos_threshold: float = 0.03  # 3 cm; stricter than the 1 cm PickTaskConfig default to filter borderline lifts where the object barely clears the receptacle.

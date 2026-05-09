@@ -5,6 +5,10 @@ import numpy as np
 from PIL import Image
 from scipy.spatial.transform import Rotation as R
 
+from molmo_spaces.configs.semantic_pick_prompts import (
+    VALID_PROMPT_LEVELS,
+    get_semantic_pick_prompt,
+)
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
@@ -46,6 +50,7 @@ class PromptSampler:
         prompt_templates: list[str] = None,
         prompt_object_word_num: int = 1,
         disambiguate_distractors_by_pos: bool = False,
+        prompt_level: int = 2,
     ) -> None:
         """
         Args:
@@ -54,6 +59,12 @@ class PromptSampler:
             prompt_object_word_num: The number of words to use for the object name in the prompt.
             disambiguate_distractors_by_pos: Whether to disambiguate distractors by position in the prompt.
                 This relies on functionality only present when using a frozen config.
+            prompt_level: For ``semantic_grasp_pick``, selects the per-object
+                prompt level from ``configs/semantic_pick_prompts.py``:
+                1 = basic ("pick up the {object}."),
+                2 = existing semantic prompts (default; preserves prior behavior),
+                3 = "pick up the {object} by the {part}.".
+                Ignored for other task types.
         """
         if prompt_templates is not None and task_type in ["pick", "pick_and_place"]:
             self.prompt_templates = prompt_templates
@@ -64,11 +75,16 @@ class PromptSampler:
                 f"Unknown task_type '{task_type}'. "
                 f"Available task types: {list(self.DEFAULT_TEMPLATES_BY_TASK.keys())}"
             )
+        if prompt_level not in VALID_PROMPT_LEVELS:
+            raise ValueError(
+                f"prompt_level must be one of {VALID_PROMPT_LEVELS}, got {prompt_level!r}"
+            )
         self.task_type = task_type
         self.current_index = -1
         self.prompt_object_word_num = prompt_object_word_num
         self._cached_prompt = None
         self._disambiguate_distractors_by_pos = disambiguate_distractors_by_pos
+        self.prompt_level = prompt_level
 
     def get_state(self):
         return {
@@ -220,12 +236,12 @@ class PromptSampler:
                 object_name, receptacle_name
             )
         elif self.task_type == "semantic_grasp_pick":
-            template = (
-                "pick up the hot {}."
-                if object_name == "pan"
-                else "pick up the {} to give to someone."
+            category = target_name.split("_")[0]
+            self._cached_prompt = get_semantic_pick_prompt(
+                category=category,
+                object_name=object_name,
+                level=self.prompt_level,
             )
-            self._cached_prompt = template.format(object_name)
         else:
             self._cached_prompt = self.prompt_templates[self.current_index].format(object_name)
 

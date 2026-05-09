@@ -8,7 +8,7 @@ import numpy as np
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy, StatefulPolicy
-from molmo_spaces.policy.learned_policy.utils import resize_with_pad
+from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_pad
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +32,20 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.grasping_type = exp_config.policy_config.grasping_type
         self.chunk_size = exp_config.policy_config.chunk_size
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
+        # PromptSampler routes the semantic_grasp_pick prompt through the
+        # per-object templates in semantic_pick_prompts.py (driven by
+        # policy_config.prompt_level). Construction-time exp_config.task_type
+        # is whatever the eval config defaults to (e.g. "pick" for
+        # JsonBenchmarkEvalConfig); the actual task_type is set per-episode
+        # from the benchmark and re-synced inside PromptSampler.get_prompt.
+        # We gate *usage* on the live per-episode task_type below, so this
+        # only takes effect for semantic_grasp_pick episodes.
+        self.prompt_sampler = PromptSampler(
+            task_type=exp_config.task_type,
+            prompt_templates=exp_config.policy_config.prompt_templates,
+            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            prompt_level=exp_config.policy_config.prompt_level,
+        )
         self.model = None  # don't init model till inference to allow multiprocessing
 
     def get_state(self):
@@ -50,6 +64,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.actions_buffer = None
         self.current_buffer_index = 0
         self.starting_time = None
+        self.prompt_sampler.next()
 
     def prepare_model(self):
         self.model_name = os.path.basename(self.checkpoint_path)
@@ -118,7 +133,14 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
                 )
             obs = obs[0]
         model_input = {**obs}
-        prompt = self.task.get_task_description()
+        # Use the per-object PromptSampler templates only for semantic_grasp_pick
+        # (the prompt_level ablation target); fall back to the task's natural
+        # description for every other task type to preserve prior pi behavior.
+        episode_task_type = getattr(self.task.env.config, "task_type", None)
+        if episode_task_type == "semantic_grasp_pick":
+            prompt = self.prompt_sampler.get_prompt(self.task)
+        else:
+            prompt = self.task.get_task_description()
 
         # For local eval
         if isinstance(obs, list | tuple):
@@ -196,7 +218,11 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.task.get_task_description()
+        episode_task_type = getattr(self.task.env.config, "task_type", None)
+        if episode_task_type == "semantic_grasp_pick":
+            info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        else:
+            info["prompt"] = self.task.get_task_description()
         log.info(f"Current prompt: {info['prompt']}")
 
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None

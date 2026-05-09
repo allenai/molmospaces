@@ -38,6 +38,26 @@ def main():
         default=None,
         help="Only combine first N trajectories (default: all)"
     )
+    parser.add_argument(
+        "--nearby-radius-m",
+        type=float,
+        default=0.30,
+        help="Radius (meters, 3D) for counting graspable objects near the pickup (default: 0.30)"
+    )
+    parser.add_argument(
+        "--nearby-max-bin",
+        type=int,
+        default=5,
+        help="Counts >= this value collapse into a single '>=N' bin (default: 5)"
+    )
+    parser.add_argument(
+        "--debug-video",
+        action="store_true",
+        help=(
+            "Save sample videos under <run>/debug_videos/num_nearby_objects/"
+            "<bin>/{success,fail}/ — 5 per outcome per bin (symlinked)."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -94,6 +114,27 @@ def main():
         reward_threshold=REWARD_THRESHOLD
     )
 
+    # Conditional success rate: success / reward_over_thresh.
+    # For semantic_grasp_pick this answers "given the policy lifted the object,
+    # how often did it grasp the correct part?". For plain pick (where success ==
+    # reward_above_threshold) this collapses to 100%.
+    if REWARD_THRESHOLD is not None:
+        print("\nCalculating success rate given reward over threshold...")
+        thor_analysis.calculate_success_given_reward_threshold(
+            combined_traj_path,
+            reward_threshold=REWARD_THRESHOLD,
+        )
+
+    # Same metric using task_info.lift_height instead of reward — picks up the
+    # episodes where the task said success via the relaxed lift-height-only path
+    # (require_no_receptacle_contact=False). Denominator becomes a superset of
+    # the success=True set.
+    print("\nCalculating success rate given lift_height over threshold...")
+    thor_analysis.calculate_success_given_lift_height(
+        combined_traj_path,
+        lift_threshold=REWARD_THRESHOLD if REWARD_THRESHOLD is not None else 0.01,
+    )
+
     # Create bar graph - save in run directory
     bar_graph_path = os.path.join(RUN_PATH, f"{run_name}_success_rate.png")
     print(f"\nGenerating bar graph: {bar_graph_path}")
@@ -103,10 +144,72 @@ def main():
         output_file=bar_graph_path
     )
 
+    # Bucket success rate by number of graspable objects near the pickup
+    # at episode start (uses frozen_config from obs_scene; same definition as
+    # scripts/benchmarks/create_json_benchmark.py).
+    print(
+        f"\nAnalyzing success by nearby graspable count "
+        f"(radius={args.nearby_radius_m:.3f} m, max_bin={args.nearby_max_bin})..."
+    )
+    density_stats = thor_analysis.analyze_success_by_nearby_density(
+        combined_traj_path,
+        reward_threshold=REWARD_THRESHOLD,
+        radius_m=args.nearby_radius_m,
+        max_bin=args.nearby_max_bin,
+    )
+    thor_analysis.print_density_statistics(density_stats, radius_m=args.nearby_radius_m)
+
+    density_bar_graph_path = os.path.join(
+        RUN_PATH, f"{run_name}_success_rate_by_nearby_density.png"
+    )
+    print(f"\nGenerating density bar graph: {density_bar_graph_path}")
+    thor_analysis.create_density_bar_graph(
+        density_stats,
+        subtitle=SUBTITLE,
+        output_file=density_bar_graph_path,
+        radius_m=args.nearby_radius_m,
+    )
+
+    print("\nBuilding success-by-pick-object histogram per nearby-graspable bin...")
+    obj_hist_by_bin = thor_analysis.analyze_success_object_histogram_by_density(
+        combined_traj_path,
+        reward_threshold=REWARD_THRESHOLD,
+        radius_m=args.nearby_radius_m,
+        max_bin=args.nearby_max_bin,
+    )
+    obj_hist_path = os.path.join(
+        RUN_PATH, f"{run_name}_success_object_histogram_by_density.txt"
+    )
+    thor_analysis.write_object_histogram_by_density(
+        obj_hist_by_bin,
+        output_file=obj_hist_path,
+        radius_m=args.nearby_radius_m,
+    )
+
+    if args.debug_video:
+        debug_video_dir = os.path.join(RUN_PATH, "debug_videos", "num_nearby_objects")
+        thor_analysis.save_debug_videos_by_density(
+            combined_traj_path,
+            output_dir=debug_video_dir,
+            reward_threshold=REWARD_THRESHOLD,
+            radius_m=args.nearby_radius_m,
+            max_bin=args.nearby_max_bin,
+            n_per_outcome=5,
+        )
+
+        grasp_video_dir = os.path.join(RUN_PATH, "debug_videos", "grasp_correctness")
+        thor_analysis.save_debug_videos_by_grasp_correctness(
+            combined_traj_path,
+            output_dir=grasp_video_dir,
+            lift_threshold=REWARD_THRESHOLD if REWARD_THRESHOLD is not None else 0.01,
+            n_per_outcome=10,
+        )
+
     print("\n" + "="*80)
     print("Analysis complete!")
     print(f"Combined trajectories saved to: {combined_traj_path}")
     print(f"Bar graph saved to: {bar_graph_path}")
+    print(f"Density bar graph saved to: {density_bar_graph_path}")
     print(f"Overall success rate: {overall_stats['rate']:.2f}%")
     print("="*80)
 

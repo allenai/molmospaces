@@ -309,6 +309,15 @@ def get_args():
         default=None,
         help="Override the policy remote_config port (e.g., for PI policy server).",
     )
+    parser.add_argument(
+        "--prompt_level",
+        type=int,
+        choices=[1, 2, 3],
+        default=None,
+        help="Override policy_config.prompt_level (semantic_grasp_pick ablation). "
+        "1=basic 'pick up the {object}.', 2=existing semantic prompts, "
+        "3='pick up the {object} by the {part}.'. If unset, uses the value from the eval config.",
+    )
     return parser.parse_args()
 
 
@@ -504,6 +513,7 @@ def run_evaluation(
     house_inds: list[int] | None = None,
     policy_host: str | None = None,
     policy_port: int | None = None,
+    prompt_level: int | None = None,
     resume: str | Path | None = None,
 ) -> EvaluationResults:
     """Run evaluation on a JSON benchmark programmatically.
@@ -707,6 +717,15 @@ def run_evaluation(
         if policy_port is not None:
             remote_config["port"] = policy_port
 
+    # Override prompt_level if provided (semantic_grasp_pick ablation switch).
+    if prompt_level is not None:
+        if not hasattr(exp_config.policy_config, "prompt_level"):
+            raise ValueError(
+                f"--prompt_level was set but {type(exp_config.policy_config).__name__} "
+                f"has no prompt_level field."
+            )
+        exp_config.policy_config.prompt_level = prompt_level
+
     # Viewer
     if viewer:
         exp_config.use_passive_viewer = True
@@ -848,6 +867,7 @@ def main() -> None:
         house_inds=args.house_inds,
         policy_host=args.policy_host,
         policy_port=args.policy_port,
+        prompt_level=args.prompt_level,
         resume=args.resume,
     )
 

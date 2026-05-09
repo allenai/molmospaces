@@ -50,12 +50,17 @@ import logging
 import os
 import pickle
 import re
+import shutil
 from collections import defaultdict
 from pathlib import Path
 import importlib
 import io
 
 import h5py
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -112,10 +117,23 @@ def parse_obs_scene(obs_scene_data) -> dict:
 
 class ConfigUnpickler(pickle.Unpickler):
     moved_name_to_module = {}
+    # Class renames for backward compat with older pickles (e.g. rollout H5
+    # files saved before the experiment-config base class was renamed).
+    name_remap = {
+        "MjThorExpConfig": "MlSpacesExpConfig",
+    }
 
     def find_class(self, module, name):
         if module.startswith("mujoco_thor."):
             module = module.replace("mujoco_thor.", "molmo_spaces.", 1)
+
+        for old, new in self.name_remap.items():
+            if name == old:
+                name = new
+                break
+            if name.startswith(old + "."):
+                name = new + name[len(old):]
+                break
 
         if name in self.moved_name_to_module:
             module = self.moved_name_to_module[name]
@@ -753,6 +771,210 @@ def batch_from_file(file_path: str) -> tuple[str, str]:
     return "0", "1"
 
 
+def _is_clutter_candidate_name(name: str, pickup_name: str) -> bool:
+    """Match the analysis-time-observable subset of the pick_task_sampler
+    candidate gates (pick_task_sampler.py:_get_scene_objects).
+
+    The mass / grasp-file / blacklist / pickup_types gates aren't checkable
+    post-hoc, but every entry in object_poses already passed them at data-gen
+    time: object_poses comes from get_mobile_objects(), which itself only
+    returns non-static, non-excluded bodies, and clutter is sampled from
+    candidate_objects which already enforces those gates.
+
+    The remaining observable gates:
+      - exclude the pickup itself
+      - exclude pre-staged clutter (clutter_<asset> namespace,
+        pick_task_sampler.py:1115)
+    """
+    if name == pickup_name:
+        return False
+    if "clutter_" in name:
+        return False
+    return True
+
+
+def compute_num_nearby_graspable(frozen_config, radius_m: float) -> int | None:
+    """Count clutter-candidate objects within radius_m (3D Euclidean) of the
+    pickup. Gates align with pick_task_sampler._get_scene_objects (see
+    _is_clutter_candidate_name). Returns None if pickup pose / object_poses
+    are missing.
+    """
+
+    def get_val(obj, key, default=None):
+        if obj is None:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    task_config = get_val(frozen_config, "task_config")
+    if task_config is None:
+        return None
+
+    pickup_name = get_val(task_config, "pickup_obj_name")
+    pickup_pose = get_val(task_config, "pickup_obj_start_pose")
+    object_poses = get_val(task_config, "object_poses")
+
+    if pickup_name is None or pickup_pose is None or not object_poses:
+        return None
+
+    if hasattr(pickup_pose, "tolist"):
+        pickup_pose = pickup_pose.tolist()
+    pickup_xyz = np.asarray(pickup_pose[:3], dtype=float)
+
+    count = 0
+    for name, pose in object_poses.items():
+        if not _is_clutter_candidate_name(name, pickup_name):
+            continue
+        if hasattr(pose, "tolist"):
+            pose = pose.tolist()
+        xyz = np.asarray(pose[:3], dtype=float)
+        if np.linalg.norm(xyz - pickup_xyz) <= radius_m:
+            count += 1
+    return count
+
+
+def bin_num_nearby_count(count, max_bin: int) -> str:
+    """Bin a raw graspable count into a label. Counts >= max_bin collapse to '>=N'."""
+    if count is None or (isinstance(count, float) and np.isnan(count)):
+        return "unknown"
+    c = int(count)
+    if c >= max_bin:
+        return f">={max_bin}"
+    return str(c)
+
+
+def _density_bin_sort_key(label):
+    """Natural sort: numeric bins first by value, then '>=N' tail, then unknown."""
+    if isinstance(label, str) and label.startswith(">="):
+        return (1, 0)
+    try:
+        return (0, int(label))
+    except (ValueError, TypeError):
+        return (2, str(label))
+
+
+def save_debug_videos_per_density_bin(
+    df: pd.DataFrame,
+    benchmark_path: Path,
+    n_per_bin: int,
+    seed: int = 42,
+) -> None:
+    """For each nearby_density_bin, sample n_per_bin episodes and symlink the
+    matching MP4 video files into <benchmark_path>/debug_num_episodes/<bin>/.
+
+    Sampled from the *full filtered pool* (df), not the balanced selection, so
+    rare bins (e.g. >=5) still get inspected even when they're undersampled.
+
+    Symlinks are used to avoid duplicating large video files; falls back to
+    copy if symlinking fails (e.g. across filesystems with no symlink support).
+    """
+    if n_per_bin <= 0:
+        return
+
+    debug_root = benchmark_path / "debug_num_episodes"
+    debug_root.mkdir(parents=True, exist_ok=True)
+
+    bins = sorted(df["nearby_density_bin"].dropna().unique(), key=_density_bin_sort_key)
+    log.info(
+        f"Writing debug videos: up to {n_per_bin} episode(s) per bin "
+        f"({len(bins)} bins) under {debug_root}"
+    )
+
+    for bin_label in bins:
+        sub = df[df["nearby_density_bin"] == bin_label]
+        if sub.empty:
+            continue
+        n = min(n_per_bin, len(sub))
+        sample = sub.sample(n=n, random_state=seed)
+        # Filesystem-safe folder name: ">=5" -> "gte5"
+        bin_safe = str(bin_label).replace(">=", "gte").replace("/", "_")
+        bin_dir = debug_root / bin_safe
+        bin_dir.mkdir(exist_ok=True)
+
+        linked_total = 0
+        for _, row in sample.iterrows():
+            h5_path = Path(row["file"])
+            traj_key = row["traj_key"]
+            try:
+                traj_idx = int(traj_key.replace("traj_", ""))
+            except ValueError:
+                log.warning(f"Skipping non-numeric traj_key: {traj_key}")
+                continue
+            traj_idx_padded = f"{traj_idx:08d}"
+
+            m = re.search(r"trajectories_(batch_\d+_of_\d+)\.h5$", h5_path.name)
+            batch_suffix = m.group(1) if m else None
+
+            house_dir = h5_path.parent
+            house_name = house_dir.name
+            if batch_suffix:
+                pattern = f"episode_{traj_idx_padded}_*_{batch_suffix}.mp4"
+            else:
+                pattern = f"episode_{traj_idx_padded}_*.mp4"
+            matches = sorted(house_dir.glob(pattern))
+
+            if not matches:
+                log.warning(
+                    f"[bin={bin_label}] No videos found for {pattern} in {house_dir}"
+                )
+                continue
+
+            for video in matches:
+                target = bin_dir / f"{house_name}_{video.name}"
+                target.unlink(missing_ok=True)
+                try:
+                    target.symlink_to(video.resolve())
+                except OSError:
+                    shutil.copy2(video, target)
+                linked_total += 1
+
+        log.info(
+            f"  bin={bin_label}: linked {linked_total} video file(s) from {n} episode(s)"
+        )
+
+
+def write_balancing_stats(
+    dfs: pd.DataFrame,
+    output_path: Path | None,
+    axes: list[tuple[str, str]],
+) -> dict[str, dict]:
+    """Log value counts and save a histogram PNG per balancing axis.
+
+    Returns a dict mapping column name -> {label: count} for inclusion in metadata.
+    If output_path is None, only logs (no PNGs saved).
+    """
+    counts_by_axis: dict[str, dict] = {}
+    for col, title in axes:
+        if col not in dfs.columns:
+            continue
+        vc = dfs[col].value_counts()
+        # Sort numeric-bin axes by natural order; leave others by frequency
+        if col == "nearby_density_bin":
+            vc = vc.reindex(sorted(vc.index, key=_density_bin_sort_key))
+        counts_by_axis[col] = {str(k): int(v) for k, v in vc.items()}
+
+        log.info(f"{title} distribution ({len(vc)} unique, {int(vc.sum())} episodes):")
+        for k, v in vc.head(20).items():
+            log.info(f"  {k}: {v}")
+        if len(vc) > 20:
+            log.info(f"  ... ({len(vc) - 20} more bins)")
+
+        if output_path is not None:
+            fig, ax = plt.subplots(figsize=(max(6.0, min(16.0, len(vc) * 0.3)), 4.0))
+            vc.plot(kind="bar", ax=ax)
+            ax.set_title(f"{title} ({int(vc.sum())} episodes, {len(vc)} bins)")
+            ax.set_xlabel(col)
+            ax.set_ylabel("count")
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+            out_file = output_path / f"hist_{col}.png"
+            plt.savefig(out_file, dpi=100)
+            plt.close(fig)
+            log.info(f"Saved histogram: {out_file}")
+    return counts_by_axis
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Create JSON-based benchmark from MuJoCo-THOR datasets"
@@ -820,6 +1042,34 @@ def main():
         default=30,
         help="Task horizon in seconds (default: 30)",
     )
+    parser.add_argument(
+        "--nearby_radius_m",
+        type=float,
+        default=0.12,
+        help=(
+            "Radius (meters, 3D Euclidean) used to count graspable objects near "
+            "the pickup object. Default: 0.12"
+        ),
+    )
+    parser.add_argument(
+        "--nearby_density_max_bin",
+        type=int,
+        default=5,
+        help=(
+            "Cap for nearby-graspable density bins. Counts >= this value collapse "
+            "into a single '>=N' bin during balancing/stats. Default: 5"
+        ),
+    )
+    parser.add_argument(
+        "--debug_num_episodes",
+        type=int,
+        default=0,
+        help=(
+            "If > 0, create <benchmark>/debug_num_episodes/<bin>/ and symlink "
+            "this many sample videos per nearby-density bin (sampled from the "
+            "full filtered pool, not the balanced selection). Default: 0 (off)."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -865,6 +1115,25 @@ def main():
 
     df_all = pd.DataFrame(rows)
     df_all["is_obja"] = df_all["object_category"].str.startswith("obja", na=False)
+
+    # Compute per-episode "number of nearby graspable objects" — counted in
+    # 3D Euclidean distance from the pickup object's start position.
+    log.info(
+        f"Computing num_nearby_graspable (radius={args.nearby_radius_m:.3f} m, "
+        f"max_bin={args.nearby_density_max_bin}) for {len(df_all)} episodes"
+    )
+    df_all["num_nearby_graspable"] = df_all["frozen_config"].apply(
+        lambda fc: compute_num_nearby_graspable(fc, args.nearby_radius_m)
+    )
+    df_all["nearby_density_bin"] = df_all["num_nearby_graspable"].apply(
+        lambda c: bin_num_nearby_count(c, args.nearby_density_max_bin)
+    )
+    n_unknown = (df_all["num_nearby_graspable"].isna()).sum()
+    if n_unknown:
+        log.warning(
+            f"{n_unknown}/{len(df_all)} episodes have no computable "
+            f"num_nearby_graspable (missing pickup pose / object_poses)"
+        )
 
     # Filter for successful episodes (use task_progress threshold if provided)
     if args.task_progress_thresh is not None and "task_progress" in df_all.columns:
@@ -946,11 +1215,18 @@ def main():
             cur_house_freq = dfs["house"].value_counts(normalize=True)
             cur_category_freq = dfs["object_category"].value_counts(normalize=True)
             cur_obj_inst_freq = dfs["model_instance"].value_counts(normalize=True)
+            cur_density_freq = dfs["nearby_density_bin"].value_counts(normalize=True)
 
-            # Compute scores (lower is better for selection)
-            # Priority: avoid reusing (house, instance) pairs > balance categories > balance houses > balance instances
+            # Compute scores (lower is better for selection).
+            # Priority (high → low):
+            #   1. Avoid reusing (house, model_instance) pairs (hard penalty)
+            #   2. Balance nearby-graspable density (the headline difficulty axis)
+            #   3. Balance object categories
+            #   4. Balance houses
+            #   5. Balance model instances
             df.loc[:, "score"] = (
                 df.apply(row2used_score, axis=1) * 1000
+                + df["nearby_density_bin"].map(cur_density_freq).fillna(0) * 500
                 + df["object_category"].map(cur_category_freq).fillna(0) * 100
                 + df["house"].map(cur_house_freq).fillna(0) * 10
                 + df["model_instance"].map(cur_obj_inst_freq).fillna(0) * 1
@@ -978,11 +1254,15 @@ def main():
     log.info(f"Categories: {dfs['object_category'].nunique()}")
     log.info(f"Houses: {dfs['house'].nunique()}")
 
+    balancing_axes = [
+        ("nearby_density_bin", "Nearby graspable density"),
+        ("object_category", "Object category"),
+        ("house", "House"),
+        ("model_instance", "Model instance"),
+    ]
+
     if args.print_stats:
-        log.info("Category distribution:")
-        log.info(dfs["object_category"].value_counts())
-        log.info("House distribution:")
-        log.info(dfs["house"].value_counts())
+        write_balancing_stats(dfs, output_path=None, axes=balancing_axes)
         return
 
     # Create output directory
@@ -1101,6 +1381,38 @@ def main():
     else:
         episode_length_stats = None
 
+    # Log distribution summaries and save a histogram PNG per balancing axis.
+    log.info("=" * 60)
+    log.info("Final distribution across balancing axes:")
+    log.info("=" * 60)
+    balancing_axis_counts = write_balancing_stats(
+        dfs, output_path=benchmark_path, axes=balancing_axes
+    )
+
+    # Optionally save sample videos per nearby_density_bin for visual sanity.
+    save_debug_videos_per_density_bin(
+        df=df,
+        benchmark_path=benchmark_path,
+        n_per_bin=args.debug_num_episodes,
+    )
+
+    # Raw num_nearby_graspable stats (pre-binning) for reporting.
+    nn = dfs["num_nearby_graspable"].dropna().astype(int)
+    if len(nn):
+        nearby_graspable_stats = {
+            "radius_m": float(args.nearby_radius_m),
+            "max_bin": int(args.nearby_density_max_bin),
+            "min": int(nn.min()),
+            "max": int(nn.max()),
+            "mean": float(nn.mean()),
+            "median": float(nn.median()),
+        }
+    else:
+        nearby_graspable_stats = {
+            "radius_m": float(args.nearby_radius_m),
+            "max_bin": int(args.nearby_density_max_bin),
+        }
+
     # Write optional metadata (as separate file for human readability)
     metadata = BenchmarkMetadata(
         description=f"JSON benchmark from {dataset_path.name}",
@@ -1115,6 +1427,8 @@ def main():
         camera_system_class=camera_system_class,
         source_data_date=source_data_date,
         benchmark_created_date=benchmark_created_date,
+        balancing_axis_counts=balancing_axis_counts,
+        nearby_graspable_stats=nearby_graspable_stats,
     )
     metadata.to_json_file(benchmark_path / "benchmark_metadata.json")
 

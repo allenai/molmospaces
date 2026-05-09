@@ -2,6 +2,7 @@ import logging
 import time
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+from molmo_spaces.policy.learned_policy.utils import PromptSampler
 from molmo_spaces.policy.learned_policy.websocket_policy import WebsocketPolicy
 
 log = logging.getLogger(__name__)
@@ -38,6 +39,17 @@ class Molmoact2RemotePolicy(WebsocketPolicy):
         self.server_url = str(server_url)
         self.starting_time: float | None = None
 
+        # PromptSampler is consulted only for semantic_grasp_pick episodes
+        # (per-episode gate in obs_to_model_input / get_info). For all other
+        # tasks, the websocket parent's task.get_task_description() prompt
+        # is used unchanged.
+        self._prompt_sampler = PromptSampler(
+            task_type=exp_config.task_type,
+            prompt_templates=policy_config.prompt_templates,
+            prompt_object_word_num=policy_config.prompt_object_word_num,
+            prompt_level=policy_config.prompt_level,
+        )
+
         super().__init__(
             config=exp_config,
             model_name="molmoact2_remote",
@@ -48,7 +60,17 @@ class Molmoact2RemotePolicy(WebsocketPolicy):
 
     def reset(self) -> None:
         self.starting_time = None
+        self._prompt_sampler.next()
         super().reset()
+
+    def obs_to_model_input(self, obs):
+        model_input = super().obs_to_model_input(obs)
+        episode_task_type = getattr(self.task.env.config, "task_type", None)
+        if episode_task_type == "semantic_grasp_pick":
+            # Override the parent's task.get_task_description() prompt with the
+            # per-object PromptSampler template chosen by policy_config.prompt_level.
+            model_input["task"] = self._prompt_sampler.get_prompt(self.task)
+        return model_input
 
     def inference_model(self, model_input):
         if self.starting_time is None:
@@ -62,7 +84,11 @@ class Molmoact2RemotePolicy(WebsocketPolicy):
         info["policy_server_url"] = self.server_url
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.task.get_task_description()
+        episode_task_type = getattr(self.task.env.config, "task_type", None)
+        if episode_task_type == "semantic_grasp_pick":
+            info["prompt"] = self._prompt_sampler.get_prompt(self.task)
+        else:
+            info["prompt"] = self.task.get_task_description()
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()
         return info

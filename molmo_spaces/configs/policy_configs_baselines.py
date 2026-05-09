@@ -58,6 +58,10 @@ class PiPolicyConfig(BasePolicyConfig):
     remote_config: dict | None = dict(host="localhost", port=8080)
     prompt_object_word_num: str = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
+    # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
+    # 1 = basic pick prompt, 2 = existing semantic prompts (default),
+    # 3 = "pick up the {object} by the {part}.".
+    prompt_level: int = 2
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 8
@@ -81,6 +85,10 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
     remote_config: dict = dict(host="ceres-cs-aus-443.reviz.ai2.in", port=5000)
     prompt_object_word_num: str = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
+    # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
+    # 1 = basic pick prompt, 2 = existing semantic prompts (default),
+    # 3 = "pick up the {object} by the {part}.".
+    prompt_level: int = 2
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 24
@@ -228,6 +236,12 @@ class Molmoact2PolicyConfig(BasePolicyConfig):
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 8
+    prompt_object_word_num: int = 1
+    prompt_templates: list[str] | None = None
+    # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
+    # 1 = basic pick prompt, 2 = existing semantic prompts (default),
+    # 3 = "pick up the {object} by the {part}.".
+    prompt_level: int = 2
 
     policy_cls: type = None
     policy_type: str = "learned"

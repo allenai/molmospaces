@@ -1,6 +1,9 @@
 import os
 import h5py
+import io
 import json
+import importlib
+import pickle
 import random
 import base64
 from pathlib import Path
@@ -293,7 +296,7 @@ def extract_object_name(obs_scene_bytes):
         return 'unknown'
 
 
-def analyze_success_by_object(h5_file_path, reward_threshold=None, map_cats=None):
+def analyze_success_by_object(h5_file_path, reward_threshold=None, map_cats=None, task_horizon=300):
     object_stats = defaultdict(lambda: {'total': 0, 'success': 0, 'fail': 0})
 
     with h5py.File(h5_file_path, 'r') as f:
@@ -305,17 +308,15 @@ def analyze_success_by_object(h5_file_path, reward_threshold=None, map_cats=None
             if 'obs_scene' in traj:
                 obs_scene_bytes = traj['obs_scene'][()]
                 object_name = extract_object_name(obs_scene_bytes)
-                N=300
-                print("till step N=",N)
                 if map_cats is not None:
                     object_name = map_cats.get(object_name, object_name)
                 if reward_threshold is not None and 'rewards' in traj:
-                    rewards_arr = traj['rewards'][:N]
+                    rewards_arr = traj['rewards'][:task_horizon]
                     max_reward = float(max(rewards_arr)) if len(rewards_arr) > 0 else 0.0
                     final_success = max_reward >= reward_threshold
                 elif 'success' in traj:
-                    success_arr = traj['success'][:N]
-                    final_success = bool(success_arr[-1]) if len(success_arr) > 0 else False
+                    success_arr = traj['success'][:task_horizon]
+                    final_success = any(bool(x) for x in success_arr)
                 else:
                     continue
 
@@ -343,6 +344,254 @@ def calculate_success_rates(object_stats):
     return success_rates
 
 
+def calculate_success_given_reward_threshold(
+    h5_file_path, reward_threshold, task_horizon=None
+):
+    """Fraction of episodes whose ``success`` flag fired, conditioned on ones where
+    ``rewards`` ever crossed ``reward_threshold``.
+
+    For semantic_grasp_pick this is the natural "given the policy lifted *something*,
+    how often did it pick the correct part?" metric: ``rewards.max() >= threshold``
+    means the object was physically lifted (reward = lift_height gated on
+    object-only-touching-the-robot, see pick_task.py), while the per-step ``success``
+    array carries the task-specific judgement (for SemanticGraspPickTask: lifted AND
+    KNN-vote grasp_correct). Since task ``success`` already requires lifted, success
+    is a subset of lifted and the conditional rate is well-defined. For tasks where
+    ``success == reward_above_threshold`` this collapses to 1.0 (unconditional rate
+    matches conditional rate), which is the expected no-op behaviour.
+    """
+    if reward_threshold is None:
+        raise ValueError(
+            "calculate_success_given_reward_threshold requires reward_threshold"
+        )
+
+    total_episodes = 0
+    lifted_episodes = 0
+    successful_episodes = 0
+    lifted_but_not_success = 0
+    success_without_lift = []  # task said success but reward never crossed CLI thresh
+
+    with h5py.File(h5_file_path, "r") as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if "rewards" not in traj or "success" not in traj:
+                continue
+
+            rewards_arr = traj["rewards"][:task_horizon]
+            success_arr = traj["success"][:task_horizon]
+            if len(rewards_arr) == 0:
+                continue
+
+            max_reward = float(np.max(rewards_arr))
+            lifted = max_reward >= reward_threshold
+            success = bool(np.any(success_arr))
+
+            # Sanity check: task ``success`` should imply some lift. But the
+            # relationship is not strict against the analysis-time CLI threshold,
+            # nor even against reward>0: for SemanticGraspPickTask with
+            # ``require_no_receptacle_contact=False``, ``lifted`` is judged on
+            # ``lift_height >= succ_pos_threshold`` alone, while ``rewards`` here
+            # is gated on the strict no-receptacle-contact condition (see
+            # pick_task.py:73-77). So an object can be high in z (task lifted=True)
+            # but still touching the receptacle (reward=0). We track this cohort
+            # rather than asserting; treat it as a config-mismatch diagnostic.
+            if success and not lifted:
+                success_without_lift.append((traj_key, max_reward))
+
+            total_episodes += 1
+            if lifted:
+                lifted_episodes += 1
+                if success:
+                    successful_episodes += 1
+                else:
+                    lifted_but_not_success += 1
+
+    cond_rate = (
+        (successful_episodes / lifted_episodes * 100) if lifted_episodes > 0 else 0.0
+    )
+    abs_rate = (
+        (successful_episodes / total_episodes * 100) if total_episodes > 0 else 0.0
+    )
+
+    s, t = successful_episodes, lifted_episodes
+    if t > 0:
+        a, b = 1 + s, 1 + (t - s)
+        ci_lo = beta_dist.ppf(0.025, a, b) * 100
+        ci_hi = beta_dist.ppf(0.975, a, b) * 100
+    else:
+        ci_lo = ci_hi = 0.0
+
+    print(f"\n{'='*80}")
+    print("SUCCESS RATE GIVEN REWARD CROSSED THRESHOLD")
+    print(f"{'='*80}")
+    print(f"Reward threshold:           {reward_threshold}")
+    print(f"Total episodes:             {total_episodes}")
+    print(f"Reward-over-thresh:         {lifted_episodes}")
+    print(f"Success (per success flag): {successful_episodes}")
+    print(f"Reward-over-thresh & !succ: {lifted_but_not_success}")
+    print(
+        f"Conditional rate:           {cond_rate:.2f}% "
+        f"(95% CI: {ci_lo:.2f}% - {ci_hi:.2f}%)"
+    )
+    print(f"Absolute rate:              {abs_rate:.2f}%")
+    if success_without_lift:
+        print(
+            f"NOTE: {len(success_without_lift)} episodes had success=True but "
+            f"max_reward < {reward_threshold} (likely the task's succ_pos_threshold "
+            "is below the CLI threshold). Excluded from conditional denominator."
+        )
+        for name, mr in success_without_lift[:5]:
+            print(f"      {name}: max_reward={mr:.4f}")
+    print(f"{'='*80}\n")
+
+    return {
+        "total": total_episodes,
+        "reward_over_thresh": lifted_episodes,
+        "success": successful_episodes,
+        "reward_over_thresh_not_success": lifted_but_not_success,
+        "conditional_rate": cond_rate,
+        "absolute_rate": abs_rate,
+        "ci_lo": ci_lo,
+        "ci_hi": ci_hi,
+        "success_without_lift": success_without_lift,
+    }
+
+
+def _decode_task_info_field(traj, field):
+    """Decode a per-step scalar field from the task_info JSON sensor.
+
+    task_info is stored at ``obs/extra/task_info`` as a (T_sub, 4000) uint8 array
+    of NUL-padded UTF-8 JSON. Sampling cadence may be coarser than the reward
+    array; the caller should treat this as 'this signal at some sampled steps,
+    not every step'. Returns a list[float] (skipping rows that fail to parse or
+    lack the field).
+    """
+    try:
+        ti = traj["obs/extra/task_info"][:]
+    except KeyError:
+        return []
+    out = []
+    for row in ti:
+        s = bytes(row).rstrip(b"\x00").decode("utf-8", errors="replace").strip()
+        if not s:
+            continue
+        try:
+            d = json.loads(s)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(d, list):
+            d = d[0] if d else {}
+        if isinstance(d, dict) and field in d:
+            try:
+                out.append(float(d[field]))
+            except (TypeError, ValueError):
+                continue
+    return out
+
+
+def calculate_success_given_lift_height(
+    h5_file_path, lift_threshold=0.01, task_horizon=None
+):
+    """Like ``calculate_success_given_reward_threshold`` but uses the per-step
+    ``lift_height`` recorded in ``task_info`` as the lifted criterion. Matches
+    the SemanticGraspPickTask success definition under
+    ``require_no_receptacle_contact=False`` (lift_height ≥ succ_pos_threshold,
+    no contact gate), so the denominator is a strict superset of the
+    success=True numerator.
+    """
+    total_episodes = 0
+    lifted_episodes = 0
+    successful_episodes = 0
+    lifted_but_not_success = 0
+    success_without_lift = []  # success=True but lift_height never crossed threshold
+    no_task_info = 0  # episodes missing task_info — fall back to reward
+
+    with h5py.File(h5_file_path, "r") as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if "success" not in traj:
+                continue
+            success_arr = traj["success"][:task_horizon]
+            if len(success_arr) == 0:
+                continue
+            success = bool(np.any(success_arr))
+
+            lifts = _decode_task_info_field(traj, "lift_height")
+            if not lifts:
+                no_task_info += 1
+                continue
+            max_lift = max(lifts)
+            lifted = max_lift >= lift_threshold
+
+            if success and not lifted:
+                success_without_lift.append((traj_key, max_lift))
+
+            total_episodes += 1
+            if lifted:
+                lifted_episodes += 1
+                if success:
+                    successful_episodes += 1
+                else:
+                    lifted_but_not_success += 1
+
+    cond_rate = (
+        (successful_episodes / lifted_episodes * 100) if lifted_episodes > 0 else 0.0
+    )
+    abs_rate = (
+        (successful_episodes / total_episodes * 100) if total_episodes > 0 else 0.0
+    )
+
+    s, t = successful_episodes, lifted_episodes
+    if t > 0:
+        a, b = 1 + s, 1 + (t - s)
+        ci_lo = beta_dist.ppf(0.025, a, b) * 100
+        ci_hi = beta_dist.ppf(0.975, a, b) * 100
+    else:
+        ci_lo = ci_hi = 0.0
+
+    print(f"\n{'='*80}")
+    print("SUCCESS RATE GIVEN LIFT_HEIGHT (from task_info)")
+    print(f"{'='*80}")
+    print(f"Lift threshold:             {lift_threshold} m")
+    print(f"Total episodes:             {total_episodes}")
+    print(f"Lift-height-over-thresh:    {lifted_episodes}")
+    print(f"Success ∩ lift-over:        {successful_episodes}")
+    print(f"Lift-over & !success:       {lifted_but_not_success}")
+    print(
+        f"Conditional rate:           {cond_rate:.2f}% "
+        f"(95% CI: {ci_lo:.2f}% - {ci_hi:.2f}%)"
+    )
+    print(f"Absolute rate:              {abs_rate:.2f}%")
+    if success_without_lift:
+        print(
+            f"WARNING: {len(success_without_lift)} episodes had success=True but "
+            f"lift_height max < {lift_threshold}. Suggests sub-sampled task_info "
+            "missed the success step; treat as a lower bound on the denominator."
+        )
+        for name, ml in success_without_lift[:5]:
+            print(f"      {name}: lift_height max={ml:.4f}")
+    if no_task_info:
+        print(f"NOTE: {no_task_info} episodes missing task_info — skipped.")
+    print(f"{'='*80}\n")
+
+    return {
+        "total": total_episodes,
+        "lift_over_thresh": lifted_episodes,
+        "success": successful_episodes,
+        "lift_over_thresh_not_success": lifted_but_not_success,
+        "conditional_rate": cond_rate,
+        "absolute_rate": abs_rate,
+        "ci_lo": ci_lo,
+        "ci_hi": ci_hi,
+        "success_without_lift": success_without_lift,
+        "no_task_info": no_task_info,
+    }
+
+
 def calculate_overall_success_rate(h5_file_path, reward_threshold=None, task_horizon=None):
     total_episodes = 0
     successful_episodes = 0
@@ -359,7 +608,8 @@ def calculate_overall_success_rate(h5_file_path, reward_threshold=None, task_hor
                 final_success = max_reward >= reward_threshold
             elif 'success' in traj:
                 success_arr = traj['success'][:task_horizon]
-                final_success = bool(success_arr[-1]) if len(success_arr) > 0 else False
+                # final_success = bool(success_arr[-1]) if len(success_arr) > 0 else False
+                final_success = any(bool(x) for x in success_arr)
             else:
                 continue
 
@@ -481,6 +731,674 @@ def create_bar_graph(object_stats, output_file='success_rate_by_object.png', sub
         plt.subplots_adjust(bottom=0.25)
         fig.text(0.5, 0.08, subtitle, ha='center', va='top', fontsize=12,
                 style='italic', wrap=True, color='gray', fontfamily='sans-serif')
+    else:
+        plt.tight_layout()
+
+    if output_file:
+        plt.savefig(output_file, dpi=150, bbox_inches='tight')
+        print(f"Saved plot to: {output_file}")
+
+    plt.show()
+
+
+class _ConfigUnpickler(pickle.Unpickler):
+    """Decode legacy pickle-format frozen_configs (mirrors create_json_benchmark)."""
+    name_remap = {"MjThorExpConfig": "MlSpacesExpConfig"}
+
+    def find_class(self, module, name):
+        if module.startswith("mujoco_thor."):
+            module = module.replace("mujoco_thor.", "molmo_spaces.", 1)
+        for old, new in self.name_remap.items():
+            if name == old:
+                name = new
+                break
+            if name.startswith(old + "."):
+                name = new + name[len(old):]
+                break
+        try:
+            mod = importlib.import_module(module)
+            cls = mod
+            for part in name.split("."):
+                cls = getattr(cls, part)
+            return cls
+        except (ImportError, AttributeError, TypeError):
+            return super().find_class(module, name)
+
+
+def extract_frozen_config_from_bytes(obs_scene_bytes):
+    """Return decoded frozen_config dict/object, or None if missing/undecodable."""
+    try:
+        obs_scene = json.loads(obs_scene_bytes.decode('utf-8'))
+    except (json.JSONDecodeError, AttributeError, UnicodeDecodeError):
+        return None
+    raw = obs_scene.get("frozen_config")
+    if raw is None:
+        return None
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        pass
+    try:
+        loaded_bytes = base64.b64decode(raw)
+        return _ConfigUnpickler(io.BytesIO(loaded_bytes)).load()
+    except Exception:
+        return None
+
+
+def _is_clutter_candidate_name(name, pickup_name):
+    """Match the analysis-time-observable subset of the pick_task_sampler
+    candidate gates (pick_task_sampler.py:_get_scene_objects).
+
+    The mass / grasp-file / blacklist / pickup_types gates aren't checkable
+    post-hoc, but every entry in object_poses already passed them at data-gen
+    time: object_poses comes from get_mobile_objects(), which itself only
+    returns non-static, non-excluded bodies, and (for the default clutter
+    branch we use) clutter is sampled from candidate_objects which already
+    enforces those gates.
+
+    The remaining observable gates:
+      - exclude the pickup itself
+      - exclude pre-staged clutter (clutter_<asset> namespace,
+        pick_task_sampler.py:1115)
+    """
+    if name == pickup_name:
+        return False
+    if "clutter_" in name:
+        return False
+    return True
+
+
+def compute_num_nearby_graspable(frozen_config, radius_m):
+    """Count clutter-candidate objects within radius_m (3D Euclidean) of the
+    pickup. Gates align with pick_task_sampler._get_scene_objects (see
+    _is_clutter_candidate_name). Returns None if pickup pose / object_poses
+    are missing.
+    """
+    def get_val(obj, key, default=None):
+        if obj is None:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    task_config = get_val(frozen_config, "task_config")
+    if task_config is None:
+        return None
+
+    pickup_name = get_val(task_config, "pickup_obj_name")
+    pickup_pose = get_val(task_config, "pickup_obj_start_pose")
+    object_poses = get_val(task_config, "object_poses")
+
+    if pickup_name is None or pickup_pose is None or not object_poses:
+        return None
+
+    if hasattr(pickup_pose, "tolist"):
+        pickup_pose = pickup_pose.tolist()
+    pickup_xyz = np.asarray(pickup_pose[:3], dtype=float)
+
+    count = 0
+    for name, pose in object_poses.items():
+        if not _is_clutter_candidate_name(name, pickup_name):
+            continue
+        if hasattr(pose, "tolist"):
+            pose = pose.tolist()
+        xyz = np.asarray(pose[:3], dtype=float)
+        if np.linalg.norm(xyz - pickup_xyz) <= radius_m:
+            count += 1
+    return count
+
+
+def list_all_graspable_distances(frozen_config):
+    """Return [(object_name, distance_m), ...] for every clutter-candidate
+    object in the scene, sorted by distance to the target (pickup) object.
+    Pickup and pre-staged clutter (clutter_*) excluded. Returns None if
+    pickup pose / object_poses are missing.
+    """
+    def get_val(obj, key, default=None):
+        if obj is None:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    task_config = get_val(frozen_config, "task_config")
+    if task_config is None:
+        return None
+
+    pickup_name = get_val(task_config, "pickup_obj_name")
+    pickup_pose = get_val(task_config, "pickup_obj_start_pose")
+    object_poses = get_val(task_config, "object_poses")
+    if pickup_name is None or pickup_pose is None or not object_poses:
+        return None
+
+    if hasattr(pickup_pose, "tolist"):
+        pickup_pose = pickup_pose.tolist()
+    pickup_xyz = np.asarray(pickup_pose[:3], dtype=float)
+
+    out = []
+    for name, pose in object_poses.items():
+        if not _is_clutter_candidate_name(name, pickup_name):
+            continue
+        if hasattr(pose, "tolist"):
+            pose = pose.tolist()
+        xyz = np.asarray(pose[:3], dtype=float)
+        d = float(np.linalg.norm(xyz - pickup_xyz))
+        out.append((name, d))
+    out.sort(key=lambda x: x[1])
+    return out
+
+
+def list_nearby_graspable(frozen_config, radius_m):
+    """Return [(object_name, distance_m), ...] for graspable objects within
+    radius_m of the pickup, sorted by distance. Pickup itself excluded.
+    Returns None if pickup pose / object_poses are missing.
+    """
+    all_dist = list_all_graspable_distances(frozen_config)
+    if all_dist is None:
+        return None
+    return [(name, d) for name, d in all_dist if d <= radius_m]
+
+
+def _get_pickup_name(frozen_config):
+    if frozen_config is None:
+        return None
+    tc = frozen_config.get("task_config") if isinstance(frozen_config, dict) else getattr(frozen_config, "task_config", None)
+    if tc is None:
+        return None
+    return tc.get("pickup_obj_name") if isinstance(tc, dict) else getattr(tc, "pickup_obj_name", None)
+
+
+def bin_num_nearby_count(count, max_bin):
+    if count is None or (isinstance(count, float) and np.isnan(count)):
+        return "unknown"
+    c = int(count)
+    if c >= max_bin:
+        return f">={max_bin}"
+    return str(c)
+
+
+def _density_bin_sort_key(label):
+    if isinstance(label, str) and label.startswith(">="):
+        return (1, 0)
+    try:
+        return (0, int(label))
+    except (ValueError, TypeError):
+        return (2, str(label))
+
+
+def analyze_success_by_nearby_density(
+    h5_file_path,
+    reward_threshold=None,
+    radius_m=0.12,
+    max_bin=5,
+    task_horizon=300,
+):
+    """Bucket episodes by the number of graspable objects within radius_m of the
+    pickup at episode start, and compute success rate per bucket."""
+    density_stats = defaultdict(lambda: {'total': 0, 'success': 0, 'fail': 0})
+    n_unknown = 0
+
+    with h5py.File(h5_file_path, 'r') as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if 'obs_scene' not in traj:
+                continue
+
+            obs_scene_bytes = traj['obs_scene'][()]
+            frozen_config = extract_frozen_config_from_bytes(obs_scene_bytes)
+            if frozen_config is None:
+                bin_label = "unknown"
+                n_unknown += 1
+            else:
+                count = compute_num_nearby_graspable(frozen_config, radius_m)
+                bin_label = bin_num_nearby_count(count, max_bin)
+                if bin_label == "unknown":
+                    n_unknown += 1
+
+            if reward_threshold is not None and 'rewards' in traj:
+                rewards_arr = traj['rewards'][:task_horizon]
+                max_reward = float(max(rewards_arr)) if len(rewards_arr) > 0 else 0.0
+                final_success = max_reward >= reward_threshold
+            elif 'success' in traj:
+                success_arr = traj['success'][:task_horizon]
+                final_success = any(bool(x) for x in success_arr)
+            else:
+                continue
+
+            density_stats[bin_label]['total'] += 1
+            if final_success:
+                density_stats[bin_label]['success'] += 1
+            else:
+                density_stats[bin_label]['fail'] += 1
+
+    for bin_label in density_stats:
+        total = density_stats[bin_label]['total']
+        success = density_stats[bin_label]['success']
+        density_stats[bin_label]['rate'] = (success / total * 100) if total > 0 else 0.0
+
+    if n_unknown:
+        print(f"Warning: {n_unknown} episode(s) had no computable nearby-graspable count "
+              f"(missing frozen_config / pickup pose / object_poses)")
+
+    return dict(density_stats)
+
+
+def print_density_statistics(density_stats, radius_m=None):
+    radius_str = f" (radius {radius_m:.2f} m)" if radius_m is not None else ""
+    print(f"\n{'='*100}")
+    print(f"SUCCESS RATE BY NEARBY GRASPABLE COUNT{radius_str}")
+    print(f"{'='*100}")
+    print(f"{'Nearby Graspable Count':<60} {'Total':<8} {'Success':<8} {'Fail':<8} {'Rate':<10}")
+    print("=" * 100)
+
+    sorted_items = sorted(density_stats.items(), key=lambda x: _density_bin_sort_key(x[0]))
+    for bin_label, stats in sorted_items:
+        total = stats['total']
+        success = stats['success']
+        fail = stats['fail']
+        rate = (success / total * 100) if total > 0 else 0.0
+        print(f"{bin_label:<60} {total:<8} {success:<8} {fail:<8} {rate:>6.2f}%")
+
+    print("=" * 100)
+    total_all = sum(s['total'] for s in density_stats.values())
+    success_all = sum(s['success'] for s in density_stats.values())
+    rate_all = (success_all / total_all * 100) if total_all > 0 else 0.0
+    print(f"{'TOTAL':<60} {total_all:<8} {success_all:<8} {total_all - success_all:<8} {rate_all:>6.2f}%")
+    print()
+
+
+def analyze_success_object_histogram_by_density(
+    h5_file_path,
+    reward_threshold=None,
+    radius_m=0.30,
+    max_bin=5,
+    task_horizon=300,
+):
+    """For each nearby-graspable bin, count successful episodes per pick-object
+    category. Returns dict[bin_label] -> dict[pick_object_category] -> count.
+    """
+    histograms = defaultdict(lambda: defaultdict(int))
+
+    with h5py.File(h5_file_path, 'r') as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if 'obs_scene' not in traj:
+                continue
+
+            obs_scene_bytes = traj['obs_scene'][()]
+            object_name = extract_object_name(obs_scene_bytes)
+            frozen_config = extract_frozen_config_from_bytes(obs_scene_bytes)
+
+            if frozen_config is None:
+                bin_label = "unknown"
+            else:
+                count = compute_num_nearby_graspable(frozen_config, radius_m)
+                bin_label = bin_num_nearby_count(count, max_bin)
+
+            if reward_threshold is not None and 'rewards' in traj:
+                rewards_arr = traj['rewards'][:task_horizon]
+                max_reward = float(max(rewards_arr)) if len(rewards_arr) > 0 else 0.0
+                final_success = max_reward >= reward_threshold
+            elif 'success' in traj:
+                success_arr = traj['success'][:task_horizon]
+                final_success = any(bool(x) for x in success_arr)
+            else:
+                continue
+
+            if final_success:
+                histograms[bin_label][object_name] += 1
+
+    return {bin_label: dict(hist) for bin_label, hist in histograms.items()}
+
+
+def write_object_histogram_by_density(histograms, output_file, radius_m=None):
+    """Write a text histogram of successes per pick-object, broken down by
+    nearby-graspable bin. Bars are ASCII, scaled per-bin to the max count
+    in that bin (so you can read shape, not absolute size, across bins).
+    """
+    radius_str = f" (radius {radius_m:.2f} m)" if radius_m is not None else ""
+    bar_width = 40
+
+    sorted_bins = sorted(histograms.keys(), key=_density_bin_sort_key)
+    with open(output_file, "w") as f:
+        f.write(f"Successes per pick-object, by nearby-graspable bin{radius_str}\n")
+        f.write("=" * 80 + "\n\n")
+        for bin_label in sorted_bins:
+            hist = histograms[bin_label]
+            total = sum(hist.values())
+            f.write(f"Bin {bin_label}  (total successes = {total})\n")
+            f.write("-" * 80 + "\n")
+            if not hist:
+                f.write("  (no successes)\n\n")
+                continue
+            sorted_objs = sorted(hist.items(), key=lambda x: (-x[1], x[0]))
+            max_count = max(hist.values())
+            for obj_name, count in sorted_objs:
+                bar_len = int(bar_width * count / max_count) if max_count > 0 else 0
+                bar = "#" * bar_len
+                f.write(f"  {obj_name:<30s} {count:>4d}  {bar}\n")
+            f.write("\n")
+    print(f"Saved success-by-pick-object histogram per density bin to: {output_file}")
+
+
+def save_debug_videos_by_density(
+    h5_file_path,
+    output_dir,
+    reward_threshold=None,
+    radius_m=0.12,
+    max_bin=5,
+    task_horizon=300,
+    n_per_outcome=5,
+    seed=42,
+):
+    """Symlink up to n_per_outcome sample videos per (nearby-graspable bin,
+    outcome) under output_dir/<bin>/<success|fail>/.
+
+    Trajectory selection mirrors analyze_success_by_nearby_density: same bin
+    definition, same success rule. Symlinks avoid duplicating large MP4 files;
+    falls back to copy if symlinking fails (e.g. cross-filesystem).
+    """
+    import re
+    import shutil
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # combine_all_trajectories stamps every trajectory with *all* MP4s from
+    # its source folder, so a per-trajectory 'videos' list contains videos
+    # for sibling trajectories too. Filter by source traj index encoded in
+    # the trajectory key (episode_XXXX_traj_<N>) → episode_<N:08d>_*.mp4.
+    _traj_idx_re = re.compile(r"traj_(\d+)$")
+
+    def _videos_for_traj(traj_key, video_paths):
+        m = _traj_idx_re.search(traj_key)
+        if m is None:
+            return video_paths
+        prefix = f"episode_{int(m.group(1)):08d}_"
+        filtered = [vp for vp in video_paths if os.path.basename(vp).startswith(prefix)]
+        return filtered if filtered else video_paths
+
+    # (bin_label, success_flag) -> list of (traj_key, [video_paths])
+    groups = defaultdict(list)
+
+    with h5py.File(h5_file_path, 'r') as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if 'obs_scene' not in traj:
+                continue
+
+            obs_scene_bytes = traj['obs_scene'][()]
+            frozen_config = extract_frozen_config_from_bytes(obs_scene_bytes)
+            if frozen_config is None:
+                bin_label = "unknown"
+                all_distances = None
+            else:
+                count = compute_num_nearby_graspable(frozen_config, radius_m)
+                bin_label = bin_num_nearby_count(count, max_bin)
+                all_distances = list_all_graspable_distances(frozen_config)
+            pickup_name = _get_pickup_name(frozen_config)
+
+            if reward_threshold is not None and 'rewards' in traj:
+                rewards_arr = traj['rewards'][:task_horizon]
+                max_reward = float(max(rewards_arr)) if len(rewards_arr) > 0 else 0.0
+                final_success = max_reward >= reward_threshold
+            elif 'success' in traj:
+                success_arr = traj['success'][:task_horizon]
+                final_success = any(bool(x) for x in success_arr)
+            else:
+                continue
+
+            if 'videos' not in traj:
+                continue
+            video_paths = [
+                vp.decode('utf-8') if isinstance(vp, bytes) else vp
+                for vp in traj['videos'][:]
+            ]
+            video_paths = _videos_for_traj(traj_key, video_paths)
+            if not video_paths:
+                continue
+
+            groups[(bin_label, bool(final_success))].append(
+                (traj_key, video_paths, pickup_name, all_distances)
+            )
+
+    rng = random.Random(seed)
+    print(f"\nWriting debug videos under: {output_dir}")
+    print(f"  ({n_per_outcome} per (bin, outcome); symlinking when possible)")
+
+    sorted_keys = sorted(
+        groups.keys(),
+        key=lambda k: (_density_bin_sort_key(k[0]), 0 if k[1] else 1),
+    )
+    for key in sorted_keys:
+        bin_label, success_flag = key
+        entries = groups[key]
+        outcome = "success" if success_flag else "fail"
+        bin_safe = str(bin_label).replace(">=", "gte").replace("/", "_")
+        bin_dir = output_dir / bin_safe / outcome
+        bin_dir.mkdir(parents=True, exist_ok=True)
+
+        sample_size = min(n_per_outcome, len(entries))
+        sampled = rng.sample(entries, sample_size)
+
+        n_files = 0
+        for traj_key, video_paths, pickup_name, all_distances in sampled:
+            for vp in video_paths:
+                if not os.path.exists(vp):
+                    continue
+                src = Path(vp).resolve()
+                target = bin_dir / f"{traj_key}_{src.name}"
+                target.unlink(missing_ok=True)
+                try:
+                    target.symlink_to(src)
+                except OSError:
+                    shutil.copy2(src, target)
+                n_files += 1
+
+            txt_path = bin_dir / f"{traj_key}_nearby.txt"
+            with open(txt_path, "w") as f_txt:
+                f_txt.write(f"Trajectory:               {traj_key}\n")
+                f_txt.write(f"Target object (pickup):   {pickup_name}\n")
+                f_txt.write(f"Outcome:                  {outcome}\n")
+                f_txt.write(f"Nearby-radius threshold:  {radius_m:.3f} m\n")
+                f_txt.write(f"Density bin:              {bin_label}\n")
+                if all_distances is None:
+                    f_txt.write(
+                        "\nGraspable objects: <unknown - missing frozen_config / poses>\n"
+                    )
+                else:
+                    n_within = sum(1 for _, d in all_distances if d <= radius_m)
+                    f_txt.write(
+                        f"\nGraspable objects in scene (excluding target): {len(all_distances)}\n"
+                    )
+                    f_txt.write(
+                        f"  - within {radius_m:.3f} m of target: {n_within}\n"
+                    )
+                    f_txt.write(
+                        f"  - beyond {radius_m:.3f} m of target: {len(all_distances) - n_within}\n"
+                    )
+                    f_txt.write(
+                        "\nAll graspable objects, sorted by distance to target "
+                        "(closest first; '*' = within radius):\n"
+                    )
+                    f_txt.write(f"  {'Dist (m)':>10}  {'Within':>6}  Object\n")
+                    f_txt.write(f"  {'-'*10}  {'-'*6}  {'-'*40}\n")
+                    for name, d in all_distances:
+                        marker = "*" if d <= radius_m else ""
+                        f_txt.write(f"  {d:>10.4f}  {marker:>6}  {name}\n")
+
+        print(
+            f"  bin={bin_label:<8} outcome={outcome:<7} "
+            f"sampled {sample_size}/{len(entries)} episode(s) -> {n_files} file(s)"
+        )
+
+    return output_dir
+
+
+def save_debug_videos_by_grasp_correctness(
+    h5_file_path,
+    output_dir,
+    lift_threshold=0.01,
+    task_horizon=300,
+    n_per_outcome=10,
+    seed=42,
+):
+    """Symlink up to n_per_outcome sample videos per (correct_grasp_lifted,
+    wrong_grasp_lifted) under output_dir/<outcome>/. "Lifted" uses
+    task_info.lift_height (matches the task's own success definition under
+    ``require_no_receptacle_contact=False``); "correct grasp" is the saved
+    success array (lifted AND KNN-vote grasp_correct).
+
+    Outcome buckets:
+      - correct_grasp_lifted: success=True AND lift_height_max >= threshold
+      - wrong_grasp_lifted:   success=False AND lift_height_max >= threshold
+    """
+    import re
+    import shutil
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    _traj_idx_re = re.compile(r"traj_(\d+)$")
+
+    def _videos_for_traj(traj_key, video_paths):
+        m = _traj_idx_re.search(traj_key)
+        if m is None:
+            return video_paths
+        prefix = f"episode_{int(m.group(1)):08d}_"
+        filtered = [vp for vp in video_paths if os.path.basename(vp).startswith(prefix)]
+        return filtered if filtered else video_paths
+
+    groups = defaultdict(list)  # outcome -> list of (traj_key, video_paths, max_lift)
+
+    with h5py.File(h5_file_path, "r") as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if "success" not in traj or "videos" not in traj:
+                continue
+            success_arr = traj["success"][:task_horizon]
+            if len(success_arr) == 0:
+                continue
+            success = bool(np.any(success_arr))
+
+            lifts = _decode_task_info_field(traj, "lift_height")
+            if not lifts:
+                continue
+            max_lift = max(lifts)
+            if max_lift < lift_threshold:
+                continue  # only keep lifted episodes
+
+            outcome = "correct_grasp_lifted" if success else "wrong_grasp_lifted"
+
+            video_paths = [
+                vp.decode("utf-8") if isinstance(vp, bytes) else vp
+                for vp in traj["videos"][:]
+            ]
+            video_paths = _videos_for_traj(traj_key, video_paths)
+            if not video_paths:
+                continue
+
+            groups[outcome].append((traj_key, video_paths, max_lift))
+
+    rng = random.Random(seed)
+    print(f"\nWriting grasp-correctness debug videos under: {output_dir}")
+    print(f"  ({n_per_outcome} per outcome; symlinking when possible)")
+
+    for outcome in ("correct_grasp_lifted", "wrong_grasp_lifted"):
+        entries = groups.get(outcome, [])
+        out_subdir = output_dir / outcome
+        out_subdir.mkdir(parents=True, exist_ok=True)
+
+        sample_size = min(n_per_outcome, len(entries))
+        sampled = rng.sample(entries, sample_size) if sample_size else []
+
+        n_files = 0
+        for traj_key, video_paths, max_lift in sampled:
+            for vp in video_paths:
+                if not os.path.exists(vp):
+                    continue
+                src = Path(vp).resolve()
+                target = out_subdir / f"{traj_key}_{src.name}"
+                target.unlink(missing_ok=True)
+                try:
+                    target.symlink_to(src)
+                except OSError:
+                    shutil.copy2(src, target)
+                n_files += 1
+            info_path = out_subdir / f"{traj_key}_info.txt"
+            with open(info_path, "w") as f_txt:
+                f_txt.write(f"Trajectory:        {traj_key}\n")
+                f_txt.write(f"Outcome:           {outcome}\n")
+                f_txt.write(f"max(lift_height):  {max_lift:.4f} m\n")
+                f_txt.write(f"Lift threshold:    {lift_threshold} m\n")
+
+        print(
+            f"  outcome={outcome:<22} sampled {sample_size}/{len(entries)} "
+            f"episode(s) -> {n_files} file(s)"
+        )
+
+    return output_dir
+
+
+def create_density_bar_graph(
+    density_stats,
+    output_file='success_rate_by_nearby_density.png',
+    subtitle=None,
+    radius_m=None,
+):
+    if not _HAS_MATPLOTLIB or not _HAS_SEABORN:
+        raise RuntimeError("matplotlib and seaborn are required for plotting but not available")
+
+    if not density_stats:
+        print("No data to plot!")
+        return
+
+    sorted_items = sorted(density_stats.items(), key=lambda x: _density_bin_sort_key(x[0]))
+    bin_labels = [item[0] for item in sorted_items]
+    rates = [stats['rate'] for _, stats in sorted_items]
+    totals = [stats['total'] for _, stats in sorted_items]
+    successes = [stats['success'] for _, stats in sorted_items]
+
+    df = pd.DataFrame({
+        'Nearby graspable count': bin_labels,
+        'Success Rate': rates,
+        'Total': totals,
+        'Success': successes,
+    })
+
+    colors = ['#2ecc71' if r >= 80 else '#f39c12' if r >= 50 else '#e74c3c' for r in rates]
+
+    fig, ax = plt.subplots(figsize=(max(10, len(bin_labels) * 1.2), 8))
+    bars = sns.barplot(data=df, x='Nearby graspable count', y='Success Rate', palette=colors,
+                       edgecolor='black', linewidth=1.5, ax=ax, order=bin_labels)
+
+    for bar, rate, total, success in zip(bars.patches, rates, totals, successes):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2., height + 1,
+                f'{rate:.1f}%\n({success}/{total})',
+                ha='center', va='bottom', fontsize=12, fontweight='bold',
+                fontfamily='sans-serif')
+
+    radius_str = f" (radius {radius_m:.2f} m)" if radius_m is not None else ""
+    ax.set_xlabel(f'Nearby graspable count{radius_str}', fontsize=16, fontweight='bold', fontfamily='sans-serif')
+    ax.set_ylabel('Success Rate (%)', fontsize=16, fontweight='bold', fontfamily='sans-serif')
+    ax.set_title(f'Success Rate by Nearby Graspable Count{radius_str}',
+                 fontsize=19, fontweight='bold', pad=20, fontfamily='sans-serif')
+    plt.xticks(fontfamily='sans-serif', fontsize=14)
+    plt.yticks(fontfamily='sans-serif', fontsize=14)
+    ax.set_ylim(0, 110)
+    sns.despine()
+
+    if subtitle:
+        plt.subplots_adjust(bottom=0.25)
+        fig.text(0.5, 0.08, subtitle, ha='center', va='top', fontsize=12,
+                 style='italic', wrap=True, color='gray', fontfamily='sans-serif')
     else:
         plt.tight_layout()
 
