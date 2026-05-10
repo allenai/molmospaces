@@ -67,12 +67,12 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         assert move_group.n_actuators == n_actuators
     assert view.get_move_group("left_arm").leaf_frame_type == "site"
     assert (
-        scene_model.site("robot_0/left_wrist_site").id
+        scene_model.site("robot_0/left_grasp_site").id
         == view.get_move_group("left_arm").leaf_frame_id
     )
     assert view.get_move_group("right_arm").leaf_frame_type == "site"
     assert (
-        scene_model.site("robot_0/right_wrist_site").id
+        scene_model.site("robot_0/right_grasp_site").id
         == view.get_move_group("right_arm").leaf_frame_id
     )
 

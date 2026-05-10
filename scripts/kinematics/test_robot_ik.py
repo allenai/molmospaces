@@ -98,12 +98,8 @@ def main() -> None:
         move_group = robot_view.get_move_group(move_group_id)
 
     unlocked_move_groups = args.unlocked_move_groups
-    if (
-        unlocked_move_groups is None
-        and "arm" in move_group_id
-        and "waist" in robot_view.move_group_ids()
-    ):
-        unlocked_move_groups = ["waist", move_group_id]
+    if unlocked_move_groups is None and "arm" in move_group_id:
+        unlocked_move_groups = [move_group_id]
 
     pose0 = move_group.leaf_frame_to_world.copy()
     pose1 = pose0.copy()
