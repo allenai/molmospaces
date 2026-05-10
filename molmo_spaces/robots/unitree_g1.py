@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from mujoco import MjData
+from mujoco import MjData, MjSpec
 
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
@@ -39,6 +39,7 @@ class UnitreeG1Robot(Robot):
             if move_group_id != "base"
             and config.robot_config.command_mode.get(move_group_id) == "joint_position"
         }
+        self.reset()
 
     @property
     def namespace(self):
@@ -59,6 +60,40 @@ class UnitreeG1Robot(Robot):
     @property
     def controllers(self) -> dict[str, Controller]:
         return self._controllers
+
+    @classmethod
+    def add_robot_to_scene(
+        cls,
+        robot_config,
+        spec: MjSpec,
+        robot_spec: MjSpec,
+        prefix: str,
+        pos: list[float],
+        quat: list[float],
+        randomize_textures: bool = False,
+    ) -> None:
+        super().add_robot_to_scene(
+            robot_config,
+            spec,
+            robot_spec,
+            prefix,
+            pos,
+            quat,
+            randomize_textures,
+        )
+        root_body = spec.body(prefix + cls.robot_model_root_name())
+        if root_body is None:
+            raise ValueError(f"Robot root body {prefix}{cls.robot_model_root_name()} not found")
+        root_body.pos = robot_config.default_world_pose[:3]
+        root_body.quat = robot_config.default_world_pose[3:7]
+
+    @classmethod
+    def apply_control_overrides(cls, spec: MjSpec, robot_config) -> None:
+        super().apply_control_overrides(spec, robot_config)
+        if robot_config.gravcomp:
+            root_body = spec.body(robot_config.robot_namespace + cls.robot_model_root_name())
+            if root_body is not None:
+                root_body.gravcomp = 1.0
 
     @property
     def state_dim(self) -> int:
@@ -101,6 +136,9 @@ class UnitreeG1Robot(Robot):
         self._zero_base_velocity_if_configured()
 
     def reset(self) -> None:
+        self.mj_data.qpos[:] = self.mj_model.qpos0
+        self.mj_data.qvel[:] = 0.0
+        self.mj_data.ctrl[:] = 0.0
         for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
                 move_group = self._robot_view.get_move_group(mg_id)

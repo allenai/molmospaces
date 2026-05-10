@@ -25,6 +25,25 @@ KINEMATICS_SITE_NAMES = [
 ]
 
 
+def _has_deep_robot_floor_penetration(
+    model: mujoco.MjModel,
+    data: mujoco.MjData,
+    threshold_m: float = 0.01,
+) -> bool:
+    for i in range(data.ncon):
+        contact = data.contact[i]
+        if contact.dist > -threshold_m:
+            continue
+        geom1 = model.geom(contact.geom1)
+        geom2 = model.geom(contact.geom2)
+        body1 = model.body(model.geom_bodyid[contact.geom1]).name
+        body2 = model.body(model.geom_bodyid[contact.geom2]).name
+        names = " ".join([geom1.name, geom2.name, body1, body2]).lower()
+        if "robot_0/" in names and "floor" in names:
+            return True
+    return False
+
+
 def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     unitree_root = os.environ.get("UNITREE_URDF_ROOT")
     if unitree_root is None:
@@ -37,6 +56,9 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
 
     model = mujoco.MjModel.from_xml_path(str(xml_path))
     assert (model.nq, model.nv, model.nu) == (40, 39, 33)
+    base_joint_id = model.joint("floating_base_joint").id
+    base_qposadr = model.jnt_qposadr[base_joint_id]
+    assert model.qpos0[base_qposadr + 2] == pytest.approx(0.793)
     for site_name in KINEMATICS_SITE_NAMES:
         assert model.site(site_name).id >= 0
 
@@ -51,8 +73,14 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         [0.0, 0.0, 0.0],
         [1.0, 0.0, 0.0, 0.0],
     )
+    config.robot_cls.apply_control_overrides(scene_spec, config)
     scene_model = scene_spec.compile()
     scene_data = mujoco.MjData(scene_model)
+    scene_base_joint_id = scene_model.joint("robot_0/floating_base_joint").id
+    scene_base_qposadr = scene_model.jnt_qposadr[scene_base_joint_id]
+    assert scene_model.qpos0[scene_base_qposadr + 2] == pytest.approx(0.793)
+    mujoco.mj_forward(scene_model, scene_data)
+    assert not _has_deep_robot_floor_penetration(scene_model, scene_data)
 
     view = config.robot_view_factory(scene_data, config.robot_namespace)
     expected_counts = {
@@ -121,6 +149,10 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         [0.0, 0.0, 0.0],
         [1.0, 0.0, 0.0, 0.0],
     )
+    datagen_config.robot_config.robot_cls.apply_control_overrides(
+        datagen_scene_spec,
+        datagen_config.robot_config,
+    )
     datagen_scene_model = datagen_scene_spec.compile()
     assert datagen_scene_model.body("robot_0/pelvis").id >= 0
     pick_scene_spec = mujoco.MjSpec.from_file(str(base_scene_path))
@@ -132,6 +164,10 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         pick_datagen_config.robot_config.robot_namespace,
         [0.0, 0.0, 0.0],
         [1.0, 0.0, 0.0, 0.0],
+    )
+    pick_datagen_config.robot_config.robot_cls.apply_control_overrides(
+        pick_scene_spec,
+        pick_datagen_config.robot_config,
     )
     pick_scene_model = pick_scene_spec.compile()
     pick_scene_data = mujoco.MjData(pick_scene_model)

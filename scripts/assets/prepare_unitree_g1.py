@@ -22,6 +22,7 @@ ROBOT_ASSET_NAME = "unitree_g1_29dof_dex1_1"
 SOURCE_URDF_REL_PATH = Path("g1_description/g1_29dof_mode_15_with_dex1_1.urdf")
 SOURCE_MESH_DIR_REL_PATH = Path("g1_description/meshes")
 OUTPUT_XML_NAME = "model.xml"
+DEFAULT_PELVIS_HEIGHT_M = 0.793
 
 
 GAIN_BY_JOINT_GROUP = {
@@ -208,6 +209,7 @@ def prepare_unitree_g1(
     pelvis = spec.body("pelvis")
     if pelvis is None:
         raise ValueError("Expected root body `pelvis` in Unitree G1 URDF")
+    pelvis.pos = [0.0, 0.0, DEFAULT_PELVIS_HEIGHT_M]
     pelvis.add_freejoint(name="floating_base_joint")
     _add_kinematics_sites(spec)
     _add_position_actuators(spec, joints)
