@@ -36,6 +36,8 @@ from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.mobile_franka_droid_view import MobileFrankaDroidRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
 from molmo_spaces.robots.robot_views.rum_gripper_view import FloatingRUMRobotView
+from molmo_spaces.robots.robot_views.unitree_g1_view import UnitreeG1RobotView
+from molmo_spaces.robots.unitree_g1 import UnitreeG1Robot
 
 
 class ActionNoiseConfig(Config):
@@ -419,3 +421,37 @@ class BimanualYamRobotConfig(BaseRobotConfig):
             assert self.command_mode["gripper"] == "joint_position"
         if "arm" in self.command_mode:
             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
+
+
+class UnitreeG1Dex1RobotConfig(BaseRobotConfig):
+    """Configuration for Unitree G1 29-DoF humanoid with Dex1.1 hands."""
+
+    robot_cls: type[UnitreeG1Robot] | None = UnitreeG1Robot
+    robot_factory: Callable[[MjData, Any], Robot] | None = UnitreeG1Robot
+    robot_view_factory: RobotViewFactory | None = UnitreeG1RobotView
+    robot_namespace: str = "robot_0/"
+    default_world_pose: list[float] = [0.0, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0]
+    name: str = "unitree_g1_29dof_dex1_1"
+    robot_xml_path: Path = Path("model.xml")
+    init_qpos: dict[str, list[float]] = {
+        "base": [0.0, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0],
+        "left_leg": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "right_leg": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "waist": [0.0, 0.0, 0.0],
+        "left_arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "right_arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "left_hand": [0.0245, 0.0245],
+        "right_hand": [0.0245, 0.0245],
+    }
+    init_qpos_noise_range: dict[str, list[float]] | None = None
+    command_mode: dict[str, str | None] = {
+        "base": None,
+        "left_leg": "joint_position",
+        "right_leg": "joint_position",
+        "waist": "joint_position",
+        "left_arm": "joint_position",
+        "right_arm": "joint_position",
+        "left_hand": "joint_position",
+        "right_hand": "joint_position",
+    }
+    gravcomp: bool = True
