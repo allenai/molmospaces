@@ -46,7 +46,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--unitree-urdf-root",
         type=Path,
-        default=Path(os.environ["UNITREE_URDF_ROOT"]) if "UNITREE_URDF_ROOT" in os.environ else None,
+        default=Path(os.environ["UNITREE_URDF_ROOT"])
+        if "UNITREE_URDF_ROOT" in os.environ
+        else None,
         help="Path to the Unitree `unitree_ros/robots` directory. Defaults to UNITREE_URDF_ROOT.",
     )
     parser.add_argument(
@@ -160,6 +162,25 @@ def _add_position_actuators(spec: mujoco.MjSpec, joints: list[JointSpec]) -> Non
         )
 
 
+def _add_kinematics_sites(spec: mujoco.MjSpec) -> None:
+    for side in ("left", "right"):
+        wrist_body = spec.body(f"{side}_wrist_yaw_link")
+        if wrist_body is None:
+            raise ValueError(f"Expected body `{side}_wrist_yaw_link` in Unitree G1 model")
+        wrist_body.add_site(
+            name=f"{side}_wrist_site",
+            pos=[0.0, 0.0, 0.0],
+            size=[0.015],
+            rgba=[0.1, 0.4, 1.0, 1.0],
+        )
+        wrist_body.add_site(
+            name=f"{side}_grasp_site",
+            pos=[0.095, 0.0, 0.0],
+            size=[0.015],
+            rgba=[0.1, 1.0, 0.4, 1.0],
+        )
+
+
 def prepare_unitree_g1(
     unitree_urdf_root: str | os.PathLike[str],
     output_dir: str | os.PathLike[str],
@@ -188,6 +209,7 @@ def prepare_unitree_g1(
     if pelvis is None:
         raise ValueError("Expected root body `pelvis` in Unitree G1 URDF")
     pelvis.add_freejoint(name="floating_base_joint")
+    _add_kinematics_sites(spec)
     _add_position_actuators(spec, joints)
 
     model = spec.compile()

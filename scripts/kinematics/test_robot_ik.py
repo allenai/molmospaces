@@ -18,10 +18,10 @@ import time
 import mujoco
 from mujoco.viewer import launch_passive
 
-from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
-from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
-from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.configs.robot_configs import BaseRobotConfig
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
+from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
+from molmo_spaces.molmo_spaces_constants import get_robot_path
 
 
 def main() -> None:
@@ -48,11 +48,16 @@ def main() -> None:
         action="store_true",
         help="Use the parallel IK solver instead of the non-parallel one",
     )
+    parser.add_argument(
+        "--headless-once",
+        action="store_true",
+        help="Run one IK solve without opening the viewer",
+    )
     args = parser.parse_args()
 
     config_module = importlib.import_module(args.config_module)
     config_class = getattr(config_module, args.config_class)
-    robot_config: "BaseRobotConfig" = config_class()
+    robot_config: BaseRobotConfig = config_class()
 
     if args.parallel:
         kinematics = SimpleWarpKinematics(robot_config)
@@ -77,17 +82,45 @@ def main() -> None:
     robot_view.set_qpos_dict(robot_config.init_qpos)
     mujoco.mj_forward(model, data)
 
-    if args.move_group is None:
+    if args.move_group is None and robot_view.get_gripper_movegroup_ids():
         move_group_id = robot_view.get_gripper_movegroup_ids()[0]
+        move_group = robot_view.get_move_group(move_group_id)
+    elif args.move_group is None:
+        arm_move_group_ids = [mg_id for mg_id in robot_view.move_group_ids() if "arm" in mg_id]
+        if not arm_move_group_ids:
+            raise ValueError(
+                "No move group provided, and robot has no gripper or arm move groups to test"
+            )
+        move_group_id = arm_move_group_ids[0]
         move_group = robot_view.get_move_group(move_group_id)
     else:
         move_group_id = args.move_group
         move_group = robot_view.get_move_group(move_group_id)
 
+    unlocked_move_groups = args.unlocked_move_groups
+    if (
+        unlocked_move_groups is None
+        and "arm" in move_group_id
+        and "waist" in robot_view.move_group_ids()
+    ):
+        unlocked_move_groups = ["waist", move_group_id]
+
     pose0 = move_group.leaf_frame_to_world.copy()
     pose1 = pose0.copy()
     pose0[2, 3] += 0.05  # Move up 5cm
     pose1[2, 3] -= 0.05  # Move down 5cm
+
+    if args.headless_once:
+        ret = kinematics.ik(
+            move_group_id,
+            pose0,
+            unlocked_move_groups,
+            robot_view.get_qpos_dict(),
+            robot_view.base.pose,
+        )
+        if ret is None:
+            raise SystemExit(f"IK failed for {move_group_id}")
+        return
 
     with launch_passive(model, data) as viewer:
         viewer.sync()
@@ -98,7 +131,7 @@ def main() -> None:
             ret = kinematics.ik(
                 move_group_id,
                 target_pose,
-                args.unlocked_move_groups,
+                unlocked_move_groups,
                 robot_view.get_qpos_dict(),
                 robot_view.base.pose,
             )

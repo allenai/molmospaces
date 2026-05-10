@@ -12,7 +12,7 @@ from molmo_spaces.robots.robot_views.abstract import (
     RobotView,
     SimplyActuatedMoveGroup,
 )
-from molmo_spaces.utils.mj_model_and_data_utils import body_pose
+from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
 
 UNITREE_G1_LEG_JOINTS = [
     "hip_pitch_joint",
@@ -66,24 +66,31 @@ class UnitreeG1BodyMoveGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
         mj_data: MjData,
         joint_names: list[str],
         root_body_name: str,
-        leaf_body_name: str,
+        leaf_frame_name: str,
         base: RobotBaseGroup,
         namespace: str = "",
+        leaf_frame_type: Literal["body", "site"] = "body",
     ) -> None:
         model = mj_data.model
         joint_ids = [model.joint(f"{namespace}{joint_name}").id for joint_name in joint_names]
         act_ids = [model.actuator(f"{namespace}{joint_name}").id for joint_name in joint_names]
         self._root_body_id = model.body(f"{namespace}{root_body_name}").id
-        self._leaf_body_id = model.body(f"{namespace}{leaf_body_name}").id
+        self._leaf_frame_type = leaf_frame_type
+        if leaf_frame_type == "body":
+            self._leaf_frame_id = model.body(f"{namespace}{leaf_frame_name}").id
+        elif leaf_frame_type == "site":
+            self._leaf_frame_id = model.site(f"{namespace}{leaf_frame_name}").id
+        else:
+            raise ValueError(f"Unsupported leaf_frame_type: {leaf_frame_type}")
         super().__init__(mj_data, joint_ids, act_ids, self._root_body_id, base)
 
     @property
     def leaf_frame_id(self) -> int:
-        return self._leaf_body_id
+        return self._leaf_frame_id
 
     @property
     def leaf_frame_type(self):
-        return "body"
+        return self._leaf_frame_type
 
     @property
     def noop_ctrl(self) -> np.ndarray:
@@ -91,7 +98,9 @@ class UnitreeG1BodyMoveGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
 
     @property
     def leaf_frame_to_world(self) -> np.ndarray:
-        return body_pose(self.mj_data, self._leaf_body_id)
+        if self.leaf_frame_type == "body":
+            return body_pose(self.mj_data, self._leaf_frame_id)
+        return site_pose(self.mj_data, self._leaf_frame_id)
 
     @property
     def root_frame_to_world(self) -> np.ndarray:
@@ -107,12 +116,21 @@ class UnitreeG1SideMoveGroup(UnitreeG1BodyMoveGroup):
         side: Literal["left", "right"],
         joint_suffixes: list[str],
         root_body_name: str,
-        leaf_body_name: str,
+        leaf_frame_name: str,
         base: RobotBaseGroup,
         namespace: str = "",
+        leaf_frame_type: Literal["body", "site"] = "body",
     ) -> None:
         joint_names = [f"{side}_{joint_suffix}" for joint_suffix in joint_suffixes]
-        super().__init__(mj_data, joint_names, root_body_name, leaf_body_name, base, namespace)
+        super().__init__(
+            mj_data,
+            joint_names,
+            root_body_name,
+            leaf_frame_name,
+            base,
+            namespace,
+            leaf_frame_type,
+        )
 
 
 class UnitreeG1RobotView(RobotView):
@@ -154,18 +172,20 @@ class UnitreeG1RobotView(RobotView):
                 "left",
                 UNITREE_G1_ARM_JOINTS,
                 "torso_link",
-                "left_wrist_yaw_link",
+                "left_wrist_site",
                 base,
                 namespace,
+                "site",
             ),
             "right_arm": UnitreeG1SideMoveGroup(
                 mj_data,
                 "right",
                 UNITREE_G1_ARM_JOINTS,
                 "torso_link",
-                "right_wrist_yaw_link",
+                "right_wrist_site",
                 base,
                 namespace,
+                "site",
             ),
             "left_hand": UnitreeG1SideMoveGroup(
                 mj_data,

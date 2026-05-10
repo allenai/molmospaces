@@ -19,6 +19,7 @@ from molmo_spaces.configs.base_pick_and_place_configs import (
 from molmo_spaces.configs.base_pick_and_place_next_to_configs import PickAndPlaceNextToDataGenConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
+    CameraSystemConfig,
     FrankaDroidCameraSystem,
     FrankaEasyRandomizedDroidCameraSystem,
     FrankaGoProD405D455CameraSystem,
@@ -38,6 +39,7 @@ from molmo_spaces.configs.robot_configs import (
     FrankaRobotConfig,
     RBY1MConfig,
     RBY1MOpenCloseConfig,
+    UnitreeG1Dex1RobotConfig,
 )
 from molmo_spaces.configs.task_sampler_configs import (
     OpenTaskSamplerConfig,
@@ -121,6 +123,21 @@ class RUMPickDataGenConfig(PickBaseConfig):
     @property
     def tag(self) -> str:
         return "rum_pick_datagen"
+
+
+@register_config("UnitreeG1SceneSmokeDataGenConfig")
+class UnitreeG1SceneSmokeDataGenConfig(PickBaseConfig):
+    """Minimal config-path smoke test for loading Unitree G1 into MolmoSpaces scenes."""
+
+    robot_config: UnitreeG1Dex1RobotConfig = UnitreeG1Dex1RobotConfig()
+    camera_config: CameraSystemConfig | None = None
+    task_horizon: int = 1
+    profile: bool = False
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "unitree_g1_scene_smoke_v1"
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_scene_smoke_datagen"
 
 
 @register_config("FrankaPickAndPlaceDataGenConfig")

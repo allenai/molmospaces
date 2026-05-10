@@ -1,3 +1,4 @@
+import importlib
 import os
 from types import SimpleNamespace
 
@@ -7,8 +8,17 @@ import pytest
 
 import molmo_spaces.molmo_spaces_constants as constants
 from molmo_spaces.configs.robot_configs import UnitreeG1Dex1RobotConfig
+from molmo_spaces.data_generation.config_registry import get_config_class
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.unitree_g1 import UnitreeG1Robot
 from scripts.assets.prepare_unitree_g1 import ROBOT_ASSET_NAME, prepare_unitree_g1
+
+KINEMATICS_SITE_NAMES = [
+    "left_wrist_site",
+    "right_wrist_site",
+    "left_grasp_site",
+    "right_grasp_site",
+]
 
 
 def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
@@ -23,6 +33,8 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
 
     model = mujoco.MjModel.from_xml_path(str(xml_path))
     assert (model.nq, model.nv, model.nu) == (40, 39, 33)
+    for site_name in KINEMATICS_SITE_NAMES:
+        assert model.site(site_name).id >= 0
 
     config = UnitreeG1Dex1RobotConfig()
     scene_spec = mujoco.MjSpec()
@@ -53,6 +65,46 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         move_group = view.get_move_group(move_group_id)
         assert move_group.n_joints == n_joints
         assert move_group.n_actuators == n_actuators
+    assert view.get_move_group("left_arm").leaf_frame_type == "site"
+    assert (
+        scene_model.site("robot_0/left_wrist_site").id
+        == view.get_move_group("left_arm").leaf_frame_id
+    )
+    assert view.get_move_group("right_arm").leaf_frame_type == "site"
+    assert (
+        scene_model.site("robot_0/right_wrist_site").id
+        == view.get_move_group("right_arm").leaf_frame_id
+    )
+
+    kinematics = MlSpacesKinematics(config)
+    fk = kinematics.fk(config.init_qpos, np.eye(4))
+    for move_group_id in ("left_arm", "right_arm"):
+        assert fk[move_group_id].shape == (4, 4)
+        assert np.isfinite(fk[move_group_id]).all()
+        assert np.allclose(fk[move_group_id][3], [0.0, 0.0, 0.0, 1.0])
+
+    importlib.import_module(
+        "molmo_spaces.data_generation.config.object_manipulation_datagen_configs"
+    )
+    datagen_config_cls = get_config_class("UnitreeG1SceneSmokeDataGenConfig")
+    datagen_config = datagen_config_cls()
+    assert isinstance(datagen_config.robot_config, UnitreeG1Dex1RobotConfig)
+
+    base_scene_path = constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR / (
+        "molmo_spaces/resources/base_scene.xml"
+    )
+    datagen_scene_spec = mujoco.MjSpec.from_file(str(base_scene_path))
+    datagen_robot_spec = mujoco.MjSpec.from_file(str(xml_path))
+    datagen_config.robot_config.robot_cls.add_robot_to_scene(
+        datagen_config.robot_config,
+        datagen_scene_spec,
+        datagen_robot_spec,
+        datagen_config.robot_config.robot_namespace,
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0, 0.0],
+    )
+    datagen_scene_model = datagen_scene_spec.compile()
+    assert datagen_scene_model.body("robot_0/pelvis").id >= 0
 
     robot = UnitreeG1Robot(scene_data, SimpleNamespace(robot_config=config))
     robot.reset()
