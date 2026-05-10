@@ -48,7 +48,7 @@ cd molmospaces
 
 Then, set up the virtual environment and install.
 
-> Note: If you want to use the debug viewer on macOS you need to use conda or a Homebrew Python. This is because `mjpython` used by the debug viewer requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship.
+> Note: If you want to use the debug viewer on macOS you need a Python environment that exposes a shared `libpython3.11.dylib` where `mjpython` can find it. Conda or Homebrew Python are the most reliable options; `uv` environments can run headless checks but may not expose the shared library at the path `mjpython` probes.
 
 
 With conda:
@@ -66,6 +66,16 @@ uv venv --python 3.11 .venv
 source .venv/bin/activate
 uv pip install -e ".[mujoco]"
 ```
+
+To check a headless MuJoCo + MuJoCo Warp install:
+
+```bash
+.venv/bin/python scripts/kinematics/check_mujoco_stack.py
+```
+
+On macOS, use conda or Homebrew Python for commands that open a MuJoCo viewer with
+`mjpython` if your `uv` environment does not expose `libpython3.11.dylib`. The
+`uv` environment is fine for non-viewer simulation, imports, and data generation.
 
 One of the following options must be provided:
 - `mujoco` to use the classic MuJoCo renderer
@@ -141,6 +151,22 @@ python scripts/datagen/run_pipeline.py --viewer --seed 3
 # Mac
 mjpython scripts/datagen/run_pipeline.py --viewer --seed 3
 ```
+
+For IK-specific viewer checks, use the kinematics test script rather than running
+the kinematics module directly:
+
+```bash
+# Standard MuJoCo IK
+mjpython scripts/kinematics/test_robot_ik.py FrankaRobotConfig
+
+# Parallel/Warp IK
+mjpython scripts/kinematics/test_robot_ik.py FrankaRobotConfig --parallel
+```
+
+If `mjpython` fails on macOS with `Library not loaded: @rpath/libpython3.11.dylib`,
+recreate the environment with conda or Homebrew Python and reinstall
+`pip install -e ".[mujoco]"`. That error is a Python runtime issue, not a MuJoCo
+or MuJoCo Warp version mismatch.
 
 The MolmoSpaces codebase has three entry points for data generation, evaluation, and debugging. The two initial entry points make use of experiment configs to configure runs. The third is more easily modifiable, with some logic for constructing runs on the fly, however constructing experiments is complicated and not all permutations have been tested fully.
 

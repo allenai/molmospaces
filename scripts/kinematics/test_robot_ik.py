@@ -1,7 +1,14 @@
 """
 Interactive script to test a robot with the parallel and non-parallel IK solvers.
 
-On mac, run with mjpython.
+On macOS, run viewer commands with mjpython from a conda or Homebrew Python
+environment if your current environment does not expose libpython3.11.dylib.
+uv environments can run headless checks, but mjpython needs that shared library.
+
+Examples:
+
+    mjpython scripts/kinematics/test_robot_ik.py FrankaRobotConfig
+    mjpython scripts/kinematics/test_robot_ik.py FrankaRobotConfig --parallel
 """
 
 import argparse
@@ -92,7 +99,7 @@ def main() -> None:
                 move_group_id,
                 target_pose,
                 args.unlocked_move_groups,
-                robot_config.init_qpos,
+                robot_view.get_qpos_dict(),
                 robot_view.base.pose,
             )
             print(f"IK iteration {i}: {'Success' if ret is not None else 'Failed'}")
