@@ -14,6 +14,7 @@ from molmo_spaces.configs.robot_configs import (
 from molmo_spaces.data_generation.config_registry import get_config_class
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.unitree_g1 import UnitreeG1Robot
+from molmo_spaces.tasks.pick_task_sampler import UnitreeG1RightArmPickTaskSampler
 from scripts.assets.prepare_unitree_g1 import ROBOT_ASSET_NAME, prepare_unitree_g1
 
 KINEMATICS_SITE_NAMES = [
@@ -95,6 +96,11 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     pick_datagen_config_cls = get_config_class("UnitreeG1RightArmPickDataGenConfig")
     pick_datagen_config = pick_datagen_config_cls()
     assert isinstance(pick_datagen_config.robot_config, UnitreeG1RightArmPickRobotConfig)
+    assert pick_datagen_config.robot_config.pin_base_in_place
+    assert (
+        pick_datagen_config.task_sampler_config.task_sampler_class
+        is UnitreeG1RightArmPickTaskSampler
+    )
     assert pick_datagen_config.policy_config.policy_cls.__name__ == (
         "UnitreeG1RightArmPickPlannerPolicy"
     )
@@ -177,6 +183,11 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     )
     pick_robot.reset()
     mujoco.mj_forward(pick_scene_model, pick_scene_data)
+    initial_pick_base_pose = pick_robot.robot_view.base.pose.copy()
+    initial_pick_base_pose[:3, 3] = [0.2, -0.3, initial_pick_base_pose[2, 3]]
+    pick_robot.robot_view.base.pose = initial_pick_base_pose
+    pick_robot.robot_view.base.joint_vel = np.zeros(pick_robot.robot_view.base.vel_dim)
+    mujoco.mj_forward(pick_scene_model, pick_scene_data)
     pick_action = {
         move_group_id: pick_robot.robot_view.get_move_group(move_group_id).joint_pos.copy()
         for move_group_id in pick_robot.controllers
@@ -185,11 +196,16 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     pick_action["right_arm"][3] = 0.1
     pick_action["gripper"] = np.array([-0.02, -0.02])
     pick_robot.update_control(pick_action)
-    pick_robot.compute_control()
     for _ in range(10):
+        pick_robot.compute_control()
         mujoco.mj_step(pick_scene_model, pick_scene_data)
     assert np.isfinite(pick_scene_data.qpos).all()
     assert np.isfinite(pick_scene_data.ctrl).all()
+    assert np.allclose(
+        pick_robot.robot_view.base.pose[:3, 3],
+        initial_pick_base_pose[:3, 3],
+        atol=1e-3,
+    )
     assert pick_robot.state_dim == 16
     assert pick_robot.action_dim(list(pick_robot.controllers)) == 9
 

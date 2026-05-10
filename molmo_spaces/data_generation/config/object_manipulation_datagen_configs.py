@@ -64,7 +64,7 @@ from molmo_spaces.tasks.pick_and_place_task_sampler import (
     PickAndPlaceMultiTaskSampler,
     PickAndPlaceTaskSampler,
 )
-from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
+from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler, UnitreeG1RightArmPickTaskSampler
 from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 from molmo_spaces.utils.synset_utils import get_valid_pickupable_obja_uids
 
@@ -150,7 +150,7 @@ class UnitreeG1RightArmPickDataGenConfig(PickBaseConfig):
     robot_config: UnitreeG1RightArmPickRobotConfig = UnitreeG1RightArmPickRobotConfig()
     camera_config: UnitreeG1RightArmPickCameraSystem = UnitreeG1RightArmPickCameraSystem()
     task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
-        task_sampler_class=PickTaskSampler,
+        task_sampler_class=UnitreeG1RightArmPickTaskSampler,
         house_inds=[1],
         samples_per_house=5,
         robot_object_z_offset=0.0,

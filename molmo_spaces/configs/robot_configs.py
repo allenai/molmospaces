@@ -458,12 +458,14 @@ class UnitreeG1Dex1RobotConfig(BaseRobotConfig):
         "right_hand": "joint_position",
     }
     gravcomp: bool = True
+    pin_base_in_place: bool = False
 
 
 class UnitreeG1RightArmPickRobotConfig(UnitreeG1Dex1RobotConfig):
     """Unitree G1 config scoped to right-arm pick datagen."""
 
     robot_view_factory: RobotViewFactory | None = UnitreeG1RightArmPickRobotView
+    pin_base_in_place: bool = True
     init_qpos: dict[str, list[float]] = {
         "base": [0.0, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0],
         "right_arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],

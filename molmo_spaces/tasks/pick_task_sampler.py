@@ -962,14 +962,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         else:
             raise ValueError(f"Invalid pickup object type: {type(pickup_obj)}")
 
-        initial_robot_z = (
-            target_pos[2]
-            + self.config.task_sampler_config.robot_object_z_offset
-            + np.random.uniform(
-                self.config.task_sampler_config.robot_object_z_offset_random_min,
-                self.config.task_sampler_config.robot_object_z_offset_random_max,
-            )
-        )
+        initial_robot_z = self._initial_robot_z_for_pickup(target_pos, robot_view)
 
         # place robot near receptacle - this is the expensive call with collision/visibility checks
         if self._datagen_profiler is not None:
@@ -1005,6 +998,18 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         task_cfg.pickup_obj_goal_pose = pickup_obj_goal_pose.tolist()
 
         log.info(f"Supporting receptacle: {self.config.task_config.receptacle_name}")
+
+    def _initial_robot_z_for_pickup(self, target_pos: np.ndarray, robot_view) -> float:
+        """Return the robot base Z used by placement sampling for a pickup target."""
+        del robot_view
+        return float(
+            target_pos[2]
+            + self.config.task_sampler_config.robot_object_z_offset
+            + np.random.uniform(
+                self.config.task_sampler_config.robot_object_z_offset_random_min,
+                self.config.task_sampler_config.robot_object_z_offset_random_max,
+            )
+        )
 
     def _place_target_near_object(
         self, env: CPUMujocoEnv, object_pos: np.ndarray, placement_region=None
@@ -1179,3 +1184,14 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         )
 
         return spec
+
+
+class UnitreeG1RightArmPickTaskSampler(PickTaskSampler):
+    """Pick sampler variant that keeps the Unitree G1 pelvis at its standing height."""
+
+    def _initial_robot_z_for_pickup(self, target_pos: np.ndarray, robot_view) -> float:
+        del target_pos, robot_view
+        base_qpos = self.config.robot_config.init_qpos.get("base")
+        if base_qpos is None or len(base_qpos) < 3:
+            raise ValueError("Unitree G1 pick sampling requires a base init_qpos with xyz.")
+        return float(base_qpos[2])

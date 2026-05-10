@@ -32,6 +32,7 @@ class UnitreeG1Robot(Robot):
             config.robot_config,
             self._kinematics,
         )
+        self._pinned_base_pose: np.ndarray | None = None
         self._controllers = {
             move_group_id: JointPosController(self._robot_view.get_move_group(move_group_id))
             for move_group_id in self._robot_view.move_group_ids()
@@ -82,21 +83,51 @@ class UnitreeG1Robot(Robot):
                 controller.set_to_stationary()
 
     def compute_control(self) -> None:
+        self._pin_base_if_configured()
         for controller in self.controllers.values():
             ctrl_inputs = controller.compute_ctrl_inputs()
             controller.robot_move_group.ctrl = ctrl_inputs
+        self._pin_base_if_configured()
 
     def set_joint_pos(self, robot_joint_pos_dict) -> None:
         for mg_id, joint_pos in robot_joint_pos_dict.items():
             self._robot_view.get_move_group(mg_id).joint_pos = joint_pos
+            if mg_id == "base":
+                self._set_pinned_base_pose_if_configured()
 
     def set_world_pose(self, robot_world_pose) -> None:
         self._robot_view.base.pose = robot_world_pose
+        self._set_pinned_base_pose_if_configured()
+        self._zero_base_velocity_if_configured()
 
     def reset(self) -> None:
         for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
-                self._robot_view.get_move_group(mg_id).joint_pos = np.asarray(default_pos)
+                move_group = self._robot_view.get_move_group(mg_id)
+                move_group.joint_pos = np.asarray(default_pos)
+                move_group.joint_vel = np.zeros(move_group.vel_dim)
+        if self._should_pin_base():
+            self._pinned_base_pose = None
+            self._zero_base_velocity_if_configured()
+
+    def _should_pin_base(self) -> bool:
+        return bool(getattr(self.exp_config.robot_config, "pin_base_in_place", False))
+
+    def _set_pinned_base_pose_if_configured(self) -> None:
+        if self._should_pin_base():
+            self._pinned_base_pose = self._robot_view.base.pose.copy()
+
+    def _zero_base_velocity_if_configured(self) -> None:
+        if self._should_pin_base():
+            self._robot_view.base.joint_vel = np.zeros(self._robot_view.base.vel_dim)
+
+    def _pin_base_if_configured(self) -> None:
+        if not self._should_pin_base():
+            return
+        if self._pinned_base_pose is None:
+            self._pinned_base_pose = self._robot_view.base.pose.copy()
+        self._robot_view.base.pose = self._pinned_base_pose
+        self._robot_view.base.joint_vel = np.zeros(self._robot_view.base.vel_dim)
 
     @staticmethod
     def robot_model_root_name() -> str:
