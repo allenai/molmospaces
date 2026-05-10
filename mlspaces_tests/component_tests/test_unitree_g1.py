@@ -129,6 +129,11 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         pick_datagen_config.task_sampler_config.task_sampler_class
         is UnitreeG1RightArmPickTaskSampler
     )
+    assert pick_datagen_config.task_sampler_config.base_pose_sampling_radius_range == (
+        0.15,
+        0.4,
+    )
+    assert pick_datagen_config.task_sampler_config.robot_safety_radius == 0.25
     assert pick_datagen_config.policy_config.policy_cls.__name__ == (
         "UnitreeG1RightArmPickPlannerPolicy"
     )

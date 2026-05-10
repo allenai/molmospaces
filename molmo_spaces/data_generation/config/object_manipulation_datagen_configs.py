@@ -156,7 +156,7 @@ class UnitreeG1RightArmPickDataGenConfig(PickBaseConfig):
         robot_object_z_offset=0.0,
         robot_object_z_offset_random_min=0.0,
         robot_object_z_offset_random_max=0.0,
-        base_pose_sampling_radius_range=(0.2, 0.8),
+        base_pose_sampling_radius_range=(0.15, 0.4),
         robot_safety_radius=0.25,
         check_robot_placement_visibility=False,
     )
