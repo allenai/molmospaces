@@ -1189,6 +1189,10 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 class UnitreeG1RightArmPickTaskSampler(PickTaskSampler):
     """Pick sampler variant that keeps the Unitree G1 pelvis at its standing height."""
 
+    def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
+        super()._sample_and_place_robot(env)
+        env.current_robot.sync_pinned_base_pose()
+
     def _initial_robot_z_for_pickup(self, target_pos: np.ndarray, robot_view) -> float:
         del target_pos, robot_view
         base_qpos = self.config.robot_config.init_qpos.get("base")

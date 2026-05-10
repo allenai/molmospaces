@@ -132,6 +132,10 @@ class UnitreeG1Robot(Robot):
 
     def set_world_pose(self, robot_world_pose) -> None:
         self._robot_view.base.pose = robot_world_pose
+        self.sync_pinned_base_pose()
+
+    def sync_pinned_base_pose(self) -> None:
+        """Latch the current base pose as the fixed pose for pinned-base workflows."""
         self._set_pinned_base_pose_if_configured()
         self._zero_base_velocity_if_configured()
 

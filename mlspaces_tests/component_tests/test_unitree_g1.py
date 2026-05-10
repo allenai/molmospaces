@@ -245,6 +245,18 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     assert pick_robot.state_dim == 16
     assert pick_robot.action_dim(list(pick_robot.controllers)) == 9
 
+    next_pick_base_pose = initial_pick_base_pose.copy()
+    next_pick_base_pose[:3, 3] = [0.6, -0.1, initial_pick_base_pose[2, 3]]
+    pick_robot.robot_view.base.pose = next_pick_base_pose
+    pick_robot.sync_pinned_base_pose()
+    pick_robot.compute_control()
+    mujoco.mj_step(pick_scene_model, pick_scene_data)
+    assert np.allclose(
+        pick_robot.robot_view.base.pose[:3, 3],
+        next_pick_base_pose[:3, 3],
+        atol=1e-3,
+    )
+
     robot = UnitreeG1Robot(scene_data, SimpleNamespace(robot_config=config))
     robot.reset()
     mujoco.mj_forward(scene_model, scene_data)
