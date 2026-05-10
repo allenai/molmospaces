@@ -349,6 +349,40 @@ class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     ]
 
 
+class UnitreeG1RightArmPickCameraSystem(CameraSystemConfig):
+    """Exocentric-only cameras for Unitree G1 right-arm pick smoke datagen."""
+
+    img_resolution: tuple[int, int] = (624, 352)
+    cameras: list[AllCameraTypes] = [
+        RandomizedExocentricCameraConfig(
+            name="exo_camera_1",
+            distance_range=(0.6, 1.4),
+            height_range=(0.5, 1.1),
+            azimuth_range=(-np.pi, np.pi),
+            fov_range=(55, 80),
+            lookat_noise_range=(-0.08, 0.08),
+            visibility_constraints={
+                "__task_objects__": 0.0001,
+                "__gripper__": 0.0001,
+            },
+            allow_relaxed_constraints=True,
+        ),
+        RandomizedExocentricCameraConfig(
+            name="exo_camera_2",
+            distance_range=(0.7, 1.6),
+            height_range=(0.7, 1.3),
+            azimuth_range=(-np.pi, np.pi),
+            fov_range=(55, 85),
+            lookat_noise_range=(-0.08, 0.08),
+            visibility_constraints={
+                "__task_objects__": 0.0001,
+                "__gripper__": 0.0001,
+            },
+            allow_relaxed_constraints=True,
+        ),
+    ]
+
+
 class FrankaDroidCameraSystem(CameraSystemConfig):
     """Camera system for Franka with DROID-style fixed cameras.
 
@@ -953,6 +987,7 @@ AllCameraSystems: TypeAlias = (
     | FrankaGoProD405RandomizedCameraSystem
     | FrankaRobotiq2f85CameraSystem
     | FrankaEvalCameraSystem
+    | UnitreeG1RightArmPickCameraSystem
     | I2rtYamCameraSystem
     | BimanualYamCameraSystem
     | FrankaEvalCameraSystem

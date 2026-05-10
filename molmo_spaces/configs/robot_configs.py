@@ -36,7 +36,10 @@ from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.mobile_franka_droid_view import MobileFrankaDroidRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
 from molmo_spaces.robots.robot_views.rum_gripper_view import FloatingRUMRobotView
-from molmo_spaces.robots.robot_views.unitree_g1_view import UnitreeG1RobotView
+from molmo_spaces.robots.robot_views.unitree_g1_view import (
+    UnitreeG1RightArmPickRobotView,
+    UnitreeG1RobotView,
+)
 from molmo_spaces.robots.unitree_g1 import UnitreeG1Robot
 
 
@@ -455,3 +458,19 @@ class UnitreeG1Dex1RobotConfig(BaseRobotConfig):
         "right_hand": "joint_position",
     }
     gravcomp: bool = True
+
+
+class UnitreeG1RightArmPickRobotConfig(UnitreeG1Dex1RobotConfig):
+    """Unitree G1 config scoped to right-arm pick datagen."""
+
+    robot_view_factory: RobotViewFactory | None = UnitreeG1RightArmPickRobotView
+    init_qpos: dict[str, list[float]] = {
+        "base": [0.0, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0],
+        "right_arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "gripper": [0.0245, 0.0245],
+    }
+    command_mode: dict[str, str | None] = {
+        "base": None,
+        "right_arm": "joint_position",
+        "gripper": "joint_position",
+    }

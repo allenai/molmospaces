@@ -139,6 +139,30 @@ class PickPlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
             self.policy_cls = PickPlannerPolicy
 
 
+class UnitreeG1RightArmPickPlannerPolicyConfig(PickPlannerPolicyConfig):
+    """Pick planner config for Unitree G1 right-arm-only smoke datagen."""
+
+    policy_cls: type = None
+    filter_colliding_grasps: bool = False
+    filter_feasible_grasps: bool = False
+    grasp_feasibility_batch_size: int = 32
+    grasp_feasibility_max_grasps: int = 32
+    grasp_collision_batch_size: int = 32
+    grasp_collision_max_grasps: int = 64
+    max_retries: int = 0
+    max_sequential_ik_failures: int = 4
+    phase_timeout: float = 20.0
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy import (
+            UnitreeG1RightArmPickPlannerPolicy,
+        )
+
+        self.policy_cls = UnitreeG1RightArmPickPlannerPolicy
+
+
 class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
     move_settle_time: float = 0.5

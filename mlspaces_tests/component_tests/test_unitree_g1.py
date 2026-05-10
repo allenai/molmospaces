@@ -7,7 +7,10 @@ import numpy as np
 import pytest
 
 import molmo_spaces.molmo_spaces_constants as constants
-from molmo_spaces.configs.robot_configs import UnitreeG1Dex1RobotConfig
+from molmo_spaces.configs.robot_configs import (
+    UnitreeG1Dex1RobotConfig,
+    UnitreeG1RightArmPickRobotConfig,
+)
 from molmo_spaces.data_generation.config_registry import get_config_class
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.unitree_g1 import UnitreeG1Robot
@@ -89,6 +92,15 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     datagen_config_cls = get_config_class("UnitreeG1SceneSmokeDataGenConfig")
     datagen_config = datagen_config_cls()
     assert isinstance(datagen_config.robot_config, UnitreeG1Dex1RobotConfig)
+    pick_datagen_config_cls = get_config_class("UnitreeG1RightArmPickDataGenConfig")
+    pick_datagen_config = pick_datagen_config_cls()
+    assert isinstance(pick_datagen_config.robot_config, UnitreeG1RightArmPickRobotConfig)
+    assert pick_datagen_config.policy_config.policy_cls.__name__ == (
+        "UnitreeG1RightArmPickPlannerPolicy"
+    )
+    assert not pick_datagen_config.policy_config.filter_colliding_grasps
+    assert not pick_datagen_config.policy_config.filter_feasible_grasps
+    assert len(pick_datagen_config.camera_config.cameras) == 2
 
     base_scene_path = constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR / (
         "molmo_spaces/resources/base_scene.xml"
@@ -105,6 +117,81 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     )
     datagen_scene_model = datagen_scene_spec.compile()
     assert datagen_scene_model.body("robot_0/pelvis").id >= 0
+    pick_scene_spec = mujoco.MjSpec.from_file(str(base_scene_path))
+    pick_robot_spec = mujoco.MjSpec.from_file(str(xml_path))
+    pick_datagen_config.robot_config.robot_cls.add_robot_to_scene(
+        pick_datagen_config.robot_config,
+        pick_scene_spec,
+        pick_robot_spec,
+        pick_datagen_config.robot_config.robot_namespace,
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0, 0.0],
+    )
+    pick_scene_model = pick_scene_spec.compile()
+    pick_scene_data = mujoco.MjData(pick_scene_model)
+    pick_view = pick_datagen_config.robot_config.robot_view_factory(
+        pick_scene_data, pick_datagen_config.robot_config.robot_namespace
+    )
+    assert pick_view.move_group_ids() == ["base", "right_arm", "gripper"]
+    assert pick_view.get_gripper_movegroup_ids() == ["gripper"]
+    assert pick_view.get_move_group("right_arm").leaf_frame_type == "site"
+    assert pick_view.get_move_group("gripper").leaf_frame_type == "site"
+    assert (
+        pick_scene_model.site("robot_0/right_grasp_site").id
+        == pick_view.get_move_group("right_arm").leaf_frame_id
+    )
+    assert (
+        pick_scene_model.site("robot_0/right_grasp_site").id
+        == pick_view.get_move_group("gripper").leaf_frame_id
+    )
+
+    gripper = pick_view.get_gripper("gripper")
+    gripper.set_gripper_ctrl_open(True)
+    assert np.all(gripper.ctrl <= gripper.ctrl_limits[:, 1])
+    assert np.all(gripper.ctrl >= gripper.ctrl_limits[:, 0])
+    gripper.set_gripper_ctrl_open(False)
+    assert np.all(gripper.ctrl <= gripper.ctrl_limits[:, 1])
+    assert np.all(gripper.ctrl >= gripper.ctrl_limits[:, 0])
+
+    pick_kinematics = MlSpacesKinematics(pick_datagen_config.robot_config)
+    pick_fk = pick_kinematics.fk(pick_datagen_config.robot_config.init_qpos, np.eye(4))
+    for move_group_id in ("right_arm", "gripper"):
+        assert pick_fk[move_group_id].shape == (4, 4)
+        assert np.isfinite(pick_fk[move_group_id]).all()
+
+    target_pose = pick_fk["gripper"].copy()
+    target_pose[2, 3] += 0.02
+    pick_ik = pick_kinematics.ik(
+        "gripper",
+        target_pose,
+        ["right_arm"],
+        pick_datagen_config.robot_config.init_qpos,
+        np.eye(4),
+        max_iter=250,
+    )
+    assert pick_ik is not None
+    assert set(pick_ik) == {"base", "right_arm", "gripper"}
+
+    pick_robot = UnitreeG1Robot(
+        pick_scene_data, SimpleNamespace(robot_config=pick_datagen_config.robot_config)
+    )
+    pick_robot.reset()
+    mujoco.mj_forward(pick_scene_model, pick_scene_data)
+    pick_action = {
+        move_group_id: pick_robot.robot_view.get_move_group(move_group_id).joint_pos.copy()
+        for move_group_id in pick_robot.controllers
+    }
+    pick_action["right_arm"] = pick_action["right_arm"].copy()
+    pick_action["right_arm"][3] = 0.1
+    pick_action["gripper"] = np.array([-0.02, -0.02])
+    pick_robot.update_control(pick_action)
+    pick_robot.compute_control()
+    for _ in range(10):
+        mujoco.mj_step(pick_scene_model, pick_scene_data)
+    assert np.isfinite(pick_scene_data.qpos).all()
+    assert np.isfinite(pick_scene_data.ctrl).all()
+    assert pick_robot.state_dim == 16
+    assert pick_robot.action_dim(list(pick_robot.controllers)) == 9
 
     robot = UnitreeG1Robot(scene_data, SimpleNamespace(robot_config=config))
     robot.reset()

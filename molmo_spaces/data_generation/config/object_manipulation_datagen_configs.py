@@ -27,12 +27,14 @@ from molmo_spaces.configs.camera_configs import (
     FrankaRandomizedD405D455CameraSystem,
     FrankaRandomizedDroidCameraSystem,
     RBY1GoProD455CameraSystem,
+    UnitreeG1RightArmPickCameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
     CuroboOpenClosePlannerPolicyConfig,
     CuroboPickAndPlacePlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickPlannerPolicyConfig,
+    UnitreeG1RightArmPickPlannerPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import (
     FloatingRUMRobotConfig,
@@ -40,6 +42,7 @@ from molmo_spaces.configs.robot_configs import (
     RBY1MConfig,
     RBY1MOpenCloseConfig,
     UnitreeG1Dex1RobotConfig,
+    UnitreeG1RightArmPickRobotConfig,
 )
 from molmo_spaces.configs.task_sampler_configs import (
     OpenTaskSamplerConfig,
@@ -138,6 +141,36 @@ class UnitreeG1SceneSmokeDataGenConfig(PickBaseConfig):
     @property
     def tag(self) -> str:
         return "unitree_g1_scene_smoke_datagen"
+
+
+@register_config("UnitreeG1RightArmPickDataGenConfig")
+class UnitreeG1RightArmPickDataGenConfig(PickBaseConfig):
+    """Right-arm-only Unitree G1 pick smoke datagen."""
+
+    robot_config: UnitreeG1RightArmPickRobotConfig = UnitreeG1RightArmPickRobotConfig()
+    camera_config: UnitreeG1RightArmPickCameraSystem = UnitreeG1RightArmPickCameraSystem()
+    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+        task_sampler_class=PickTaskSampler,
+        house_inds=[1],
+        samples_per_house=5,
+        robot_object_z_offset=0.0,
+        robot_object_z_offset_random_min=0.0,
+        robot_object_z_offset_random_max=0.0,
+        base_pose_sampling_radius_range=(0.2, 0.8),
+        robot_safety_radius=0.25,
+        check_robot_placement_visibility=False,
+    )
+    policy_config: UnitreeG1RightArmPickPlannerPolicyConfig = (
+        UnitreeG1RightArmPickPlannerPolicyConfig()
+    )
+    task_horizon: int = 120
+    filter_for_successful_trajectories: bool = False
+    profile: bool = False
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "unitree_g1_right_arm_pick_v1"
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_right_arm_pick_datagen"
 
 
 @register_config("FrankaPickAndPlaceDataGenConfig")
