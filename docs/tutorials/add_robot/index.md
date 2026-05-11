@@ -375,7 +375,7 @@ class XArm7Robot(Robot):
 We said we'd come back to the gripper's inter finger distance range, and now that we have the robot infrastructure set up we can empirically measure it!
 
 ```bash
-PYTHONPATH=. python <molmo_spaces_dir>/scripts/kinematics/find_gripper_finger_range.py xarm7_config XArm7RobotConfig
+python -m molmo_spaces.robots.find_gripper_finger_range xarm7_config XArm7RobotConfig
 ```
 
 Which outputs:
@@ -391,7 +391,7 @@ Now we can go back and change `inter_finger_dist_range` to return `0.004, 0.089`
 Now we're done! Let's do some quick integration tests to make sure.
 
 ```bash
-PYTHONPATH=. python <molmo_spaces_dir>/scripts/kinematics/test_robot_ik.py XArm7RobotConfig --config_module xarm7_config
+python -m molmo_spaces.kinematics.test_robot_ik XArm7RobotConfig --config_module xarm7_config
 ```
 
 You should see the xarm7 moving back and forth between two end-effector poses. To test the parallel IK integration, run it again with the `--parallel` flag.
