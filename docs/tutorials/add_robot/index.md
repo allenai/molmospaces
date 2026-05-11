@@ -196,7 +196,9 @@ class XArm7RobotView(RobotView):
 ### Robot config
 
 The robot config specified robot-specific parameters, including where the robot xml is.
-Note the `init_qpos` field, which should be configured to set each move group's joints
+Importantly, note the `robot_dir` field, which points to the directory containing the robot assets.
+If unspecified, MolmoSpaces will attempt to load the robot from one of the prepackaged MolmoSpaces robots.
+Additionally, note the `init_qpos` field, which should be configured to set each move group's joints
 to a proper initial configuration. Due to the setup of the xarm's mjcf, zeros work fine.
 
 This implementation should be in `xarm7_config.py`.
@@ -399,3 +401,11 @@ Congratulations, you have added your robot to MolmoSpaces!
 ## Full example code
 
 Full example code (without modified robot models) is provided [here](https://github.com/allenai/molmospaces/blob/main/examples/add_robot/).
+
+## Additional resources
+
+This tutorial covers adding a new single static manipulator, but more complicated robots might require additional machinery. For further examples, see:
+ - Manipulator on a mobile base: [Mobile Franka](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/robots/mobile_franka.py)
+ - Floating gripper: [Floating RUM](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/robots/floating_rum.py).
+
+To make a custom bimanual robot from two single-arm manipulators, for example, consider reusing the robot view implementations in a new robot implementation, and just inserting the robot twice during model insertion. Namespacing (e.g. `left/` and `right/`) can be used to prevent model name collisions.
