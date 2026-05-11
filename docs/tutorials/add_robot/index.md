@@ -395,3 +395,7 @@ PYTHONPATH=. python <molmo_spaces_dir>/scripts/kinematics/test_robot_ik.py XArm7
 You should see the xarm7 moving back and forth between two end-effector poses. To test the parallel IK integration, run it again with the `--parallel` flag.
 
 Congratulations, you have added your robot to MolmoSpaces!
+
+## Full example code
+
+Full example code (without modified robot models) is provided [here](https://github.com/allenai/molmospaces/blob/main/examples/add_robot/).
