@@ -33,8 +33,7 @@ TABLE_RGBA = (0.74, 0.56, 0.36, 1.0)
 PLACE_RECEPTACLE_BODY_NAME = "g1_place_bin"
 PLACE_RECEPTACLE_SITE_NAME = "g1_place_bin_site"
 
-PELVIS_MINUS_10CM_TABLETOP_HEIGHT_M = 0.693
-PELVIS_TABLETOP_HEIGHT_M = 0.793
+TABLETOP_HEIGHT_M = 0.693
 
 
 @dataclass(frozen=True)
@@ -46,9 +45,8 @@ class TabletopSceneSpec:
 SCENE_SPECS = (
     TabletopSceneSpec(
         "unitree_g1_tabletop_pelvis_minus_10cm_v1",
-        PELVIS_MINUS_10CM_TABLETOP_HEIGHT_M,
+        TABLETOP_HEIGHT_M,
     ),
-    TabletopSceneSpec("unitree_g1_tabletop_pelvis_height_v1", PELVIS_TABLETOP_HEIGHT_M),
 )
 
 

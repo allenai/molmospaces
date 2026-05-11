@@ -75,6 +75,29 @@ class UnitreeG1RightArmTabletopPickAndPlaceTaskSampler(PickAndPlaceTaskSampler):
         half_size = np.asarray(size_xy, dtype=float) / 2.0
         return center + np.random.uniform(-half_size, half_size)
 
+    def _pickup_clear_of_receptacle(
+        self,
+        env: CPUMujocoEnv,
+        pickup_obj_name: str,
+        receptacle_xy: np.ndarray,
+    ) -> bool:
+        pickup_body = create_mlspaces_body(env.current_data, pickup_obj_name)
+        center, size = body_aabb(
+            env.current_model,
+            env.current_data,
+            pickup_body.body_id,
+            visual_only=False,
+        )
+        pickup_half_size_xy = np.asarray(size[:2], dtype=float) / 2.0
+        receptacle_half_size_xy = np.asarray(
+            self.config.task_sampler_config.place_receptacle_half_size_xy,
+            dtype=float,
+        )
+        clearance = float(self.config.task_sampler_config.pickup_receptacle_min_clearance)
+        required_separation = pickup_half_size_xy + receptacle_half_size_xy + clearance
+        xy_delta = np.abs(np.asarray(center[:2], dtype=float) - receptacle_xy)
+        return bool(np.any(xy_delta > required_separation))
+
     def _place_pickup_on_table(self, env: CPUMujocoEnv, pickup_obj_name: str) -> None:
         body = create_mlspaces_body(env.current_data, pickup_obj_name)
         model = env.current_model
@@ -100,13 +123,20 @@ class UnitreeG1RightArmTabletopPickAndPlaceTaskSampler(PickAndPlaceTaskSampler):
         self._zero_free_body_velocity(env, pickup_obj_name)
         mujoco.mj_forward(model, data)
 
-    def _place_receptacle_on_table(self, env: CPUMujocoEnv) -> None:
+    def _place_receptacle_on_table(self, env: CPUMujocoEnv, pickup_obj_name: str) -> None:
         receptacle_name = self.config.task_sampler_config.place_receptacle_name
         body = create_mlspaces_body(env.current_data, receptacle_name)
-        xy = self._sample_xy(
-            self.config.task_sampler_config.place_workspace_center_xy,
-            self.config.task_sampler_config.place_workspace_size_xy,
-        )
+        for _ in range(self.config.task_sampler_config.max_place_receptacle_sampling_attempts):
+            xy = self._sample_xy(
+                self.config.task_sampler_config.place_workspace_center_xy,
+                self.config.task_sampler_config.place_workspace_size_xy,
+            )
+            if self._pickup_clear_of_receptacle(env, pickup_obj_name, xy):
+                break
+        else:
+            raise HouseInvalidForTask(
+                f"Unable to place {receptacle_name} clear of {pickup_obj_name}"
+            )
         body.position = np.array(
             [
                 xy[0],
@@ -119,7 +149,8 @@ class UnitreeG1RightArmTabletopPickAndPlaceTaskSampler(PickAndPlaceTaskSampler):
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         robot_view = env.current_robot.robot_view
-        base_qpos = self.config.robot_config.init_qpos["base"]
+        base_qpos = np.asarray(self.config.robot_config.init_qpos["base"], dtype=float).copy()
+        base_qpos[:2] = np.asarray(self.config.task_sampler_config.robot_base_xy, dtype=float)
         robot_view.base.pose = pos_quat_to_pose_mat(np.asarray(base_qpos[:3]), base_qpos[3:7])
         robot_view.base.joint_vel = np.zeros(robot_view.base.vel_dim)
         env.current_robot.sync_pinned_base_pose()
@@ -139,7 +170,7 @@ class UnitreeG1RightArmTabletopPickAndPlaceTaskSampler(PickAndPlaceTaskSampler):
 
             self._restore_pickupables_to_staging(env)
             self._place_pickup_on_table(env, pickup_obj_name)
-            self._place_receptacle_on_table(env)
+            self._place_receptacle_on_table(env, pickup_obj_name)
             self._sample_and_place_robot(env)
 
             om = env.object_managers[env.current_batch_index]

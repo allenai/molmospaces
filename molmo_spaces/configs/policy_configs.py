@@ -182,15 +182,64 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicy
     """Pick-and-place planner config for fixed-base G1 right-arm tabletop datagen."""
 
     policy_cls: type = None
+    pregrasp_z_offset: float = 0.12
+    gripper_close_duration: float = 1.0
+    gripper_empty_threshold: float = 0.0005
+    grasp_rot_cost_weight: float = 0.02
+    grasp_vertical_cost_weight: float = 0.5
     filter_colliding_grasps: bool = False
     filter_feasible_grasps: bool = False
     grasp_feasibility_batch_size: int = 32
-    grasp_feasibility_max_grasps: int = 32
+    grasp_feasibility_max_grasps: int = 128
     grasp_collision_batch_size: int = 32
     grasp_collision_max_grasps: int = 64
     max_retries: int = 0
     max_sequential_ik_failures: int = 4
     phase_timeout: float = 24.0
+    pregrasp_tcp_pos_err_threshold: float = 0.1
+    pregrasp_tcp_rot_err_threshold: float = float("inf")
+    enable_failure_diagnostics: bool = True
+    diagnostic_large_object_max_extent_m: float = 0.18
+    diagnostic_large_object_volume_m3: float = 0.004
+    diagnostic_failure_hold_duration_s: float = 2.0
+    record_unfiltered_attempt_on_no_feasible_grasp: bool = True
+    g1_ik_debug: bool = False
+    g1_ik_debug_higher_z_offset: float = 0.05
+    g1_ik_debug_top_k_grasps: int = 5
+    g1_online_grasp_selector: bool = True
+    g1_grasp_candidate_limit: int = 256
+    g1_grasp_ik_eval_limit: int = 256
+    g1_grasp_require_all_pick_place_phases: bool = True
+    g1_grasp_joint_margin_weight: float = 0.5
+    g1_grasp_joint_motion_weight: float = 0.25
+    g1_grasp_topdown_weight: float = 1.0
+    g1_grasp_min_vertical_axis_z: float = 0.75
+    g1_grasp_max_tcp_rot_deg: float = 120.0
+    g1_ignore_flipped_grasps: bool = True
+    g1_grasp_inward_xy_offset: float = 0.006
+    g1_grasp_table_clearance: float = 0.065
+    g1_center_grasp_lateral: bool = True
+    g1_grasp_lateral_centering_scale: float = 1.0
+    g1_grasp_lateral_centering_max_offset: float = 0.02
+    g1_level_grasp_orientation: bool = False
+    g1_grasp_level_max_tilt_deg: float = 35.0
+    g1_require_fingertip_pad_grasp_contact: bool = False
+    g1_reject_non_fingertip_grasp_object_contact: bool = True
+    g1_reject_grasp_table_contact: bool = True
+    g1_reject_open_grasp_object_contact: bool = True
+    g1_grasp_single_pad_contact_penalty: float = 0.5
+    g1_closed_grasp_quality_enabled: bool = True
+    g1_closed_grasp_settle_steps: int = 25
+    g1_closed_grasp_min_pad_geom_count: int = 2
+    g1_closed_grasp_max_object_shift_m: float = 0.05
+    g1_closed_grasp_penalty_per_missing_pad: float = 1.0
+    g1_pregrasp_min_vertical_lift: float = 0.10
+    g1_pregrasp_object_clearance: float = 0.12
+    g1_place_travel_object_clearance: float = 0.13
+    g1_held_object_speed: float = 0.04
+    g1_postgrasp_hold_duration: float = 0.4
+    g1_record_partial_attempt_on_no_full_grasp_candidate: bool = True
+    g1_pick_lift_only: bool = False
 
     def model_post_init(self, __context) -> None:
         """Set policy_cls after initialization to avoid circular imports."""

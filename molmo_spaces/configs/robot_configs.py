@@ -488,3 +488,13 @@ class UnitreeG1RightArmPickRobotConfig(UnitreeG1Dex1RobotConfig):
         "right_arm": "joint_position",
         "gripper": "joint_position",
     }
+
+
+class UnitreeG1RightArmTabletopPickRobotConfig(UnitreeG1RightArmPickRobotConfig):
+    """Right-arm G1 config that starts at the fixed tabletop base pose."""
+
+    init_qpos: dict[str, list[float]] = {
+        "base": [0.08, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0],
+        "right_arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "gripper": [0.0245, 0.0245],
+    }

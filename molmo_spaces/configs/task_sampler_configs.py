@@ -216,10 +216,14 @@ class UnitreeG1TabletopPickAndPlaceTaskSamplerConfig(PickAndPlaceTaskSamplerConf
     table_body_name: str = "g1_table"
     table_geom_name: str = "g1_tabletop_geom"
     place_receptacle_name: str = "g1_place_bin"
-    pickup_workspace_center_xy: tuple[float, float] = (0.42, -0.16)
-    pickup_workspace_size_xy: tuple[float, float] = (0.18, 0.22)
-    place_workspace_center_xy: tuple[float, float] = (0.42, 0.16)
-    place_workspace_size_xy: tuple[float, float] = (0.16, 0.20)
+    robot_base_xy: tuple[float, float] = (0.08, 0.0)
+    pickup_workspace_center_xy: tuple[float, float] = (0.42, -0.20)
+    pickup_workspace_size_xy: tuple[float, float] = (0.16, 0.10)
+    place_workspace_center_xy: tuple[float, float] = (0.42, 0.08)
+    place_workspace_size_xy: tuple[float, float] = (0.10, 0.08)
+    place_receptacle_half_size_xy: tuple[float, float] = (0.14, 0.11)
+    pickup_receptacle_min_clearance: float = 0.015
+    max_place_receptacle_sampling_attempts: int = 100
     object_table_clearance: float = 0.006
     receptacle_table_clearance: float = 0.001
 

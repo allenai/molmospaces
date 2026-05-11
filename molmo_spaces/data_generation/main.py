@@ -40,6 +40,24 @@ def get_args():
         "optionally with the module name prepended with a colon (e.g. molmo_spaces.data_generation.config.object_manipulation_datagen_configs:FrankaPickDroidDataGenConfig). "
         "If the module is specified, only that module will be imported to populate the registry. Otherwise, all config files will be imported.",
     )
+    parser.add_argument(
+        "--enable-g1-ik-grasp-filtering",
+        action="store_true",
+        help=(
+            "Enable IK-feasible grasp filtering for G1 tabletop debugging. "
+            "By default, G1 uses the unfiltered grasp ranking path so each episode records an attempt."
+        ),
+    )
+    parser.add_argument(
+        "--g1-ik-debug",
+        action="store_true",
+        help="Write detailed G1 tabletop IK diagnostics next to the datagen run log.",
+    )
+    parser.add_argument(
+        "--viewer",
+        action="store_true",
+        help="Launch the configured experiment with the existing MuJoCo passive viewer.",
+    )
     return parser.parse_args()
 
 
@@ -94,8 +112,26 @@ def main() -> None:
     exp_config_args = vars(args)
     # pop exp_config_cls from args
     exp_config_args.pop("exp_config_cls")
+    enable_g1_ik_grasp_filtering = exp_config_args.pop("enable_g1_ik_grasp_filtering")
+    g1_ik_debug = exp_config_args.pop("g1_ik_debug")
+    viewer = exp_config_args.pop("viewer")
     # Create exp_config instance with args
     exp_config = ExpConfigClass(**exp_config_args)
+    if viewer:
+        exp_config.use_passive_viewer = True
+    if enable_g1_ik_grasp_filtering:
+        policy_config = getattr(exp_config, "policy_config", None)
+        if policy_config is None or not hasattr(policy_config, "filter_feasible_grasps"):
+            raise ValueError(
+                "--enable-g1-ik-grasp-filtering requires a policy config with "
+                "filter_feasible_grasps"
+            )
+        policy_config.filter_feasible_grasps = True
+    if g1_ik_debug:
+        policy_config = getattr(exp_config, "policy_config", None)
+        if policy_config is None or not hasattr(policy_config, "g1_ik_debug"):
+            raise ValueError("--g1-ik-debug requires a G1 policy config with g1_ik_debug")
+        policy_config.g1_ik_debug = True
 
     # Optional: Modify the config parameters here if needed
     # Eg. for hyperparamter sweeps etc.

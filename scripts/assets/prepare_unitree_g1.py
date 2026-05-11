@@ -23,6 +23,16 @@ SOURCE_URDF_REL_PATH = Path("g1_description/g1_29dof_mode_15_with_dex1_1.urdf")
 SOURCE_MESH_DIR_REL_PATH = Path("g1_description/meshes")
 OUTPUT_XML_NAME = "model.xml"
 DEFAULT_PELVIS_HEIGHT_M = 0.793
+DEX1_GRASP_SITE_POS = [0.148, 0.0, 0.0]
+DEX1_FINGERTIP_PAD_SIZE = [0.02, 0.01, 0.045]
+DEX1_FINGERTIP_PAD_POSITIONS = {
+    "dex1_finger_link_1": [0.1065, -0.0285, 0.0],
+    "dex1_finger_link_2": [0.1065, 0.0285, 0.0],
+}
+DEX1_FINGERTIP_PAD_FRICTION = [12.0, 0.2, 0.02]
+DEX1_FINGERTIP_PAD_CONDIM = 6
+DEX1_FINGERTIP_PAD_GROUP = 4
+DEX1_HAND_FORCE_LIMIT_MULTIPLIER = 3.0
 LEFT_ARM_STOW_QPOS = {
     "left_shoulder_pitch_joint": 0.25,
     "left_shoulder_roll_joint": 0.35,
@@ -42,7 +52,7 @@ GAIN_BY_JOINT_GROUP = {
     "leg": (120.0, 12.0),
     "waist": (80.0, 8.0),
     "arm": (60.0, 6.0),
-    "hand": (25.0, 2.5),
+    "hand": (80.0, 8.0),
 }
 
 
@@ -159,8 +169,13 @@ def _add_position_actuators(spec: mujoco.MjSpec, joints: list[JointSpec]) -> Non
         stiffness, damping = GAIN_BY_JOINT_GROUP[joint.group]
         kwargs = {}
         if joint.effort is not None:
+            effort = (
+                joint.effort * DEX1_HAND_FORCE_LIMIT_MULTIPLIER
+                if joint.group == "hand"
+                else joint.effort
+            )
             kwargs["forcelimited"] = 1
-            kwargs["forcerange"] = [-joint.effort, joint.effort]
+            kwargs["forcerange"] = [-effort, effort]
 
         spec.add_actuator(
             name=joint.name,
@@ -189,10 +204,35 @@ def _add_kinematics_sites(spec: mujoco.MjSpec) -> None:
         )
         wrist_body.add_site(
             name=f"{side}_grasp_site",
-            pos=[0.095, 0.0, 0.0],
+            pos=DEX1_GRASP_SITE_POS,
             size=[0.015],
             rgba=[0.1, 1.0, 0.4, 1.0],
         )
+
+
+def _add_dex1_fingertip_contact_pads(spec: mujoco.MjSpec) -> None:
+    for side in ("left", "right"):
+        for finger_suffix, pad_pos in DEX1_FINGERTIP_PAD_POSITIONS.items():
+            finger_body_name = f"{side}_{finger_suffix}"
+            finger_body = spec.body(finger_body_name)
+            if finger_body is None:
+                raise ValueError(f"Expected body `{finger_body_name}` in Unitree G1 model")
+
+            finger_id = finger_suffix.rsplit("_", maxsplit=1)[-1]
+            finger_body.add_geom(
+                name=f"{side}_dex1_fingertip_pad_{finger_id}",
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                pos=pad_pos,
+                size=DEX1_FINGERTIP_PAD_SIZE,
+                contype=1,
+                conaffinity=1,
+                condim=DEX1_FINGERTIP_PAD_CONDIM,
+                priority=2,
+                friction=DEX1_FINGERTIP_PAD_FRICTION,
+                density=0.0,
+                group=DEX1_FINGERTIP_PAD_GROUP,
+                rgba=[0.05, 0.8, 0.2, 0.35],
+            )
 
 
 def prepare_unitree_g1(
@@ -225,6 +265,7 @@ def prepare_unitree_g1(
     pelvis.pos = [0.0, 0.0, DEFAULT_PELVIS_HEIGHT_M]
     pelvis.add_freejoint(name="floating_base_joint")
     _add_kinematics_sites(spec)
+    _add_dex1_fingertip_contact_pads(spec)
     _add_position_actuators(spec, joints)
 
     model = spec.compile()
