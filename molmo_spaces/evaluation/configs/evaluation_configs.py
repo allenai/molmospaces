@@ -131,7 +131,6 @@ class JsonBenchmarkEvalConfig(MlSpacesExpConfig):
         samples_per_house=1,
         task_batch_size=1,
         max_tasks=10000,
-        load_robot_from_file=True,
     )
     task_config: BaseMujocoTaskConfig = BaseMujocoTaskConfig(task_cls=None)
 

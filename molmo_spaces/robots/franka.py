@@ -14,7 +14,6 @@ from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
-from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
@@ -155,7 +154,7 @@ class FrankaRobot(Robot):
         prefix: str,
         randomize_base_texture: bool,
     ) -> None:
-        texture_dir = get_robot_path(robot_config.name) / "assets" / "base_textures"
+        texture_dir = robot_config.get_robot_dir() / "assets" / "base_textures"
         assert texture_dir.is_dir(), f"Texture directory {texture_dir} does not exist"
         texture_path: Path | None = None
         if randomize_base_texture:

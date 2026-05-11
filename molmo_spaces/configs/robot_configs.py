@@ -15,6 +15,7 @@ import numpy as np
 from mujoco import MjData
 
 from molmo_spaces.configs.abstract_config import Config
+from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.robots.bimanual_yam import BimanualYamRobot
 from molmo_spaces.robots.floating_robotiq import FloatingRobotiqRobot
@@ -97,9 +98,10 @@ class BaseRobotConfig(Config):
     init_qpos: dict[str, list[float]]
     init_qpos_noise_range: dict[str, list[float]] | None
     name: str | None
-    robot_xml_path: (
-        Path | None
-    )  # robot name and XML file (required if load_robot_from_file is True)
+    robot_xml_path: Path  # path to the robot XML file within the robot directory
+    robot_dir: Path | None = (
+        None  # path to the robot directory, if not using a prepackaged MlSpaces robot
+    )
 
     # configurable control parameters for low-level mujoco controllers
     gravcomp: bool = False  # apply gravity compensation to every body in the robot
@@ -116,6 +118,20 @@ class BaseRobotConfig(Config):
         """Ensure action_noise_config is always initialized, even when loading from old configs."""
         if self.action_noise_config is None:
             object.__setattr__(self, "action_noise_config", ActionNoiseConfig())
+
+    def get_robot_dir(self) -> Path:
+        """
+        Get the path to the robot directory, which may or may not be a prepackaged MlSpaces robot.
+        """
+        if self.robot_dir is not None:
+            return self.robot_dir
+        return get_robot_path(self.name)
+
+    def get_robot_xml_path(self) -> Path:
+        """
+        Get the full path to the robot XML file.
+        """
+        return self.get_robot_dir() / self.robot_xml_path
 
 
 # Concrete robot configurations

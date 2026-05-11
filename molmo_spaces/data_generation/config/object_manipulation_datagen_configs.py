@@ -51,7 +51,7 @@ from molmo_spaces.configs.task_sampler_configs import (
 # Oder of configs should be order the code is executed in
 # scenes, robots, camera, task_sampler, policy, output
 from molmo_spaces.data_generation.config_registry import register_config
-from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_paths
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_path
 from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
 from molmo_spaces.tasks.pick_and_place_color_task_sampler import PickAndPlaceColorTaskSampler
 from molmo_spaces.tasks.pick_and_place_next_to_task_sampler import PickAndPlaceNextToTaskSampler
@@ -280,8 +280,7 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
             CuroboOpenClosePlannerPolicy,
         )
 
-        rby1_path = get_robot_paths().get("rby1m")
-        assert rby1_path is not None, "RBY1 robot path not found"
+        rby1_path = get_robot_path("rby1m")
 
         left_curobo_planner_config = CuroboPlannerConfig(
             curobo_robot_config_path=str(
@@ -335,8 +334,7 @@ class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
             CuroboPickAndPlacePlannerPolicy,
         )
 
-        rby1_path = get_robot_paths().get("rby1m")
-        assert rby1_path is not None, "RBY1 robot path not found"
+        rby1_path = get_robot_path("rby1m")
         from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
 
         left_curobo_planner_config = CuroboPlannerConfig(
@@ -412,8 +410,7 @@ class RBY1PickDataGenConfig(PickBaseConfig):
             CuroboPickAndPlacePlannerPolicy,
         )
 
-        rby1_path = get_robot_paths().get("rby1m")
-        assert rby1_path is not None, "RBY1 robot path not found"
+        rby1_path = get_robot_path("rby1m")
         from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
 
         left_curobo_planner_config = CuroboPlannerConfig(

@@ -5,7 +5,6 @@ import numpy as np
 from mujoco import MjData
 
 from molmo_spaces.env.data_views import create_mlspaces_body
-from molmo_spaces.molmo_spaces_constants import get_robot_paths
 from molmo_spaces.robots.robot_views.abstract import (
     FreeJointRobotBaseGroup,
     GripperGroup,
@@ -140,9 +139,12 @@ if __name__ == "__main__":
         from mujoco import MjData, MjModel
         from mujoco.viewer import launch_passive
 
+        from molmo_spaces.configs.robot_configs import FloatingRUMRobotConfig
+
         np.set_printoptions(linewidth=np.inf)
 
-        xml_path = str(get_robot_paths().get("floating_rum")) + "/model.xml"
+        robot_config = FloatingRUMRobotConfig()
+        xml_path = str(robot_config.get_robot_xml_path())
         model = MjModel.from_xml_path(xml_path)
 
         data = MjData(model)

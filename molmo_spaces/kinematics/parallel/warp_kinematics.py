@@ -15,7 +15,6 @@ import mujoco_warp as mjw
 import warp as wp
 
 from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
-from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.robot_views.abstract import (
     GripperGroup,
     MJCFFrameMixin,
@@ -263,7 +262,7 @@ class SimpleWarpKinematics(ParallelKinematics):
         self._device = device
 
         spec = MjSpec()
-        robot_xml_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+        robot_xml_path = robot_config.get_robot_xml_path()
         robot_spec = MjSpec.from_file(str(robot_xml_path))
         for body in robot_spec.bodies:
             body: mujoco.MjsBody

@@ -12,7 +12,6 @@ from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
-from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
@@ -116,7 +115,7 @@ class MobileFrankaRobot(Robot):
         prefix: str,
         randomize_base_texture: bool,
     ) -> None:
-        texture_dir = get_robot_path(robot_config.name) / "assets" / "base_textures"
+        texture_dir = robot_config.get_robot_dir() / "assets" / "base_textures"
         assert texture_dir.is_dir(), f"Texture directory {texture_dir} does not exist"
         texture_path: Path | None = None
         if randomize_base_texture:
@@ -245,7 +244,7 @@ if __name__ == "__main__":
     import mujoco.viewer
 
     from molmo_spaces.configs.robot_configs import MobileFrankaRobotConfig
-    from molmo_spaces.molmo_spaces_constants import get_procthor_10k_houses, get_robot_path
+    from molmo_spaces.molmo_spaces_constants import get_procthor_10k_houses
     from molmo_spaces.utils.lazy_loading_utils import (
         install_scene_with_objects_and_grasps_from_path,
     )
@@ -257,7 +256,7 @@ if __name__ == "__main__":
     spec = MjSpec.from_file(house_xml_path)
 
     robot_config = MobileFrankaRobotConfig(base_size=[0.5, 0.5, 0.75])
-    robot_file_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+    robot_file_path = robot_config.get_robot_xml_path()
     robot_spec = MjSpec.from_file(str(robot_file_path))
 
     MobileFrankaRobot.add_robot_to_scene(

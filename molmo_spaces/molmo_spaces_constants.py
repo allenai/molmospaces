@@ -557,7 +557,7 @@ def get_holodeck_objaverse_houses(split) -> dict:
 
 
 def get_robot_paths() -> dict[str, Path]:
-    """Return {robot_name: Path} for all available robot files."""
+    """Return {robot_name: Path} for all prepackaged MlSpaces robot files."""
     robot_paths = {}
     for robot_name in os.listdir(ROBOTS_DIR):
         robot_paths[robot_name] = ROBOTS_DIR / robot_name
@@ -565,6 +565,9 @@ def get_robot_paths() -> dict[str, Path]:
 
 
 def get_robot_path(robot_name) -> Path:
+    """
+    Return the path to the prepackaged MlSpaces robot file for the given robot name.
+    """
     return ROBOTS_DIR / robot_name
 
 

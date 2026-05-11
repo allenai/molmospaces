@@ -15,7 +15,7 @@ from molmo_spaces.configs.task_sampler_configs import (
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import (
     ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR,
-    get_robot_paths,
+    get_robot_path,
 )
 from molmo_spaces.tasks.opening_task_samplers import (
     DoorOpeningTaskSampler,
@@ -83,8 +83,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
         from molmo_spaces.policy.solvers.opening_solver import DoorOpeningPlannerPolicy
 
         # Setup curobo planner configs with current ctrl_dt_ms
-        rby1m_path = get_robot_paths().get("rby1m")
-        assert rby1m_path is not None, "RBY1M robot path not found"
+        rby1m_path = get_robot_path("rby1m")
 
         left_curobo_planner_config = CuroboPlannerConfig(
             curobo_robot_config_path=str(

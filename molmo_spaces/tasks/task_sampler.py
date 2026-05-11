@@ -32,7 +32,6 @@ from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import (
     ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR,
     DATA_TYPE_TO_SOURCE_TO_VERSION,
-    get_robot_path,
     get_scenes,
     get_scenes_root,
 )
@@ -550,10 +549,13 @@ class BaseMujocoTaskSampler:
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("compile_xml_load")
 
-        robot_file_path = get_robot_path(robot_config.name) / robot_config.robot_xml_path
+        robot_file_path = robot_config.get_robot_xml_path()
         use_include = robot_config.name == "rby1" or robot_config.name == "rby1m"
 
         if use_include:
+            # for whatever reason, the rby1 specifically doesn't play nice with MjSpec insertion,
+            # so we directly insert the rby1 xml into the scene. For all other robots,
+            # we use spec editing.
             spec = xml_add_rby1_to_scene(
                 self.config.task_sampler_config, scene_file_path, robot_file_path
             )
