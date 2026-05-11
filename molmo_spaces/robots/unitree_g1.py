@@ -119,9 +119,11 @@ class UnitreeG1Robot(Robot):
 
     def compute_control(self) -> None:
         self._pin_base_if_configured()
+        self._apply_locked_joint_targets()
         for controller in self.controllers.values():
             ctrl_inputs = controller.compute_ctrl_inputs()
             controller.robot_move_group.ctrl = ctrl_inputs
+        self._apply_locked_joint_targets()
         self._pin_base_if_configured()
 
     def set_joint_pos(self, robot_joint_pos_dict) -> None:
@@ -148,9 +150,28 @@ class UnitreeG1Robot(Robot):
                 move_group = self._robot_view.get_move_group(mg_id)
                 move_group.joint_pos = np.asarray(default_pos)
                 move_group.joint_vel = np.zeros(move_group.vel_dim)
+        self._apply_locked_joint_targets()
         if self._should_pin_base():
             self._pinned_base_pose = None
             self._zero_base_velocity_if_configured()
+
+    def apply_initial_state_overrides(self) -> None:
+        """Apply non-policy initial state constraints after sampler-level resets."""
+        self._apply_locked_joint_targets()
+        self._pin_base_if_configured()
+
+    def _apply_locked_joint_targets(self) -> None:
+        """Hold joints that are intentionally outside the policy-facing move groups."""
+        locked_joint_qpos = getattr(self.exp_config.robot_config, "locked_joint_qpos", None) or {}
+        for joint_name, joint_qpos in locked_joint_qpos.items():
+            namespaced_joint_name = f"{self.namespace}{joint_name}"
+            joint_id = self.mj_model.joint(namespaced_joint_name).id
+            qpos_addr = self.mj_model.jnt_qposadr[joint_id]
+            qvel_addr = self.mj_model.jnt_dofadr[joint_id]
+            self.mj_data.qpos[qpos_addr] = joint_qpos
+            self.mj_data.qvel[qvel_addr] = 0.0
+            actuator_id = self.mj_model.actuator(namespaced_joint_name).id
+            self.mj_data.ctrl[actuator_id] = joint_qpos
 
     def _should_pin_base(self) -> bool:
         return bool(getattr(self.exp_config.robot_config, "pin_base_in_place", False))

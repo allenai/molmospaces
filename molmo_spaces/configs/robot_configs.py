@@ -101,6 +101,7 @@ class BaseRobotConfig(Config):
     ]  # move_group to command_mode e.g., "joint", "cartesian", "velocity"
     init_qpos: dict[str, list[float]]
     init_qpos_noise_range: dict[str, list[float]] | None
+    locked_joint_qpos: dict[str, float] | None = None
     name: str | None
     robot_xml_path: (
         Path | None
@@ -470,6 +471,17 @@ class UnitreeG1RightArmPickRobotConfig(UnitreeG1Dex1RobotConfig):
         "base": [0.0, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0],
         "right_arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         "gripper": [0.0245, 0.0245],
+    }
+    locked_joint_qpos: dict[str, float] | None = {
+        "left_shoulder_pitch_joint": 0.25,
+        "left_shoulder_roll_joint": 0.35,
+        "left_shoulder_yaw_joint": -0.1,
+        "left_elbow_joint": 1.0,
+        "left_wrist_roll_joint": 0.0,
+        "left_wrist_pitch_joint": 0.0,
+        "left_wrist_yaw_joint": 0.0,
+        "left_dex1_finger_joint_1": 0.0245,
+        "left_dex1_finger_joint_2": 0.0245,
     }
     command_mode: dict[str, str | None] = {
         "base": None,

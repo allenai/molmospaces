@@ -210,6 +210,20 @@ class PickAndPlaceTaskSamplerConfig(PickTaskSamplerConfig):
     episodes_per_receptacle: int = 2
 
 
+class UnitreeG1TabletopPickAndPlaceTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
+    """Sampler settings for the fixed Unitree G1 tabletop user scene."""
+
+    table_body_name: str = "g1_table"
+    table_geom_name: str = "g1_tabletop_geom"
+    place_receptacle_name: str = "g1_place_bin"
+    pickup_workspace_center_xy: tuple[float, float] = (0.42, -0.16)
+    pickup_workspace_size_xy: tuple[float, float] = (0.18, 0.22)
+    place_workspace_center_xy: tuple[float, float] = (0.42, 0.16)
+    place_workspace_size_xy: tuple[float, float] = (0.16, 0.20)
+    object_table_clearance: float = 0.006
+    receptacle_table_clearance: float = 0.001
+
+
 class PickAndPlaceNextToTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
     place_receptacle_types: list[str] = []  # Empty = any object on bench
     min_object_to_receptacle_dist: float = 0.3  # avoid insta-success by keeping this large

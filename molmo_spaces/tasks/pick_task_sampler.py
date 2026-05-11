@@ -245,6 +245,9 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if "head" in robot.robot_view.move_group_ids():
                 head_mg = robot.robot_view.get_move_group("head")
                 head_mg.ctrl = head_mg.noop_ctrl
+            apply_initial_state_overrides = getattr(robot, "apply_initial_state_overrides", None)
+            if apply_initial_state_overrides is not None:
+                apply_initial_state_overrides()
 
         # robot_color = None
         # robot_color = [.941, .322, .612,1.]  # example: red

@@ -23,6 +23,19 @@ SOURCE_URDF_REL_PATH = Path("g1_description/g1_29dof_mode_15_with_dex1_1.urdf")
 SOURCE_MESH_DIR_REL_PATH = Path("g1_description/meshes")
 OUTPUT_XML_NAME = "model.xml"
 DEFAULT_PELVIS_HEIGHT_M = 0.793
+LEFT_ARM_STOW_QPOS = {
+    "left_shoulder_pitch_joint": 0.25,
+    "left_shoulder_roll_joint": 0.35,
+    "left_shoulder_yaw_joint": -0.1,
+    "left_elbow_joint": 1.0,
+    "left_wrist_roll_joint": 0.0,
+    "left_wrist_pitch_joint": 0.0,
+    "left_wrist_yaw_joint": 0.0,
+}
+LEFT_HAND_OPEN_QPOS = {
+    "left_dex1_finger_joint_1": 0.0245,
+    "left_dex1_finger_joint_2": 0.0245,
+}
 
 
 GAIN_BY_JOINT_GROUP = {

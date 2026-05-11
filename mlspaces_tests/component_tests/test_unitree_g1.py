@@ -15,7 +15,22 @@ from molmo_spaces.data_generation.config_registry import get_config_class
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.unitree_g1 import UnitreeG1Robot
 from molmo_spaces.tasks.pick_task_sampler import UnitreeG1RightArmPickTaskSampler
-from scripts.assets.prepare_unitree_g1 import ROBOT_ASSET_NAME, prepare_unitree_g1
+from scripts.assets.prepare_unitree_g1 import (
+    LEFT_ARM_STOW_QPOS,
+    LEFT_HAND_OPEN_QPOS,
+    ROBOT_ASSET_NAME,
+    prepare_unitree_g1,
+)
+from scripts.assets.prepare_unitree_g1_tabletop import (
+    PLACE_RECEPTACLE_BODY_NAME,
+    PLACE_RECEPTACLE_SITE_NAME,
+    TABLE_BODY_NAME,
+    TABLE_MATERIAL_NAME,
+    TABLE_RGBA,
+    TABLETOP_GEOM_NAME,
+    TABLETOP_VISUAL_GEOM_NAME,
+    prepare_unitree_g1_tabletop,
+)
 
 KINEMATICS_SITE_NAMES = [
     "left_wrist_site",
@@ -23,6 +38,36 @@ KINEMATICS_SITE_NAMES = [
     "left_grasp_site",
     "right_grasp_site",
 ]
+
+
+def test_prepare_unitree_g1_tabletop_scenes_smoke(tmp_path):
+    scene_dir = tmp_path / "scenes" / "unitree_g1_tabletop_v1"
+    scene_paths = prepare_unitree_g1_tabletop(scene_dir)
+    assert [path.name for path in scene_paths] == [
+        "unitree_g1_tabletop_pelvis_minus_10cm_v1.xml",
+        "unitree_g1_tabletop_pelvis_height_v1.xml",
+    ]
+
+    expected_heights = [0.693, 0.793]
+    for scene_path, expected_height in zip(scene_paths, expected_heights, strict=True):
+        metadata_path = scene_path.with_name(scene_path.stem + "_metadata.json")
+        assert metadata_path.exists()
+        model = mujoco.MjModel.from_xml_path(str(scene_path))
+        data = mujoco.MjData(model)
+        mujoco.mj_forward(model, data)
+        assert model.body(TABLE_BODY_NAME).id >= 0
+        assert model.body(PLACE_RECEPTACLE_BODY_NAME).id >= 0
+        assert model.site(PLACE_RECEPTACLE_SITE_NAME).id >= 0
+        table_material_id = model.material(TABLE_MATERIAL_NAME).id
+        np.testing.assert_allclose(model.mat_rgba[table_material_id], TABLE_RGBA)
+        tabletop_geom = model.geom(TABLETOP_GEOM_NAME)
+        tabletop_visual_geom = model.geom(TABLETOP_VISUAL_GEOM_NAME)
+        assert model.geom_group[tabletop_geom.id] == 4
+        assert model.geom_group[tabletop_visual_geom.id] == 0
+        assert model.geom_contype[tabletop_visual_geom.id] == 0
+        assert model.geom_conaffinity[tabletop_visual_geom.id] == 0
+        tabletop_top_z = float(tabletop_geom.pos[2] + tabletop_geom.size[2])
+        assert tabletop_top_z == pytest.approx(expected_height)
 
 
 def _has_deep_robot_floor_penetration(
@@ -42,6 +87,21 @@ def _has_deep_robot_floor_penetration(
         if "robot_0/" in names and "floor" in names:
             return True
     return False
+
+
+def _assert_locked_joints(
+    model: mujoco.MjModel,
+    data: mujoco.MjData,
+    namespace: str,
+    locked_joint_qpos: dict[str, float],
+) -> None:
+    for joint_name, expected_qpos in locked_joint_qpos.items():
+        namespaced_joint_name = f"{namespace}{joint_name}"
+        joint_id = model.joint(namespaced_joint_name).id
+        qposadr = model.jnt_qposadr[joint_id]
+        actuator_id = model.actuator(namespaced_joint_name).id
+        assert data.qpos[qposadr] == pytest.approx(expected_qpos)
+        assert data.ctrl[actuator_id] == pytest.approx(expected_qpos)
 
 
 def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
@@ -124,6 +184,9 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     pick_datagen_config_cls = get_config_class("UnitreeG1RightArmPickDataGenConfig")
     pick_datagen_config = pick_datagen_config_cls()
     assert isinstance(pick_datagen_config.robot_config, UnitreeG1RightArmPickRobotConfig)
+    assert pick_datagen_config.robot_config.locked_joint_qpos == (
+        LEFT_ARM_STOW_QPOS | LEFT_HAND_OPEN_QPOS
+    )
     assert pick_datagen_config.robot_config.pin_base_in_place
     assert (
         pick_datagen_config.task_sampler_config.task_sampler_class
@@ -140,6 +203,24 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     assert not pick_datagen_config.policy_config.filter_colliding_grasps
     assert not pick_datagen_config.policy_config.filter_feasible_grasps
     assert len(pick_datagen_config.camera_config.cameras) == 2
+    tabletop_datagen_config_cls = get_config_class(
+        "UnitreeG1RightArmTabletopPickAndPlaceDataGenConfig"
+    )
+    tabletop_datagen_config = tabletop_datagen_config_cls()
+    assert tabletop_datagen_config.scene_dataset == "user"
+    assert isinstance(tabletop_datagen_config.robot_config, UnitreeG1RightArmPickRobotConfig)
+    assert (
+        tabletop_datagen_config.task_sampler_config.task_sampler_class.__name__
+        == "UnitreeG1RightArmTabletopPickAndPlaceTaskSampler"
+    )
+    assert tabletop_datagen_config.task_sampler_config.house_inds == [0, 1]
+    assert tabletop_datagen_config.task_sampler_config.samples_per_house == 5
+    assert len(tabletop_datagen_config.task_sampler_config.scene_xml_paths) == 2
+    assert tabletop_datagen_config.policy_config.policy_cls.__name__ == (
+        "UnitreeG1RightArmPickAndPlacePlannerPolicy"
+    )
+    assert not tabletop_datagen_config.policy_config.filter_colliding_grasps
+    assert not tabletop_datagen_config.policy_config.filter_feasible_grasps
 
     base_scene_path = constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR / (
         "molmo_spaces/resources/base_scene.xml"
@@ -222,8 +303,28 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     pick_robot = UnitreeG1Robot(
         pick_scene_data, SimpleNamespace(robot_config=pick_datagen_config.robot_config)
     )
+    mujoco.mj_resetData(pick_scene_model, pick_scene_data)
+    for group_name, qpos in pick_datagen_config.robot_config.init_qpos.items():
+        pick_robot.robot_view.get_move_group(group_name).joint_pos = np.asarray(qpos)
+    for controller in pick_robot.controllers.values():
+        controller.reset()
+    pick_robot.apply_initial_state_overrides()
+    mujoco.mj_forward(pick_scene_model, pick_scene_data)
+    _assert_locked_joints(
+        pick_scene_model,
+        pick_scene_data,
+        pick_datagen_config.robot_config.robot_namespace,
+        pick_datagen_config.robot_config.locked_joint_qpos,
+    )
+
     pick_robot.reset()
     mujoco.mj_forward(pick_scene_model, pick_scene_data)
+    _assert_locked_joints(
+        pick_scene_model,
+        pick_scene_data,
+        pick_datagen_config.robot_config.robot_namespace,
+        pick_datagen_config.robot_config.locked_joint_qpos,
+    )
     initial_pick_base_pose = pick_robot.robot_view.base.pose.copy()
     initial_pick_base_pose[:3, 3] = [0.2, -0.3, initial_pick_base_pose[2, 3]]
     pick_robot.robot_view.base.pose = initial_pick_base_pose
@@ -240,8 +341,15 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     for _ in range(10):
         pick_robot.compute_control()
         mujoco.mj_step(pick_scene_model, pick_scene_data)
+    pick_robot.compute_control()
     assert np.isfinite(pick_scene_data.qpos).all()
     assert np.isfinite(pick_scene_data.ctrl).all()
+    _assert_locked_joints(
+        pick_scene_model,
+        pick_scene_data,
+        pick_datagen_config.robot_config.robot_namespace,
+        pick_datagen_config.robot_config.locked_joint_qpos,
+    )
     assert np.allclose(
         pick_robot.robot_view.base.pose[:3, 3],
         initial_pick_base_pose[:3, 3],

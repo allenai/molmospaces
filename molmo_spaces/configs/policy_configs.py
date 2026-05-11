@@ -178,6 +178,30 @@ class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
             self.policy_cls = PickAndPlacePlannerPolicy
 
 
+class UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
+    """Pick-and-place planner config for fixed-base G1 right-arm tabletop datagen."""
+
+    policy_cls: type = None
+    filter_colliding_grasps: bool = False
+    filter_feasible_grasps: bool = False
+    grasp_feasibility_batch_size: int = 32
+    grasp_feasibility_max_grasps: int = 32
+    grasp_collision_batch_size: int = 32
+    grasp_collision_max_grasps: int = 64
+    max_retries: int = 0
+    max_sequential_ik_failures: int = 4
+    phase_timeout: float = 24.0
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_planner_policy import (
+            UnitreeG1RightArmPickAndPlacePlannerPolicy,
+        )
+
+        self.policy_cls = UnitreeG1RightArmPickAndPlacePlannerPolicy
+
+
 class CuroboOpenClosePlannerPolicyConfig(OpenClosePlannerPolicyConfig):
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
     left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
