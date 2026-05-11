@@ -45,6 +45,8 @@ nav:
       - Benchmark Evaluation: evaluation_guide.md
       - Code Structure: code_structure.md
       - Development: development.md
+      - "Tutorial: Add a custom robot":
+          - tutorials/add_robot/index.md
   - API Reference:
       - Overview: api/index.md
       - molmo_spaces: api/molmo_spaces.md
