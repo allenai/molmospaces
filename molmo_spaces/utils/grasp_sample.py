@@ -519,6 +519,26 @@ def compute_grasp_pose(
         raise ValueError("No feasible grasp found")
 
     original_grasp_idx = grasp_idx % (len(grasp_poses_world) // 2)
+    if hasattr(policy, "_record_g1_selected_grasp_debug"):
+        policy._record_g1_selected_grasp_debug(
+            {
+                "grasp_idx": int(grasp_idx),
+                "original_grasp_idx": int(original_grasp_idx),
+                "grasp_pose_world": grasp_pose_world.copy(),
+                "top_candidate_ids": close_grasp_ids[
+                    : getattr(policy.policy_config, "g1_ik_debug_top_k_grasps", 5)
+                ]
+                .astype(int)
+                .tolist(),
+                "top_candidate_poses": grasp_poses_world[
+                    close_grasp_ids[
+                        : getattr(policy.policy_config, "g1_ik_debug_top_k_grasps", 5)
+                    ]
+                ].copy(),
+                "selected_pos_cost_m": float(dists_tcp_p[grasp_idx]),
+                "selected_rot_cost_deg": float(dist_tcp_o[grasp_idx]),
+            }
+        )
     log.info(
         f"Feasible grasp found {grasp_idx} (originally {original_grasp_idx}): w/ {dists_tcp_p[grasp_idx]:.3f}[m] {dist_tcp_o[grasp_idx]:.3f}[deg]"
     )

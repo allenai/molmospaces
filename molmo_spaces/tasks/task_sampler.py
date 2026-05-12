@@ -719,7 +719,10 @@ class BaseMujocoTaskSampler:
             scene_path = self._current_house_scene_path(variant=variant)
 
         # If using a MolmoSpaces scene, install it
-        if get_scenes_root().resolve() in Path(scene_path).resolve().parents:
+        if (
+            self.config.scene_dataset != "user"
+            and get_scenes_root().resolve() in Path(scene_path).resolve().parents
+        ):
             # Track asset installation time (fetching/extracting scene, objects, grasps)
             # Use detailed profiling to identify which asset type is slow
             if self._datagen_profiler is not None:
@@ -897,7 +900,7 @@ class BaseMujocoTaskSampler:
         else:
             mapping = {
                 self.config.data_split: {
-                    i: {"base": scene_xml_path}
+                    i: {"base": scene_xml_path, "ceiling": scene_xml_path}
                     for i, scene_xml_path in enumerate(
                         self.config.task_sampler_config.scene_xml_paths
                     )

@@ -1,7 +1,9 @@
 """
 Demo script that demonstrates the parallel IK solver for multiple robots simultaneously.
 
-On mac, run with mjpython.
+On macOS, run viewer commands with mjpython from a conda or Homebrew Python
+environment if your current environment does not expose libpython3.11.dylib.
+uv environments can run headless checks, but mjpython needs that shared library.
 """
 
 from collections import defaultdict

@@ -19,6 +19,7 @@ from molmo_spaces.configs.base_pick_and_place_configs import (
 from molmo_spaces.configs.base_pick_and_place_next_to_configs import PickAndPlaceNextToDataGenConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
+    CameraSystemConfig,
     FrankaDroidCameraSystem,
     FrankaEasyRandomizedDroidCameraSystem,
     FrankaGoProD405D455CameraSystem,
@@ -26,18 +27,24 @@ from molmo_spaces.configs.camera_configs import (
     FrankaRandomizedD405D455CameraSystem,
     FrankaRandomizedDroidCameraSystem,
     RBY1GoProD455CameraSystem,
+    UnitreeG1RightArmPickCameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
     CuroboOpenClosePlannerPolicyConfig,
     CuroboPickAndPlacePlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickPlannerPolicyConfig,
+    UnitreeG1RightArmPickAndPlacePlannerPolicyConfig,
+    UnitreeG1RightArmPickPlannerPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import (
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
     RBY1MConfig,
     RBY1MOpenCloseConfig,
+    UnitreeG1Dex1RobotConfig,
+    UnitreeG1RightArmPickRobotConfig,
+    UnitreeG1RightArmTabletopPickRobotConfig,
 )
 from molmo_spaces.configs.task_sampler_configs import (
     OpenTaskSamplerConfig,
@@ -46,6 +53,7 @@ from molmo_spaces.configs.task_sampler_configs import (
     PickAndPlaceTaskSamplerConfig,
     PickTaskSamplerConfig,
     RUMPickTaskSamplerConfig,
+    UnitreeG1TabletopPickAndPlaceTaskSamplerConfig,
 )
 
 # Oder of configs should be order the code is executed in
@@ -59,9 +67,23 @@ from molmo_spaces.tasks.pick_and_place_task_sampler import (
     PickAndPlaceMultiTaskSampler,
     PickAndPlaceTaskSampler,
 )
-from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
+from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler, UnitreeG1RightArmPickTaskSampler
+from molmo_spaces.tasks.unitree_g1_tabletop_task_sampler import (
+    UnitreeG1RightArmTabletopPickAndPlaceTaskSampler,
+)
 from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 from molmo_spaces.utils.synset_utils import get_valid_pickupable_obja_uids
+
+G1_TABLETOP_DIAGNOSTIC_PICKUP_OBJECTS = [
+    "Apple_22",
+    "Egg_9",
+    "Potato_12",
+    "Salt_Shaker_1",
+    "Cup_5",
+    "Apple_18",
+    "Tomato_26",
+    "Apple_4",
+]
 
 
 @register_config("FrankaPickDroidDataGenConfig")
@@ -121,6 +143,211 @@ class RUMPickDataGenConfig(PickBaseConfig):
     @property
     def tag(self) -> str:
         return "rum_pick_datagen"
+
+
+@register_config("UnitreeG1SceneSmokeDataGenConfig")
+class UnitreeG1SceneSmokeDataGenConfig(PickBaseConfig):
+    """Minimal config-path smoke test for loading Unitree G1 into MolmoSpaces scenes."""
+
+    robot_config: UnitreeG1Dex1RobotConfig = UnitreeG1Dex1RobotConfig()
+    camera_config: CameraSystemConfig | None = None
+    task_horizon: int = 1
+    profile: bool = False
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "unitree_g1_scene_smoke_v1"
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_scene_smoke_datagen"
+
+
+@register_config("UnitreeG1RightArmPickDataGenConfig")
+class UnitreeG1RightArmPickDataGenConfig(PickBaseConfig):
+    """Right-arm-only Unitree G1 pick smoke datagen."""
+
+    robot_config: UnitreeG1RightArmPickRobotConfig = UnitreeG1RightArmPickRobotConfig()
+    camera_config: UnitreeG1RightArmPickCameraSystem = UnitreeG1RightArmPickCameraSystem()
+    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+        task_sampler_class=UnitreeG1RightArmPickTaskSampler,
+        house_inds=[1],
+        samples_per_house=5,
+        robot_object_z_offset=0.0,
+        robot_object_z_offset_random_min=0.0,
+        robot_object_z_offset_random_max=0.0,
+        base_pose_sampling_radius_range=(0.15, 0.4),
+        robot_safety_radius=0.25,
+        check_robot_placement_visibility=False,
+    )
+    policy_config: UnitreeG1RightArmPickPlannerPolicyConfig = (
+        UnitreeG1RightArmPickPlannerPolicyConfig()
+    )
+    task_horizon: int = 120
+    filter_for_successful_trajectories: bool = False
+    profile: bool = False
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "unitree_g1_right_arm_pick_v1"
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_right_arm_pick_datagen"
+
+
+@register_config("UnitreeG1RightArmTabletopPickAndPlaceDataGenConfig")
+class UnitreeG1RightArmTabletopPickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
+    """Right-arm-only Unitree G1 pick-and-place datagen for a fixed tabletop user scene."""
+
+    scene_dataset: str = "user"
+    robot_config: UnitreeG1RightArmTabletopPickRobotConfig = (
+        UnitreeG1RightArmTabletopPickRobotConfig()
+    )
+    camera_config: UnitreeG1RightArmPickCameraSystem = UnitreeG1RightArmPickCameraSystem()
+    task_sampler_config: UnitreeG1TabletopPickAndPlaceTaskSamplerConfig = (
+        UnitreeG1TabletopPickAndPlaceTaskSamplerConfig(
+            task_sampler_class=UnitreeG1RightArmTabletopPickAndPlaceTaskSampler,
+            house_inds=[0],
+            scene_xml_paths=[
+                str(
+                    ASSETS_DIR
+                    / "scenes"
+                    / "unitree_g1_tabletop_v1"
+                    / "unitree_g1_tabletop_pelvis_minus_10cm_v1.xml"
+                ),
+            ],
+            samples_per_house=5,
+            added_pickup_objects=get_valid_pickupable_obja_uids(),
+            num_added_pickups=12,
+            episodes_per_added_pickup=1,
+            check_robot_placement_visibility=False,
+            robot_safety_radius=0.25,
+        )
+    )
+    policy_config: UnitreeG1RightArmPickAndPlacePlannerPolicyConfig = (
+        UnitreeG1RightArmPickAndPlacePlannerPolicyConfig()
+    )
+    task_horizon: int = 360
+    end_on_success: bool = True
+    filter_for_successful_trajectories: bool = False
+    profile: bool = False
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "unitree_g1_tabletop_pnp_v1"
+    )
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_right_arm_tabletop_pick_and_place_datagen"
+
+
+@register_config("UnitreeG1RightArmTabletopPickAndPlaceDiagnosticDataGenConfig")
+class UnitreeG1RightArmTabletopPickAndPlaceDiagnosticDataGenConfig(
+    UnitreeG1RightArmTabletopPickAndPlaceDataGenConfig
+):
+    """Diagnostic G1 tabletop run with small fixed objects and detailed IK logs."""
+
+    task_sampler_config: UnitreeG1TabletopPickAndPlaceTaskSamplerConfig = (
+        UnitreeG1TabletopPickAndPlaceTaskSamplerConfig(
+            task_sampler_class=UnitreeG1RightArmTabletopPickAndPlaceTaskSampler,
+            house_inds=[0],
+            scene_xml_paths=[
+                str(
+                    ASSETS_DIR
+                    / "scenes"
+                    / "unitree_g1_tabletop_v1"
+                    / "unitree_g1_tabletop_pelvis_minus_10cm_v1.xml"
+                ),
+            ],
+            samples_per_house=len(G1_TABLETOP_DIAGNOSTIC_PICKUP_OBJECTS),
+            added_pickup_objects=G1_TABLETOP_DIAGNOSTIC_PICKUP_OBJECTS,
+            num_added_pickups=len(G1_TABLETOP_DIAGNOSTIC_PICKUP_OBJECTS),
+            episodes_per_added_pickup=1,
+            check_robot_placement_visibility=False,
+            robot_safety_radius=0.25,
+        )
+    )
+    policy_config: UnitreeG1RightArmPickAndPlacePlannerPolicyConfig = (
+        UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(
+            g1_ik_debug=True,
+            g1_ik_debug_top_k_grasps=8,
+        )
+    )
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "unitree_g1_tabletop_pnp_diagnostic_v1"
+    )
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_right_arm_tabletop_pick_and_place_diagnostic_datagen"
+
+
+@register_config("UnitreeG1RightArmTabletopPickAndPlaceViewerDebugConfig")
+class UnitreeG1RightArmTabletopPickAndPlaceViewerDebugConfig(
+    UnitreeG1RightArmTabletopPickAndPlaceDiagnosticDataGenConfig
+):
+    """Single-object G1 tabletop run for inspecting planner waypoints in the MuJoCo viewer."""
+
+    use_passive_viewer: bool = True
+    task_sampler_config: UnitreeG1TabletopPickAndPlaceTaskSamplerConfig = (
+        UnitreeG1TabletopPickAndPlaceTaskSamplerConfig(
+            task_sampler_class=UnitreeG1RightArmTabletopPickAndPlaceTaskSampler,
+            house_inds=[0],
+            scene_xml_paths=[
+                str(
+                    ASSETS_DIR
+                    / "scenes"
+                    / "unitree_g1_tabletop_v1"
+                    / "unitree_g1_tabletop_pelvis_minus_10cm_v1.xml"
+                ),
+            ],
+            samples_per_house=1,
+            added_pickup_objects=["Salt_Shaker_1"],
+            num_added_pickups=1,
+            episodes_per_added_pickup=1,
+            check_robot_placement_visibility=False,
+            robot_safety_radius=0.25,
+        )
+    )
+    policy_config: UnitreeG1RightArmPickAndPlacePlannerPolicyConfig = (
+        UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(
+            debug_poses=True,
+            g1_ik_debug=True,
+            g1_ik_debug_top_k_grasps=8,
+        )
+    )
+    output_dir: Path = (
+        ASSETS_DIR
+        / "experiment_output"
+        / "datagen"
+        / "unitree_g1_tabletop_pnp_viewer_debug_v1"
+    )
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_right_arm_tabletop_pick_and_place_viewer_debug"
+
+
+@register_config("UnitreeG1RightArmTabletopPickLiftViewerDebugConfig")
+class UnitreeG1RightArmTabletopPickLiftViewerDebugConfig(
+    UnitreeG1RightArmTabletopPickAndPlaceViewerDebugConfig
+):
+    """Single-object G1 tabletop run that stops after lift for grasp/contact inspection."""
+
+    policy_config: UnitreeG1RightArmPickAndPlacePlannerPolicyConfig = (
+        UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(
+            debug_poses=True,
+            g1_ik_debug=True,
+            g1_ik_debug_top_k_grasps=8,
+            g1_grasp_require_all_pick_place_phases=False,
+            g1_pick_lift_only=True,
+        )
+    )
+    task_horizon: int = 120
+    output_dir: Path = (
+        ASSETS_DIR
+        / "experiment_output"
+        / "datagen"
+        / "unitree_g1_tabletop_pick_lift_viewer_debug_v1"
+    )
+
+    @property
+    def tag(self) -> str:
+        return "unitree_g1_right_arm_tabletop_pick_lift_viewer_debug"
 
 
 @register_config("FrankaPickAndPlaceDataGenConfig")

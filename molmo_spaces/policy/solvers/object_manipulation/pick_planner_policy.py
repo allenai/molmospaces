@@ -169,3 +169,69 @@ class PickPlannerPolicy(BaseObjectManipulationPlannerPolicy):
         log.info(f"Planning completed. w/ {len(target_poses)} steps\n")
 
         return target_poses
+
+
+class UnitreeG1RightArmPickPlannerPolicy(PickPlannerPolicy):
+    """Pick planner variant that solves IK through the G1 right arm only."""
+
+    def _tcp_to_jp_fn(self, mg_id: str, target_pose: np.ndarray) -> dict[str, np.ndarray]:
+        kinematics = self.task.env.current_robot.kinematics
+
+        jp = kinematics.ik(
+            mg_id,
+            target_pose,
+            ["right_arm"],
+            self.robot_view.get_qpos_dict(),
+            self.robot_view.base.pose,
+        )
+
+        action = self.robot_view.get_ctrl_dict()
+        if jp is not None:
+            self.sequential_ik_failures = 0
+            action["right_arm"] = jp["right_arm"]
+        else:
+            self.sequential_ik_failures += 1
+            log.info(f"⚠️ IK failed, holding current position, fails:{self.sequential_ik_failures}")
+            if self.sequential_ik_failures >= self.policy_config.max_sequential_ik_failures:
+                log.info("❌ Too many sequential IK failures, triggering retry.")
+                return self._handle_failure()
+
+        return action
+
+    def check_feasible_ik(self, pose: np.ndarray) -> bool:
+        if not self.policy_config.filter_feasible_grasps:
+            if pose.ndim > 2:
+                return np.ones(pose.shape[0], dtype=bool)
+            return True
+
+        robot_view = self.task.env.current_robot.robot_view
+        kinematics = self.task.env.current_robot.kinematics
+        gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
+
+        if pose.ndim > 2:
+            return np.array(
+                [
+                    kinematics.ik(
+                        gripper_mg_id,
+                        single_pose,
+                        ["right_arm"],
+                        robot_view.get_qpos_dict(),
+                        robot_view.base.pose,
+                        max_iter=100,
+                    )
+                    is not None
+                    for single_pose in pose
+                ],
+                dtype=bool,
+            )
+
+        assert pose.shape == (4, 4)
+        jp_dict = kinematics.ik(
+            gripper_mg_id,
+            pose,
+            ["right_arm"],
+            robot_view.get_qpos_dict(),
+            robot_view.base.pose,
+            max_iter=100,
+        )
+        return jp_dict is not None

@@ -210,6 +210,35 @@ class PickAndPlaceTaskSamplerConfig(PickTaskSamplerConfig):
     episodes_per_receptacle: int = 2
 
 
+class UnitreeG1TabletopPickAndPlaceTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
+    """Sampler settings for the fixed Unitree G1 tabletop user scene."""
+
+    table_body_name: str = "g1_table"
+    table_geom_name: str = "g1_tabletop_geom"
+    place_receptacle_name: str = "g1_place_bin"
+    robot_base_xy: tuple[float, float] = (0.08, 0.0)
+    pickup_workspace_center_xy: tuple[float, float] = (0.42, -0.20)
+    # y range tightened from 0.10 to 0.06 so the bottle's far edge cannot
+    # crowd the bin under the constrained place workspace below. The
+    # earlier wider y range left less than the 15 mm
+    # pickup_receptacle_min_clearance at the unlucky end of the sample
+    # range, which silently dropped episodes.
+    pickup_workspace_size_xy: tuple[float, float] = (0.16, 0.06)
+    # The bin is 22 cm wide in y, so the bin center can sit only slightly
+    # to the right of the pelvis centerline before its physical extent
+    # crowds the pickup workspace. Constrain the bin to a tight band just
+    # past y=0 — close enough to the right arm to keep the carry path
+    # short, far enough from the pickup to leave a visible breathing-room
+    # gap (~5 cm worst case) between the bottle and the bin wall.
+    place_workspace_center_xy: tuple[float, float] = (0.42, 0.02)
+    place_workspace_size_xy: tuple[float, float] = (0.04, 0.02)
+    place_receptacle_half_size_xy: tuple[float, float] = (0.14, 0.11)
+    pickup_receptacle_min_clearance: float = 0.015
+    max_place_receptacle_sampling_attempts: int = 100
+    object_table_clearance: float = 0.006
+    receptacle_table_clearance: float = 0.001
+
+
 class PickAndPlaceNextToTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
     place_receptacle_types: list[str] = []  # Empty = any object on bench
     min_object_to_receptacle_dist: float = 0.3  # avoid insta-success by keeping this large

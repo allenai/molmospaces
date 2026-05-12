@@ -4,7 +4,7 @@ This solver is not parallelizable and runs on the CPU. While fairly fast,
 this is not suitable for large batches.
 """
 
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import mujoco
 import numpy as np
@@ -252,3 +252,133 @@ class MlSpacesKinematics:
         if succ:
             return self._robot_view.get_qpos_dict()
         return None
+
+    def diagnose_ik(
+        self,
+        move_group_id: str,
+        pose: np.ndarray,
+        unlocked_move_group_ids: list[str] | None,
+        q0: dict[str, np.ndarray],
+        base_pose: np.ndarray,
+        rel_to_base: bool = False,
+        eps: float = 1e-4,
+        max_iter: int = 1000,
+        damping: float = 1e-12,
+        dt: float = 1.0,
+    ) -> dict:
+        """Solve IK and return structured diagnostics instead of only success/failure."""
+        if set(q0.keys()) != set(self._robot_view.move_group_ids()):
+            raise ValueError(
+                f"q0 keys must match move group ids: {set(q0.keys())} != {set(self._robot_view.move_group_ids())}"
+            )
+
+        if unlocked_move_group_ids is None:
+            unlocked_move_group_ids = self._robot_view.move_group_ids()
+
+        requested_unlocked_groups = list(unlocked_move_group_ids)
+        unavailable_groups = [
+            mg_id for mg_id in unlocked_move_group_ids if mg_id not in self._robot_view.move_group_ids()
+        ]
+        unlocked_move_group_ids = [
+            mg_id for mg_id in unlocked_move_group_ids if mg_id in self._robot_view.move_group_ids()
+        ]
+        if not unlocked_move_group_ids:
+            return {
+                "success": False,
+                "reason": "no_available_unlocked_groups",
+                "requested_unlocked_groups": requested_unlocked_groups,
+                "unavailable_groups": unavailable_groups,
+                "qpos": None,
+            }
+
+        self._robot_view.base.pose = base_pose
+        self._robot_view.set_qpos_dict(q0)
+        if rel_to_base:
+            pose = self._robot_view.base.pose @ pose
+
+        move_group = self._robot_view.get_move_group(move_group_id)
+        singular_iterations = 0
+        min_singular_value = float("inf")
+        min_jjt_det = float("inf")
+        clamp_events: list[dict] = []
+        err_norm = float("inf")
+        pos_err_norm = float("inf")
+        rot_err_norm = float("inf")
+        iterations = 0
+        succ = False
+
+        for i in range(max_iter):
+            iterations = i + 1
+            mujoco.mj_fwdPosition(self._mj_model, self._mj_data)
+            mujoco.mj_sensorPos(self._mj_model, self._mj_data)
+
+            ee_pose = relative_to_global_transform(
+                move_group.leaf_frame_to_robot, self._robot_view.base.pose
+            )
+            err_trf = inverse_homogeneous_matrix(ee_pose) @ pose
+            twist_lin, twist_ang = transform_to_twist(err_trf)
+            err = np.concatenate([ee_pose[:3, :3] @ twist_lin, ee_pose[:3, :3] @ twist_ang])
+            pos_err_norm = float(np.linalg.norm(err[:3]))
+            rot_err_norm = float(np.linalg.norm(err[3:]))
+            err_norm = float(np.linalg.norm(err))
+            if err_norm < eps:
+                succ = True
+                break
+            if i == max_iter - 1:
+                break
+
+            J: np.ndarray = self._robot_view.get_jacobian(move_group_id, unlocked_move_group_ids)
+            singular_values = np.linalg.svd(J, compute_uv=False)
+            if singular_values.size:
+                min_singular_value = min(min_singular_value, float(singular_values[-1]))
+            jjt_det = float(np.linalg.det(J @ J.T))
+            min_jjt_det = min(min_jjt_det, jjt_det)
+            if jjt_det < 1e-20:
+                singular_iterations += 1
+
+            H = J @ J.T + damping * np.eye(J.shape[0])
+            q_dot = J.T @ np.linalg.solve(H, err)
+            dq = q_dot * dt
+
+            j = 0
+            for mg_id in unlocked_move_group_ids:
+                mg = self._robot_view.get_move_group(mg_id)
+                before = mg.joint_pos.copy()
+                proposed = mg.integrate_joint_vel(mg.joint_pos, dq[j : j + mg.vel_dim])
+                clipped = np.clip(proposed, mg.joint_pos_limits[:, 0], mg.joint_pos_limits[:, 1])
+                clamped = np.abs(proposed - clipped) > 1e-9
+                if np.any(clamped):
+                    clamp_events.append(
+                        {
+                            "iteration": i,
+                            "move_group": mg_id,
+                            "joint_indices": np.flatnonzero(clamped).astype(int).tolist(),
+                            "before": np.round(before[clamped], 6).tolist(),
+                            "proposed": np.round(proposed[clamped], 6).tolist(),
+                            "clipped": np.round(clipped[clamped], 6).tolist(),
+                        }
+                    )
+                mg.joint_pos = clipped
+                j += mg.vel_dim
+
+        qpos = self._robot_view.get_qpos_dict()
+        final_pose = relative_to_global_transform(move_group.leaf_frame_to_robot, self._robot_view.base.pose)
+        return {
+            "success": bool(succ),
+            "reason": "converged" if succ else "max_iter",
+            "requested_unlocked_groups": requested_unlocked_groups,
+            "unlocked_groups": list(unlocked_move_group_ids),
+            "unavailable_groups": unavailable_groups,
+            "iterations": iterations,
+            "final_error_norm": err_norm,
+            "final_pos_error_norm": pos_err_norm,
+            "final_rot_error_norm": rot_err_norm,
+            "singular_iterations": singular_iterations,
+            "min_singular_value": min_singular_value if np.isfinite(min_singular_value) else None,
+            "min_jjt_det": min_jjt_det if np.isfinite(min_jjt_det) else None,
+            "clamp_event_count": len(clamp_events),
+            "clamp_events": clamp_events[:20],
+            "qpos": qpos if succ else None,
+            "final_qpos": qpos,
+            "final_pose": final_pose,
+        }

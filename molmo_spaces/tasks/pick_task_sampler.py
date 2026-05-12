@@ -245,6 +245,9 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if "head" in robot.robot_view.move_group_ids():
                 head_mg = robot.robot_view.get_move_group("head")
                 head_mg.ctrl = head_mg.noop_ctrl
+            apply_initial_state_overrides = getattr(robot, "apply_initial_state_overrides", None)
+            if apply_initial_state_overrides is not None:
+                apply_initial_state_overrides()
 
         # robot_color = None
         # robot_color = [.941, .322, .612,1.]  # example: red
@@ -962,14 +965,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         else:
             raise ValueError(f"Invalid pickup object type: {type(pickup_obj)}")
 
-        initial_robot_z = (
-            target_pos[2]
-            + self.config.task_sampler_config.robot_object_z_offset
-            + np.random.uniform(
-                self.config.task_sampler_config.robot_object_z_offset_random_min,
-                self.config.task_sampler_config.robot_object_z_offset_random_max,
-            )
-        )
+        initial_robot_z = self._initial_robot_z_for_pickup(target_pos, robot_view)
 
         # place robot near receptacle - this is the expensive call with collision/visibility checks
         if self._datagen_profiler is not None:
@@ -1005,6 +1001,18 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         task_cfg.pickup_obj_goal_pose = pickup_obj_goal_pose.tolist()
 
         log.info(f"Supporting receptacle: {self.config.task_config.receptacle_name}")
+
+    def _initial_robot_z_for_pickup(self, target_pos: np.ndarray, robot_view) -> float:
+        """Return the robot base Z used by placement sampling for a pickup target."""
+        del robot_view
+        return float(
+            target_pos[2]
+            + self.config.task_sampler_config.robot_object_z_offset
+            + np.random.uniform(
+                self.config.task_sampler_config.robot_object_z_offset_random_min,
+                self.config.task_sampler_config.robot_object_z_offset_random_max,
+            )
+        )
 
     def _place_target_near_object(
         self, env: CPUMujocoEnv, object_pos: np.ndarray, placement_region=None
@@ -1179,3 +1187,18 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         )
 
         return spec
+
+
+class UnitreeG1RightArmPickTaskSampler(PickTaskSampler):
+    """Pick sampler variant that keeps the Unitree G1 pelvis at its standing height."""
+
+    def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
+        super()._sample_and_place_robot(env)
+        env.current_robot.sync_pinned_base_pose()
+
+    def _initial_robot_z_for_pickup(self, target_pos: np.ndarray, robot_view) -> float:
+        del target_pos, robot_view
+        base_qpos = self.config.robot_config.init_qpos.get("base")
+        if base_qpos is None or len(base_qpos) < 3:
+            raise ValueError("Unitree G1 pick sampling requires a base init_qpos with xyz.")
+        return float(base_qpos[2])
