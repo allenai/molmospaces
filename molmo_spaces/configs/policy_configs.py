@@ -194,12 +194,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicy
     grasp_collision_batch_size: int = 32
     grasp_collision_max_grasps: int = 64
     max_retries: int = 0
-    # Bumped from 4 → 20. The standalone IK teleop shows the right arm can
-    # reach the preplace region; the runtime was just aborting too early on
-    # transient near-singular sub-targets during the continuous SE(3) sweep.
-    # Higher threshold gives the seed chain a chance to recover before the
-    # planner declares the carry unreachable.
-    max_sequential_ik_failures: int = 20
+    max_sequential_ik_failures: int = 4
     phase_timeout: float = 24.0
     pregrasp_tcp_pos_err_threshold: float = 0.1
     pregrasp_tcp_rot_err_threshold: float = float("inf")
@@ -215,101 +210,31 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicy
     g1_grasp_candidate_limit: int = 256
     g1_grasp_ik_eval_limit: int = 256
     g1_grasp_require_all_pick_place_phases: bool = True
-    # Bumped from the original 0.5 / 0.25 / 1.0 defaults. The joint-margin
-    # and joint-motion weights are the selector's lever for biasing toward
-    # grasps whose IK chain stays away from joint limits and whose
-    # phase-to-phase joint excursion is small — directly addressing the
-    # runtime "elbow flips mid-carry" failure mode by pre-filtering for
-    # grasps with a smoother kinematic path.
-    g1_grasp_joint_margin_weight: float = 1.5
-    g1_grasp_joint_motion_weight: float = 1.0
+    g1_grasp_joint_margin_weight: float = 0.5
+    g1_grasp_joint_motion_weight: float = 0.25
     g1_grasp_topdown_weight: float = 1.0
-    # Damped-least-squares damping passed to the shared IK solver at G1
-    # call sites only. Higher damping = solver stays closer to seed near
-    # singularities, fewer elbow-branch flips, at the cost of slightly
-    # slower / less precise convergence. Defaults unchanged for every
-    # other robot.
-    g1_runtime_ik_damping: float = 5e-3
-    g1_selector_ik_damping: float = 1e-4
-    # Runtime IK integration step size. Default 1.0 = full Newton step;
-    # smaller values produce smoother per-iteration joint changes near
-    # singular configurations at the cost of slightly more iterations to
-    # converge. 0.5 is a good balance.
-    g1_runtime_ik_dt: float = 0.5
-    # Exponential-moving-average smoothing factor for the right-arm ctrl
-    # output. `ctrl_new = α·ctrl_prev + (1-α)·ik_output`. 0.0 = no
-    # smoothing (raw IK output); 1.0 = freeze (never update). Disabled
-    # for now: α=0.4 introduced bimodal-basin averaging (mixing
-    # elbow-up/down IK solutions into a between-state) that produced a
-    # 43° wrist tracking error in run 23. The arm-gain + IK-dt changes
-    # alone provided the IK-stability improvement.
-    g1_runtime_ctrl_smoothing: float = 0.0
-    # If any right-arm joint changes by more than this between consecutive
-    # IK calls, log a [G1_BASIN_FLIP] warning. Indicates the DLS solver
-    # jumped kinematic branches (elbow swivel or wrist flip) between
-    # adjacent sub-targets along the Cartesian sweep.
-    g1_runtime_basin_flip_threshold_rad: float = 0.30
-    # If True, log every active MuJoCo contact at runtime (throttled to
-    # 100 ms intervals) with both body names. Surfaces hidden collisions
-    # the classifier filters out as `other`.
-    g1_runtime_full_contact_diagnostic: bool = True
-    # Null-space posture nudge weight. After each IK call, project
-    # `(nominal_qpos - ik_qpos)` onto the null space of the gripper-site
-    # Jacobian and add `weight * v_null` to the IK output. This biases
-    # the 1-DoF redundancy of the 7-DoF right arm toward a fixed nominal
-    # posture (`init_qpos["right_arm"]`) without changing the commanded
-    # TCP pose — preventing the wrist roll/yaw basin flips that
-    # appeared in run 27 as 19° one-frame joint jumps. 0.0 = disabled.
-    g1_runtime_null_space_weight: float = 0.3
-    g1_runtime_null_space_damping: float = 1e-4
-    g1_runtime_null_space_max_step_rad: float = 0.05
-    g1_grasp_min_vertical_axis_z: float = 0.75
     g1_grasp_max_tcp_rot_deg: float = 120.0
-    g1_ignore_flipped_grasps: bool = False
-    # The G1 right_grasp_site is at the physical pinch center and uses the
-    # MolmoSpaces parallel-jaw frame (+z forward, +y finger-opening). DROID
-    # grasp poses are stored in the Robotiq grasp_site frame which is also at
-    # the pinch center with the same axis convention, so DROID grasp poses
-    # apply to the G1 right_grasp_site directly. The inward / lateral /
-    # forward centering knobs below were empirically tuned against the prior
-    # rotated G1 grasp site and now distort otherwise-good poses; default
-    # them off and keep the levers available for follow-up tuning.
-    g1_grasp_inward_xy_offset: float = 0.0
+    g1_ignore_flipped_grasps: bool = True
+    g1_grasp_inward_xy_offset: float = 0.006
     g1_grasp_table_clearance: float = 0.065
-    g1_center_grasp_lateral: bool = False
+    g1_center_grasp_lateral: bool = True
     g1_grasp_lateral_centering_scale: float = 1.0
     g1_grasp_lateral_centering_max_offset: float = 0.02
-    g1_center_grasp_forward: bool = False
-    g1_grasp_forward_centering_scale: float = 1.0
-    g1_grasp_forward_centering_max_offset: float = 0.03
-    g1_grasp_forward_centering_target_m: float = 0.0
     g1_level_grasp_orientation: bool = False
     g1_grasp_level_max_tilt_deg: float = 35.0
     g1_require_fingertip_pad_grasp_contact: bool = False
     g1_reject_non_fingertip_grasp_object_contact: bool = True
     g1_reject_grasp_table_contact: bool = True
     g1_reject_open_grasp_object_contact: bool = True
-    g1_allow_open_fingertip_pad_contact: bool = True
     g1_grasp_single_pad_contact_penalty: float = 0.5
     g1_closed_grasp_quality_enabled: bool = True
-    g1_closed_grasp_settle_steps: int = 120
+    g1_closed_grasp_settle_steps: int = 25
     g1_closed_grasp_min_pad_geom_count: int = 2
     g1_closed_grasp_max_object_shift_m: float = 0.05
     g1_closed_grasp_penalty_per_missing_pad: float = 1.0
-    # With the corrected grasp-site frame, `pregrasp_z_offset` along the
-    # gripper's true forward axis already lifts pregrasp above the grasp by
-    # the configured offset for top-down approaches; the additional
-    # "minimum vertical lift" and "object clearance" margins below were
-    # over-padding under the prior misaligned site frame.
-    g1_pregrasp_min_vertical_lift: float = 0.0
-    g1_pregrasp_object_clearance: float = 0.04
-    # Carried bottle's bottom must stay this far above the bin's AABB top
-    # during the lift→preplace travel. Reduced from 0.13 — the original
-    # value was over-cautious and forced the right arm into a high-reach
-    # envelope (~24 cm above table) where the runtime IK frequently
-    # singular-fails. The bin walls are 9.5 cm tall, so 5 cm of clearance
-    # is plenty of margin during the slow held-object carry (4 cm/s).
-    g1_place_travel_object_clearance: float = 0.07
+    g1_pregrasp_min_vertical_lift: float = 0.10
+    g1_pregrasp_object_clearance: float = 0.12
+    g1_place_travel_object_clearance: float = 0.13
     g1_held_object_speed: float = 0.04
     g1_postgrasp_hold_duration: float = 0.4
     g1_record_partial_attempt_on_no_full_grasp_candidate: bool = True

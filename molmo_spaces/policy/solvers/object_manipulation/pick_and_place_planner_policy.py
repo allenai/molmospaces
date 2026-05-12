@@ -319,10 +319,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
     def reset(self, reset_retries: bool = True):
         self._g1_failure_diag_steps: list[dict] = []
         self._g1_last_target_pose: np.ndarray | None = None
-        self._g1_site_frame_debug_logged = False
         self._g1_initial_tcp_pose = self._current_g1_tcp_pose()
-        self._log_g1_site_frame_debug_once("reset")
-        self._log_g1_frame_conventions("reset")
         self._g1_failure_diagnostics_logged = False
         self._g1_failure_reason_override: str | None = None
         self._g1_failure_phase_override: str | None = None
@@ -332,16 +329,8 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         self._g1_selected_grasp_debug: dict | None = None
         self._g1_grasp_selector_debug: dict | None = None
         self._g1_last_ik_debug: dict | None = None
-        self._g1_failure_hold_action: HoldCurrentControlAction | None = None
+        self._g1_failure_hold_action: NoopAction | None = None
         self._g1_terminal_failure_pending = False
-        # Smoothed right-arm ctrl carried across runtime IK calls so the
-        # EMA filter in `_tcp_to_jp_fn` has a previous-value reference.
-        self._g1_right_arm_ctrl_smoothed: np.ndarray | None = None
-        # State for the per-frame runtime IK diagnostic (basin-flip
-        # detection + full-contact dump). Reset per episode.
-        self._g1_runtime_prev_arm_qpos: np.ndarray | None = None
-        self._g1_runtime_diag_step = 0
-        self._g1_runtime_contact_last_log_t = -1e9
         self._g1_grip_diag_samples: list[dict] = []
         self._g1_grip_diag_last_log_time = -np.inf
         self._g1_grip_diag_last_key: tuple | None = None
@@ -643,10 +632,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             grasp_pose_world,
             pickup_obj,
         )
-        grasp_pose_world = self._g1_center_grasp_forward(
-            grasp_pose_world,
-            pickup_obj,
-        )
 
         pregrasp_pose = grasp_pose_world.copy()
         pregrasp_pose[:3, 3] -= self.policy_config.pregrasp_z_offset * pregrasp_pose[:3, 2]
@@ -761,33 +746,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         pose[:3, 3] += lateral_offset * pose[:3, 1]
         return pose
 
-    def _g1_center_grasp_forward(
-        self,
-        grasp_pose_world: np.ndarray,
-        pickup_obj: MlSpacesObject,
-    ) -> np.ndarray:
-        if not getattr(self.policy_config, "g1_center_grasp_forward", False):
-            return grasp_pose_world
-
-        pose = grasp_pose_world.copy()
-        object_pos = np.asarray(pickup_obj.position[:3], dtype=float)
-        object_in_grasp = pose[:3, :3].T @ (object_pos - pose[:3, 3])
-        target_forward_offset = float(
-            getattr(self.policy_config, "g1_grasp_forward_centering_target_m", 0.0)
-        )
-        forward_offset = float(object_in_grasp[2] - target_forward_offset)
-        forward_offset *= float(
-            getattr(self.policy_config, "g1_grasp_forward_centering_scale", 1.0)
-        )
-        max_offset = float(
-            getattr(self.policy_config, "g1_grasp_forward_centering_max_offset", np.inf)
-        )
-        if np.isfinite(max_offset):
-            forward_offset = float(np.clip(forward_offset, -max_offset, max_offset))
-
-        pose[:3, 3] += forward_offset * pose[:3, 2]
-        return pose
-
     def _g1_level_grasp_orientation(self, grasp_pose_world: np.ndarray) -> np.ndarray:
         if not getattr(self.policy_config, "g1_level_grasp_orientation", False):
             return grasp_pose_world
@@ -890,7 +848,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
                 np.degrees(np.arccos(np.clip(abs(grasp_pose_world[2, 2]), -1.0, 1.0)))
             ),
             "object_local_y_in_grasp_m": float(object_in_grasp[1]),
-            "object_local_z_in_grasp_m": float(object_in_grasp[2]),
             "grasp_table_clearance_m": float(grasp_pose_world[2, 3] - table_top_z)
             if np.isfinite(table_top_z)
             else None,
@@ -933,11 +890,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
                     qpos,
                     base_pose,
                     max_iter=250,
-                    damping=float(
-                        getattr(self.policy_config, "g1_selector_ik_damping", 1e-12)
-                    ),
                 )
-                result = self._g1_accept_relaxed_candidate_ik_result(phase, result)
                 phase_results[phase] = result
                 if not result["success"]:
                     return {
@@ -956,40 +909,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         finally:
             robot_view.base.pose = live_base_pose
             robot_view.set_qpos_dict(live_qpos)
-
-    def _g1_candidate_ik_thresholds_for_phase(self, phase: str) -> tuple[float, float]:
-        if phase == "pregrasp":
-            return (
-                float(getattr(self.policy_config, "pregrasp_tcp_pos_err_threshold", 0.1)),
-                float(getattr(self.policy_config, "pregrasp_tcp_rot_err_threshold", np.inf)),
-            )
-        return (
-            float(self.policy_config.tcp_pos_err_threshold),
-            float(self.policy_config.tcp_rot_err_threshold),
-        )
-
-    def _g1_accept_relaxed_candidate_ik_result(self, phase: str, result: dict) -> dict:
-        if result["success"]:
-            return result
-
-        final_qpos = result.get("final_qpos")
-        if final_qpos is None:
-            return result
-
-        pos_threshold, rot_threshold = self._g1_candidate_ik_thresholds_for_phase(phase)
-        pos_err = float(result.get("final_pos_error_norm", np.inf))
-        rot_err = float(result.get("final_rot_error_norm", np.inf))
-        if pos_err > pos_threshold or rot_err > rot_threshold:
-            return result
-
-        accepted = dict(result)
-        accepted["success"] = True
-        accepted["strict_success"] = False
-        accepted["accepted_with_g1_candidate_thresholds"] = True
-        accepted["qpos"] = self._copy_qpos_dict(final_qpos)
-        accepted["g1_candidate_pos_err_threshold"] = pos_threshold
-        accepted["g1_candidate_rot_err_threshold"] = rot_threshold
-        return accepted
 
     def _g1_contact_quality_from_contacts(self, contacts: list[dict]) -> dict:
         robot_namespace = self.config.robot_config.robot_namespace
@@ -1214,42 +1133,22 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         base_pose: np.ndarray,
         pickup_obj: MlSpacesObject,
     ) -> dict:
-        robot = self.task.env.current_robot
-        robot_view = robot.robot_view
+        robot_view = self.task.env.current_robot.robot_view
         model = self.task.env.current_model
         data = self.task.env.current_data
         snapshot = self._g1_mujoco_state_snapshot()
-        # Without restoring this, the runtime would keep pinning the base to
-        # whatever pose we latched during the probe.
-        prior_pinned_base_pose = getattr(robot, "_pinned_base_pose", None)
-        if prior_pinned_base_pose is not None:
-            prior_pinned_base_pose = prior_pinned_base_pose.copy()
         settle_steps = max(
             int(getattr(self.policy_config, "g1_closed_grasp_settle_steps", 25)),
             0,
         )
-        gripper_mg_ids = set(robot_view.get_gripper_movegroup_ids())
 
         try:
             robot_view.base.pose = base_pose
-            # Latch the probe's base pose so per-step re-pinning doesn't snap
-            # back to the live runtime base pose.
-            if hasattr(robot, "sync_pinned_base_pose"):
-                robot.sync_pinned_base_pose()
             robot_view.set_qpos_dict(qpos)
-            # Hold candidate qpos via position-servo ctrl on non-gripper move
-            # groups so the wrist doesn't drift back to the prior live ctrl
-            # target during the settle.
-            for mg_id in robot_view.move_group_ids():
-                if mg_id in gripper_mg_ids or mg_id not in qpos:
-                    continue
-                mg = robot_view.get_move_group(mg_id)
-                if mg.n_actuators == 0 or mg.n_actuators != mg.pos_dim:
-                    continue
-                mg.ctrl = np.asarray(qpos[mg_id])
             gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
             gripper = robot_view.get_gripper(gripper_mg_id)
             gripper.set_gripper_ctrl_open(False)
+            gripper.joint_pos = gripper.ctrl.copy()
             data.qvel[:] = 0.0
             data.qacc[:] = 0.0
             data.qacc_warmstart[:] = 0.0
@@ -1257,10 +1156,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             object_start_pos = pickup_obj.position.copy()
             for _ in range(settle_steps):
                 mujoco.mj_step(model, data)
-                # Re-enforce pinned base + locked left arm/hand between
-                # steps; right arm is held via the ctrl assignment above.
-                if hasattr(robot, "apply_initial_state_overrides"):
-                    robot.apply_initial_state_overrides()
             mujoco.mj_forward(model, data)
             object_shift_m = float(np.linalg.norm(pickup_obj.position - object_start_pos))
             contacts = self._collect_contact_diagnostics()
@@ -1279,8 +1174,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             return quality
         finally:
             self._g1_restore_mujoco_state(snapshot)
-            if hasattr(robot, "_pinned_base_pose"):
-                robot._pinned_base_pose = prior_pinned_base_pose
 
     def _g1_candidate_grasp_contact_quality(
         self,
@@ -1299,7 +1192,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         if (
             getattr(self.policy_config, "g1_reject_open_grasp_object_contact", True)
             and quality["object_contact_count"] > 0
-            and not self._g1_is_allowed_open_grasp_object_contact(quality)
         ):
             return "open_grasp_object_contact"
         if (
@@ -1318,21 +1210,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         ):
             return "missing_fingertip_pad_contact"
         return None
-
-    def _g1_is_allowed_open_grasp_object_contact(self, quality: dict) -> bool:
-        if not getattr(self.policy_config, "g1_allow_open_fingertip_pad_contact", False):
-            return False
-        if not quality["non_pad_object_contacts"]:
-            return quality["pad_geom_count"] > 0
-
-        min_pad_geom_count = int(
-            getattr(self.policy_config, "g1_closed_grasp_min_pad_geom_count", 2)
-        )
-        return (
-            quality["pad_geom_count"] >= min_pad_geom_count
-            and bool(quality["finger_link_object_contacts"])
-            and not quality["other_robot_object_contacts"]
-        )
 
     def _g1_grasp_quality_rejection_key(self, quality: dict) -> str:
         if quality["closed_probe"]:
@@ -1476,8 +1353,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         dist_tcp = np.linalg.inv(tcp_pose_world) @ grasp_poses_world
         dists_tcp_p = np.linalg.norm(dist_tcp[:, :3, 3], axis=1)
         dists_tcp_o = R.from_matrix(dist_tcp[:, :3, :3]).magnitude() * 180 / np.pi
-        grasp_forward_axis_z = grasp_poses_world[:, 2, 2]
-        grasp_down_alignment = -grasp_forward_axis_z
+        dists_up = grasp_poses_world[:, 2, 2]
         dists_com = np.linalg.norm(
             (np.linalg.inv(object_pose) @ grasp_poses_world)[:, :3, 3],
             axis=1,
@@ -1485,7 +1361,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         base_cost = (
             self.policy_config.grasp_pos_cost_weight * dists_tcp_p
             + self.policy_config.grasp_rot_cost_weight * dists_tcp_o
-            + self.policy_config.grasp_vertical_cost_weight * grasp_forward_axis_z
+            + self.policy_config.grasp_vertical_cost_weight * dists_up
             + self.policy_config.grasp_com_dist_cost_weight * dists_com
         )
 
@@ -1501,12 +1377,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             tcp_eligible_mask = eligible_mask.copy()
             eligible_mask &= dists_tcp_o <= max_tcp_rot_deg
             tcp_rotation_mask = tcp_eligible_mask & ~eligible_mask
-        min_vertical_axis_z = float(
-            getattr(self.policy_config, "g1_grasp_min_vertical_axis_z", -np.inf)
-        )
-        vertical_eligible_mask = eligible_mask.copy()
-        eligible_mask &= grasp_down_alignment >= min_vertical_axis_z
-        vertical_axis_mask = vertical_eligible_mask & ~eligible_mask
         eligible_ids = np.where(eligible_mask)[0]
 
         candidate_limit = min(
@@ -1540,7 +1410,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
                 else 0
             ),
             "tcp_rotation": int(np.count_nonzero(tcp_rotation_mask)),
-            "vertical_axis": int(np.count_nonzero(vertical_axis_mask)),
             "collision": int(len(candidate_ids) - len(collision_free_ids)),
             "pregrasp": 0,
             "grasp": 0,
@@ -1632,10 +1501,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
                                 "base_cost": float(base_cost[grasp_idx]),
                                 "tcp_pos_cost_m": float(dists_tcp_p[grasp_idx]),
                                 "tcp_rot_cost_deg": float(dists_tcp_o[grasp_idx]),
-                                "vertical_axis_z": float(grasp_forward_axis_z[grasp_idx]),
-                                "grasp_down_alignment": float(
-                                    grasp_down_alignment[grasp_idx]
-                                ),
+                                "vertical_axis_z": float(dists_up[grasp_idx]),
                                 "com_dist_cost_m": float(dists_com[grasp_idx]),
                                 "progress_penalty": progress_penalty,
                                 "is_flipped": bool(grasp_idx >= original_grasp_count),
@@ -1716,8 +1582,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
                         "base_cost": float(base_cost[grasp_idx]),
                         "tcp_pos_cost_m": float(dists_tcp_p[grasp_idx]),
                         "tcp_rot_cost_deg": float(dists_tcp_o[grasp_idx]),
-                        "vertical_axis_z": float(grasp_forward_axis_z[grasp_idx]),
-                        "grasp_down_alignment": float(grasp_down_alignment[grasp_idx]),
+                        "vertical_axis_z": float(dists_up[grasp_idx]),
                         "com_dist_cost_m": float(dists_com[grasp_idx]),
                         "is_flipped": bool(grasp_idx >= original_grasp_count),
                         "grasp_pad_contact_count": int(grasp_quality["pad_contact_count"]),
@@ -1852,257 +1717,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
 
     def _g1_ik_debug_enabled(self) -> bool:
         return bool(getattr(self.policy_config, "g1_ik_debug", False))
-
-    @staticmethod
-    def _unit_vector(vec: np.ndarray) -> list[float] | None:
-        norm = float(np.linalg.norm(vec))
-        if norm < 1e-8:
-            return None
-        return np.round(vec / norm, 4).tolist()
-
-    def _g1_named_site_id(self, site_name: str) -> int:
-        model = self.task.env.current_model
-        namespace = self.task.env.current_robot.namespace
-        for candidate in (f"{namespace}{site_name}", site_name):
-            site_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, candidate)
-            if site_id >= 0:
-                return int(site_id)
-        raise ValueError(f"Expected MuJoCo site `{site_name}`")
-
-    def _g1_named_geom_id(self, geom_name: str) -> int:
-        model = self.task.env.current_model
-        namespace = self.task.env.current_robot.namespace
-        for candidate in (f"{namespace}{geom_name}", geom_name):
-            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, candidate)
-            if geom_id >= 0:
-                return int(geom_id)
-        raise ValueError(f"Expected MuJoCo geom `{geom_name}`")
-
-    def _g1_site_frame_debug(self) -> dict:
-        data = self.task.env.current_data
-        wrist_site_id = self._g1_named_site_id("right_wrist_site")
-        grasp_site_id = self._g1_named_site_id("right_grasp_site")
-        pad_1_geom_id = self._g1_named_geom_id("right_dex1_fingertip_pad_1")
-        pad_2_geom_id = self._g1_named_geom_id("right_dex1_fingertip_pad_2")
-
-        wrist_pos = data.site_xpos[wrist_site_id].copy()
-        grasp_pos = data.site_xpos[grasp_site_id].copy()
-        grasp_xmat = data.site_xmat[grasp_site_id].reshape(3, 3).copy()
-        grasp_axes = {
-            "+x": np.round(grasp_xmat[:, 0], 4).tolist(),
-            "+y": np.round(grasp_xmat[:, 1], 4).tolist(),
-            "+z": np.round(grasp_xmat[:, 2], 4).tolist(),
-        }
-        wrist_to_grasp = grasp_pos - wrist_pos
-        pad_axis = data.geom_xpos[pad_2_geom_id] - data.geom_xpos[pad_1_geom_id]
-        wrist_to_grasp_unit = self._unit_vector(wrist_to_grasp)
-        pad_axis_unit = self._unit_vector(pad_axis)
-
-        return {
-            "right_grasp_site_pos": np.round(grasp_pos, 4).tolist(),
-            "right_grasp_site_axes_world": grasp_axes,
-            "wrist_to_grasp_unit": wrist_to_grasp_unit,
-            "finger_pad_1_to_2_unit": pad_axis_unit,
-            "dot_site_x_with_wrist_to_grasp": float(
-                np.dot(grasp_xmat[:, 0], wrist_to_grasp / np.linalg.norm(wrist_to_grasp))
-            ),
-            "dot_site_y_with_finger_pad_axis": float(
-                np.dot(grasp_xmat[:, 1], pad_axis / np.linalg.norm(pad_axis))
-            ),
-            "dot_site_z_with_wrist_to_grasp": float(
-                np.dot(grasp_xmat[:, 2], wrist_to_grasp / np.linalg.norm(wrist_to_grasp))
-            ),
-        }
-
-    def _log_g1_site_frame_debug_once(self, label: str) -> None:
-        if not self._g1_ik_debug_enabled() or self._g1_site_frame_debug_logged:
-            return
-        self._g1_site_frame_debug_logged = True
-        log.info("[G1_SITE] label=%s debug=%s", label, self._g1_site_frame_debug())
-
-    def _g1_apply_null_space_posture_nudge(
-        self, gripper_mg_id: str, arm_ctrl: np.ndarray
-    ) -> np.ndarray:
-        """Bias `arm_ctrl` toward the nominal right-arm posture along the
-        null space of the gripper-site Jacobian. Returns a modified ctrl
-        whose forward-kinematic TCP pose is (to first order) identical to
-        the input. The redundant 1 DoF of the 7-DoF arm is steered toward
-        the configured nominal, preventing the wrist roll/yaw basin flips
-        seen in the runtime IK output across consecutive frames.
-        """
-        weight = float(
-            getattr(self.policy_config, "g1_runtime_null_space_weight", 0.0)
-        )
-        if weight <= 0.0:
-            return arm_ctrl
-
-        try:
-            nominal = self.config.robot_config.init_qpos.get("right_arm")
-        except AttributeError:
-            return arm_ctrl
-        if nominal is None:
-            return arm_ctrl
-        nominal_arr = np.asarray(nominal, dtype=float)
-        if nominal_arr.shape != arm_ctrl.shape:
-            return arm_ctrl
-
-        # Jacobian of the gripper site w.r.t. right_arm joints, at the
-        # current runtime qpos (close enough to the IK-solved qpos for a
-        # first-order null-space projection).
-        J = self.robot_view.get_jacobian(gripper_mg_id, ["right_arm"])
-        if J.shape[0] != 6 or J.shape[1] != arm_ctrl.shape[0]:
-            return arm_ctrl
-
-        # Damped null-space projector  N = I - J⁺ J  where J⁺ uses damping
-        # for numerical stability near singular configurations.
-        damping = float(
-            getattr(self.policy_config, "g1_runtime_null_space_damping", 1e-4)
-        )
-        try:
-            J_pinv = J.T @ np.linalg.solve(
-                J @ J.T + damping * np.eye(6), np.eye(6)
-            )
-        except np.linalg.LinAlgError:
-            return arm_ctrl
-        N = np.eye(arm_ctrl.shape[0]) - J_pinv @ J
-
-        delta = N @ (nominal_arr - arm_ctrl)
-        max_step = float(
-            getattr(self.policy_config, "g1_runtime_null_space_max_step_rad", 0.05)
-        )
-        scaled = weight * delta
-        per_joint_cap = float(max_step) if np.isfinite(max_step) else np.inf
-        scaled = np.clip(scaled, -per_joint_cap, per_joint_cap)
-
-        adjusted = arm_ctrl + scaled
-        # Clamp to actuator ctrlrange (joint limits) so the nudge cannot
-        # produce an out-of-range command.
-        arm_mg = self.robot_view.get_move_group("right_arm")
-        if hasattr(arm_mg, "ctrl_limits"):
-            limits = arm_mg.ctrl_limits
-            adjusted = np.clip(adjusted, limits[:, 0], limits[:, 1])
-        return adjusted
-
-    def _g1_runtime_diagnostic(
-        self,
-        target_pose: np.ndarray,
-        ik_succeeded: bool,
-        new_arm_ctrl: np.ndarray | None = None,
-    ) -> None:
-        """Per-frame runtime diagnostic: basin-flip detection on the
-        right-arm **IK output ctrl** and a full contact dump.
-
-        Compare the *commanded* qpos (= IK output → ctrl) across
-        consecutive successful IK calls. The actual joint pos lags via
-        servo dynamics and would not reveal an IK-output jump.
-        """
-        self._g1_runtime_diag_step += 1
-        step = self._g1_runtime_diag_step
-        model = self.task.env.current_model
-        data = self.task.env.current_data
-        phase = self.get_phase()
-        threshold = float(
-            getattr(self.policy_config, "g1_runtime_basin_flip_threshold_rad", 0.30)
-        )
-        force_dump = False
-
-        # 1) Basin-flip detection on the IK *output* ctrl
-        if ik_succeeded and new_arm_ctrl is not None:
-            if self._g1_runtime_prev_arm_qpos is not None:
-                delta = new_arm_ctrl - self._g1_runtime_prev_arm_qpos
-                abs_delta = np.abs(delta)
-                max_delta = float(abs_delta.max())
-                if max_delta > threshold:
-                    worst = int(abs_delta.argmax())
-                    force_dump = True
-                    log.warning(
-                        "[G1_BASIN_FLIP] step=%d phase=%s max_delta=%.4frad "
-                        "on_joint=%d prev_ctrl=%s new_ctrl=%s per_joint_delta=%s "
-                        "target_pos=%s",
-                        step,
-                        phase,
-                        max_delta,
-                        worst,
-                        np.round(self._g1_runtime_prev_arm_qpos, 4).tolist(),
-                        np.round(new_arm_ctrl, 4).tolist(),
-                        np.round(delta, 4).tolist(),
-                        np.round(target_pose[:3, 3], 4).tolist(),
-                    )
-            self._g1_runtime_prev_arm_qpos = new_arm_ctrl.copy()
-
-        # 2) Full contact dump (throttled to ~10 Hz; also fires immediately
-        #    on basin-flip)
-        if not getattr(
-            self.policy_config, "g1_runtime_full_contact_diagnostic", False
-        ):
-            return
-        sim_t = float(data.time)
-        if (sim_t - self._g1_runtime_contact_last_log_t < 0.1) and not force_dump:
-            return
-        self._g1_runtime_contact_last_log_t = sim_t
-
-        def geom_label(geom_id: int) -> str:
-            gn = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, geom_id)
-            if gn:
-                return gn
-            # Fall back to body name + geom id so unnamed structural
-            # collision geoms (e.g., the bin's hidden walls) are
-            # identifiable in the log.
-            body_id = int(model.geom_bodyid[geom_id])
-            bn = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id) or "?"
-            return f"{bn}#geom{geom_id}"
-
-        contacts = []
-        for i in range(data.ncon):
-            con = data.contact[i]
-            g1n = geom_label(con.geom1)
-            g2n = geom_label(con.geom2)
-            contacts.append((float(con.dist), g1n, g2n))
-        contacts.sort(key=lambda c: c[0])  # most-interpenetrating first
-        formatted = ";".join(
-            f"{g1}↔{g2}@{d:+.4f}" for d, g1, g2 in contacts[:12]
-        )
-        log.info(
-            "[G1_CONTACTS] step=%d phase=%s t=%.3f n=%d %s",
-            step,
-            phase,
-            sim_t,
-            data.ncon,
-            formatted if formatted else "(none)",
-        )
-
-    def _log_g1_frame_conventions(self, label: str) -> None:
-        """Unconditional convention check at reset. Confirms:
-        - Pelvis frame:        +x forward, +y left, +z up   (MolmoSpaces robot base)
-        - Right grasp_site:    +z forward, +y finger-opening (parallel-jaw)
-        Logs the world-frame axes of both so any deviation from convention
-        is visible at a glance.
-        """
-        try:
-            model = self.task.env.current_model
-            data = self.task.env.current_data
-            pelvis_id = mujoco.mj_name2id(
-                model,
-                mujoco.mjtObj.mjOBJ_BODY,
-                f"{self.robot_view._namespace}pelvis",
-            )
-            if pelvis_id < 0:
-                return
-            pelvis_xmat = data.xmat[pelvis_id].reshape(3, 3)
-            site_debug = self._g1_site_frame_debug()
-            log.info(
-                "[G1_CONV] label=%s pelvis_world_axes={+x:%s, +y:%s, +z:%s} "
-                "grasp_axes=%s dot_z_forward=%.3f dot_y_finger=%.3f",
-                label,
-                np.round(pelvis_xmat[:, 0], 3).tolist(),
-                np.round(pelvis_xmat[:, 1], 3).tolist(),
-                np.round(pelvis_xmat[:, 2], 3).tolist(),
-                site_debug["right_grasp_site_axes_world"],
-                site_debug["dot_site_z_with_wrist_to_grasp"],
-                site_debug["dot_site_y_with_finger_pad_axis"],
-            )
-        except Exception as exc:  # diagnostic only — never block the run
-            log.debug("[G1_CONV] frame-convention diagnostic failed: %r", exc)
 
     def _names_for_contact(self, geom_id: int) -> dict[str, str | int]:
         model = self.task.env.current_model
@@ -2416,14 +2030,7 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             self._g1_terminal_failure_pending = True
             if self._g1_failure_hold_action is None:
                 log.info("[G1_DIAG] holding failed attempt for %.2fs before done", hold_duration)
-                # Hold the current commanded controls (including a closed
-                # gripper carrying a held object) instead of NoopAction, which
-                # can infer an open gripper when the held object keeps the
-                # fingers apart and cause a visible drop at the end of a
-                # failed attempt.
-                self._g1_failure_hold_action = HoldCurrentControlAction(
-                    self.robot_view, hold_duration
-                )
+                self._g1_failure_hold_action = NoopAction(self.robot_view, hold_duration)
             if not self._g1_failure_hold_action.execute():
                 return self._g1_failure_hold_action.get_current_action()
 
@@ -2465,47 +2072,19 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             ["right_arm"],
             self.robot_view.get_qpos_dict(),
             self.robot_view.base.pose,
-            damping=float(getattr(self.policy_config, "g1_runtime_ik_damping", 1e-12)),
-            dt=float(getattr(self.policy_config, "g1_runtime_ik_dt", 1.0)),
         )
         self._g1_last_target_pose = target_pose.copy()
 
         action = self.robot_view.get_ctrl_dict()
         if jp is not None:
             self.sequential_ik_failures = 0
-            new_arm_ctrl = np.asarray(jp["right_arm"], dtype=float)
-            # Null-space posture nudge: bias the redundant 1 DoF of the 7-DoF
-            # right arm toward a fixed nominal posture without changing the
-            # commanded TCP pose. Prevents the wrist-orientation basin flips
-            # caught by the [G1_BASIN_FLIP] diagnostic.
-            new_arm_ctrl = self._g1_apply_null_space_posture_nudge(
-                mg_id, new_arm_ctrl
-            )
-            # Exponential-moving-average smoothing across frames to kill
-            # high-frequency IK output jitter that an underdamped servo
-            # would otherwise overshoot.
-            alpha = float(
-                getattr(self.policy_config, "g1_runtime_ctrl_smoothing", 0.0)
-            )
-            if 0.0 < alpha < 1.0 and self._g1_right_arm_ctrl_smoothed is not None:
-                new_arm_ctrl = (
-                    alpha * self._g1_right_arm_ctrl_smoothed
-                    + (1.0 - alpha) * new_arm_ctrl
-                )
-            self._g1_right_arm_ctrl_smoothed = new_arm_ctrl.copy()
-            action["right_arm"] = new_arm_ctrl
+            action["right_arm"] = jp["right_arm"]
             self._record_failure_diagnostic_step(target_pose, True)
-            self._g1_runtime_diagnostic(
-                target_pose, ik_succeeded=True, new_arm_ctrl=new_arm_ctrl
-            )
         else:
             self.sequential_ik_failures += 1
             log.info(f"IK failed, holding current position, fails:{self.sequential_ik_failures}")
             self._record_failure_diagnostic_step(target_pose, False)
             self._run_g1_ik_debug(mg_id, target_pose)
-            self._g1_runtime_diagnostic(
-                target_pose, ik_succeeded=False, new_arm_ctrl=None
-            )
             if self.sequential_ik_failures >= self.policy_config.max_sequential_ik_failures:
                 log.info("Too many sequential IK failures, triggering retry.")
                 return self._handle_failure()
@@ -2526,7 +2105,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             self.robot_view.get_qpos_dict(),
             self.robot_view.base.pose,
             max_iter=max_iter,
-            damping=float(getattr(self.policy_config, "g1_selector_ik_damping", 1e-12)),
         )
 
     def _candidate_pose_for_phase(self, candidate_grasp_pose: np.ndarray) -> np.ndarray:
@@ -2759,9 +2337,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
         kinematics = self.task.env.current_robot.kinematics
         gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
 
-        selector_damping = float(
-            getattr(self.policy_config, "g1_selector_ik_damping", 1e-12)
-        )
         if pose.ndim > 2:
             return np.array(
                 [
@@ -2772,7 +2347,6 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
                         robot_view.get_qpos_dict(),
                         robot_view.base.pose,
                         max_iter=100,
-                        damping=selector_damping,
                     )
                     is not None
                     for single_pose in pose
@@ -2788,6 +2362,5 @@ class UnitreeG1RightArmPickAndPlacePlannerPolicy(PickAndPlacePlannerPolicy):
             robot_view.get_qpos_dict(),
             robot_view.base.pose,
             max_iter=100,
-            damping=selector_damping,
         )
         return jp_dict is not None

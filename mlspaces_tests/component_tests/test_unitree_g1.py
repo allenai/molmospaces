@@ -27,7 +27,6 @@ from scripts.assets.prepare_unitree_g1 import (
     DEX1_FINGERTIP_PAD_POSITIONS,
     DEX1_FINGERTIP_PAD_SIZE,
     DEX1_GRASP_SITE_POS,
-    DEX1_GRASP_SITE_QUAT,
     DEX1_HAND_FORCE_LIMIT_MULTIPLIER,
     LEFT_ARM_STOW_QPOS,
     LEFT_HAND_OPEN_QPOS,
@@ -124,7 +123,6 @@ def test_unitree_g1_grasp_contact_filter_requires_right_fingertip_pad():
     policy.policy_config = SimpleNamespace(
         g1_reject_grasp_table_contact=True,
         g1_reject_open_grasp_object_contact=True,
-        g1_allow_open_fingertip_pad_contact=True,
         g1_closed_grasp_min_pad_geom_count=2,
         g1_closed_grasp_max_object_shift_m=0.05,
     )
@@ -164,12 +162,9 @@ def test_unitree_g1_grasp_contact_filter_requires_right_fingertip_pad():
         "root1_name": "robot_0/pelvis",
     }
     assert not policy._g1_is_allowed_grasp_object_contact(wrist_contact)
-    assert not policy._g1_grasp_contact_quality_failure(
-        policy._g1_contact_quality_from_contacts([pad_contact])
-    )
     assert (
         policy._g1_grasp_contact_quality_failure(
-            policy._g1_contact_quality_from_contacts([finger_link_contact])
+            policy._g1_contact_quality_from_contacts([pad_contact])
         )
         == "open_grasp_object_contact"
     )
@@ -217,17 +212,7 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     for site_name in KINEMATICS_SITE_NAMES:
         assert model.site(site_name).id >= 0
     for site_name in ("left_grasp_site", "right_grasp_site"):
-        site_id = model.site(site_name).id
-        np.testing.assert_allclose(model.site_pos[site_id], DEX1_GRASP_SITE_POS)
-        np.testing.assert_allclose(model.site_quat[site_id], DEX1_GRASP_SITE_QUAT)
-    assert (
-        mujoco.mj_name2id(
-            model,
-            mujoco.mjtObj.mjOBJ_GEOM,
-            "right_grasp_site_debug_axis_x",
-        )
-        == -1
-    )
+        np.testing.assert_allclose(model.site_pos[model.site(site_name).id], DEX1_GRASP_SITE_POS)
     for side in ("left", "right"):
         for finger_id, finger_suffix in (("1", "dex1_finger_link_1"), ("2", "dex1_finger_link_2")):
             pad = model.geom(f"{side}_dex1_fingertip_pad_{finger_id}")
@@ -267,12 +252,6 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     assert scene_model.qpos0[scene_base_qposadr + 2] == pytest.approx(0.793)
     mujoco.mj_forward(scene_model, scene_data)
     assert not _has_deep_robot_floor_penetration(scene_model, scene_data)
-    wrist_site_id = scene_model.site("robot_0/right_wrist_site").id
-    grasp_site_id = scene_model.site("robot_0/right_grasp_site").id
-    wrist_to_grasp = scene_data.site_xpos[grasp_site_id] - scene_data.site_xpos[wrist_site_id]
-    wrist_to_grasp /= np.linalg.norm(wrist_to_grasp)
-    grasp_xmat = scene_data.site_xmat[grasp_site_id].reshape(3, 3)
-    np.testing.assert_allclose(grasp_xmat[:, 2], wrist_to_grasp, atol=1e-6)
 
     view = config.robot_view_factory(scene_data, config.robot_namespace)
     expected_counts = {
@@ -396,44 +375,31 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     assert tabletop_datagen_config.policy_config.g1_grasp_candidate_limit == 256
     assert tabletop_datagen_config.policy_config.g1_grasp_ik_eval_limit == 256
     assert tabletop_datagen_config.policy_config.g1_grasp_require_all_pick_place_phases
-    assert tabletop_datagen_config.policy_config.g1_grasp_joint_margin_weight == 1.5
-    assert tabletop_datagen_config.policy_config.g1_grasp_joint_motion_weight == 1.0
+    assert tabletop_datagen_config.policy_config.g1_grasp_joint_margin_weight == 0.5
+    assert tabletop_datagen_config.policy_config.g1_grasp_joint_motion_weight == 0.25
     assert tabletop_datagen_config.policy_config.g1_grasp_topdown_weight == 1.0
-    assert tabletop_datagen_config.policy_config.g1_runtime_ik_damping == 5e-3
-    assert tabletop_datagen_config.policy_config.g1_selector_ik_damping == 1e-4
-    assert tabletop_datagen_config.policy_config.g1_runtime_ik_dt == 0.5
-    assert tabletop_datagen_config.policy_config.g1_runtime_ctrl_smoothing == 0.0
-    assert tabletop_datagen_config.policy_config.g1_grasp_min_vertical_axis_z == 0.75
     assert tabletop_datagen_config.policy_config.g1_grasp_max_tcp_rot_deg == 120.0
-    assert not tabletop_datagen_config.policy_config.g1_ignore_flipped_grasps
-    assert tabletop_datagen_config.policy_config.g1_grasp_inward_xy_offset == 0.0
+    assert tabletop_datagen_config.policy_config.g1_ignore_flipped_grasps
+    assert tabletop_datagen_config.policy_config.g1_grasp_inward_xy_offset == 0.006
     assert tabletop_datagen_config.policy_config.g1_grasp_table_clearance == 0.065
-    assert not tabletop_datagen_config.policy_config.g1_center_grasp_lateral
+    assert tabletop_datagen_config.policy_config.g1_center_grasp_lateral
     assert tabletop_datagen_config.policy_config.g1_grasp_lateral_centering_scale == 1.0
     assert tabletop_datagen_config.policy_config.g1_grasp_lateral_centering_max_offset == 0.02
-    assert not tabletop_datagen_config.policy_config.g1_center_grasp_forward
-    assert tabletop_datagen_config.policy_config.g1_grasp_forward_centering_scale == 1.0
-    assert tabletop_datagen_config.policy_config.g1_grasp_forward_centering_max_offset == 0.03
-    assert tabletop_datagen_config.policy_config.g1_grasp_forward_centering_target_m == 0.0
     assert not tabletop_datagen_config.policy_config.g1_level_grasp_orientation
     assert tabletop_datagen_config.policy_config.g1_grasp_level_max_tilt_deg == 35.0
     assert not tabletop_datagen_config.policy_config.g1_require_fingertip_pad_grasp_contact
     assert tabletop_datagen_config.policy_config.g1_reject_non_fingertip_grasp_object_contact
     assert tabletop_datagen_config.policy_config.g1_reject_grasp_table_contact
     assert tabletop_datagen_config.policy_config.g1_reject_open_grasp_object_contact
-    assert tabletop_datagen_config.policy_config.g1_allow_open_fingertip_pad_contact
     assert tabletop_datagen_config.policy_config.g1_grasp_single_pad_contact_penalty == 0.5
     assert tabletop_datagen_config.policy_config.g1_closed_grasp_quality_enabled
-    assert tabletop_datagen_config.policy_config.g1_closed_grasp_settle_steps == 120
+    assert tabletop_datagen_config.policy_config.g1_closed_grasp_settle_steps == 25
     assert tabletop_datagen_config.policy_config.g1_closed_grasp_min_pad_geom_count == 2
     assert tabletop_datagen_config.policy_config.g1_closed_grasp_max_object_shift_m == 0.05
     assert tabletop_datagen_config.policy_config.g1_closed_grasp_penalty_per_missing_pad == 1.0
-    assert tabletop_datagen_config.policy_config.g1_pregrasp_min_vertical_lift == 0.0
-    assert tabletop_datagen_config.policy_config.g1_pregrasp_object_clearance == 0.04
-    assert tabletop_datagen_config.policy_config.g1_place_travel_object_clearance == 0.07
-    assert tabletop_datagen_config.policy_config.g1_runtime_null_space_weight == 0.3
-    assert tabletop_datagen_config.policy_config.g1_runtime_null_space_damping == 1e-4
-    assert tabletop_datagen_config.policy_config.g1_runtime_null_space_max_step_rad == 0.05
+    assert tabletop_datagen_config.policy_config.g1_pregrasp_min_vertical_lift == 0.10
+    assert tabletop_datagen_config.policy_config.g1_pregrasp_object_clearance == 0.12
+    assert tabletop_datagen_config.policy_config.g1_place_travel_object_clearance == 0.13
     assert tabletop_datagen_config.policy_config.g1_held_object_speed == 0.04
     assert tabletop_datagen_config.policy_config.g1_postgrasp_hold_duration == 0.4
     assert tabletop_datagen_config.policy_config.g1_record_partial_attempt_on_no_full_grasp_candidate
@@ -628,40 +594,6 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     )
     assert not unreachable_eval["success"]
     assert unreachable_eval["failed_phase"] == "pregrasp"
-    relaxed_pregrasp_result = fake_tabletop_policy._g1_accept_relaxed_candidate_ik_result(
-        "pregrasp",
-        {
-            "success": False,
-            "final_pos_error_norm": 0.05,
-            "final_rot_error_norm": 10.0,
-            "final_qpos": pick_datagen_config.robot_config.init_qpos,
-            "qpos": None,
-        },
-    )
-    assert relaxed_pregrasp_result["success"]
-    assert relaxed_pregrasp_result["accepted_with_g1_candidate_thresholds"]
-    strict_grasp_result = fake_tabletop_policy._g1_accept_relaxed_candidate_ik_result(
-        "grasp",
-        {
-            "success": False,
-            "final_pos_error_norm": 0.05,
-            "final_rot_error_norm": 0.4,
-            "final_qpos": pick_datagen_config.robot_config.init_qpos,
-            "qpos": None,
-        },
-    )
-    assert strict_grasp_result["success"]
-    rejected_grasp_result = fake_tabletop_policy._g1_accept_relaxed_candidate_ik_result(
-        "grasp",
-        {
-            "success": False,
-            "final_pos_error_norm": 0.05,
-            "final_rot_error_norm": 1.0,
-            "final_qpos": pick_datagen_config.robot_config.init_qpos,
-            "qpos": None,
-        },
-    )
-    assert not rejected_grasp_result["success"]
 
     clearance_model = mujoco.MjModel.from_xml_string(
         """
@@ -720,28 +652,11 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
     assert g1_target_poses["grasp"][2, 3] >= (
         table_top_z + tabletop_datagen_config.policy_config.g1_grasp_table_clearance
     )
-    # Default G1 candidate construction must not shift the grasp pose in XY:
-    # the DROID grasp bank already encodes pinch placement in the corrected
-    # grasp-site frame, and lateral/forward centering and inward XY offsets
-    # default off.
-    np.testing.assert_allclose(g1_target_poses["grasp"][:2, 3], grasp_pose[:2, 3])
+    object_in_grasp = g1_target_poses["grasp"][:3, :3].T @ (
+        pickup_obj.position - g1_target_poses["grasp"][:3, 3]
+    )
+    assert abs(object_in_grasp[1]) < 1e-8
     np.testing.assert_allclose(g1_target_poses["grasp"][:3, 2], grasp_pose[:3, 2])
-
-    # Opt-in centering still applies its math when enabled.
-    centered_policy = object.__new__(UnitreeG1RightArmPickAndPlacePlannerPolicy)
-    centered_policy.policy_config = tabletop_datagen_config.policy_config.model_copy(
-        update={
-            "g1_center_grasp_forward": True,
-            "g1_grasp_forward_centering_target_m": 0.02,
-        }
-    )
-    forward_offset_pose = np.eye(4)
-    forward_offset_pose[:3, 3] = [0.0, 0.0, -0.05]
-    forward_centered_pose = centered_policy._g1_center_grasp_forward(
-        forward_offset_pose,
-        SimpleNamespace(position=np.array([0.0, 0.0, 0.0])),
-    )
-    np.testing.assert_allclose(forward_centered_pose[:3, 3], [0.0, 0.0, -0.02])
 
     fake_clearance_policy.policy_config = tabletop_datagen_config.policy_config.model_copy(
         update={"g1_level_grasp_orientation": True}
@@ -757,13 +672,8 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
         np.eye(3),
         atol=1e-7,
     )
-    assert g1_target_poses["pregrasp"][2, 3] >= (
-        pickup_top_z
-        + tabletop_datagen_config.policy_config.g1_pregrasp_object_clearance
-    )
-    # Pregrasp also lifts strictly above the (clamped) grasp pose along the
-    # gripper-forward axis, so the wrist always sits above the grasp.
-    assert g1_target_poses["pregrasp"][2, 3] > g1_target_poses["grasp"][2, 3]
+    assert g1_target_poses["pregrasp"][2, 3] >= grasp_pose[2, 3] + 0.10
+    assert g1_target_poses["pregrasp"][2, 3] >= pickup_top_z + 0.12
     pickup_bottom_z = 0.70
     receptacle_top_z = 0.75
     min_travel_bottom_z = (
@@ -776,7 +686,7 @@ def test_prepare_unitree_g1_dex1_smoke(tmp_path, monkeypatch):
             + pickup_bottom_z
             - g1_target_poses["grasp"][2, 3]
         )
-        assert carried_bottom_z + 1e-9 >= min_travel_bottom_z
+        assert carried_bottom_z >= min_travel_bottom_z
     place_bottom_z = (
         g1_target_poses["place"][2, 3]
         + pickup_bottom_z
