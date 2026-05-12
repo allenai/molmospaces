@@ -381,6 +381,8 @@
       
         
       
+        
+      
     
     
     
@@ -617,6 +619,76 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../tutorials/add_robot/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: Add a custom robot
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorial: Add a custom robot
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -43574,11 +43646,11 @@ is strictly authoritative for episode initialization.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-275">275</a></span>
-<span class="normal"><a href="#__codelineno-0-276">276</a></span>
-<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -46517,11 +46589,11 @@ is strictly authoritative for episode initialization.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-275">275</a></span>
-<span class="normal"><a href="#__codelineno-0-276">276</a></span>
-<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -48273,7 +48345,7 @@ is strictly authoritative for episode initialization.</p>
   </span>
 
 <a href="#molmo_spaces.evaluation.configs.evaluation_configs.CAPPolicyEvalConfig.task_sampler_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(load_robot_from_file)">load_robot_from_file</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -49408,11 +49480,11 @@ is strictly authoritative for episode initialization.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-203">203</a></span>
-<span class="normal"><a href="#__codelineno-0-204">204</a></span>
-<span class="normal"><a href="#__codelineno-0-205">205</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
-<a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-202">202</a></span>
+<span class="normal"><a href="#__codelineno-0-203">203</a></span>
+<span class="normal"><a href="#__codelineno-0-204">204</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -51164,7 +51236,7 @@ is strictly authoritative for episode initialization.</p>
   </span>
 
 <a href="#molmo_spaces.evaluation.configs.evaluation_configs.DreamZeroPolicyEvalConfig.task_sampler_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(load_robot_from_file)">load_robot_from_file</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -52299,11 +52371,11 @@ is strictly authoritative for episode initialization.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-300">300</a></span>
-<span class="normal"><a href="#__codelineno-0-301">301</a></span>
-<span class="normal"><a href="#__codelineno-0-302">302</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-299" name="__codelineno-0-299"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -54063,7 +54135,7 @@ this inherits from a class with <strong>init</strong>.</p>
   </span>
 
 <a href="#molmo_spaces.evaluation.configs.evaluation_configs.DummyBenchmarkEvalConfig.task_sampler_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(load_robot_from_file)">load_robot_from_file</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -55198,13 +55270,13 @@ this inherits from a class with <strong>init</strong>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-180">180</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-179">179</a></span>
+<span class="normal"><a href="#__codelineno-0-180">180</a></span>
 <span class="normal"><a href="#__codelineno-0-181">181</a></span>
-<span class="normal"><a href="#__codelineno-0-182">182</a></span>
-<span class="normal"><a href="#__codelineno-0-183">183</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-181" name="__codelineno-0-181"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-182" name="__codelineno-0-182"></a>    <span class="c1"># Disable action noise for deterministic testing</span>
-<a id="__codelineno-0-183" name="__codelineno-0-183"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span> <span class="o">=</span> <span class="n">ActionNoiseConfig</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-182">182</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-180" name="__codelineno-0-180"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-181" name="__codelineno-0-181"></a>    <span class="c1"># Disable action noise for deterministic testing</span>
+<a id="__codelineno-0-182" name="__codelineno-0-182"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span> <span class="o">=</span> <span class="n">ActionNoiseConfig</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -58143,11 +58215,11 @@ this inherits from a class with <strong>init</strong>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-244">244</a></span>
-<span class="normal"><a href="#__codelineno-0-245">245</a></span>
-<span class="normal"><a href="#__codelineno-0-246">246</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-243">243</a></span>
+<span class="normal"><a href="#__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#__codelineno-0-245">245</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -59915,7 +59987,7 @@ the task sampler/config are minimal stubs.</p>
   </span>
 
 <a href="#molmo_spaces.evaluation.configs.evaluation_configs.JsonBenchmarkEvalConfig.task_sampler_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(load_robot_from_file)">load_robot_from_file</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -62832,7 +62904,7 @@ the task sampler/config are minimal stubs.</p>
   </span>
 
 <a href="#molmo_spaces.evaluation.configs.evaluation_configs.PiPolicyEvalConfig.task_sampler_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(load_robot_from_file)">load_robot_from_file</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -63967,11 +64039,11 @@ the task sampler/config are minimal stubs.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-193">193</a></span>
-<span class="normal"><a href="#__codelineno-0-194">194</a></span>
-<span class="normal"><a href="#__codelineno-0-195">195</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span>
+<span class="normal"><a href="#__codelineno-0-194">194</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -65723,7 +65795,7 @@ the task sampler/config are minimal stubs.</p>
   </span>
 
 <a href="#molmo_spaces.evaluation.configs.evaluation_configs.TeleopPolicyEvalConfig.task_sampler_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(load_robot_from_file)">load_robot_from_file</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">task_sampler_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span> <span class="o">=</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig">BaseMujocoTaskSamplerConfig</span></span><span class="p">(</span><span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_sampler_class)">task_sampler_class</span></span><span class="o">=</span><span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTaskSampler (molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler)" href="../tasks/#molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler">BaseMujocoTaskSampler</a></span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(house_inds)">house_inds</span></span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(samples_per_house)">samples_per_house</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(task_batch_size)">task_batch_size</span></span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.configs.task_sampler_configs.BaseMujocoTaskSamplerConfig(max_tasks)">max_tasks</span></span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -66858,11 +66930,11 @@ the task sampler/config are minimal stubs.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-213">213</a></span>
-<span class="normal"><a href="#__codelineno-0-214">214</a></span>
-<span class="normal"><a href="#__codelineno-0-215">215</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-212">212</a></span>
+<span class="normal"><a href="#__codelineno-0-213">213</a></span>
+<span class="normal"><a href="#__codelineno-0-214">214</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="k">def</span><span class="w"> </span><span class="nf">model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">__context</span><span class="p">):</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_post_init</span><span class="p">(</span><span class="n">__context</span><span class="p">)</span>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">robot_config</span><span class="o">.</span><span class="n">action_noise_config</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
