@@ -637,7 +637,6 @@ def print_license_info(data_type, data_source, asset_or_tar_id):
 
 
 if __name__ == "__main__":
-    get_robot_path("i2rt_yam")
     resource_manager_log_level(logging.DEBUG)
     print("Setting up resources...")
     get_resource_manager(force_post_setup=True)
