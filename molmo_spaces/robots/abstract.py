@@ -354,15 +354,36 @@ class Robot:
                 actuator.forcerange[:] = [-force_limit[i], force_limit[i]]
 
     @classmethod
+    def _load_robot_spec(
+        cls, robot_config: "BaseRobotConfig", strip_meshes: bool = False
+    ) -> MjSpec:
+        """Load the robot MjSpec from the robot config's XML path.
+
+        Args:
+            robot_config: The robot config to load the spec for.
+            strip_meshes: If True, remove all mesh geometries from the spec.
+                Useful for kinematics-only models that don't need visual/collision meshes.
+        """
+        robot_spec = MjSpec.from_file(str(robot_config.get_robot_xml_path()))
+        if strip_meshes:
+            for body in robot_spec.bodies:
+                body: mujoco.MjsBody
+                for geom in body.geoms:
+                    geom: mujoco.MjsGeom
+                    if geom.type == mujoco.mjtGeom.mjGEOM_MESH:
+                        robot_spec.delete(geom)
+        return robot_spec
+
+    @classmethod
     def add_robot_to_scene(
         cls,
         robot_config: "BaseRobotConfig",
         spec: MjSpec,
-        robot_spec: MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
+        strip_meshes: bool = False,
     ) -> None:
         """
         Add a robot to a scene, taking care of any robot-specific considerations.
@@ -370,17 +391,17 @@ class Robot:
         Args:
             robot_config: The robot config, of the corresponding derived class (i.e. FrankaConfig for Franka, etc.)
             spec: The scene to insert the robot into
-            robot_spec: The robot model
             prefix: The prefix to use for the robot, i.e. the namespace
             pos: The position to use for the robot, either 2d or 3d. If 2d, the z-coordinate is assumed to be 0.
             quat: The quaternion to use for the robot, in [w, x, y, z] format.
             randomize_textures: Whether to randomize the textures of the robot, if applicable. Not supported by all robots.
+            strip_meshes: If True, remove all mesh geometries before insertion (for kinematics-only models).
         """
         pos = pos + [0.0] if len(pos) == 2 else pos
+        robot_spec = cls._load_robot_spec(robot_config, strip_meshes=strip_meshes)
         robot_root_name = cls.robot_model_root_name()
         attach_frame = spec.worldbody.add_frame(pos=pos, quat=quat)
 
-        # Attach the robot to the base via the frame
         robot_root = robot_spec.body(robot_root_name)
         if robot_root is None:
             raise ValueError(f"Robot {robot_root_name=} not found in {robot_spec}")

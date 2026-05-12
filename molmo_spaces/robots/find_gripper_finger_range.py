@@ -34,17 +34,13 @@ def main():
 
     robot_config: BaseRobotConfig = robot_config_class()
 
-    robot_xml_path = robot_config.get_robot_xml_path()
-    robot_spec = MjSpec.from_file(str(robot_xml_path))
-
     spec = MjSpec()
     robot_config.robot_cls.add_robot_to_scene(
         robot_config,
         spec,
-        robot_spec,
-        robot_config.robot_namespace,
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0, 0.0],
+        prefix=robot_config.robot_namespace,
+        pos=[0.0, 0.0, 0.0],
+        quat=[1.0, 0.0, 0.0, 0.0],
     )
 
     model: MjModel = spec.compile()

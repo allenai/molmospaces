@@ -147,11 +147,11 @@ class MobileFrankaRobot(Robot):
         cls,
         robot_config: "MobileFrankaRobotConfig",
         spec: MjSpec,
-        robot_spec: MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
+        strip_meshes: bool = False,
     ) -> None:
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int
@@ -195,7 +195,7 @@ class MobileFrankaRobot(Robot):
         )
         attach_frame = robot_body.add_frame(pos=[0, 0, base_height])
 
-        # Attach the robot to the base via the frame
+        robot_spec = cls._load_robot_spec(robot_config, strip_meshes=strip_meshes)
         robot_root_name = cls.robot_model_root_name()
         robot_root = robot_spec.body(robot_root_name)
         if robot_root is None:
@@ -256,13 +256,10 @@ if __name__ == "__main__":
     spec = MjSpec.from_file(house_xml_path)
 
     robot_config = MobileFrankaRobotConfig(base_size=[0.5, 0.5, 0.75])
-    robot_file_path = robot_config.get_robot_xml_path()
-    robot_spec = MjSpec.from_file(str(robot_file_path))
 
     MobileFrankaRobot.add_robot_to_scene(
         robot_config,
         spec,
-        robot_spec,
         prefix=robot_config.robot_namespace,
         pos=[6.8, 9.75],
         quat=R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True),

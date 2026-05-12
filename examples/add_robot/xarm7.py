@@ -109,11 +109,11 @@ class XArm7Robot(Robot):
         cls,
         robot_config: "XArm7RobotConfig",
         spec: MjSpec,
-        robot_spec: MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
+        strip_meshes: bool = False,
     ) -> None:
         robot_config = cast("XArm7RobotConfig", robot_config)
         add_base = robot_config.base_size is not None
@@ -139,6 +139,7 @@ class XArm7Robot(Robot):
         else:
             attach_frame = robot_body.add_frame()
 
+        robot_spec = cls._load_robot_spec(robot_config, strip_meshes=strip_meshes)
         robot_root_name = cls.robot_model_root_name()
         robot_root = robot_spec.body(robot_root_name)
         if robot_root is None:
@@ -156,12 +157,10 @@ if __name__ == "__main__":
 
     robot_config = XArm7RobotConfig()
     spec = MjSpec()
-    robot_spec = MjSpec.from_file(str(robot_config.get_robot_xml_path()))
 
     XArm7Robot.add_robot_to_scene(
         robot_config,
         spec,
-        robot_spec,
         prefix="robot_0/",
         pos=[0.0, 0.0, 0.0],
         quat=[1.0, 0.0, 0.0, 0.0],

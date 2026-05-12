@@ -262,16 +262,13 @@ class SimpleWarpKinematics(ParallelKinematics):
         self._device = device
 
         spec = MjSpec()
-        robot_xml_path = robot_config.get_robot_xml_path()
-        robot_spec = MjSpec.from_file(str(robot_xml_path))
-        for body in robot_spec.bodies:
-            body: mujoco.MjsBody
-            for geom in body.geoms:
-                geom: mujoco.MjsGeom
-                if geom.type == mujoco.mjtGeom.mjGEOM_MESH:
-                    robot_spec.delete(geom)
         robot_config.robot_cls.add_robot_to_scene(
-            robot_config, spec, robot_spec, "", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]
+            robot_config,
+            spec,
+            prefix="",
+            pos=[0.0, 0.0, 0.0],
+            quat=[1.0, 0.0, 0.0, 0.0],
+            strip_meshes=True,
         )
         self._mj_model: MjModel = spec.compile()
         with wp.ScopedDevice(self._device):

@@ -601,7 +601,6 @@ class BaseMujocoTaskSampler:
             self.config.robot_config.robot_cls.add_robot_to_scene(
                 self.config.robot_config,
                 spec,
-                MjSpec.from_file(str(robot_file_path)),
                 prefix="robot_0/",
                 pos=[0, -0.15],  # TOOD(abhay): is this ok?
                 quat=[1, 0, 0, 1],

@@ -16,16 +16,23 @@ class FloatingRobotiqRobot(FloatingRUMRobot):
         cls,
         robot_config: "BaseRobotConfig",
         spec: MjSpec,
-        robot_spec: MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
+        strip_meshes: bool = False,
     ) -> None:
         pos = pos + [0.0] if len(pos) == 2 else pos
         # call grandparent class method (Robot) directly, skipping FloatingRUMRobot
-        # Use __func__ to get the unbound method and pass cls explicitly
-        Robot.add_robot_to_scene.__func__(cls, robot_config, spec, robot_spec, prefix, pos, quat)
+        Robot.add_robot_to_scene.__func__(
+            cls,
+            robot_config=robot_config,
+            spec=spec,
+            prefix=prefix,
+            pos=pos,
+            quat=quat,
+            strip_meshes=strip_meshes,
+        )
 
         # add target pose body and weld to base
         target_body_name = f"{prefix}target_ee_pose"

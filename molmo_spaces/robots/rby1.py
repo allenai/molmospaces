@@ -590,14 +590,20 @@ class RBY1(Robot):
         cls,
         robot_config: "MlSpacesExpConfig.RobotConfig",
         spec: MjSpec,
-        robot_spec: MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
+        strip_meshes: bool = False,
     ) -> None:
         super().add_robot_to_scene(
-            robot_config, spec, robot_spec, prefix, pos, quat, randomize_textures
+            robot_config=robot_config,
+            spec=spec,
+            prefix=prefix,
+            pos=pos,
+            quat=quat,
+            randomize_textures=randomize_textures,
+            strip_meshes=strip_meshes,
         )
 
         prefix += "robot_0/"

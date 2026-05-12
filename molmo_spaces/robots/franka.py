@@ -237,11 +237,11 @@ class FrankaRobot(Robot):
         cls,
         robot_config: "FrankaRobotConfig",
         spec: MjSpec,
-        robot_spec: MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
+        strip_meshes: bool = False,
     ) -> None:
         robot_config = cast("FrankaRobotConfig", robot_config)
         add_base = robot_config.base_size is not None
@@ -272,10 +272,11 @@ class FrankaRobot(Robot):
         else:
             attach_frame = robot_body.add_frame()
 
+        robot_spec = cls._load_robot_spec(robot_config, strip_meshes=strip_meshes)
+
         if randomize_textures:
             cls.randomize_robot_textures(robot_config, spec, prefix, robot_spec)
 
-        # Attach the robot to the base via the frame
         robot_root_name = cls.robot_model_root_name()
         robot_root = robot_spec.body(robot_root_name)
         if robot_root is None:

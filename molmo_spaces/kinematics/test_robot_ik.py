@@ -52,15 +52,12 @@ def main() -> None:
         kinematics = MlSpacesKinematics(robot_config)
 
     spec = mujoco.MjSpec()
-    robot_xml_path = robot_config.get_robot_xml_path()
-    robot_spec = mujoco.MjSpec.from_file(str(robot_xml_path))
     robot_config.robot_cls.add_robot_to_scene(
         robot_config,
         spec,
-        robot_spec,
-        "",
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0, 0.0],
+        prefix="",
+        pos=[0.0, 0.0, 0.0],
+        quat=[1.0, 0.0, 0.0, 0.0],
     )
     model = spec.compile()
     data = mujoco.MjData(model)
