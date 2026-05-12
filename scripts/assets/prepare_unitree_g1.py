@@ -24,12 +24,18 @@ SOURCE_MESH_DIR_REL_PATH = Path("g1_description/meshes")
 OUTPUT_XML_NAME = "model.xml"
 DEFAULT_PELVIS_HEIGHT_M = 0.793
 DEX1_GRASP_SITE_POS = [0.148, 0.0, 0.0]
-DEX1_FINGERTIP_PAD_SIZE = [0.02, 0.01, 0.045]
+# Rotate Unitree's Dex1.1 wrist frame into MolmoSpaces' parallel-jaw gripper frame:
+# local +z points forward through the gripper, local +y spans the finger opening axis.
+DEX1_GRASP_SITE_QUAT = [0.7071067811865476, 0.0, 0.7071067811865475, 0.0]
+DEX1_KINEMATICS_SITE_SIZE = [0.04]
+DEX1_DEBUG_AXIS_LENGTH = 0.08
+DEX1_DEBUG_AXIS_RADIUS = 0.004
+DEX1_FINGERTIP_PAD_SIZE = [0.045, 0.01, 0.02]
 DEX1_FINGERTIP_PAD_POSITIONS = {
     "dex1_finger_link_1": [0.1065, -0.0285, 0.0],
     "dex1_finger_link_2": [0.1065, 0.0285, 0.0],
 }
-DEX1_FINGERTIP_PAD_FRICTION = [12.0, 0.2, 0.02]
+DEX1_FINGERTIP_PAD_FRICTION = [20.0, 0.4, 0.04]
 DEX1_FINGERTIP_PAD_CONDIM = 6
 DEX1_FINGERTIP_PAD_GROUP = 4
 DEX1_HAND_FORCE_LIMIT_MULTIPLIER = 3.0
@@ -51,7 +57,14 @@ LEFT_HAND_OPEN_QPOS = {
 GAIN_BY_JOINT_GROUP = {
     "leg": (120.0, 12.0),
     "waist": (80.0, 8.0),
-    "arm": (60.0, 6.0),
+    # Arm damping doubled from the original (60, 6) to (60, 12). Keeping
+    # stiffness at 60 preserves the "soft" approach behavior — at 100,
+    # the arm was tracking pregrasp/grasp targets stiffly enough that
+    # the invisible Dex1.1 fingertip pad collision geoms shoved the
+    # pickup object aside during descent (run 24 lost the bottle 11 cm
+    # to the right of its sampled pose). Higher damping reduces servo
+    # ringing without making the arm push harder on tracking errors.
+    "arm": (60.0, 12.0),
     "hand": (80.0, 8.0),
 }
 
@@ -85,6 +98,11 @@ def parse_args() -> argparse.Namespace:
         "--force",
         action="store_true",
         help="Overwrite an existing output directory.",
+    )
+    parser.add_argument(
+        "--add-debug-grasp-site-axes",
+        action="store_true",
+        help="Add non-collision RGB visual axes to the right grasp site for temporary debugging.",
     )
     return parser.parse_args()
 
@@ -191,7 +209,10 @@ def _add_position_actuators(spec: mujoco.MjSpec, joints: list[JointSpec]) -> Non
         )
 
 
-def _add_kinematics_sites(spec: mujoco.MjSpec) -> None:
+def _add_kinematics_sites(
+    spec: mujoco.MjSpec,
+    add_debug_grasp_site_axes: bool = False,
+) -> None:
     for side in ("left", "right"):
         wrist_body = spec.body(f"{side}_wrist_yaw_link")
         if wrist_body is None:
@@ -199,15 +220,67 @@ def _add_kinematics_sites(spec: mujoco.MjSpec) -> None:
         wrist_body.add_site(
             name=f"{side}_wrist_site",
             pos=[0.0, 0.0, 0.0],
-            size=[0.015],
+            size=DEX1_KINEMATICS_SITE_SIZE,
             rgba=[0.1, 0.4, 1.0, 1.0],
         )
         wrist_body.add_site(
             name=f"{side}_grasp_site",
             pos=DEX1_GRASP_SITE_POS,
-            size=[0.015],
+            quat=DEX1_GRASP_SITE_QUAT,
+            size=DEX1_KINEMATICS_SITE_SIZE,
             rgba=[0.1, 1.0, 0.4, 1.0],
         )
+        if side == "right" and add_debug_grasp_site_axes:
+            axis_specs = (
+                (
+                    "x",
+                    [0.0, 0.0, -DEX1_DEBUG_AXIS_LENGTH / 2],
+                    [
+                        DEX1_DEBUG_AXIS_LENGTH / 2,
+                        DEX1_DEBUG_AXIS_RADIUS,
+                        DEX1_DEBUG_AXIS_RADIUS,
+                    ],
+                    [1.0, 0.0, 0.0, 1.0],
+                ),
+                (
+                    "y",
+                    [0.0, DEX1_DEBUG_AXIS_LENGTH / 2, 0.0],
+                    [
+                        DEX1_DEBUG_AXIS_RADIUS,
+                        DEX1_DEBUG_AXIS_LENGTH / 2,
+                        DEX1_DEBUG_AXIS_RADIUS,
+                    ],
+                    [0.0, 1.0, 0.0, 1.0],
+                ),
+                (
+                    "z",
+                    [DEX1_DEBUG_AXIS_LENGTH / 2, 0.0, 0.0],
+                    [
+                        DEX1_DEBUG_AXIS_RADIUS,
+                        DEX1_DEBUG_AXIS_RADIUS,
+                        DEX1_DEBUG_AXIS_LENGTH / 2,
+                    ],
+                    [0.1, 0.3, 1.0, 1.0],
+                ),
+            )
+            for axis_name, axis_offset, axis_size, rgba in axis_specs:
+                axis_pos = [
+                    DEX1_GRASP_SITE_POS[0] + axis_offset[0],
+                    DEX1_GRASP_SITE_POS[1] + axis_offset[1],
+                    DEX1_GRASP_SITE_POS[2] + axis_offset[2],
+                ]
+                wrist_body.add_geom(
+                    name=f"{side}_grasp_site_debug_axis_{axis_name}",
+                    type=mujoco.mjtGeom.mjGEOM_BOX,
+                    pos=axis_pos,
+                    quat=DEX1_GRASP_SITE_QUAT,
+                    size=axis_size,
+                    contype=0,
+                    conaffinity=0,
+                    density=0.0,
+                    group=5,
+                    rgba=rgba,
+                )
 
 
 def _add_dex1_fingertip_contact_pads(spec: mujoco.MjSpec) -> None:
@@ -239,6 +312,7 @@ def prepare_unitree_g1(
     unitree_urdf_root: str | os.PathLike[str],
     output_dir: str | os.PathLike[str],
     force: bool = False,
+    add_debug_grasp_site_axes: bool = False,
 ) -> Path:
     source_root = Path(unitree_urdf_root).expanduser().resolve()
     urdf_path = source_root / SOURCE_URDF_REL_PATH
@@ -264,7 +338,7 @@ def prepare_unitree_g1(
         raise ValueError("Expected root body `pelvis` in Unitree G1 URDF")
     pelvis.pos = [0.0, 0.0, DEFAULT_PELVIS_HEIGHT_M]
     pelvis.add_freejoint(name="floating_base_joint")
-    _add_kinematics_sites(spec)
+    _add_kinematics_sites(spec, add_debug_grasp_site_axes)
     _add_dex1_fingertip_contact_pads(spec)
     _add_position_actuators(spec, joints)
 
@@ -285,7 +359,12 @@ def main() -> None:
     if args.unitree_urdf_root is None:
         raise SystemExit("Set UNITREE_URDF_ROOT or pass --unitree-urdf-root")
 
-    output_xml_path = prepare_unitree_g1(args.unitree_urdf_root, args.output_dir, args.force)
+    output_xml_path = prepare_unitree_g1(
+        args.unitree_urdf_root,
+        args.output_dir,
+        args.force,
+        args.add_debug_grasp_site_axes,
+    )
     print(f"Wrote Unitree G1 Dex1.1 model: {output_xml_path}")
 
 
