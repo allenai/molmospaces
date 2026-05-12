@@ -12,6 +12,7 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
+from copy import deepcopy
 
 import compress_json
 from molmospaces_resources import (
@@ -133,8 +134,17 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
 _RESOURCE_MANAGER = None
 
 
-def get_resource_manager(force_post_setup: bool = False):
-    global _RESOURCE_MANAGER
+def get_resource_manager(
+    force_post_setup: bool = False, data_type_to_source_to_version: dict | None = None
+):
+    if data_type_to_source_to_version is None:
+        # save resource manager
+        global _RESOURCE_MANAGER
+        data_type_to_source_to_version = DATA_TYPE_TO_SOURCE_TO_VERSION
+    else:
+        # ignore resource manger
+        _RESOURCE_MANAGER = None
+
     if _RESOURCE_MANAGER is None:
 
         def post_setup(manager: ResourceManager):
@@ -147,7 +157,7 @@ def get_resource_manager(force_post_setup: bool = False):
                 manager.install_all_for_data_type("grasps")
             else:
                 to_install = {}
-                for scene_source in DATA_TYPE_TO_SOURCE_TO_VERSION["scenes"]:
+                for scene_source in data_type_to_source_to_version["scenes"]:
                     source_packages = manager.find_all_packages_for_source("scenes", scene_source)
                     if len(source_packages) < 10:
                         # Fully install small scene datasets
@@ -171,7 +181,7 @@ def get_resource_manager(force_post_setup: bool = False):
             if USE_HUGGING_FACE
             else R2RemoteStorage("mujoco-thor-resources"),
             symlink_dir=ASSETS_DIR,
-            versions=DATA_TYPE_TO_SOURCE_TO_VERSION,
+            versions=data_type_to_source_to_version,
             cache_dir=DATA_CACHE_DIR,
             env_prefix="MLSPACES",
             post_setup=post_setup,
@@ -564,10 +574,38 @@ def get_robot_paths() -> dict[str, Path]:
     return robot_paths
 
 
+def install_missing_source(data_type: str, missing_source: str, existing_sources: list[str]):
+    from molmospaces_resources.manager import _lock_context, LOCAL_MANIFEST_NAME
+    from molmospaces_resources.setup_utils import _get_current_install
+
+    existing_sources.append(missing_source)
+    data_type_to_source_to_version = deepcopy(DATA_TYPE_TO_SOURCE_TO_VERSION)
+    data_type_to_source_to_version[data_type] = {
+        source: DATA_TYPE_TO_SOURCE_TO_VERSION[data_type][source] for source in existing_sources
+    }
+
+    current_install = _get_current_install(ASSETS_DIR, data_type_to_source_to_version)
+    current_install[data_type][missing_source] = None
+    manifest_path = ASSETS_DIR / LOCAL_MANIFEST_NAME
+    with _lock_context(ASSETS_DIR, DATA_CACHE_DIR):
+        with open(manifest_path, "w") as f:
+            json.dump(current_install, f, indent=2)
+
+    get_resource_manager(data_type_to_source_to_version=data_type_to_source_to_version)
+
+
 def get_robot_path(robot_name) -> Path:
     """
     Return the path to the prepackaged MlSpaces robot file for the given robot name.
     """
+    robots = os.listdir(ROBOTS_DIR)
+    if robot_name not in robots:
+        logging.info(
+            f"Robot {robot_name} not found in {ROBOTS_DIR}. Attempting direct installation."
+        )
+        install_missing_source("robots", robot_name, robots)
+        assert robot_name in os.listdir(ROBOTS_DIR), f"Failed to install missing robot {robot_name}"
+
     return ROBOTS_DIR / robot_name
 
 
@@ -599,6 +637,7 @@ def print_license_info(data_type, data_source, asset_or_tar_id):
 
 
 if __name__ == "__main__":
+    get_robot_path("i2rt_yam")
     resource_manager_log_level(logging.DEBUG)
     print("Setting up resources...")
     get_resource_manager(force_post_setup=True)
