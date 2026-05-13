@@ -1164,6 +1164,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.install_missing_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;install_missing_source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#molmo_spaces.molmo_spaces_constants.get_robot_path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1789,6 +1800,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#molmo_spaces.molmo_spaces_constants.install_missing_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;install_missing_source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#molmo_spaces.molmo_spaces_constants.get_robot_path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2237,6 +2259,14 @@
               </td>
             </tr>
             <tr class="doc-section-item">
+              <td><code><a class="autorefs autorefs-internal" title="            install_missing_source (molmo_spaces.molmo_spaces_constants.install_missing_source)" href="#molmo_spaces.molmo_spaces_constants.install_missing_source">install_missing_source</a></code></td>
+              <td>
+                <div class="doc-md-description">
+                  
+                </div>
+              </td>
+            </tr>
+            <tr class="doc-section-item">
               <td><code><a class="autorefs autorefs-internal" title="            get_robot_path (molmo_spaces.molmo_spaces_constants.get_robot_path)" href="#molmo_spaces.molmo_spaces_constants.get_robot_path">get_robot_path</a></code></td>
               <td>
                 <div class="doc-md-description">
@@ -2643,8 +2673,7 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-26">26</a></span>
-<span class="normal"><a href="#__codelineno-0-27">27</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-27">27</a></span>
 <span class="normal"><a href="#__codelineno-0-28">28</a></span>
 <span class="normal"><a href="#__codelineno-0-29">29</a></span>
 <span class="normal"><a href="#__codelineno-0-30">30</a></span>
@@ -2658,22 +2687,23 @@
 <span class="normal"><a href="#__codelineno-0-38">38</a></span>
 <span class="normal"><a href="#__codelineno-0-39">39</a></span>
 <span class="normal"><a href="#__codelineno-0-40">40</a></span>
-<span class="normal"><a href="#__codelineno-0-41">41</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="k">def</span><span class="w"> </span><span class="nf">single_thread_environment</span><span class="p">():</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting single thread environment for proc </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30"></a>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a>        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a>        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_interop_threads</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">set_num_interop_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MKL_NUM_THREADS&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a>            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;MKL_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="k">pass</span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#__codelineno-0-42">42</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="k">def</span><span class="w"> </span><span class="nf">single_thread_environment</span><span class="p">():</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting single thread environment for proc </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a>        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_threads</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_num_interop_threads</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">set_num_interop_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MKL_NUM_THREADS&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;MKL_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2696,15 +2726,15 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-44">44</a></span>
-<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-45">45</a></span>
 <span class="normal"><a href="#__codelineno-0-46">46</a></span>
 <span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="k">def</span><span class="w"> </span><span class="nf">resource_manager_log_level</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;molmospaces_resources&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_level</span><span class="p">)</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">())</span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="k">def</span><span class="w"> </span><span class="nf">resource_manager_log_level</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;molmospaces_resources&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_level</span><span class="p">)</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">())</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2719,7 +2749,7 @@
 
 
 <a href="#molmo_spaces.molmo_spaces_constants.get_resource_manager" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_resource_manager</span><span class="p">(</span><span class="n">force_post_setup</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_resource_manager</span><span class="p">(</span><span class="n">force_post_setup</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">data_type_to_source_to_version</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2727,16 +2757,7 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-136">136</a></span>
-<span class="normal"><a href="#__codelineno-0-137">137</a></span>
-<span class="normal"><a href="#__codelineno-0-138">138</a></span>
-<span class="normal"><a href="#__codelineno-0-139">139</a></span>
-<span class="normal"><a href="#__codelineno-0-140">140</a></span>
-<span class="normal"><a href="#__codelineno-0-141">141</a></span>
-<span class="normal"><a href="#__codelineno-0-142">142</a></span>
-<span class="normal"><a href="#__codelineno-0-143">143</a></span>
-<span class="normal"><a href="#__codelineno-0-144">144</a></span>
-<span class="normal"><a href="#__codelineno-0-145">145</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-145">145</a></span>
 <span class="normal"><a href="#__codelineno-0-146">146</a></span>
 <span class="normal"><a href="#__codelineno-0-147">147</a></span>
 <span class="normal"><a href="#__codelineno-0-148">148</a></span>
@@ -2771,51 +2792,88 @@
 <span class="normal"><a href="#__codelineno-0-177">177</a></span>
 <span class="normal"><a href="#__codelineno-0-178">178</a></span>
 <span class="normal"><a href="#__codelineno-0-179">179</a></span>
-<span class="normal"><a href="#__codelineno-0-180">180</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_resource_manager</span><span class="p">(</span><span class="n">force_post_setup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<a id="__codelineno-0-137" name="__codelineno-0-137"></a>    <span class="k">global</span> <span class="n">_RESOURCE_MANAGER</span>
-<a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="k">if</span> <span class="n">_RESOURCE_MANAGER</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-139" name="__codelineno-0-139"></a>
-<a id="__codelineno-0-140" name="__codelineno-0-140"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">post_setup</span><span class="p">(</span><span class="n">manager</span><span class="p">:</span> <span class="n">ResourceManager</span><span class="p">):</span>
-<a id="__codelineno-0-141" name="__codelineno-0-141"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_IN_MULTIPROCESSING_CHILD&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">str2bool</span><span class="p">(</span>
-<a id="__codelineno-0-142" name="__codelineno-0-142"></a>                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MLSPACES_DOWNLOAD_EXTRACT_ALL_SCENES_OBJECTS_GRASPS&quot;</span><span class="p">,</span> <span class="s2">&quot;False&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-143" name="__codelineno-0-143"></a>            <span class="p">):</span>
-<a id="__codelineno-0-144" name="__codelineno-0-144"></a>                <span class="c1"># extract to cache only; link on demand (per-file for scenes)</span>
-<a id="__codelineno-0-145" name="__codelineno-0-145"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">skip_linking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-146" name="__codelineno-0-146"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;objects&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-147" name="__codelineno-0-147"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;grasps&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-148" name="__codelineno-0-148"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-149" name="__codelineno-0-149"></a>                <span class="n">to_install</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-150" name="__codelineno-0-150"></a>                <span class="k">for</span> <span class="n">scene_source</span> <span class="ow">in</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-151" name="__codelineno-0-151"></a>                    <span class="n">source_packages</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">find_all_packages_for_source</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">scene_source</span><span class="p">)</span>
-<a id="__codelineno-0-152" name="__codelineno-0-152"></a>                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_packages</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
-<a id="__codelineno-0-153" name="__codelineno-0-153"></a>                        <span class="c1"># Fully install small scene datasets</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154"></a>                        <span class="n">packages</span> <span class="o">=</span> <span class="n">source_packages</span>
-<a id="__codelineno-0-155" name="__codelineno-0-155"></a>                    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-156" name="__codelineno-0-156"></a>                        <span class="c1"># Install unindexed scene archives</span>
-<a id="__codelineno-0-157" name="__codelineno-0-157"></a>                        <span class="n">packages</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">unindexed_archives</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">scene_source</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-180">180</a></span>
+<span class="normal"><a href="#__codelineno-0-181">181</a></span>
+<span class="normal"><a href="#__codelineno-0-182">182</a></span>
+<span class="normal"><a href="#__codelineno-0-183">183</a></span>
+<span class="normal"><a href="#__codelineno-0-184">184</a></span>
+<span class="normal"><a href="#__codelineno-0-185">185</a></span>
+<span class="normal"><a href="#__codelineno-0-186">186</a></span>
+<span class="normal"><a href="#__codelineno-0-187">187</a></span>
+<span class="normal"><a href="#__codelineno-0-188">188</a></span>
+<span class="normal"><a href="#__codelineno-0-189">189</a></span>
+<span class="normal"><a href="#__codelineno-0-190">190</a></span>
+<span class="normal"><a href="#__codelineno-0-191">191</a></span>
+<span class="normal"><a href="#__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span>
+<span class="normal"><a href="#__codelineno-0-194">194</a></span>
+<span class="normal"><a href="#__codelineno-0-195">195</a></span>
+<span class="normal"><a href="#__codelineno-0-196">196</a></span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#__codelineno-0-200">200</a></span>
+<span class="normal"><a href="#__codelineno-0-201">201</a></span>
+<span class="normal"><a href="#__codelineno-0-202">202</a></span>
+<span class="normal"><a href="#__codelineno-0-203">203</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_resource_manager</span><span class="p">(</span>
+<a id="__codelineno-0-146" name="__codelineno-0-146"></a>    <span class="n">force_post_setup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">data_type_to_source_to_version</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="p">):</span>
+<a id="__codelineno-0-148" name="__codelineno-0-148"></a>    <span class="c1"># Note: This would still be effective even wíthin a specific branch in the if-else below.</span>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a>    <span class="c1"># The scope of variables is defined before execution starts.</span>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a>    <span class="k">global</span> <span class="n">_RESOURCE_MANAGER</span>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a>
+<a id="__codelineno-0-152" name="__codelineno-0-152"></a>    <span class="k">if</span> <span class="n">data_type_to_source_to_version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-153" name="__codelineno-0-153"></a>        <span class="c1"># save resource manager</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a>        <span class="n">use_global</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-155" name="__codelineno-0-155"></a>        <span class="n">data_type_to_source_to_version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span>
+<a id="__codelineno-0-156" name="__codelineno-0-156"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-157" name="__codelineno-0-157"></a>        <span class="n">use_global</span> <span class="o">=</span> <span class="kc">False</span>
 <a id="__codelineno-0-158" name="__codelineno-0-158"></a>
-<a id="__codelineno-0-159" name="__codelineno-0-159"></a>                    <span class="k">if</span> <span class="n">packages</span><span class="p">:</span>
-<a id="__codelineno-0-160" name="__codelineno-0-160"></a>                        <span class="n">to_install</span><span class="p">[</span><span class="n">scene_source</span><span class="p">]</span> <span class="o">=</span> <span class="n">packages</span>
-<a id="__codelineno-0-161" name="__codelineno-0-161"></a>
-<a id="__codelineno-0-162" name="__codelineno-0-162"></a>                <span class="k">if</span> <span class="n">to_install</span><span class="p">:</span>
-<a id="__codelineno-0-163" name="__codelineno-0-163"></a>                    <span class="n">manager</span><span class="o">.</span><span class="n">install_packages</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">to_install</span><span class="p">)</span>
-<a id="__codelineno-0-164" name="__codelineno-0-164"></a>
-<a id="__codelineno-0-165" name="__codelineno-0-165"></a>        <span class="c1"># resource_manager_log_level()</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166"></a>
-<a id="__codelineno-0-167" name="__codelineno-0-167"></a>        <span class="n">_RESOURCE_MANAGER</span> <span class="o">=</span> <span class="n">setup_resource_manager</span><span class="p">(</span>
-<a id="__codelineno-0-168" name="__codelineno-0-168"></a>            <span class="n">HFRemoteStorage</span><span class="p">(</span>
-<a id="__codelineno-0-169" name="__codelineno-0-169"></a>                <span class="s2">&quot;allenai/molmospaces&quot;</span><span class="p">,</span> <span class="n">repo_prefix</span><span class="o">=</span><span class="s2">&quot;mujoco&quot;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HF_TOKEN&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-170" name="__codelineno-0-170"></a>            <span class="p">)</span>
-<a id="__codelineno-0-171" name="__codelineno-0-171"></a>            <span class="k">if</span> <span class="n">USE_HUGGING_FACE</span>
-<a id="__codelineno-0-172" name="__codelineno-0-172"></a>            <span class="k">else</span> <span class="n">R2RemoteStorage</span><span class="p">(</span><span class="s2">&quot;mujoco-thor-resources&quot;</span><span class="p">),</span>
-<a id="__codelineno-0-173" name="__codelineno-0-173"></a>            <span class="n">symlink_dir</span><span class="o">=</span><span class="n">ASSETS_DIR</span><span class="p">,</span>
-<a id="__codelineno-0-174" name="__codelineno-0-174"></a>            <span class="n">versions</span><span class="o">=</span><span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">,</span>
-<a id="__codelineno-0-175" name="__codelineno-0-175"></a>            <span class="n">cache_dir</span><span class="o">=</span><span class="n">DATA_CACHE_DIR</span><span class="p">,</span>
-<a id="__codelineno-0-176" name="__codelineno-0-176"></a>            <span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;MLSPACES&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-177" name="__codelineno-0-177"></a>            <span class="n">post_setup</span><span class="o">=</span><span class="n">post_setup</span><span class="p">,</span>
-<a id="__codelineno-0-178" name="__codelineno-0-178"></a>            <span class="n">force_post_setup</span><span class="o">=</span><span class="n">force_post_setup</span><span class="p">,</span>
-<a id="__codelineno-0-179" name="__codelineno-0-179"></a>        <span class="p">)</span>
-<a id="__codelineno-0-180" name="__codelineno-0-180"></a>    <span class="k">return</span> <span class="n">_RESOURCE_MANAGER</span>
+<a id="__codelineno-0-159" name="__codelineno-0-159"></a>    <span class="k">if</span> <span class="n">_RESOURCE_MANAGER</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">use_global</span><span class="p">:</span>
+<a id="__codelineno-0-160" name="__codelineno-0-160"></a>
+<a id="__codelineno-0-161" name="__codelineno-0-161"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">post_setup</span><span class="p">(</span><span class="n">manager</span><span class="p">:</span> <span class="n">ResourceManager</span><span class="p">):</span>
+<a id="__codelineno-0-162" name="__codelineno-0-162"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_IN_MULTIPROCESSING_CHILD&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">str2bool</span><span class="p">(</span>
+<a id="__codelineno-0-163" name="__codelineno-0-163"></a>                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MLSPACES_DOWNLOAD_EXTRACT_ALL_SCENES_OBJECTS_GRASPS&quot;</span><span class="p">,</span> <span class="s2">&quot;False&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-164" name="__codelineno-0-164"></a>            <span class="p">):</span>
+<a id="__codelineno-0-165" name="__codelineno-0-165"></a>                <span class="c1"># extract to cache only; link on demand (per-file for scenes)</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">skip_linking</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-167" name="__codelineno-0-167"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;objects&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-168" name="__codelineno-0-168"></a>                <span class="n">manager</span><span class="o">.</span><span class="n">install_all_for_data_type</span><span class="p">(</span><span class="s2">&quot;grasps&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-169" name="__codelineno-0-169"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-170" name="__codelineno-0-170"></a>                <span class="n">to_install</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a>                <span class="k">for</span> <span class="n">scene_source</span> <span class="ow">in</span> <span class="n">data_type_to_source_to_version</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-172" name="__codelineno-0-172"></a>                    <span class="n">source_packages</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">find_all_packages_for_source</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">scene_source</span><span class="p">)</span>
+<a id="__codelineno-0-173" name="__codelineno-0-173"></a>                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_packages</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+<a id="__codelineno-0-174" name="__codelineno-0-174"></a>                        <span class="c1"># Fully install small scene datasets</span>
+<a id="__codelineno-0-175" name="__codelineno-0-175"></a>                        <span class="n">packages</span> <span class="o">=</span> <span class="n">source_packages</span>
+<a id="__codelineno-0-176" name="__codelineno-0-176"></a>                    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-177" name="__codelineno-0-177"></a>                        <span class="c1"># Install unindexed scene archives</span>
+<a id="__codelineno-0-178" name="__codelineno-0-178"></a>                        <span class="n">packages</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">unindexed_archives</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">scene_source</span><span class="p">)</span>
+<a id="__codelineno-0-179" name="__codelineno-0-179"></a>
+<a id="__codelineno-0-180" name="__codelineno-0-180"></a>                    <span class="k">if</span> <span class="n">packages</span><span class="p">:</span>
+<a id="__codelineno-0-181" name="__codelineno-0-181"></a>                        <span class="n">to_install</span><span class="p">[</span><span class="n">scene_source</span><span class="p">]</span> <span class="o">=</span> <span class="n">packages</span>
+<a id="__codelineno-0-182" name="__codelineno-0-182"></a>
+<a id="__codelineno-0-183" name="__codelineno-0-183"></a>                <span class="k">if</span> <span class="n">to_install</span><span class="p">:</span>
+<a id="__codelineno-0-184" name="__codelineno-0-184"></a>                    <span class="n">manager</span><span class="o">.</span><span class="n">install_packages</span><span class="p">(</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="n">to_install</span><span class="p">)</span>
+<a id="__codelineno-0-185" name="__codelineno-0-185"></a>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a>        <span class="c1"># resource_manager_log_level()</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a>        <span class="n">manager</span> <span class="o">=</span> <span class="n">setup_resource_manager</span><span class="p">(</span>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a>            <span class="n">_select_storage</span><span class="p">(),</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a>            <span class="n">symlink_dir</span><span class="o">=</span><span class="n">ASSETS_DIR</span><span class="p">,</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a>            <span class="n">versions</span><span class="o">=</span><span class="n">data_type_to_source_to_version</span><span class="p">,</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a>            <span class="n">cache_dir</span><span class="o">=</span><span class="n">DATA_CACHE_DIR</span><span class="p">,</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a>            <span class="n">env_prefix</span><span class="o">=</span><span class="s2">&quot;MLSPACES&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a>            <span class="n">post_setup</span><span class="o">=</span><span class="n">post_setup</span><span class="p">,</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a>            <span class="n">force_post_setup</span><span class="o">=</span><span class="n">force_post_setup</span><span class="p">,</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>        <span class="p">)</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>        <span class="k">if</span> <span class="n">use_global</span><span class="p">:</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a>            <span class="n">_RESOURCE_MANAGER</span> <span class="o">=</span> <span class="n">manager</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-201" name="__codelineno-0-201"></a>            <span class="k">return</span> <span class="n">manager</span>
+<a id="__codelineno-0-202" name="__codelineno-0-202"></a>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a>    <span class="k">return</span> <span class="n">_RESOURCE_MANAGER</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2838,43 +2896,43 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-220">220</a></span>
-<span class="normal"><a href="#__codelineno-0-221">221</a></span>
-<span class="normal"><a href="#__codelineno-0-222">222</a></span>
-<span class="normal"><a href="#__codelineno-0-223">223</a></span>
-<span class="normal"><a href="#__codelineno-0-224">224</a></span>
-<span class="normal"><a href="#__codelineno-0-225">225</a></span>
-<span class="normal"><a href="#__codelineno-0-226">226</a></span>
-<span class="normal"><a href="#__codelineno-0-227">227</a></span>
-<span class="normal"><a href="#__codelineno-0-228">228</a></span>
-<span class="normal"><a href="#__codelineno-0-229">229</a></span>
-<span class="normal"><a href="#__codelineno-0-230">230</a></span>
-<span class="normal"><a href="#__codelineno-0-231">231</a></span>
-<span class="normal"><a href="#__codelineno-0-232">232</a></span>
-<span class="normal"><a href="#__codelineno-0-233">233</a></span>
-<span class="normal"><a href="#__codelineno-0-234">234</a></span>
-<span class="normal"><a href="#__codelineno-0-235">235</a></span>
-<span class="normal"><a href="#__codelineno-0-236">236</a></span>
-<span class="normal"><a href="#__codelineno-0-237">237</a></span>
-<span class="normal"><a href="#__codelineno-0-238">238</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scenes_root</span><span class="p">():</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="k">global</span> <span class="n">_SCENES_ROOT</span>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="k">if</span> <span class="n">_SCENES_ROOT</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="c1"># Ensure scenes dir under asset root exists</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">get_resource_manager</span><span class="p">()</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a>        <span class="k">if</span> <span class="p">(</span><span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a>            <span class="n">_SCENES_ROOT</span> <span class="o">=</span> <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a>            <span class="n">_SCENES_ROOT</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a>                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>                    <span class="s2">&quot;MLSPACES_SCENES_ROOT&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>                    <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>                <span class="p">)</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>            <span class="p">)</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using SCENES_ROOT: </span><span class="si">{</span><span class="n">_SCENES_ROOT</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="k">return</span> <span class="n">_SCENES_ROOT</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-243">243</a></span>
+<span class="normal"><a href="#__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#__codelineno-0-245">245</a></span>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span>
+<span class="normal"><a href="#__codelineno-0-247">247</a></span>
+<span class="normal"><a href="#__codelineno-0-248">248</a></span>
+<span class="normal"><a href="#__codelineno-0-249">249</a></span>
+<span class="normal"><a href="#__codelineno-0-250">250</a></span>
+<span class="normal"><a href="#__codelineno-0-251">251</a></span>
+<span class="normal"><a href="#__codelineno-0-252">252</a></span>
+<span class="normal"><a href="#__codelineno-0-253">253</a></span>
+<span class="normal"><a href="#__codelineno-0-254">254</a></span>
+<span class="normal"><a href="#__codelineno-0-255">255</a></span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span>
+<span class="normal"><a href="#__codelineno-0-258">258</a></span>
+<span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scenes_root</span><span class="p">():</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="k">global</span> <span class="n">_SCENES_ROOT</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="k">if</span> <span class="n">_SCENES_ROOT</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="c1"># Ensure scenes dir under asset root exists</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="n">get_resource_manager</span><span class="p">()</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>        <span class="k">if</span> <span class="p">(</span><span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>            <span class="n">_SCENES_ROOT</span> <span class="o">=</span> <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>            <span class="n">_SCENES_ROOT</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>                    <span class="s2">&quot;MLSPACES_SCENES_ROOT&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>                    <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="s2">&quot;scenes&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>                <span class="p">)</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>            <span class="p">)</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using SCENES_ROOT: </span><span class="si">{</span><span class="n">_SCENES_ROOT</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="k">return</span> <span class="n">_SCENES_ROOT</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2897,27 +2955,27 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-244">244</a></span>
-<span class="normal"><a href="#__codelineno-0-245">245</a></span>
-<span class="normal"><a href="#__codelineno-0-246">246</a></span>
-<span class="normal"><a href="#__codelineno-0-247">247</a></span>
-<span class="normal"><a href="#__codelineno-0-248">248</a></span>
-<span class="normal"><a href="#__codelineno-0-249">249</a></span>
-<span class="normal"><a href="#__codelineno-0-250">250</a></span>
-<span class="normal"><a href="#__codelineno-0-251">251</a></span>
-<span class="normal"><a href="#__codelineno-0-252">252</a></span>
-<span class="normal"><a href="#__codelineno-0-253">253</a></span>
-<span class="normal"><a href="#__codelineno-0-254">254</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_asset_id_to_object_type</span><span class="p">():</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="k">global</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="k">if</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="n">ref_file</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;refs&quot;</span> <span class="o">/</span> <span class="s2">&quot;asset_id_to_object_type.json&quot;</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>            <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="o">=</span> <span class="n">compress_json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ref_file</span><span class="p">))</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to load asset_id_to_object_type.json: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>            <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="k">return</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_asset_id_to_object_type</span><span class="p">():</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>    <span class="k">global</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="k">if</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>        <span class="n">ref_file</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;refs&quot;</span> <span class="o">/</span> <span class="s2">&quot;asset_id_to_object_type.json&quot;</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>            <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="o">=</span> <span class="n">compress_json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ref_file</span><span class="p">))</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to load asset_id_to_object_type.json: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>            <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="k">return</span> <span class="n">_ASSET_ID_TO_OBJECT_TYPE</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2940,25 +2998,25 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-260">260</a></span>
-<span class="normal"><a href="#__codelineno-0-261">261</a></span>
-<span class="normal"><a href="#__codelineno-0-262">262</a></span>
-<span class="normal"><a href="#__codelineno-0-263">263</a></span>
-<span class="normal"><a href="#__codelineno-0-264">264</a></span>
-<span class="normal"><a href="#__codelineno-0-265">265</a></span>
-<span class="normal"><a href="#__codelineno-0-266">266</a></span>
-<span class="normal"><a href="#__codelineno-0-267">267</a></span>
-<span class="normal"><a href="#__codelineno-0-268">268</a></span>
-<span class="normal"><a href="#__codelineno-0-269">269</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_object_type_to_asset_ids</span><span class="p">():</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="k">global</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="k">if</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>        <span class="c1"># Group asset IDs by object type</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>        <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="k">for</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">get_asset_id_to_object_type</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>            <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asset_id</span><span class="p">)</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span><span class="p">)</span>  <span class="c1"># Convert back to regular dict</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="k">return</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-283">283</a></span>
+<span class="normal"><a href="#__codelineno-0-284">284</a></span>
+<span class="normal"><a href="#__codelineno-0-285">285</a></span>
+<span class="normal"><a href="#__codelineno-0-286">286</a></span>
+<span class="normal"><a href="#__codelineno-0-287">287</a></span>
+<span class="normal"><a href="#__codelineno-0-288">288</a></span>
+<span class="normal"><a href="#__codelineno-0-289">289</a></span>
+<span class="normal"><a href="#__codelineno-0-290">290</a></span>
+<span class="normal"><a href="#__codelineno-0-291">291</a></span>
+<span class="normal"><a href="#__codelineno-0-292">292</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_object_type_to_asset_ids</span><span class="p">():</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a>    <span class="k">global</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a>    <span class="k">if</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a>        <span class="c1"># Group asset IDs by object type</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">for</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">get_asset_id_to_object_type</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asset_id</span><span class="p">)</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a>        <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span><span class="p">)</span>  <span class="c1"># Convert back to regular dict</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="k">return</span> <span class="n">_OBJECT_TYPE_TO_ASSET_IDS</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2981,30 +3039,7 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-421">421</a></span>
-<span class="normal"><a href="#__codelineno-0-422">422</a></span>
-<span class="normal"><a href="#__codelineno-0-423">423</a></span>
-<span class="normal"><a href="#__codelineno-0-424">424</a></span>
-<span class="normal"><a href="#__codelineno-0-425">425</a></span>
-<span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span>
-<span class="normal"><a href="#__codelineno-0-435">435</a></span>
-<span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span>
-<span class="normal"><a href="#__codelineno-0-441">441</a></span>
-<span class="normal"><a href="#__codelineno-0-442">442</a></span>
-<span class="normal"><a href="#__codelineno-0-443">443</a></span>
-<span class="normal"><a href="#__codelineno-0-444">444</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-444">444</a></span>
 <span class="normal"><a href="#__codelineno-0-445">445</a></span>
 <span class="normal"><a href="#__codelineno-0-446">446</a></span>
 <span class="normal"><a href="#__codelineno-0-447">447</a></span>
@@ -3016,42 +3051,65 @@
 <span class="normal"><a href="#__codelineno-0-453">453</a></span>
 <span class="normal"><a href="#__codelineno-0-454">454</a></span>
 <span class="normal"><a href="#__codelineno-0-455">455</a></span>
-<span class="normal"><a href="#__codelineno-0-456">456</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scenes</span><span class="p">(</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a>    <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">return_version</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">names2functions</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="s2">&quot;ithor&quot;</span><span class="p">:</span> <span class="n">get_ithor_houses</span><span class="p">,</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="s2">&quot;procthor-10k&quot;</span><span class="p">:</span> <span class="n">get_procthor_10k_houses</span><span class="p">,</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="s2">&quot;procthor-100k-debug&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_houses</span><span class="p">,</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="s2">&quot;procthor-objaverse-debug&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_debug_houses</span><span class="p">,</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="s2">&quot;procthor-objaverse&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_houses</span><span class="p">,</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>        <span class="s2">&quot;holodeck-objaverse&quot;</span><span class="p">:</span> <span class="n">get_holodeck_objaverse_houses</span><span class="p">,</span>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a>    <span class="p">}</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a>    <span class="k">if</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names2functions</span><span class="p">:</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a>            <span class="sa">f</span><span class="s2">&quot;dataset_name was </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">, must be one of </span><span class="si">{</span><span class="n">names2functions</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a>        <span class="p">)</span>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">names2functions</span><span class="p">[</span><span class="n">dataset_name</span><span class="p">](</span><span class="n">split</span><span class="o">=</span><span class="n">split</span><span class="p">)</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">return_version</span><span class="p">:</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a>        <span class="k">return</span> <span class="n">index_map</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a>        <span class="k">if</span> <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;procthor-10k&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;procthor-10k-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a>        <span class="k">elif</span> <span class="p">(</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a>            <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;procthor-objaverse&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a>            <span class="ow">and</span> <span class="n">dataset_name</span> <span class="o">!=</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="p">):</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;procthor-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="k">elif</span> <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;holodeck-objaverse&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;holodeck-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="k">elif</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Missing source for </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a>            <span class="n">version</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="n">dataset_name</span><span class="p">]</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="k">return</span> <span class="n">index_map</span><span class="p">,</span> <span class="n">version</span>
+<span class="normal"><a href="#__codelineno-0-456">456</a></span>
+<span class="normal"><a href="#__codelineno-0-457">457</a></span>
+<span class="normal"><a href="#__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scenes</span><span class="p">(</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a>    <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">return_version</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="n">names2functions</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="s2">&quot;ithor&quot;</span><span class="p">:</span> <span class="n">get_ithor_houses</span><span class="p">,</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>        <span class="s2">&quot;procthor-10k&quot;</span><span class="p">:</span> <span class="n">get_procthor_10k_houses</span><span class="p">,</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>        <span class="s2">&quot;procthor-100k-debug&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_houses</span><span class="p">,</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="s2">&quot;procthor-objaverse-debug&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_debug_houses</span><span class="p">,</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>        <span class="s2">&quot;procthor-objaverse&quot;</span><span class="p">:</span> <span class="n">get_procthor_objaverse_houses</span><span class="p">,</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>        <span class="s2">&quot;holodeck-objaverse&quot;</span><span class="p">:</span> <span class="n">get_holodeck_objaverse_houses</span><span class="p">,</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>    <span class="p">}</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="k">if</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names2functions</span><span class="p">:</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>            <span class="sa">f</span><span class="s2">&quot;dataset_name was </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">, must be one of </span><span class="si">{</span><span class="n">names2functions</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="p">)</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">names2functions</span><span class="p">[</span><span class="n">dataset_name</span><span class="p">](</span><span class="n">split</span><span class="o">=</span><span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">return_version</span><span class="p">:</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>        <span class="k">return</span> <span class="n">index_map</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="k">if</span> <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;procthor-10k&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;procthor-10k-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="k">elif</span> <span class="p">(</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>            <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;procthor-objaverse&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>            <span class="ow">and</span> <span class="n">dataset_name</span> <span class="o">!=</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="p">):</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;procthor-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>        <span class="k">elif</span> <span class="n">dataset_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;holodeck-objaverse&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;holodeck-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="k">elif</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Missing source for </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>            <span class="n">version</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="n">version</span> <span class="o">=</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">][</span><span class="n">dataset_name</span><span class="p">]</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="k">return</span> <span class="n">index_map</span><span class="p">,</span> <span class="n">version</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3074,9 +3132,9 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-459">459</a></span>
-<span class="normal"><a href="#__codelineno-0-460">460</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="k">return</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span> <span class="ow">and</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="k">return</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span> <span class="ow">and</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3099,27 +3157,27 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-463">463</a></span>
-<span class="normal"><a href="#__codelineno-0-464">464</a></span>
-<span class="normal"><a href="#__codelineno-0-465">465</a></span>
-<span class="normal"><a href="#__codelineno-0-466">466</a></span>
-<span class="normal"><a href="#__codelineno-0-467">467</a></span>
-<span class="normal"><a href="#__codelineno-0-468">468</a></span>
-<span class="normal"><a href="#__codelineno-0-469">469</a></span>
-<span class="normal"><a href="#__codelineno-0-470">470</a></span>
-<span class="normal"><a href="#__codelineno-0-471">471</a></span>
-<span class="normal"><a href="#__codelineno-0-472">472</a></span>
-<span class="normal"><a href="#__codelineno-0-473">473</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="k">def</span><span class="w"> </span><span class="nf">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">):</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">:</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="c1"># If we got val and test (we should), add those to the cache</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="k">for</span> <span class="n">rsplit</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">num_houses</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">]</span> <span class="k">if</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">])</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="k">if</span> <span class="n">num_houses</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>            <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">][</span><span class="n">rsplit</span><span class="p">]</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">]</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="c1"># If no houses available for split, make sure to still set it up in the cache</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">][</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="k">def</span><span class="w"> </span><span class="nf">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">):</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">:</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>        <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="c1"># If we got val and test (we should), add those to the cache</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="k">for</span> <span class="n">rsplit</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="n">num_houses</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">]</span> <span class="k">if</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">])</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="k">if</span> <span class="n">num_houses</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>            <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">][</span><span class="n">rsplit</span><span class="p">]</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">rsplit</span><span class="p">]</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="c1"># If no houses available for split, make sure to still set it up in the cache</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">][</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="n">index_map</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3144,31 +3202,31 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span>
-<span class="normal"><a href="#__codelineno-0-480">480</a></span>
-<span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_ithor_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for iTHOR houses.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;ithor&quot;</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;ithor&quot;</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_ithor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">)</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="k">return</span> <span class="n">index_map</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-499" name="__codelineno-0-499"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_ithor_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for iTHOR houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;ithor&quot;</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;ithor&quot;</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_ithor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">)</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="k">return</span> <span class="n">index_map</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3193,47 +3251,47 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-491">491</a></span>
-<span class="normal"><a href="#__codelineno-0-492">492</a></span>
-<span class="normal"><a href="#__codelineno-0-493">493</a></span>
-<span class="normal"><a href="#__codelineno-0-494">494</a></span>
-<span class="normal"><a href="#__codelineno-0-495">495</a></span>
-<span class="normal"><a href="#__codelineno-0-496">496</a></span>
-<span class="normal"><a href="#__codelineno-0-497">497</a></span>
-<span class="normal"><a href="#__codelineno-0-498">498</a></span>
-<span class="normal"><a href="#__codelineno-0-499">499</a></span>
-<span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span>
-<span class="normal"><a href="#__codelineno-0-510">510</a></span>
-<span class="normal"><a href="#__codelineno-0-511">511</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_10k_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR-10k houses.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k&quot;</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="k">if</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-train&quot;</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="k">elif</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;val&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-val&quot;</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">elif</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;test&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-test&quot;</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="k">raise</span> <span class="ne">ValueError</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="n">location</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="k">return</span> <span class="n">index_map</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-514">514</a></span>
+<span class="normal"><a href="#__codelineno-0-515">515</a></span>
+<span class="normal"><a href="#__codelineno-0-516">516</a></span>
+<span class="normal"><a href="#__codelineno-0-517">517</a></span>
+<span class="normal"><a href="#__codelineno-0-518">518</a></span>
+<span class="normal"><a href="#__codelineno-0-519">519</a></span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span>
+<span class="normal"><a href="#__codelineno-0-523">523</a></span>
+<span class="normal"><a href="#__codelineno-0-524">524</a></span>
+<span class="normal"><a href="#__codelineno-0-525">525</a></span>
+<span class="normal"><a href="#__codelineno-0-526">526</a></span>
+<span class="normal"><a href="#__codelineno-0-527">527</a></span>
+<span class="normal"><a href="#__codelineno-0-528">528</a></span>
+<span class="normal"><a href="#__codelineno-0-529">529</a></span>
+<span class="normal"><a href="#__codelineno-0-530">530</a></span>
+<span class="normal"><a href="#__codelineno-0-531">531</a></span>
+<span class="normal"><a href="#__codelineno-0-532">532</a></span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_10k_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR-10k houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k&quot;</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="k">if</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-train&quot;</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="k">elif</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;val&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-val&quot;</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="k">elif</span> <span class="n">split</span> <span class="o">==</span> <span class="s2">&quot;test&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>        <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;procthor-10k-test&quot;</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>        <span class="k">raise</span> <span class="ne">ValueError</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="n">location</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>    <span class="k">return</span> <span class="n">index_map</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3258,31 +3316,31 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-514">514</a></span>
-<span class="normal"><a href="#__codelineno-0-515">515</a></span>
-<span class="normal"><a href="#__codelineno-0-516">516</a></span>
-<span class="normal"><a href="#__codelineno-0-517">517</a></span>
-<span class="normal"><a href="#__codelineno-0-518">518</a></span>
-<span class="normal"><a href="#__codelineno-0-519">519</a></span>
-<span class="normal"><a href="#__codelineno-0-520">520</a></span>
-<span class="normal"><a href="#__codelineno-0-521">521</a></span>
-<span class="normal"><a href="#__codelineno-0-522">522</a></span>
-<span class="normal"><a href="#__codelineno-0-523">523</a></span>
-<span class="normal"><a href="#__codelineno-0-524">524</a></span>
-<span class="normal"><a href="#__codelineno-0-525">525</a></span>
-<span class="normal"><a href="#__codelineno-0-526">526</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_objaverse_debug_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="k">return</span> <span class="n">index_map</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#__codelineno-0-540">540</a></span>
+<span class="normal"><a href="#__codelineno-0-541">541</a></span>
+<span class="normal"><a href="#__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#__codelineno-0-543">543</a></span>
+<span class="normal"><a href="#__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#__codelineno-0-549">549</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_objaverse_debug_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;procthor-objaverse-debug&quot;</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="k">return</span> <span class="n">index_map</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3307,31 +3365,31 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-529">529</a></span>
-<span class="normal"><a href="#__codelineno-0-530">530</a></span>
-<span class="normal"><a href="#__codelineno-0-531">531</a></span>
-<span class="normal"><a href="#__codelineno-0-532">532</a></span>
-<span class="normal"><a href="#__codelineno-0-533">533</a></span>
-<span class="normal"><a href="#__codelineno-0-534">534</a></span>
-<span class="normal"><a href="#__codelineno-0-535">535</a></span>
-<span class="normal"><a href="#__codelineno-0-536">536</a></span>
-<span class="normal"><a href="#__codelineno-0-537">537</a></span>
-<span class="normal"><a href="#__codelineno-0-538">538</a></span>
-<span class="normal"><a href="#__codelineno-0-539">539</a></span>
-<span class="normal"><a href="#__codelineno-0-540">540</a></span>
-<span class="normal"><a href="#__codelineno-0-541">541</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-objaverse&quot;</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;procthor-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="k">return</span> <span class="n">index_map</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_procthor_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;procthor-objaverse&quot;</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;procthor-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>    <span class="k">return</span> <span class="n">index_map</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3356,31 +3414,31 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-544">544</a></span>
-<span class="normal"><a href="#__codelineno-0-545">545</a></span>
-<span class="normal"><a href="#__codelineno-0-546">546</a></span>
-<span class="normal"><a href="#__codelineno-0-547">547</a></span>
-<span class="normal"><a href="#__codelineno-0-548">548</a></span>
-<span class="normal"><a href="#__codelineno-0-549">549</a></span>
-<span class="normal"><a href="#__codelineno-0-550">550</a></span>
-<span class="normal"><a href="#__codelineno-0-551">551</a></span>
-<span class="normal"><a href="#__codelineno-0-552">552</a></span>
-<span class="normal"><a href="#__codelineno-0-553">553</a></span>
-<span class="normal"><a href="#__codelineno-0-554">554</a></span>
-<span class="normal"><a href="#__codelineno-0-555">555</a></span>
-<span class="normal"><a href="#__codelineno-0-556">556</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_holodeck_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;holodeck-objaverse&quot;</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;holodeck-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="k">return</span> <span class="n">index_map</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span>
+<span class="normal"><a href="#__codelineno-0-577">577</a></span>
+<span class="normal"><a href="#__codelineno-0-578">578</a></span>
+<span class="normal"><a href="#__codelineno-0-579">579</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_holodeck_objaverse_houses</span><span class="p">(</span><span class="n">split</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {split: {index: xml_path_or_None}} for ProcTHOR Objaverse houses.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>    <span class="n">cache_key</span> <span class="o">=</span> <span class="s2">&quot;holodeck-objaverse&quot;</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>    <span class="k">if</span> <span class="n">check_in_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">):</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="n">_DATASET_INDEX_CACHE</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>    <span class="n">houses_dir</span> <span class="o">=</span> <span class="n">get_scenes_root</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;holodeck-objaverse-</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>    <span class="n">index_map</span> <span class="o">=</span> <span class="n">_build_scene_index_map_procthor</span><span class="p">(</span><span class="n">houses_dir</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>    <span class="n">populate_cache</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">index_map</span><span class="p">)</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>    <span class="k">return</span> <span class="n">index_map</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3405,17 +3463,102 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-559">559</a></span>
-<span class="normal"><a href="#__codelineno-0-560">560</a></span>
-<span class="normal"><a href="#__codelineno-0-561">561</a></span>
-<span class="normal"><a href="#__codelineno-0-562">562</a></span>
-<span class="normal"><a href="#__codelineno-0-563">563</a></span>
-<span class="normal"><a href="#__codelineno-0-564">564</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_robot_paths</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {robot_name: Path} for all prepackaged MlSpaces robot files.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>    <span class="n">robot_paths</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="k">for</span> <span class="n">robot_name</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ROBOTS_DIR</span><span class="p">):</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">robot_paths</span><span class="p">[</span><span class="n">robot_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>    <span class="k">return</span> <span class="n">robot_paths</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-582">582</a></span>
+<span class="normal"><a href="#__codelineno-0-583">583</a></span>
+<span class="normal"><a href="#__codelineno-0-584">584</a></span>
+<span class="normal"><a href="#__codelineno-0-585">585</a></span>
+<span class="normal"><a href="#__codelineno-0-586">586</a></span>
+<span class="normal"><a href="#__codelineno-0-587">587</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_robot_paths</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {robot_name: Path} for all prepackaged MlSpaces robot files.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a>    <span class="n">robot_paths</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a>    <span class="k">for</span> <span class="n">robot_name</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ROBOTS_DIR</span><span class="p">):</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a>        <span class="n">robot_paths</span><span class="p">[</span><span class="n">robot_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>    <span class="k">return</span> <span class="n">robot_paths</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="molmo_spaces.molmo_spaces_constants.install_missing_source" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">install_missing_source</span>
+
+
+<a href="#molmo_spaces.molmo_spaces_constants.install_missing_source" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">install_missing_source</span><span class="p">(</span><span class="n">data_type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">missing_source</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">existing_sources</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">])</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-590">590</a></span>
+<span class="normal"><a href="#__codelineno-0-591">591</a></span>
+<span class="normal"><a href="#__codelineno-0-592">592</a></span>
+<span class="normal"><a href="#__codelineno-0-593">593</a></span>
+<span class="normal"><a href="#__codelineno-0-594">594</a></span>
+<span class="normal"><a href="#__codelineno-0-595">595</a></span>
+<span class="normal"><a href="#__codelineno-0-596">596</a></span>
+<span class="normal"><a href="#__codelineno-0-597">597</a></span>
+<span class="normal"><a href="#__codelineno-0-598">598</a></span>
+<span class="normal"><a href="#__codelineno-0-599">599</a></span>
+<span class="normal"><a href="#__codelineno-0-600">600</a></span>
+<span class="normal"><a href="#__codelineno-0-601">601</a></span>
+<span class="normal"><a href="#__codelineno-0-602">602</a></span>
+<span class="normal"><a href="#__codelineno-0-603">603</a></span>
+<span class="normal"><a href="#__codelineno-0-604">604</a></span>
+<span class="normal"><a href="#__codelineno-0-605">605</a></span>
+<span class="normal"><a href="#__codelineno-0-606">606</a></span>
+<span class="normal"><a href="#__codelineno-0-607">607</a></span>
+<span class="normal"><a href="#__codelineno-0-608">608</a></span>
+<span class="normal"><a href="#__codelineno-0-609">609</a></span>
+<span class="normal"><a href="#__codelineno-0-610">610</a></span>
+<span class="normal"><a href="#__codelineno-0-611">611</a></span>
+<span class="normal"><a href="#__codelineno-0-612">612</a></span>
+<span class="normal"><a href="#__codelineno-0-613">613</a></span>
+<span class="normal"><a href="#__codelineno-0-614">614</a></span>
+<span class="normal"><a href="#__codelineno-0-615">615</a></span>
+<span class="normal"><a href="#__codelineno-0-616">616</a></span>
+<span class="normal"><a href="#__codelineno-0-617">617</a></span>
+<span class="normal"><a href="#__codelineno-0-618">618</a></span>
+<span class="normal"><a href="#__codelineno-0-619">619</a></span>
+<span class="normal"><a href="#__codelineno-0-620">620</a></span>
+<span class="normal"><a href="#__codelineno-0-621">621</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="k">def</span><span class="w"> </span><span class="nf">install_missing_source</span><span class="p">(</span><span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">missing_source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">existing_sources</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmospaces_resources.manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">_lock_context</span><span class="p">,</span> <span class="n">LOCAL_MANIFEST_NAME</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmospaces_resources.setup_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">_get_current_install</span><span class="p">,</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="n">_RESOURCE_MANAGERS</span><span class="p">,</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a>        <span class="n">_manager_key</span><span class="p">,</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a>    <span class="p">)</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a>    <span class="k">assert</span> <span class="n">missing_source</span> <span class="ow">in</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="n">data_type</span><span class="p">],</span> <span class="p">(</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a>        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">missing_source</span><span class="si">}</span><span class="s2"> has no version under </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a>    <span class="p">)</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a>    <span class="n">data_type_to_source_to_version</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">)</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>    <span class="n">existing_sources</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a>        <span class="n">source</span> <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">existing_sources</span> <span class="k">if</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">data_type_to_source_to_version</span><span class="p">[</span><span class="n">data_type</span><span class="p">]</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">missing_source</span><span class="p">]</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="n">data_type_to_source_to_version</span><span class="p">[</span><span class="n">data_type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>        <span class="n">source</span><span class="p">:</span> <span class="n">DATA_TYPE_TO_SOURCE_TO_VERSION</span><span class="p">[</span><span class="n">data_type</span><span class="p">][</span><span class="n">source</span><span class="p">]</span> <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">existing_sources</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="p">}</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>    <span class="n">current_install</span> <span class="o">=</span> <span class="n">_get_current_install</span><span class="p">(</span><span class="n">ASSETS_DIR</span><span class="p">,</span> <span class="n">data_type_to_source_to_version</span><span class="p">)</span>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a>    <span class="n">current_install</span><span class="p">[</span><span class="n">data_type</span><span class="p">][</span><span class="n">missing_source</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">ASSETS_DIR</span> <span class="o">/</span> <span class="n">LOCAL_MANIFEST_NAME</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">_manager_key</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_select_storage</span><span class="p">()),</span> <span class="n">data_type_to_source_to_version</span><span class="p">)</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a>    <span class="k">with</span> <span class="n">_lock_context</span><span class="p">(</span><span class="n">ASSETS_DIR</span><span class="p">,</span> <span class="n">DATA_CACHE_DIR</span><span class="p">):</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_RESOURCE_MANAGERS</span><span class="p">:</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a>            <span class="n">_RESOURCE_MANAGERS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">current_install</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>    <span class="n">get_resource_manager</span><span class="p">(</span><span class="n">data_type_to_source_to_version</span><span class="o">=</span><span class="n">data_type_to_source_to_version</span><span class="p">)</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>    <span class="k">assert</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_RESOURCE_MANAGERS</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;BUG: Missing expected </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> from _RESOURCE_MANAGERS&quot;</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3440,15 +3583,37 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-567">567</a></span>
-<span class="normal"><a href="#__codelineno-0-568">568</a></span>
-<span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span>
-<span class="normal"><a href="#__codelineno-0-571">571</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_robot_path</span><span class="p">(</span><span class="n">robot_name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">    Return the path to the prepackaged MlSpaces robot file for the given robot name.</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a>    <span class="k">return</span> <span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-624">624</a></span>
+<span class="normal"><a href="#__codelineno-0-625">625</a></span>
+<span class="normal"><a href="#__codelineno-0-626">626</a></span>
+<span class="normal"><a href="#__codelineno-0-627">627</a></span>
+<span class="normal"><a href="#__codelineno-0-628">628</a></span>
+<span class="normal"><a href="#__codelineno-0-629">629</a></span>
+<span class="normal"><a href="#__codelineno-0-630">630</a></span>
+<span class="normal"><a href="#__codelineno-0-631">631</a></span>
+<span class="normal"><a href="#__codelineno-0-632">632</a></span>
+<span class="normal"><a href="#__codelineno-0-633">633</a></span>
+<span class="normal"><a href="#__codelineno-0-634">634</a></span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span>
+<span class="normal"><a href="#__codelineno-0-638">638</a></span>
+<span class="normal"><a href="#__codelineno-0-639">639</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_robot_path</span><span class="p">(</span><span class="n">robot_name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">    Return the path to the prepackaged MlSpaces robot file for the given robot name.</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="n">robot_dirs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ROBOTS_DIR</span><span class="p">)</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="k">if</span> <span class="n">robot_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">robot_dirs</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>            <span class="sa">f</span><span class="s2">&quot;Robot </span><span class="si">{</span><span class="n">robot_name</span><span class="si">}</span><span class="s2"> not found in </span><span class="si">{</span><span class="n">ROBOTS_DIR</span><span class="si">}</span><span class="s2">. Attempting direct installation.&quot;</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>        <span class="p">)</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>        <span class="n">robot_dirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">robot_dir</span> <span class="k">for</span> <span class="n">robot_dir</span> <span class="ow">in</span> <span class="n">robot_dirs</span> <span class="k">if</span> <span class="p">(</span><span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_dir</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()]</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>        <span class="n">install_missing_source</span><span class="p">(</span><span class="s2">&quot;robots&quot;</span><span class="p">,</span> <span class="n">robot_name</span><span class="p">,</span> <span class="n">robot_dirs</span><span class="p">)</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="k">assert</span> <span class="n">robot_name</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ROBOTS_DIR</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(),</span> <span class="p">(</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="sa">f</span><span class="s2">&quot;Failed to install missing robot </span><span class="si">{</span><span class="n">robot_name</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="p">)</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a>    <span class="k">return</span> <span class="n">ROBOTS_DIR</span> <span class="o">/</span> <span class="n">robot_name</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3471,55 +3636,55 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/molmo_spaces_constants.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-574">574</a></span>
-<span class="normal"><a href="#__codelineno-0-575">575</a></span>
-<span class="normal"><a href="#__codelineno-0-576">576</a></span>
-<span class="normal"><a href="#__codelineno-0-577">577</a></span>
-<span class="normal"><a href="#__codelineno-0-578">578</a></span>
-<span class="normal"><a href="#__codelineno-0-579">579</a></span>
-<span class="normal"><a href="#__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#__codelineno-0-581">581</a></span>
-<span class="normal"><a href="#__codelineno-0-582">582</a></span>
-<span class="normal"><a href="#__codelineno-0-583">583</a></span>
-<span class="normal"><a href="#__codelineno-0-584">584</a></span>
-<span class="normal"><a href="#__codelineno-0-585">585</a></span>
-<span class="normal"><a href="#__codelineno-0-586">586</a></span>
-<span class="normal"><a href="#__codelineno-0-587">587</a></span>
-<span class="normal"><a href="#__codelineno-0-588">588</a></span>
-<span class="normal"><a href="#__codelineno-0-589">589</a></span>
-<span class="normal"><a href="#__codelineno-0-590">590</a></span>
-<span class="normal"><a href="#__codelineno-0-591">591</a></span>
-<span class="normal"><a href="#__codelineno-0-592">592</a></span>
-<span class="normal"><a href="#__codelineno-0-593">593</a></span>
-<span class="normal"><a href="#__codelineno-0-594">594</a></span>
-<span class="normal"><a href="#__codelineno-0-595">595</a></span>
-<span class="normal"><a href="#__codelineno-0-596">596</a></span>
-<span class="normal"><a href="#__codelineno-0-597">597</a></span>
-<span class="normal"><a href="#__codelineno-0-598">598</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="k">def</span><span class="w"> </span><span class="nf">print_license_info</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">):</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.utils.license_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_license</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_identifiers</span><span class="p">():</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a>        <span class="k">return</span> <span class="p">[</span>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a>            <span class="n">archive</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_source</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.tar.zst&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a>            <span class="k">for</span> <span class="n">archive</span> <span class="ow">in</span> <span class="n">get_resource_manager</span><span class="p">()</span><span class="o">.</span><span class="n">find_all_packages_for_source</span><span class="p">(</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a>                <span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a>            <span class="p">)</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a>        <span class="p">]</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a>    <span class="k">if</span> <span class="n">asset_or_tar_id</span> <span class="o">==</span> <span class="s2">&quot;--list_all&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible identifiers: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">get_identifiers</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="k">return</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>        <span class="n">license_info</span> <span class="o">=</span> <span class="n">resolve_license</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">)</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">license_info</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a>    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a>        <span class="n">archives</span> <span class="o">=</span> <span class="n">get_identifiers</span><span class="p">()</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>        <span class="n">formatted</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="n">archives</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">archives</span><span class="p">),</span> <span class="mi">10</span><span class="p">))))</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible identifiers:</span><span class="se">\n</span><span class="si">{</span><span class="n">formatted</span><span class="si">}{</span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">archives</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-642">642</a></span>
+<span class="normal"><a href="#__codelineno-0-643">643</a></span>
+<span class="normal"><a href="#__codelineno-0-644">644</a></span>
+<span class="normal"><a href="#__codelineno-0-645">645</a></span>
+<span class="normal"><a href="#__codelineno-0-646">646</a></span>
+<span class="normal"><a href="#__codelineno-0-647">647</a></span>
+<span class="normal"><a href="#__codelineno-0-648">648</a></span>
+<span class="normal"><a href="#__codelineno-0-649">649</a></span>
+<span class="normal"><a href="#__codelineno-0-650">650</a></span>
+<span class="normal"><a href="#__codelineno-0-651">651</a></span>
+<span class="normal"><a href="#__codelineno-0-652">652</a></span>
+<span class="normal"><a href="#__codelineno-0-653">653</a></span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span>
+<span class="normal"><a href="#__codelineno-0-656">656</a></span>
+<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
+<span class="normal"><a href="#__codelineno-0-659">659</a></span>
+<span class="normal"><a href="#__codelineno-0-660">660</a></span>
+<span class="normal"><a href="#__codelineno-0-661">661</a></span>
+<span class="normal"><a href="#__codelineno-0-662">662</a></span>
+<span class="normal"><a href="#__codelineno-0-663">663</a></span>
+<span class="normal"><a href="#__codelineno-0-664">664</a></span>
+<span class="normal"><a href="#__codelineno-0-665">665</a></span>
+<span class="normal"><a href="#__codelineno-0-666">666</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="k">def</span><span class="w"> </span><span class="nf">print_license_info</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">):</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.utils.license_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_license</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_identifiers</span><span class="p">():</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>            <span class="n">archive</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_source</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.tar.zst&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>            <span class="k">for</span> <span class="n">archive</span> <span class="ow">in</span> <span class="n">get_resource_manager</span><span class="p">()</span><span class="o">.</span><span class="n">find_all_packages_for_source</span><span class="p">(</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>                <span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>            <span class="p">)</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="p">]</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="k">if</span> <span class="n">asset_or_tar_id</span> <span class="o">==</span> <span class="s2">&quot;--list_all&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible identifiers: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">get_identifiers</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>        <span class="k">return</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="n">license_info</span> <span class="o">=</span> <span class="n">resolve_license</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">data_source</span><span class="p">,</span> <span class="n">asset_or_tar_id</span><span class="p">)</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">license_info</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>        <span class="n">archives</span> <span class="o">=</span> <span class="n">get_identifiers</span><span class="p">()</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>        <span class="n">formatted</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="n">archives</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">archives</span><span class="p">),</span> <span class="mi">10</span><span class="p">))))</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible identifiers:</span><span class="se">\n</span><span class="si">{</span><span class="n">formatted</span><span class="si">}{</span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">archives</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
