@@ -64,14 +64,6 @@ class RBY1ArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
         return "site"
 
     @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
-
-    @property
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
 
@@ -172,10 +164,6 @@ class RBY1GripperGroup(MJCFFrameMixin, GripperGroup):
         self.mj_data.qpos[self._joint_posadr] = coupled_pos
 
     @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
-
-    @property
     def root_frame_to_world(self) -> np.ndarray:
         return self.leaf_frame_to_world
 
@@ -209,14 +197,6 @@ class RBY1TorsoGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
     @property
     def leaf_frame_type(self):
         return "body"
-
-    @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return body_pose(self.mj_data, self._torso_leaf_id)
 
     @property
     def root_frame_to_world(self) -> np.ndarray:
@@ -299,14 +279,6 @@ class RBY1HeadGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
     @property
     def leaf_frame_type(self):
         return "body"
-
-    @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return body_pose(self.mj_data, self._head_leaf_id)
 
     @property
     def root_frame_to_world(self) -> np.ndarray:

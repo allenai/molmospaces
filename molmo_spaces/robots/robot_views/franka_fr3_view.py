@@ -52,14 +52,6 @@ class FrankaFR3ArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
         return "site"
 
     @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
-
-    @property
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
 
@@ -97,10 +89,6 @@ class FrankaFR3GripperGroup(MJCFFrameMixin, GripperGroup):
     @property
     def inter_finger_dist(self) -> float:
         return np.sum(self.joint_pos).item()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
 
     @property
     def root_frame_to_world(self) -> np.ndarray:

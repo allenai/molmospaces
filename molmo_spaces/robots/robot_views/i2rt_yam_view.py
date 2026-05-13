@@ -62,14 +62,6 @@ class I2rtYamArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
         return "site"
 
     @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
-
-    @property
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
 
@@ -133,10 +125,6 @@ class I2rtYamGripperGroup(MJCFFrameMixin, GripperGroup):
         the total opening is the sum of absolute positions.
         """
         return np.abs(self.joint_pos[0]) + np.abs(self.joint_pos[1])
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
 
     @property
     def root_frame_to_world(self) -> np.ndarray:

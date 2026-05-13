@@ -296,6 +296,16 @@ class MJCFFrameMixin(ABC):
         """The type of the leaf frame."""
         raise NotImplementedError
 
+    @property
+    def leaf_frame_to_world(self) -> np.ndarray:
+        assert isinstance(self, MoveGroup)
+        if self.leaf_frame_type == "site":
+            return site_pose(self.mj_data, self.leaf_frame_id)
+        elif self.leaf_frame_type == "body":
+            return body_pose(self.mj_data, self.leaf_frame_id)
+        else:
+            raise ValueError(f"Invalid leaf frame type: {self.leaf_frame_type}")
+
     def get_jacobian(self) -> np.ndarray:
         """
         Returns the (6, model.nv) jacobian of the move group's leaf frame.
@@ -341,6 +351,10 @@ class SimplyActuatedMoveGroup(MoveGroup):
     @property
     def joint_veladr(self):
         return self._joint_veladr
+
+    @property
+    def noop_ctrl(self) -> np.ndarray:
+        return self.joint_pos.copy()
 
 
 class GripperGroup(MoveGroup):

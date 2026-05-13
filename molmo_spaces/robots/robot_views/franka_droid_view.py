@@ -55,10 +55,6 @@ class RobotIQGripperGroup(MJCFFrameMixin, GripperGroup):
         return 0.0, 0.087
 
     @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
-
-    @property
     def root_frame_to_world(self) -> np.ndarray:
         return self.leaf_frame_to_world
 
