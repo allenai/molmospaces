@@ -41,7 +41,7 @@ class MlSpacesKinematics:
         robot_config.robot_cls.add_robot_to_scene(
             robot_config,
             spec,
-            prefix="",
+            prefix=robot_config.robot_namespace,
             pos=[0.0, 0.0, 0.0],
             quat=[1.0, 0.0, 0.0, 0.0],
             strip_meshes=True,
@@ -49,7 +49,9 @@ class MlSpacesKinematics:
 
         self._mj_model = spec.compile()
         self._mj_data = mujoco.MjData(self._mj_model)
-        self._robot_view = robot_config.robot_view_factory(self._mj_data, "")
+        self._robot_view = robot_config.robot_view_factory(
+            self._mj_data, robot_config.robot_namespace
+        )
         mujoco.mj_forward(self._mj_model, self._mj_data)
 
     def _constrain_state(self) -> None:

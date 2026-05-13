@@ -9,6 +9,7 @@ from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.controllers.base_pose import DiffDriveBasePoseController
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
@@ -460,9 +461,16 @@ class RBY1(Robot):
         return "robot_0/base"
 
     @classmethod
+    def apply_control_overrides(cls, spec: MjSpec, robot_config: "BaseRobotConfig"):
+        # the model root name already includes the hardcoded namespace
+        tmp_robot_config = robot_config.model_copy(deep=True)
+        tmp_robot_config.robot_namespace = ""
+        super().apply_control_overrides(spec, tmp_robot_config)
+
+    @classmethod
     def add_robot_to_scene(
         cls,
-        robot_config: "MlSpacesExpConfig.RobotConfig",
+        robot_config: "BaseRobotConfig",
         spec: MjSpec,
         prefix: str,
         pos: list[float],
@@ -470,17 +478,16 @@ class RBY1(Robot):
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
+        assert prefix == "robot_0/", "RBY1 robot namespace must be 'robot_0/'"
         super().add_robot_to_scene(
             robot_config=robot_config,
             spec=spec,
-            prefix=prefix,
+            prefix="",  # elements already have robot_0/ prefix in MJCF
             pos=pos,
             quat=quat,
             randomize_textures=randomize_textures,
             strip_meshes=strip_meshes,
         )
-
-        prefix += "robot_0/"
 
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int

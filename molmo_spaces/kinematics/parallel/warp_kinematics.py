@@ -265,7 +265,7 @@ class SimpleWarpKinematics(ParallelKinematics):
         robot_config.robot_cls.add_robot_to_scene(
             robot_config,
             spec,
-            prefix="",
+            prefix=robot_config.robot_namespace,
             pos=[0.0, 0.0, 0.0],
             quat=[1.0, 0.0, 0.0, 0.0],
             strip_meshes=True,
@@ -275,7 +275,7 @@ class SimpleWarpKinematics(ParallelKinematics):
             self._mjw_model = mjw.put_model(self._mj_model)
 
         mj_data = MjData(self._mj_model)
-        self._robot_view = robot_config.robot_view_factory(mj_data, "")
+        self._robot_view = robot_config.robot_view_factory(mj_data, robot_config.robot_namespace)
 
         self._actuated_move_groups: OrderedDict[str, SimplyActuatedMoveGroup] = OrderedDict()
         self._frame_move_groups: dict[str, MJCFFrameMixin] = {}
@@ -340,7 +340,9 @@ class SimpleWarpKinematics(ParallelKinematics):
         self._get_data(batch_size)
 
         mj_data = MjData(self._mj_model)
-        robot_view = self._robot_config.robot_view_factory(mj_data, "")
+        robot_view = self._robot_config.robot_view_factory(
+            mj_data, self._robot_config.robot_namespace
+        )
         for mg_id, qpos in self._robot_config.init_qpos.items():
             robot_view.get_move_group(mg_id).joint_pos = qpos
         mujoco.mj_forward(self._mj_model, mj_data)

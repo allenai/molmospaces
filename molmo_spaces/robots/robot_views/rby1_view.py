@@ -305,7 +305,6 @@ class RBY1RobotView(RobotView):
             mj_data: The MuJoCo data structure containing the current simulation state
             namespace: Optional prefix for all joint/body names to support multiple robots
         """
-        namespace = namespace + "robot_0/"
         self._namespace = namespace
         base = (
             RBY1BaseGroup(mj_data, namespace=namespace)
