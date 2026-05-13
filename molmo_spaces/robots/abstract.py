@@ -159,15 +159,7 @@ class Robot:
         # Combine into TCP space noise
         tcp_noise = np.concatenate([position_noise, rotation_noise])
 
-        # Note: For reference of the original two implementations that resulting in this merging...
-        # if use_truncated_gaussian:
-        #     # Map TCP noise back to joint space via least-squares solve
-        #     joint_noise, _, _, _ = np.linalg.lstsq(J, tcp_noise, rcond=None)
-        # else:
-        #     # Map TCP noise back to joint space via Jacobian pseudo-inverse
-        #     J_pinv = np.linalg.pinv(J)
-        #     joint_noise = J_pinv @ tcp_noise
-        # default to least squares (which might also be used internally in the pseudo inverse, but I don't feel like looking for it)
+        # Map TCP noise back to joint space via least-squares solve
         joint_noise, _, _, _ = np.linalg.lstsq(J, tcp_noise, rcond=None)
 
         # Add noise to commanded joint positions
@@ -299,7 +291,7 @@ class Robot:
         elif robot_world_pose.shape == (3,):
             pose = np.eye(4)
             pose[:2, 3] = robot_world_pose[:2]
-            pose[:3, :3] = R.from_euler("Z", robot_world_pose[2], degrees=False).as_matrix()
+            pose[:3, :3] = R.from_euler("Z", robot_world_pose[2]).as_matrix()
         elif robot_world_pose.shape == (7,):
             pose = np.eye(4)
             pose[:3, 3] = robot_world_pose[:3]
