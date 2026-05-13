@@ -88,14 +88,6 @@ class XArm7ArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
         return "site"
 
     @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
-
-    @property
     def root_frame_to_world(self) -> np.ndarray:
         return body_pose(self.mj_data, self._arm_root_id)
 ```
@@ -154,10 +146,6 @@ class XArm7GripperGroup(MJCFFrameMixin, GripperGroup):
             self.mj_model, self.mj_data, self._finger_1_geom_id, self._finger_2_geom_id, 0.1, None
         )
         return max(0.0, dist)
-
-    @property
-    def leaf_frame_to_world(self) -> np.ndarray:
-        return site_pose(self.mj_data, self._ee_site_id)
 
     @property
     def root_frame_to_world(self) -> np.ndarray:
