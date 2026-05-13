@@ -134,6 +134,14 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
 _RESOURCE_MANAGER = None
 
 
+def _select_storage():
+    return (
+        HFRemoteStorage("allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN"))
+        if USE_HUGGING_FACE
+        else R2RemoteStorage("mujoco-thor-resources")
+    )
+
+
 def get_resource_manager(
     force_post_setup: bool = False, data_type_to_source_to_version: dict | None = None
 ):
@@ -178,11 +186,7 @@ def get_resource_manager(
         # resource_manager_log_level()
 
         manager = setup_resource_manager(
-            HFRemoteStorage(
-                "allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN")
-            )
-            if USE_HUGGING_FACE
-            else R2RemoteStorage("mujoco-thor-resources"),
+            _select_storage(),
             symlink_dir=ASSETS_DIR,
             versions=data_type_to_source_to_version,
             cache_dir=DATA_CACHE_DIR,
@@ -585,7 +589,11 @@ def get_robot_paths() -> dict[str, Path]:
 
 def install_missing_source(data_type: str, missing_source: str, existing_sources: list[str]):
     from molmospaces_resources.manager import _lock_context, LOCAL_MANIFEST_NAME
-    from molmospaces_resources.setup_utils import _get_current_install
+    from molmospaces_resources.setup_utils import (
+        _get_current_install,
+        _RESOURCE_MANAGERS,
+        _manager_key,
+    )
 
     assert missing_source in DATA_TYPE_TO_SOURCE_TO_VERSION[data_type], (
         f"{missing_source} has no version under {data_type}"
@@ -602,11 +610,15 @@ def install_missing_source(data_type: str, missing_source: str, existing_sources
     current_install = _get_current_install(ASSETS_DIR, data_type_to_source_to_version)
     current_install[data_type][missing_source] = None
     manifest_path = ASSETS_DIR / LOCAL_MANIFEST_NAME
+    key = _manager_key(str(_select_storage()), data_type_to_source_to_version)
     with _lock_context(ASSETS_DIR, DATA_CACHE_DIR):
+        if key in _RESOURCE_MANAGERS:
+            _RESOURCE_MANAGERS.pop(key)
         with open(manifest_path, "w") as f:
             json.dump(current_install, f, indent=2)
 
     get_resource_manager(data_type_to_source_to_version=data_type_to_source_to_version)
+    assert key in _RESOURCE_MANAGERS, f"BUG: Missing expected {key} from _RESOURCE_MANAGERS"
 
 
 def get_robot_path(robot_name) -> Path:
