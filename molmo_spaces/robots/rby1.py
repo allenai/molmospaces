@@ -1,10 +1,8 @@
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 import mujoco
 import numpy as np
 from mujoco import MjData, MjModel, MjSpec
-from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.robots.abstract import Robot
@@ -208,49 +206,6 @@ class RBY1(Robot):
     def parallel_kinematics(self):
         raise NotImplementedError("Parallel kinematics not implemented for RBY1")
 
-    @cached_property
-    def state_dim(self) -> int:
-        # return sum of all the joints of interest
-        self._state_dim = 0
-        for move_group in self.robot_view.move_group_ids():
-            if move_group == "base":
-                self._state_dim += 3  # Using only 2D base position (x, y, theta)
-            else:
-                self._state_dim += self.robot_view.get_move_group(move_group).n_joints
-        return self._state_dim
-
-    def action_dim(self, move_group_ids: list) -> int:
-        # return sum of the commanded joints based on the move group ids
-        action_dim = 0
-        if "base" in move_group_ids:
-            if "planar" in self.base_command_mode:
-                action_dim += 3  # actions provided are 2D planar positions / velocities
-            else:
-                action_dim += self._robot_view.get_move_group(
-                    "base"
-                ).n_actuators  # wheel velocities
-        if "torso" in move_group_ids:
-            if self.torso_command_mode == "height":
-                action_dim += 1
-            else:
-                action_dim += self._robot_view.get_move_group("torso").n_actuators
-        if "left_arm" in move_group_ids:
-            if "joint" in self.arm_command_mode:
-                action_dim += self._robot_view.get_move_group("left_arm").n_actuators
-            elif "ee" in self.arm_command_mode:
-                action_dim += 7  # ee pos + orientation (quaternion)
-        if "right_arm" in move_group_ids:
-            if "joint" in self.arm_command_mode:
-                action_dim += self._robot_view.get_move_group("right_arm").n_actuators
-            elif "ee" in self.arm_command_mode:
-                action_dim += 7  # ee pos + orientation (quaternion)
-        if "left_gripper" in move_group_ids:
-            action_dim += self._robot_view.get_move_group("left_gripper").n_actuators
-        if "right_gripper" in move_group_ids:
-            action_dim += self._robot_view.get_move_group("right_gripper").n_actuators
-        # Note: head is not included - RBY1 head actuation is disabled
-        return action_dim
-
     def get_arm_move_group_ids(self) -> list[str]:
         """RBY1 has two independent arms - each gets independent noise."""
         return ["left_arm", "right_arm"]
@@ -345,58 +300,6 @@ class RBY1(Robot):
 
         return noisy_action
 
-    def update_control(self, action_command_dict: dict[str, Any]) -> None:
-        """Update the control inputs to the robot based on the provided action commands.
-
-        Args:
-        action_command_dict: Dictionary containing action commands for the robot
-                             based on the move groups ids to be used.
-        """
-        # Loops through all the controllers and updates their control inputs
-        # NOTE: All joints are always controlled. If no action_command is provided, we assume the
-        # controller will maintain the current state of the joint.
-
-        action_command_dict = self._apply_action_noise_and_save_unnoised_cmd_jp(action_command_dict)
-
-        for move_group_id, controller in self.controllers.items():
-            if move_group_id in action_command_dict:
-                action_command = action_command_dict[move_group_id]
-                # send command target for the controller
-                controller.set_target(action_command)
-            else:
-                # If no action command is provided, controller should switch to
-                # stationary mode (if not already set to stationary previously)
-                if not controller.stationary:
-                    controller.set_to_stationary()
-
-    def compute_control(self) -> None:
-        for mg_id, controller in self.controllers.items():
-            ctrl_inputs = controller.compute_ctrl_inputs()
-            self.robot_view.get_move_group(mg_id).ctrl = ctrl_inputs
-
-    def set_joint_pos(self, robot_joint_pos_dict) -> None:
-        """Set all the robot's joint positions to the specified values.
-
-        Args:
-            robot_joint_pos_dict: Dictionary or SimpleNamespace containing joint positions for the robot
-            based on the move groups ids.
-        """
-        # Handle both dict and SimpleNamespace objects
-        if hasattr(robot_joint_pos_dict, "__dict__"):
-            # SimpleNamespace object
-            items = robot_joint_pos_dict.__dict__.items()
-        else:
-            # Dictionary object
-            items = robot_joint_pos_dict.items()
-
-        for move_group_id, joint_pos in items:
-            if move_group_id in self.robot_view.move_group_ids():
-                move_group = self.robot_view.get_move_group(move_group_id)
-                # set the joint positions
-                move_group.joint_pos = joint_pos
-            else:
-                raise ValueError(f"Move group {move_group_id} not found in robot view.")
-
     def get_world_pose_tf_mat(self):
         """Get the robot's world pose transformation matrix.
 
@@ -404,35 +307,6 @@ class RBY1(Robot):
             np.ndarray: 4x4 transformation matrix for the robot base pose in world frame
         """
         return self.robot_view.get_move_group("base").pose
-
-    def set_world_pose(self, robot_world_pose) -> None:
-        """Set the robot's world pose to the specified location in the world."""
-
-        pose_tf = np.eye(4, dtype=np.float64)
-        if len(robot_world_pose) == 3:
-            # (x, y, theta)
-            x, y, theta = robot_world_pose
-            pose_tf[:2, :2] = np.array(
-                [
-                    [np.cos(theta), -np.sin(theta)],
-                    [np.sin(theta), np.cos(theta)],
-                ]
-            )
-            pose_tf[:3, 3] = np.array([x, y, 0.0])
-        elif len(robot_world_pose) == 7:
-            # (x, y, z, w, x, y, z) (pos + quat, scalar_first)
-            pos = np.array(robot_world_pose[:3], dtype=np.float64)
-            quat = np.array(robot_world_pose[3:], dtype=np.float64)
-            rot_mat = R.from_quat(quat, scalar_first=True).as_matrix()
-            pose_tf[:3, :3] = rot_mat
-            pose_tf[:3, 3] = pos
-        else:
-            raise ValueError(
-                "robot_world_pose must be either (x, y, theta) or (x, y, z, w, x, y, z) (pos + quat, scalar_first)."
-            )
-
-        # The robot_view expects a transformation matrix in the form of a 4x4 numpy array
-        self.robot_view.get_move_group("base").pose = pose_tf
 
     def reset(self, robot_joint_pos_dict=None, robot_world_pose=None) -> None:
         """Reset the robot to its initial position or a provided set of positions and world pose."""

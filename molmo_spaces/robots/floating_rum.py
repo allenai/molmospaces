@@ -52,13 +52,6 @@ class FloatingRUMRobot(Robot):
     def controllers(self):
         return {}
 
-    @property
-    def state_dim(self):
-        return 7
-
-    def action_dim(self, move_group_ids: list[str]):
-        return sum(self._robot_view.get_move_group(mg_id).n_actuators for mg_id in move_group_ids)
-
     def update_control(self, action_command_dict: dict[str, Any]):
         action_command_dict = self._apply_action_noise_and_save_unnoised_cmd_jp(action_command_dict)
         self._last_cmd_action = action_command_dict
@@ -68,13 +61,6 @@ class FloatingRUMRobot(Robot):
         for mg_id, ctrl in self._last_cmd_action.items():
             if ctrl is not None:
                 self._robot_view.get_move_group(mg_id).ctrl = ctrl
-
-    def set_joint_pos(self, robot_joint_pos_dict):
-        for mg_id, joint_pos in robot_joint_pos_dict.items():
-            self._robot_view.get_move_group(mg_id).joint_pos = joint_pos
-
-    def set_world_pose(self, robot_world_pose):
-        self._robot_view.base.pose = robot_world_pose
 
     def reset(self):
         self._last_cmd_action = None

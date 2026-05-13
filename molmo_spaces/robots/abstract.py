@@ -2,13 +2,13 @@ import abc
 import logging
 from abc import abstractmethod
 from copy import deepcopy
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 import mujoco
 import numpy as np
 from mujoco import MjData, MjSpec
 from scipy.stats import truncnorm
+from scipy.spatial.transform import Rotation as R
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -59,21 +59,6 @@ class Robot:
     @abc.abstractmethod
     def controllers(self) -> dict[str, Controller]:
         """One or more controllers for the robot joints / wheels / etc."""
-        raise NotImplementedError
-
-    @cached_property
-    @abc.abstractmethod
-    def state_dim(self) -> int:
-        """sum of all the joints of interest, which defines the state of the robot."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def action_dim(self, move_group_ids: list[str]) -> int:
-        """sum of the commanded joints, which defines the action space of the robot.
-
-        Args:
-            move_group_ids: list of move group ids to consider for the action space
-        """
         raise NotImplementedError
 
     def set_stationary(self) -> None:
@@ -261,8 +246,7 @@ class Robot:
 
         return self.apply_action_noise(action)
 
-    @abc.abstractmethod
-    def update_control(self, action_command_dict) -> None:
+    def update_control(self, action_command_dict: dict[str, np.ndarray]) -> None:
         """
         Update the control targets to the robot based on the provided action commands.
         Does not set the control inputs to the robot actuators. See compute_control().
@@ -271,31 +255,59 @@ class Robot:
             action_command_dict: Dictionary containing action commands for the robot
                                  based on the move groups ids to be used.
         """
-        raise NotImplementedError
+        action_command_dict = self._apply_action_noise_and_save_unnoised_cmd_jp(action_command_dict)
 
-    @abc.abstractmethod
+        for mg_id, controller in self.controllers.items():
+            if mg_id in action_command_dict and action_command_dict[mg_id] is not None:
+                controller.set_target(action_command_dict[mg_id])
+            elif not controller.stationary:
+                controller.set_to_stationary()
+
     def compute_control(self) -> None:
         """
         Compute and set the control inputs to the robot actuators based on the
         current state and the targets set by the user.
         Must be called after update_control().
         """
-        raise NotImplementedError
+        for controller in self.controllers.values():
+            ctrl_inputs = controller.compute_ctrl_inputs()
+            controller.robot_move_group.ctrl = ctrl_inputs
 
-    @abc.abstractmethod
-    def set_joint_pos(self, robot_joint_pos_dict) -> None:
+    def set_joint_pos(self, robot_joint_pos_dict: dict[str, np.ndarray]) -> None:
         """Set all the robot's joint positions to the specified values.
 
         Args:
             robot_joint_pos_dict: Dictionary containing joint positions for the robot
-            based on the move groups ids.
+                based on the move groups ids.
         """
-        raise NotImplementedError
+        for mg_id, joint_pos in robot_joint_pos_dict.items():
+            self.robot_view.get_move_group(mg_id).joint_pos = joint_pos
 
-    @abc.abstractmethod
-    def set_world_pose(self, robot_world_pose) -> None:
-        """Set the robot's world pose to the specified location (x-y-yaw) in the world."""
-        raise NotImplementedError
+    def set_world_pose(self, robot_world_pose: np.ndarray | list[float]) -> None:
+        """
+        Set the robot's world pose to the specified pose in the world frame.
+
+        Args:
+            robot_world_pose: The pose of the robot in the world frame.
+                If (4, 4) numpy array, it is assumed to be a transformation matrix.
+                If (3,) list or numpy array, it is assumed to be (x, y, yaw).
+                If (7,) list or numpy array, it is assumed to be (xyz + wxyz).
+        """
+        robot_world_pose = np.asarray(robot_world_pose)
+        if robot_world_pose.shape == (4, 4):
+            pose = robot_world_pose
+        elif robot_world_pose.shape == (3,):
+            pose = np.eye(4)
+            pose[:2, 3] = robot_world_pose[:2]
+            pose[:3, :3] = R.from_euler("Z", robot_world_pose[2], degrees=False).as_matrix()
+        elif robot_world_pose.shape == (7,):
+            pose = np.eye(4)
+            pose[:3, 3] = robot_world_pose[:3]
+            pose[:3, :3] = R.from_quat(robot_world_pose[3:], scalar_first=True).as_matrix()
+        else:
+            raise ValueError(f"Invalid robot world pose shape: {robot_world_pose.shape}")
+
+        self.robot_view.base.pose = pose
 
     @abc.abstractmethod
     def reset(self) -> None:
