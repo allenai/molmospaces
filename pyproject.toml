@@ -84,7 +84,7 @@ housegen = [
     # "bpy==3.6.0; os_name == 'Linux'", # removed because of challenges with docker builds - is installed separately in needed docker images
 ]
 curobo = [
-    "nvidia-curobo @ git+https://github.com/allenai/curobo.git@417c995647fcb173a2bc094d1284b2a4f4b000ad",
+    "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
 ]
 mujoco = [
     "mujoco~=3.5.0",
