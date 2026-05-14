@@ -36,6 +36,26 @@ In the viewer, enable site frame visualization by selecting `Rendering > Frame >
 |:------:|:-----:|
 | <img src="images/ee_frame_before.png" height="500"> | <img src="images/ee_frame_after.png" height="500"> |
 
+### Insert cameras
+
+Now we will add cameras to the robot model. This isn't strictly required, as MolmoSpaces supports "virtual cameras" which don't exist in the MJCF, but directly adding cameras to the MJCF can be useful for visually selecting camera poses. In this tutorial, we'll add a ZED2 exo camera and a ZED Mini wrist camera to the XArm7 MJCF.
+
+#### Exo camera
+
+In the `<body name="link_base">` tag, add:
+
+```xml
+<camera name="exo_camera" pos="0.05 0.3 0.4" quat="0.353553 0.146447 -0.353553 -0.853553" fovy="71.0" />
+```
+
+#### Wrist camera
+
+In the `<body name="xarm_gripper_base_link">` tag, add:
+
+```xml
+<camera name="wrist_camera" pos="-0.07 0 0" quat="0.061628 0.704416 -0.704416 -0.061628" fovy="52.0" />
+```
+
 ## Implement move groups and robot view
 
 MolmoSpaces uses move groups and robot views to abstract away robot-specific details and provide a common interface for working with many different types of robots. We will now implement these abstractions for the xarm7 in `xarm7_view.py`.
@@ -347,9 +367,9 @@ Gripper finger ranges:
 
 Now we can go back and change `inter_finger_dist_range` to return `0.004, 0.089`.
 
-## Test your robot!
+## Integration test
 
-Now we're done! Let's do some quick integration tests to make sure.
+We've finished integrating the robot model! Let's do some quick integration tests to make sure everything works.
 
 ```bash
 python -m molmo_spaces.kinematics.test_robot_ik XArm7RobotConfig --config_module xarm7_config
@@ -357,7 +377,69 @@ python -m molmo_spaces.kinematics.test_robot_ik XArm7RobotConfig --config_module
 
 You should see the xarm7 moving back and forth between two end-effector poses. To test the parallel IK integration, run it again with the `--parallel` flag.
 
-Congratulations, you have added your robot to MolmoSpaces!
+## Camera system
+
+The robot model is now integrated with MolmoSpaces, but in order to run data generation we also need to configure the cameras that we added to the MCJF earlier.
+
+In `xarm7_datagen.py`, add the following camera system config. Note the slightly nonstandard image resolution, which is the result of a [known issue](https://github.com/allenai/molmospaces/issues/84).
+
+```python
+class XArm7CameraSystem(CameraSystemConfig):
+    img_resolution: tuple[int, int] = (624, 352)
+
+    cameras: list[AllCameraTypes] = [
+        MjcfCameraConfig(
+            name="wrist_camera_zed_mini",
+            mjcf_name="wrist_camera",
+            robot_namespace="robot_0/",
+        ),
+        MjcfCameraConfig(
+            name="exo_camera_zed_2",
+            mjcf_name="exo_camera",
+            robot_namespace="robot_0/",
+        ),
+    ]
+```
+
+## Datagen config
+
+Finally, we need to set up our experiment config to run data generation! In this example, we'll generate data for the picking task. Add the following experiment config to `xarm7_datagen.py`. Note how we register the experiment config, which is required for the `molmo_spaces.data_generation.main` entrypoint. Furthermore, observe how we configure the robot pose sampling constraints to account for the working envelope of the XArm7.
+
+```python
+@register_config("XArm7PickDataGenConfig")
+class XArm7PickDataGenConfig(PickBaseConfig):
+    robot_config: XArm7RobotConfig = XArm7RobotConfig()
+    camera_config: XArm7CameraSystem = XArm7CameraSystem()
+    output_dir: Path = Path("experiment_output") / "datagen" / "xarm7_pick_v1"
+    num_workers: int = 4  # number of rollout processes
+    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+        task_sampler_class=PickTaskSampler,
+        dataset_name="procthor-10k",  # Which house dataset to use
+        house_inds=list(range(4)),  # Run in first 4 houses
+        samples_per_house=2,  # Number of episodes to sample per house
+        # The XArm7 has a max reach of 0.7m, constrain to 0.6m for safety
+        base_pose_sampling_radius_range=(0.15, 0.6),
+        # Offset between bottom of robot base and pickup object (see the base size in the robot config)
+        robot_object_z_offset=-0.25,
+        # Randomize the robot z around the offset
+        robot_object_z_offset_random_min=-0.2,
+        robot_object_z_offset_random_max=0.2,
+    )
+
+    @property
+    def tag(self) -> str:
+        return "xarm7_pick_datagen"
+```
+
+## Generate data!
+
+Congratulations, your robot is now ready for data generation! The task sampler config can be adjusted to change the amount of generated data, or other datagen parameters.
+
+```bash
+python -m molmo_spaces.data_generation.main xarm7_datagen:XArm7PickDataGenConfig
+```
+
+Results in data such as [this](./videos/datagen.mp4).
 
 ## Full example code
 
