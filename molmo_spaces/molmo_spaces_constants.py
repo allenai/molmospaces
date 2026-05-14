@@ -625,7 +625,7 @@ def get_robot_path(robot_name) -> Path:
     """
     Return the path to the prepackaged MlSpaces robot file for the given robot name.
     """
-    robot_dirs = os.listdir(ROBOTS_DIR)
+    robot_dirs = os.listdir(ROBOTS_DIR) if ROBOTS_DIR.is_dir() else []
     if robot_name not in robot_dirs or not (ROBOTS_DIR / robot_name).is_dir():
         logging.info(
             f"Robot {robot_name} not found in {ROBOTS_DIR}. Attempting direct installation."
