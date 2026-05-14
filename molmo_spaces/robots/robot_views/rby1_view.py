@@ -26,7 +26,7 @@ from molmo_spaces.robots.robot_views.abstract import (
     RobotView,
 )
 from molmo_spaces.utils.linalg_utils import normalize_ang_error
-from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
+from molmo_spaces.utils.mj_model_and_data_utils import body_pose
 
 
 class RBY1ArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
