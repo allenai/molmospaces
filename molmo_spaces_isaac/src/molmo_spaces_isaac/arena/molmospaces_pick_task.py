@@ -29,13 +29,75 @@ _BASELINE_SETTLE_STEPS = 60
 # Consecutive steps the object must be above the lift threshold to confirm a genuine lift
 # (not a transient bounce from initial landing).
 _LIFT_CONFIRM_STEPS = 5
+_ROBOT_CONTACT_FORCE_THRESHOLD_N = 0.5
+_SCENE_CONTACT_FORCE_THRESHOLD_N = 0.5
 
 
-def _make_pick_success_func(pick_name: str, pick_start_z: float, lift_threshold_m: float):
-    """Return termination func: success when object Z exceeds baseline by lift_threshold_m for _LIFT_CONFIRM_STEPS consecutive steps."""
+def _contact_glob(prim_path_template: str) -> str:
+    return prim_path_template.replace("{ENV_REGEX_NS}", "/World/envs/env_*").replace(".*", "*")
+
+
+def _make_pick_success_func(pick_name: str, pick_prim_path: str, pick_start_z: float, lift_threshold_m: float):
+    """Return termination func matching MolmoSpaces pick success.
+
+    MuJoCo success requires the object to be lifted and supported only by robot
+    contacts. Arena approximates the same rule with two pickup-object contact
+    sensors: one filtered to the robot and one filtered to the imported scene.
+    """
     _baseline: list[torch.Tensor | None] = [None]
     _consec: list[torch.Tensor | None] = [None]  # per-env consecutive-above-threshold counter
     _init_z = float(pick_start_z)
+    _views: dict[str, Any] = {}
+
+    def _get_pick_contact_forces(env) -> tuple[torch.Tensor, torch.Tensor]:
+        base_env = getattr(env, "unwrapped", env)
+        n = int(base_env.num_envs)
+        device = base_env.device
+        try:
+            if "pick" not in _views:
+                from isaacsim.core.simulation_manager import SimulationManager
+
+                sim_view = SimulationManager.get_physics_sim_view()
+                filter_patterns = [
+                    "/World/envs/env_*/Robot/Gripper/Robotiq_2F_85/right_inner_finger",
+                    "/World/envs/env_*/Robot/Gripper/Robotiq_2F_85/left_inner_finger",
+                ]
+                last_error: Exception | None = None
+                for body_pattern in (
+                    _contact_glob(f"{pick_prim_path}/Geometry/*"),
+                    _contact_glob(pick_prim_path),
+                    _contact_glob(f"{pick_prim_path}/*"),
+                    _contact_glob(f"{pick_prim_path}/*/*"),
+                ):
+                    try:
+                        _views["pick"] = sim_view.create_rigid_contact_view(
+                            body_pattern,
+                            filter_patterns=filter_patterns,
+                        )
+                        _views["pick_body_pattern"] = body_pattern
+                        break
+                    except Exception as e:
+                        last_error = e
+                if "pick" not in _views:
+                    raise RuntimeError(f"no pickup contact view matched for {pick_prim_path}: {last_error}")
+            view = _views["pick"]
+            filter_count = int(getattr(view, "filter_count", 0))
+            if filter_count <= 0:
+                zeros = torch.zeros(n, dtype=torch.float32, device=device)
+                return zeros, zeros
+            dt = float(getattr(base_env, "physics_dt", getattr(getattr(base_env, "sim", None), "cfg", object()).dt))
+            net_forces = view.get_net_contact_forces(dt=dt).view(n, -1, 3)
+            net_force = torch.linalg.vector_norm(net_forces, dim=-1).sum(dim=1).to(device=device)
+            force_matrix = view.get_contact_force_matrix(dt=dt)
+            force_matrix = force_matrix.view(n, -1, filter_count, 3)
+            robot_force = torch.linalg.vector_norm(force_matrix, dim=-1).sum(dim=(1, 2)).to(device=device)
+            return robot_force, net_force
+        except Exception as e:
+            if "pick_failed" not in _views:
+                log.debug("Could not initialize pickup contact view for %s: %s", pick_name, e)
+                _views["pick_failed"] = True
+            zeros = torch.zeros(n, dtype=torch.float32, device=device)
+            return zeros, zeros
 
     def _pick_success(env) -> Any:
         try:
@@ -74,7 +136,13 @@ def _make_pick_success_func(pick_name: str, pick_start_z: float, lift_threshold_
             cc = torch.where(above, cc + 1, torch.zeros_like(cc))
             _consec[0] = cc
 
-            return cc >= _LIFT_CONFIRM_STEPS
+            lifted = cc >= _LIFT_CONFIRM_STEPS
+            robot_force, net_contact_force = _get_pick_contact_forces(env)
+            non_robot_force = torch.clamp(net_contact_force - robot_force, min=0.0)
+            robot_contact = robot_force > _ROBOT_CONTACT_FORCE_THRESHOLD_N
+            scene_contact = non_robot_force > _SCENE_CONTACT_FORCE_THRESHOLD_N
+
+            return lifted & robot_contact & ~scene_contact
         except (KeyError, AttributeError) as e:
             log.debug("Pick success check failed: %s", e)
             return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
@@ -111,9 +179,10 @@ class MolmoSpacesPickTask(TaskBase):
         self.background_scene = background_scene
         self.episode_length_s = episode_length_s if episode_length_s is not None else self.DEFAULT_EPISODE_LENGTH_S
         pick_name = getattr(pick_up_object, "name", "pick_object")
+        pick_prim_path = getattr(pick_up_object, "prim_path", f"{{ENV_REGEX_NS}}/{pick_name}")
         self._termination_cfg = MolmoSpacesPickTerminationsCfg()
         self._termination_cfg.object_picked = TerminationTermCfg(
-            func=_make_pick_success_func(pick_name, pick_start_z, pick_lift_threshold_m)
+            func=_make_pick_success_func(pick_name, pick_prim_path, pick_start_z, pick_lift_threshold_m)
         )
 
     def get_episode_length_s(self) -> float:

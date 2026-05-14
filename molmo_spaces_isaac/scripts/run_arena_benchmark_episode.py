@@ -105,6 +105,22 @@ parser.add_argument(
     metavar="N",
     help="Run N episodes from the benchmark (0 = all). Like MolmoSpaces; default: run single episode at --episode_idx.",
 )
+parser.add_argument(
+    "--episode_indices",
+    type=str,
+    default=None,
+    help=(
+        "Comma-separated benchmark episode indices or ranges to run sequentially, "
+        "for representative batches (e.g. '0,8,17-20'). Mutually exclusive with "
+        "--max_episodes."
+    ),
+)
+parser.add_argument(
+    "--results_json",
+    type=Path,
+    default=None,
+    help="Optional JSON output path for episode results and success-rate summaries.",
+)
 parser.add_argument("--steps", type=int, default=5000, help="Max simulation steps per episode (benchmark runs until done or this limit).")
 parser.add_argument("--num_envs", type=int, default=1, help="Number of parallel environments (Isaac Lab vectorises on GPU). E.g. --num_envs 16 runs 16 copies simultaneously.")
 parser.add_argument("--env_spacing", type=float, default=None, help="Grid spacing (m) between parallel environments (default: Arena's 30 m). 10 m is sufficient for iTHOR kitchens (~6 m wide).")
@@ -136,9 +152,13 @@ parser.add_argument(
 parser.add_argument(
     "--policy_type",
     type=str,
-    choices=["zero", "random", "pi_remote"],
+    choices=["zero", "random", "pi_remote", "h5_replay"],
     default="zero",
-    help="Action source: 'zero', 'random' (small Gaussian noise to verify arm motion), or 'pi_remote' (OpenPI server; start server first).",
+    help=(
+        "Action source: 'zero', 'random' (small Gaussian noise), 'pi_remote' "
+        "(OpenPI server; start server first), or 'h5_replay' (MolmoSpaces/MuJoCo "
+        "commanded actions from eval HDF5)."
+    ),
 )
 parser.add_argument(
     "--with_cameras",
@@ -152,8 +172,44 @@ parser.add_argument(
     action="store_true",
     help=(
         "Use joint position control for pi_remote (8D: 7 arm joint angles + 1 gripper). "
-        "Required for pi0 DROID joint-position policies like pi05_droid_jointpos. "
+        "Use for explicit DROID joint-position checkpoints. "
         "Switches Arena Franka from IK delta-EEF to JointPositionActionCfg."
+    ),
+)
+parser.add_argument(
+    "--joint_velocity_policy",
+    action="store_true",
+    help=(
+        "Use DROID joint velocity control for pi_remote (8D: 7 joint velocities + 1 gripper). "
+        "This is the default for OpenPI's pi05_droid / pi0_droid checkpoints."
+    ),
+)
+parser.add_argument(
+    "--pi_action_repeat",
+    type=int,
+    default=0,
+    help=(
+        "Repeat each pi_remote action for N Arena steps before consuming the next chunk action. "
+        "0 = auto (25 for MolmoSpaces joint-position PiPolicyEval timing, "
+        "3 for stock DROID joint-velocity checkpoints, 1 otherwise)."
+    ),
+)
+parser.add_argument(
+    "--pi_grasping_threshold",
+    type=float,
+    default=float(os.environ.get("MOLMO_PI_GRASPING_THRESHOLD", "0.01")),
+    help=(
+        "Binary gripper close threshold for pi_remote. The documented "
+        "pi05_droid_jointpos checkpoint needs a low threshold (default: 0.01)."
+    ),
+)
+parser.add_argument(
+    "--pi_chunk_size",
+    type=int,
+    default=int(os.environ.get("MOLMO_PI_CHUNK_SIZE", "15")),
+    help=(
+        "Number of OpenPI chunk actions to consume before requesting a new chunk "
+        "(default: 15, matching pi05_droid_jointpos action_horizon)."
     ),
 )
 parser.add_argument(
@@ -167,6 +223,74 @@ parser.add_argument(
     type=int,
     default=int(os.environ.get("MOLMO_PI_SERVER_PORT", "8000")),
     help="OpenPI server port for --policy_type pi_remote (default: 8000, or MOLMO_PI_SERVER_PORT).",
+)
+parser.add_argument(
+    "--pi_trace_dir",
+    type=Path,
+    default=None,
+    help=(
+        "Optional directory to save OpenPI request traces: resized camera images, qpos, "
+        "raw action chunks, and selected actions. Useful for MuJoCo/Arena policy parity debugging."
+    ),
+)
+parser.add_argument(
+    "--record_video_dir",
+    type=Path,
+    default=None,
+    help=(
+        "Optional directory to save Arena camera rollout MP4s. Records camera_obs frames "
+        "from the actual policy rollout."
+    ),
+)
+parser.add_argument(
+    "--record_video_stride",
+    type=int,
+    default=3,
+    help="Save one video frame every N Arena env steps when --record_video_dir is set (default: 3).",
+)
+parser.add_argument(
+    "--record_video_fps",
+    type=int,
+    default=15,
+    help="Output FPS for --record_video_dir MP4s (default: 15).",
+)
+parser.add_argument(
+    "--record_video_camera_keys",
+    type=str,
+    default="external_camera_rgb,wrist_camera_rgb",
+    help=(
+        "Comma-separated camera_obs keys to record when --record_video_dir is set. "
+        "Default: external_camera_rgb,wrist_camera_rgb."
+    ),
+)
+parser.add_argument(
+    "--replay_h5",
+    type=Path,
+    default=None,
+    help="MolmoSpaces eval HDF5 to replay when --policy_type h5_replay.",
+)
+parser.add_argument(
+    "--replay_traj",
+    type=str,
+    default=os.environ.get("MOLMO_ARENA_REPLAY_TRAJ", "traj_0"),
+    help="Trajectory group inside --replay_h5 for --policy_type h5_replay (default: traj_0).",
+)
+parser.add_argument(
+    "--replay_action_repeat",
+    type=int,
+    default=int(os.environ.get("MOLMO_ARENA_REPLAY_ACTION_REPEAT", "25")),
+    help="Arena env steps per MuJoCo policy action for --policy_type h5_replay (default: 25).",
+)
+parser.add_argument(
+    "--replay_start_index",
+    type=int,
+    default=int(os.environ.get("MOLMO_ARENA_REPLAY_START_INDEX", "0")),
+    help="Start HDF5 replay from this commanded-action row (default: 0).",
+)
+parser.add_argument(
+    "--replay_init_from_h5_qpos",
+    action="store_true",
+    help="Before HDF5 replay, write obs/agent/qpos at --replay_start_index directly into the Arena robot.",
 )
 parser.add_argument(
     "--scenes_root",
@@ -183,6 +307,15 @@ parser.add_argument(
     type=str,
     default="kitchen",
     help="Arena background when episode scene USD is not found (default: kitchen).",
+)
+parser.add_argument(
+    "--embodiment",
+    type=str,
+    default=None,
+    help=(
+        "Arena embodiment key. Default: franka for zero/random runs; droid_abs_joint_pos for "
+        "--policy_type pi_remote --joint_pos_policy. Set MOLMO_ARENA_EMBODIMENT to override."
+    ),
 )
 parser.add_argument(
     "--scene_extra_xyz",
@@ -316,6 +449,143 @@ def _load_all_episode_dicts(bench_dir: Path) -> list[dict]:
         return data if isinstance(data, list) else []
 
 
+def _parse_episode_indices(raw: str | None, n_total: int) -> list[int] | None:
+    """Parse '0,8,17-20' into sorted unique valid episode indices."""
+    if raw is None:
+        return None
+    indices: list[int] = []
+    for piece in str(raw).replace(" ", "").split(","):
+        if not piece:
+            continue
+        if "-" in piece:
+            start_s, end_s = piece.split("-", 1)
+            if not start_s or not end_s:
+                raise SystemExit(f"Invalid --episode_indices range: {piece!r}")
+            start = int(start_s)
+            end = int(end_s)
+            step = 1 if end >= start else -1
+            indices.extend(range(start, end + step, step))
+        else:
+            indices.append(int(piece))
+    if not indices:
+        raise SystemExit("--episode_indices did not contain any indices.")
+    seen: set[int] = set()
+    ordered: list[int] = []
+    for idx in indices:
+        if idx < 0 or idx >= n_total:
+            raise SystemExit(
+                f"--episode_indices contains {idx}, out of range [0, {n_total - 1}] "
+                f"(benchmark has {n_total} episodes)"
+            )
+        if idx not in seen:
+            ordered.append(idx)
+            seen.add(idx)
+    return ordered
+
+
+def _episode_result_metadata(idx: int, episode_dict: dict, spec=None) -> dict:
+    """Small JSON-friendly metadata payload for result tracking."""
+    task = episode_dict.get("task") or {}
+    scene_usd_path = getattr(spec, "scene_usd_path", None) if spec is not None else None
+    return {
+        "idx": int(idx),
+        "house_index": episode_dict.get("house_index"),
+        "scene_dataset": episode_dict.get("scene_dataset"),
+        "pickup_obj_name": task.get("pickup_obj_name"),
+        "task_description": ((episode_dict.get("language") or {}).get("task_description")),
+        "scene_usd_path": str(scene_usd_path) if scene_usd_path else None,
+    }
+
+
+def _write_results_json(path: Path | None, payload: dict) -> None:
+    if path is None:
+        return
+    out = Path(path).expanduser().resolve()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"[molmospaces_arena] wrote results JSON: {out}", flush=True)
+
+
+def _record_camera_keys(args: argparse.Namespace) -> list[str]:
+    raw = getattr(args, "record_video_camera_keys", "") or ""
+    return [piece.strip() for piece in raw.split(",") if piece.strip()]
+
+
+def _obs_camera_frame_to_uint8(value):
+    """Return first-env HWC uint8 frame from an Isaac Lab camera observation."""
+    import numpy as np
+
+    arr = value
+    if hasattr(arr, "detach"):
+        arr = arr.detach()
+    if hasattr(arr, "cpu"):
+        arr = arr.cpu()
+    if hasattr(arr, "numpy"):
+        arr = arr.numpy()
+    arr = np.asarray(arr)
+    if arr.ndim == 5:
+        arr = arr[0, 0]
+    elif arr.ndim == 4:
+        arr = arr[0]
+    if arr.ndim == 3 and arr.shape[0] in (1, 3, 4) and arr.shape[-1] not in (1, 3, 4):
+        arr = np.moveaxis(arr, 0, -1)
+    if arr.ndim != 3:
+        return None
+    if arr.shape[-1] == 4:
+        arr = arr[..., :3]
+    if arr.shape[-1] == 1:
+        arr = np.repeat(arr, 3, axis=-1)
+    if arr.dtype != np.uint8:
+        arr = arr.astype(np.float32, copy=False)
+        if float(np.nanmax(arr)) <= 1.5:
+            arr = arr * 255.0
+        arr = np.clip(arr, 0.0, 255.0).astype(np.uint8)
+    return np.ascontiguousarray(arr)
+
+
+class ArenaVideoRecorder:
+    """Stream camera observations to MP4 files during an Arena rollout."""
+
+    def __init__(self, output_dir: Path, episode_idx: int, camera_keys: list[str], fps: int) -> None:
+        self.output_dir = Path(output_dir).expanduser().resolve()
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.episode_idx = int(episode_idx)
+        self.camera_keys = camera_keys
+        self.fps = max(1, int(fps))
+        self._writers = {}
+        self._paths: dict[str, str] = {}
+
+    def capture(self, obs: dict, step_count: int) -> None:
+        camera_obs = (obs or {}).get("camera_obs") or {}
+        for key in self.camera_keys:
+            if key not in camera_obs:
+                continue
+            frame = _obs_camera_frame_to_uint8(camera_obs[key])
+            if frame is None:
+                continue
+            writer = self._writers.get(key)
+            if writer is None:
+                import imageio.v2 as imageio
+
+                safe_key = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in key)
+                path = self.output_dir / f"arena_ep{self.episode_idx:04d}_{safe_key}.mp4"
+                writer = imageio.get_writer(path, fps=self.fps, codec="libx264", quality=8, macro_block_size=1)
+                self._writers[key] = writer
+                self._paths[key] = str(path)
+                print(f"[molmospaces_arena] recording {key} video to {path}", flush=True)
+            writer.append_data(frame)
+
+    def close(self) -> dict[str, str]:
+        for writer in list(self._writers.values()):
+            try:
+                writer.close()
+            except Exception:
+                pass
+        self._writers.clear()
+        return dict(self._paths)
+
+
 def _maybe_default_scenes_root_from_assets(args: argparse.Namespace, _resolved_bench_dir: Path | None) -> None:
     """If scenes_root is unset, use the same root as assets (typical ms-download: objects/ + scenes/ under one dir).
 
@@ -350,6 +620,159 @@ def _to_list(x):
     return [round(float(v), 4) for v in out[:12]]
 
 
+def _decode_h5_json_row(row) -> dict:
+    """Decode MolmoSpaces HDF5 fixed-width uint8 JSON rows."""
+    import numpy as np
+
+    arr = np.asarray(row)
+    data = bytes(arr[arr != 0]).decode("utf-8")
+    return json.loads(data) if data else {}
+
+
+class H5ReplayPolicy:
+    """Replay MolmoSpaces/MuJoCo commanded arm/gripper actions into Arena."""
+
+    def __init__(self, h5_path: Path, traj: str = "traj_0", start_index: int = 0) -> None:
+        import h5py
+        import numpy as np
+
+        self.h5_path = Path(h5_path).expanduser().resolve()
+        self.traj = traj
+        if not self.h5_path.is_file():
+            raise FileNotFoundError(f"--replay_h5 does not exist: {self.h5_path}")
+        self.actions: list[np.ndarray] = []
+        with h5py.File(self.h5_path, "r") as f:
+            dataset = f[f"{traj}/actions/commanded_action"]
+            for row in dataset:
+                action = _decode_h5_json_row(row)
+                arm = np.asarray(action.get("arm", np.zeros(7)), dtype=np.float32)[:7]
+                if arm.size < 7:
+                    arm = np.pad(arm, (0, 7 - arm.size))
+                gripper = float(np.mean(np.atleast_1d(action.get("gripper", [0.0]))))
+                gripper_cmd = 1.0 if gripper > 0.5 else 0.0
+                self.actions.append(np.concatenate([arm, [gripper_cmd]]).astype(np.float32))
+        self.index = max(0, min(int(start_index), max(0, len(self.actions) - 1)))
+        print(
+            f"[molmospaces_arena] Loaded {len(self.actions)} replay actions from {self.h5_path}; "
+            f"start_index={self.index}",
+            flush=True,
+        )
+
+    def qpos_at(self, index: int) -> dict:
+        import h5py
+
+        with h5py.File(self.h5_path, "r") as f:
+            dataset = f[f"{self.traj}/obs/agent/qpos"]
+            idx = max(0, min(int(index), dataset.shape[0] - 1))
+            return _decode_h5_json_row(dataset[idx])
+
+    def next_action(self, device):
+        import torch
+
+        if not self.actions:
+            return torch.zeros((1, 8), dtype=torch.float32, device=device)
+        idx = min(self.index, len(self.actions) - 1)
+        self.index += 1
+        return torch.from_numpy(self.actions[idx]).unsqueeze(0).to(device)
+
+
+def _write_arena_robot_qpos_from_mujoco(env, qpos: dict) -> None:
+    """Write a MolmoSpaces/MuJoCo qpos dict into the Arena DROID articulation."""
+    import math
+    import torch
+
+    scene = env.unwrapped.scene
+    robot = scene["robot"]
+    joint_names = list(getattr(robot.data, "joint_names", []) or [])
+    name_to_idx = {name: i for i, name in enumerate(joint_names)}
+    joint_pos = robot.data.joint_pos.clone()
+    joint_vel = torch.zeros_like(joint_pos)
+
+    for i, value in enumerate(list(qpos.get("arm") or [])[:7]):
+        name = f"panda_joint{i + 1}"
+        if name in name_to_idx:
+            joint_pos[0, name_to_idx[name]] = float(value)
+
+    gripper = qpos.get("gripper") or []
+    g_raw = float(sum(float(x) for x in gripper) / len(gripper)) if gripper else 0.0
+    g = min(max(g_raw, 0.0), math.pi / 4)
+    if g_raw > 0.1:
+        g = math.pi / 4
+    gripper_targets = {
+        "finger_joint": g,
+        "right_outer_knuckle_joint": g,
+        "left_inner_finger_joint": -g,
+        "right_inner_finger_joint": g,
+        "left_inner_finger_knuckle_joint": -g,
+        "right_inner_finger_knuckle_joint": -g,
+    }
+    for name, value in gripper_targets.items():
+        if name in name_to_idx:
+            joint_pos[0, name_to_idx[name]] = float(value)
+
+    robot.write_joint_state_to_sim(joint_pos, joint_vel)
+    robot.set_joint_position_target(joint_pos)
+    scene.write_data_to_sim()
+    env.unwrapped.sim.forward()
+    scene.update(dt=env.unwrapped.physics_dt)
+    env.unwrapped.obs_buf = env.unwrapped.observation_manager.compute(update_history=True)
+    print(
+        f"[molmospaces_arena] Initialized Arena robot from HDF5 qpos "
+        f"(arm={_to_list(joint_pos[0, :7])}, gripper_raw={g_raw:.4f}).",
+        flush=True,
+    )
+
+
+def _selected_embodiment_key(args: argparse.Namespace) -> str:
+    """Choose the Arena embodiment. OpenPI DROID checkpoints expect DROID observations/actions."""
+    explicit = getattr(args, "embodiment", None) or os.environ.get("MOLMO_ARENA_EMBODIMENT")
+    if explicit:
+        return str(explicit)
+    if getattr(args, "joint_pos_policy", False) or (
+        getattr(args, "policy_type", "zero") == "pi_remote" and _use_pi_joint_velocity_control(args)
+    ):
+        return "droid_abs_joint_pos"
+    return "franka"
+
+
+def _use_pi_joint_velocity_control(args: argparse.Namespace) -> bool:
+    """OpenPI DROID checkpoints use joint velocity actions unless an explicit joint-pos path is requested."""
+    if getattr(args, "policy_type", "zero") != "pi_remote":
+        return False
+    if getattr(args, "joint_pos_policy", False):
+        return False
+    explicit = getattr(args, "embodiment", None) or os.environ.get("MOLMO_ARENA_EMBODIMENT")
+    if explicit and not str(explicit).startswith("droid") and not getattr(args, "joint_velocity_policy", False):
+        return False
+    return True
+
+
+def _pi_action_repeat(args: argparse.Namespace) -> int:
+    repeat = int(getattr(args, "pi_action_repeat", 0) or 0)
+    if repeat > 0:
+        return max(1, repeat)
+    if getattr(args, "policy_type", "zero") == "pi_remote" and getattr(args, "joint_pos_policy", False):
+        # MolmoSpaces PiPolicyEvalConfig uses policy_dt_ms=500. Arena DROID env step is 0.02 s.
+        return 25
+    if _use_pi_joint_velocity_control(args):
+        return 3
+    return 1
+
+
+def _default_pi_camera_key_map(embodiment_key: str) -> dict[str, str]:
+    """Map OpenPI's DROID camera names to Arena observation terms for the active embodiment."""
+    if str(embodiment_key).startswith("droid"):
+        default_wrist = "camera_obs.wrist_camera_rgb"
+        default_exo = "camera_obs.external_camera_rgb"
+    else:
+        default_wrist = "camera_obs.wrist_cam_rgb"
+        default_exo = "camera_obs.exo_cam_rgb"
+    return {
+        "wrist_camera": os.environ.get("MOLMO_PI_WRIST_CAMERA", default_wrist),
+        "exo_camera_1": os.environ.get("MOLMO_PI_EXO_CAMERA", default_exo),
+    }
+
+
 def _print_arm_motion_debug(step_count: int, obs: dict, actions, device) -> None:
     """Print current arm state and last action so user can verify the arm is moving."""
     policy = obs.get("policy") or {}
@@ -367,8 +790,8 @@ def _print_arm_motion_debug(step_count: int, obs: dict, actions, device) -> None
         print(f"  [arm_motion] step {step_count}: no policy/joint_pos/eef_pos in obs", flush=True)
 
 
-def _print_pick_z_debug(step_count: int, env, spec, spawn_z: float) -> None:
-    """Print pick object Z, lift from spawn, and a warning when below spawn (tunneling)."""
+def _print_pick_z_debug(step_count: int, env, spec, spawn_z: float, obs: dict | None = None, actions=None) -> None:
+    """Print pick object Z/lift plus policy-space distance to the end effector."""
     try:
         base_env = getattr(env, "unwrapped", env)
         scene = getattr(base_env, "scene", None)
@@ -377,11 +800,78 @@ def _print_pick_z_debug(step_count: int, env, spec, spawn_z: float) -> None:
             return
         pick_key = getattr(spec, "pickup_name", None) or ""
         rp = scene[pick_key].data.root_pos_w
+        obj_pos = rp[0] if rp.dim() > 1 else rp
         z = float(rp[0, 2].item()) if rp.dim() > 1 else float(rp[2].item())
         lift = z - spawn_z
+        dist_text = ""
+        grip_text = ""
+        if obs:
+            policy = obs.get("policy") or {}
+            eef_pos = policy.get("eef_pos")
+            joint_pos = policy.get("joint_pos")
+            gripper_pos = policy.get("gripper_pos")
+            if eef_pos is not None:
+                eef = eef_pos[0] if getattr(eef_pos, "dim", lambda: 0)() > 1 else eef_pos
+                dist = (eef - obj_pos).norm().item()
+                dist_text = f"  eef_obj_dist={dist:.4f}"
+            if gripper_pos is not None:
+                gp = gripper_pos[0] if getattr(gripper_pos, "dim", lambda: 0)() > 1 else gripper_pos
+                grip_text = f"  gripper_pos={_to_list(gp)}"
+        gripper_geom_text = ""
+        try:
+            robot = scene["robot"]
+            body_names = list(getattr(robot.data, "body_names", []) or [])
+            body_pos = getattr(robot.data, "body_pos_w", None)
+            finger_names = [
+                "left_outer_finger",
+                "right_outer_finger",
+                "left_inner_finger",
+                "right_inner_finger",
+            ]
+            finger_pos = []
+            if body_pos is not None:
+                for name in finger_names:
+                    if name in body_names:
+                        p = body_pos[0, body_names.index(name), :]
+                        finger_pos.append(p)
+                if finger_pos:
+                    import torch
+
+                    fp = torch.stack(finger_pos)
+                    finger_center = fp.mean(dim=0)
+                    finger_center_dist = (finger_center - obj_pos).norm().item()
+                    finger_min_dist = (fp - obj_pos).norm(dim=1).min().item()
+                    gripper_geom_text = (
+                        f"  finger_center_obj_dist={finger_center_dist:.4f}"
+                        f"  finger_min_obj_dist={finger_min_dist:.4f}"
+                    )
+            joint_names = list(getattr(robot.data, "joint_names", []) or [])
+            joint_pos_all = getattr(robot.data, "joint_pos", None)
+            if joint_pos_all is not None:
+                keep = [
+                    (name, joint_pos_all[0, idx].item())
+                    for idx, name in enumerate(joint_names)
+                    if "finger" in name or "knuckle" in name
+                ]
+                if keep:
+                    short = ",".join(f"{name}={float(val):.3f}" for name, val in keep)
+                    gripper_geom_text += f"  gripper_joints={short}"
+        except Exception:
+            pass
+        action_text = ""
+        if actions is not None:
+            act = actions[0] if getattr(actions, "dim", lambda: 0)() > 1 else actions
+            action_text = f"  action={_to_list(act)}"
+            if obs:
+                jp = (obs.get("policy") or {}).get("joint_pos")
+                if jp is not None:
+                    jp0 = jp[0] if getattr(jp, "dim", lambda: 0)() > 1 else jp
+                    arm_err = (jp0[:7] - act[:7]).norm().item()
+                    action_text += f"  arm_cmd_err={arm_err:.4f}"
         warn = "  *** BELOW SPAWN ***" if lift < -0.05 else ""
         print(
-            f"  [pick_z] step {step_count}: z={z:.4f}  spawn_z={spawn_z:.4f}  lift={lift:+.4f}{warn}",
+            f"  [pick_z] step {step_count}: z={z:.4f}  spawn_z={spawn_z:.4f}  "
+            f"lift={lift:+.4f}{dist_text}{grip_text}{gripper_geom_text}{action_text}{warn}",
             flush=True,
         )
     except Exception as e:
@@ -407,9 +897,11 @@ def _run_one_episode(
     episode_length_s = args.steps * 0.02
     extra = tuple(getattr(args, "scene_extra_xyz", [0.0, 0.0, 0.0])[:3])
     _enable_cameras = getattr(args, "with_cameras", False) or (getattr(args, "policy_type", "zero") == "pi_remote")
+    embodiment_key = _selected_embodiment_key(args)
     env, _ = build_arena_env_from_episode_spec(
         spec,
         env_name=env_name,
+        embodiment_key=embodiment_key,
         thor_assets_dir=thor_assets_dir,
         thor_metadata_path=thor_metadata_path,
         objaverse_assets_dir=objaverse_assets_dir,
@@ -417,6 +909,8 @@ def _run_one_episode(
         cli_args_list=cli_args_list,
         scene_extra_translation_xyz=extra,
         use_joint_pos_control=getattr(args, "joint_pos_policy", False),
+        use_joint_velocity_control=_use_pi_joint_velocity_control(args),
+        num_envs=getattr(args, "num_envs", 1),
         env_spacing=getattr(args, "env_spacing", None),
         enable_cameras=_enable_cameras,
     )
@@ -444,21 +938,38 @@ def _run_one_episode(
     step_count = 0
     success = False
     device = env.unwrapped.device
+    pi_repeat = _pi_action_repeat(args)
+    pi_repeat_left = 0
+    pi_last_actions = None
+    if args.policy_type == "pi_remote":
+        print(
+            f"[molmospaces_arena] pi_remote action mode: "
+            f"{'joint_velocity' if _use_pi_joint_velocity_control(args) else 'joint_position' if getattr(args, 'joint_pos_policy', False) else 'delta_eef'}; "
+            f"action_repeat={pi_repeat}.",
+            flush=True,
+        )
     try:
         for _ in range(args.steps):
             if simulation_app is not None and not simulation_app.is_running():
                 break
             with torch.inference_mode():
                 if args.policy_type == "pi_remote" and pi_remote_policy is not None:
-                    from molmo_spaces_isaac.arena.pi_remote_client import get_pi_remote_action
-                    actions = get_pi_remote_action(
-                        pi_remote_policy,
-                        obs,
-                        camera_key_map=pi_remote_camera_key_map or {},
-                        default_image_shape=(224, 224, 3),
-                        device=device,
-                        use_joint_pos_control=getattr(args, "joint_pos_policy", False),
-                    )
+                    if pi_last_actions is None or pi_repeat_left <= 0:
+                        from molmo_spaces_isaac.arena.pi_remote_client import get_pi_remote_action
+                        actions = get_pi_remote_action(
+                            pi_remote_policy,
+                            obs,
+                            camera_key_map=pi_remote_camera_key_map or {},
+                            default_image_shape=(224, 224, 3),
+                            device=device,
+                            use_joint_pos_control=getattr(args, "joint_pos_policy", False),
+                            use_joint_velocity_control=_use_pi_joint_velocity_control(args),
+                        )
+                        pi_last_actions = actions
+                        pi_repeat_left = pi_repeat
+                    else:
+                        actions = pi_last_actions
+                    pi_repeat_left -= 1
                 elif args.policy_type == "random":
                     actions = torch.randn(env.action_space.shape, device=device) * 0.05
                 else:
@@ -470,7 +981,7 @@ def _run_one_episode(
             if args.debug_arm_motion > 0 and step_count % args.debug_arm_motion == 0:
                 _print_arm_motion_debug(step_count, obs, actions, device)
             if args.debug_pick_z > 0 and step_count % args.debug_pick_z == 0 and spawn_z is not None:
-                _print_pick_z_debug(step_count, env, spec, spawn_z)
+                _print_pick_z_debug(step_count, env, spec, spawn_z, obs=obs, actions=actions)
             done = terminated | truncated
             if done.any():
                 success = bool(terminated.any().item())
@@ -493,6 +1004,8 @@ def main() -> int:
         args.scenes_root = Path(os.environ["MOLMO_SCENES_ROOT"]).resolve()
     if args.episode_json is not None and args.benchmark_dir is not None:
         raise SystemExit("Use either --episode_json or --benchmark_dir, not both.")
+    if getattr(args, "pi_trace_dir", None) is not None:
+        os.environ["MOLMO_PI_TRACE_DIR"] = str(Path(args.pi_trace_dir).expanduser().resolve())
 
     _bundled_simple_bench = REPO_ROOT / "examples" / "benchmark_ithor_pick_hard_simple"
 
@@ -550,7 +1063,9 @@ def main() -> int:
         resolved_bench_dir = bench_dir
 
         max_ep = getattr(args, "max_episodes", None)
-        if max_ep is not None:
+        if max_ep is not None and args.episode_indices is not None:
+            raise SystemExit("Use either --max_episodes or --episode_indices, not both.")
+        if max_ep is not None or args.episode_indices is not None:
             try:
                 from molmo_spaces.evaluation.benchmark_schema import load_all_episodes
                 episodes = load_all_episodes(bench_dir)
@@ -564,8 +1079,12 @@ def main() -> int:
             if not episode_dicts:
                 raise SystemExit("No episodes in benchmark.")
             n_total = len(episode_dicts)
-            n_run = n_total if max_ep == 0 else min(max_ep, n_total)
-            indices_to_run = list(range(n_run))
+            parsed_indices = _parse_episode_indices(args.episode_indices, n_total)
+            if parsed_indices is not None:
+                indices_to_run = parsed_indices
+            else:
+                n_run = n_total if max_ep == 0 else min(max_ep, n_total)
+                indices_to_run = list(range(n_run))
             episode_dict = None
         else:
             episode_dict = load_episode_dict_from_benchmark(bench_dir, args.episode_idx)
@@ -590,6 +1109,11 @@ def main() -> int:
 
     # Multi-episode run (like MolmoSpaces): run each episode in sequence and print summary.
     if indices_to_run is not None:
+        if args.policy_type == "h5_replay":
+            raise SystemExit(
+                "--policy_type h5_replay is single-episode only for now because each episode "
+                "needs its matching MuJoCo HDF5 trajectory. Use --episode_idx instead."
+            )
         if args.assets_root is not None and not Path(args.assets_root).resolve().is_dir():
             raise SystemExit(f"Assets root is not a directory: {args.assets_root}")
         if args.assets_root is not None:
@@ -625,16 +1149,13 @@ def main() -> int:
                     host=args.pi_server_host,
                     port=args.pi_server_port,
                     task_description="pick up the object.",
+                    grasping_threshold=args.pi_grasping_threshold,
+                    chunk_size=args.pi_chunk_size,
                     connect_timeout_s=10.0,
                     inference_timeout_s=120.0,
                 )
                 pi_remote_policy.reset()
-                _default_wrist = "camera_obs.wrist_cam_rgb"
-                _default_exo = "camera_obs.exo_cam_rgb"
-                pi_remote_camera_key_map = {
-                    "wrist_camera": os.environ.get("MOLMO_PI_WRIST_CAMERA", _default_wrist),
-                    "exo_camera_1": os.environ.get("MOLMO_PI_EXO_CAMERA", _default_exo),
-                }
+                pi_remote_camera_key_map = _default_pi_camera_key_map(_selected_embodiment_key(args))
             except Exception as e:
                 import traceback
                 print(f"Failed to connect to Pi server: {e}", flush=True)
@@ -643,7 +1164,7 @@ def main() -> int:
                     simulation_app.close()
                 return 1
 
-        results = []
+        results: list[dict] = []
         for idx in indices_to_run:
             episode_dict = episode_dicts[idx]
             spec = episode_dict_to_arena_spec(
@@ -659,24 +1180,60 @@ def main() -> int:
                     else "not supported for Arena"
                 )
                 print(f"Episode {idx}: skipped ({why})", flush=True)
-                results.append((idx, False, 0))
+                results.append(
+                    {
+                        **_episode_result_metadata(idx, episode_dict, spec=None),
+                        "status": "skipped",
+                        "success": False,
+                        "step_count": 0,
+                        "reason": why,
+                    }
+                )
                 continue
             print(f"Episode {idx}/{len(indices_to_run)}...", flush=True)
+            if pi_remote_policy is not None:
+                pi_remote_policy.reset()
+                task_description = (episode_dict.get("language") or {}).get("task_description")
+                if hasattr(pi_remote_policy, "set_task_description"):
+                    pi_remote_policy.set_task_description(task_description or "pick up the object.")
             success, step_count = _run_one_episode(
                 spec, episode_dict, args,
                 thor_assets_dir, thor_metadata_path, objaverse_assets_dir,
                 cli_args_list, pi_remote_policy, pi_remote_camera_key_map,
                 env_name=f"molospaces_arena_benchmark_{idx}",
             )
-            results.append((idx, success, step_count))
+            results.append(
+                {
+                    **_episode_result_metadata(idx, episode_dict, spec=spec),
+                    "status": "ran",
+                    "success": bool(success),
+                    "step_count": int(step_count),
+                    "reason": None if success else "failed_or_timed_out",
+                }
+            )
             print(f"  Episode {idx}: {'SUCCESS' if success else 'FAIL'} ({step_count} steps)", flush=True)
 
-        n_ok = sum(1 for _, s, _ in results if s)
+        n_ok = sum(1 for row in results if row.get("success"))
         n_total = len(results)
         if n_total == 0:
             print("\nNo episodes run.", flush=True)
         else:
             print(f"\nBenchmark complete: {n_ok}/{n_total} successful ({100.0 * n_ok / n_total:.1f}%)", flush=True)
+        _write_results_json(
+            args.results_json,
+            {
+                "benchmark_dir": str(resolved_bench_dir) if resolved_bench_dir else None,
+                "episode_indices": indices_to_run,
+                "policy_type": args.policy_type,
+                "steps": args.steps,
+                "num_envs": getattr(args, "num_envs", 1),
+                "pi_trace_dir": str(args.pi_trace_dir) if args.pi_trace_dir else None,
+                "success_count": n_ok,
+                "total_count": n_total,
+                "success_rate": (float(n_ok) / float(n_total)) if n_total else None,
+                "results": results,
+            },
+        )
         try:
             if simulation_app is not None:
                 simulation_app.close()
@@ -788,9 +1345,12 @@ def main() -> int:
     extra = tuple(getattr(args, "scene_extra_xyz", [0.0, 0.0, 0.0])[:3])
     env_id = f"molmospaces_arena_hi{hi}_ep{args.episode_idx}" if hi is not None else "molmospaces_arena_benchmark"
     _enable_cameras = getattr(args, "with_cameras", False) or (getattr(args, "policy_type", "zero") == "pi_remote")
+    embodiment_key = _selected_embodiment_key(args)
+    print(f"[molmospaces_arena] Arena embodiment: {embodiment_key}", flush=True)
     env, _ = build_arena_env_from_episode_spec(
         spec,
         env_name=env_id,
+        embodiment_key=embodiment_key,
         thor_assets_dir=thor_assets_dir,
         thor_metadata_path=thor_metadata_path,
         objaverse_assets_dir=objaverse_assets_dir,
@@ -798,6 +1358,7 @@ def main() -> int:
         cli_args_list=cli_args_list,
         scene_extra_translation_xyz=extra,
         use_joint_pos_control=getattr(args, "joint_pos_policy", False),
+        use_joint_velocity_control=_use_pi_joint_velocity_control(args),
         num_envs=getattr(args, "num_envs", 1),
         env_spacing=getattr(args, "env_spacing", None),
         enable_cameras=_enable_cameras,
@@ -812,6 +1373,17 @@ def main() -> int:
         if simulation_app is not None:
             simulation_app.close()
         return 1
+
+    video_recorder = None
+    video_paths: dict[str, str] = {}
+    if getattr(args, "record_video_dir", None) is not None:
+        video_recorder = ArenaVideoRecorder(
+            args.record_video_dir,
+            episode_idx=int(getattr(args, "episode_idx", 0)),
+            camera_keys=_record_camera_keys(args),
+            fps=getattr(args, "record_video_fps", 15),
+        )
+        video_recorder.capture(obs, step_count=0)
 
     # Capture pick spawn Z for per-step tunneling debug (--debug_pick_z).
     spawn_z: float | None = None
@@ -837,6 +1409,7 @@ def main() -> int:
 
     pi_remote_policy = None
     pi_remote_camera_key_map = None
+    h5_replay_policy = None
     if args.policy_type == "pi_remote":
         from molmo_spaces_isaac.arena.pi_remote_client import PiRemotePolicy, get_pi_remote_action
         task_description = (episode_dict.get("language") or {}).get("task_description") or "pick up the object."
@@ -846,19 +1419,16 @@ def main() -> int:
                 host=args.pi_server_host,
                 port=args.pi_server_port,
                 task_description=task_description,
+                grasping_threshold=args.pi_grasping_threshold,
+                chunk_size=args.pi_chunk_size,
                 connect_timeout_s=10.0,
                 inference_timeout_s=120.0,
             )
             pi_remote_policy.reset()
             # Camera key map: maps pi0 camera names to Arena obs keys (format "group.term").
-            # Default keys match _attach_franka_droid_cameras (wrist_cam + exo_cam).
+            # Default keys match the selected Arena embodiment.
             # Override with env vars MOLMO_PI_WRIST_CAMERA / MOLMO_PI_EXO_CAMERA if needed.
-            _default_wrist = "camera_obs.wrist_cam_rgb"
-            _default_exo = "camera_obs.exo_cam_rgb"
-            pi_remote_camera_key_map = {
-                "wrist_camera": os.environ.get("MOLMO_PI_WRIST_CAMERA", _default_wrist),
-                "exo_camera_1": os.environ.get("MOLMO_PI_EXO_CAMERA", _default_exo),
-            }
+            pi_remote_camera_key_map = _default_pi_camera_key_map(embodiment_key)
             print(
                 f"[molmospaces_arena] Pi camera keys: wrist_camera={pi_remote_camera_key_map['wrist_camera']} "
                 f"exo_camera_1={pi_remote_camera_key_map['exo_camera_1']}",
@@ -873,12 +1443,45 @@ def main() -> int:
             if simulation_app is not None:
                 simulation_app.close()
             return 1
+    elif args.policy_type == "h5_replay":
+        if args.replay_h5 is None:
+            env.close()
+            if simulation_app is not None:
+                simulation_app.close()
+            raise SystemExit("--policy_type h5_replay requires --replay_h5")
+        h5_replay_policy = H5ReplayPolicy(
+            args.replay_h5,
+            traj=args.replay_traj,
+            start_index=getattr(args, "replay_start_index", 0),
+        )
+        if getattr(args, "replay_init_from_h5_qpos", False):
+            _write_arena_robot_qpos_from_mujoco(
+                env,
+                h5_replay_policy.qpos_at(getattr(args, "replay_start_index", 0)),
+            )
+            obs = env.unwrapped.obs_buf
 
     step_count = 0
     n_success = 0
     num_envs = getattr(args, "num_envs", 1)
     terminated = truncated = None
     device = env.unwrapped.device
+    pi_repeat = _pi_action_repeat(args)
+    pi_repeat_left = 0
+    pi_last_actions = None
+    if args.policy_type == "pi_remote":
+        print(
+            f"[molmospaces_arena] pi_remote action mode: "
+            f"{'joint_velocity' if _use_pi_joint_velocity_control(args) else 'joint_position' if getattr(args, 'joint_pos_policy', False) else 'delta_eef'}; "
+            f"action_repeat={pi_repeat}.",
+            flush=True,
+        )
+    elif args.policy_type == "h5_replay":
+        print(
+            f"[molmospaces_arena] h5_replay action mode: joint_position; "
+            f"action_repeat={max(1, args.replay_action_repeat)}.",
+            flush=True,
+        )
     print(f"Starting benchmark loop ({num_envs} env(s), max {args.steps} steps)...", flush=True)
     try:
         for _ in range(args.steps):
@@ -887,26 +1490,46 @@ def main() -> int:
                 break
             with torch.inference_mode():
                 if args.policy_type == "pi_remote" and pi_remote_policy is not None:
-                    actions = get_pi_remote_action(
-                        pi_remote_policy,
-                        obs,
-                        camera_key_map=pi_remote_camera_key_map,
-                        default_image_shape=(224, 224, 3),
-                        device=device,
-                        use_joint_pos_control=getattr(args, "joint_pos_policy", False),
-                    )
+                    if pi_last_actions is None or pi_repeat_left <= 0:
+                        actions = get_pi_remote_action(
+                            pi_remote_policy,
+                            obs,
+                            camera_key_map=pi_remote_camera_key_map,
+                            default_image_shape=(224, 224, 3),
+                            device=device,
+                            use_joint_pos_control=getattr(args, "joint_pos_policy", False),
+                            use_joint_velocity_control=_use_pi_joint_velocity_control(args),
+                        )
+                        pi_last_actions = actions
+                        pi_repeat_left = pi_repeat
+                    else:
+                        actions = pi_last_actions
+                    pi_repeat_left -= 1
+                elif args.policy_type == "h5_replay" and h5_replay_policy is not None:
+                    if pi_last_actions is None or pi_repeat_left <= 0:
+                        actions = h5_replay_policy.next_action(device)
+                        pi_last_actions = actions
+                        pi_repeat_left = max(1, args.replay_action_repeat)
+                    else:
+                        actions = pi_last_actions
+                    pi_repeat_left -= 1
                 elif args.policy_type == "random":
                     actions = torch.randn(env.action_space.shape, device=device) * 0.05
                 else:
                     actions = torch.zeros(env.action_space.shape, device=device)
                 obs, _reward, terminated, truncated, info = env.step(actions)
             step_count += 1
+            if (
+                video_recorder is not None
+                and step_count % max(1, int(getattr(args, "record_video_stride", 1))) == 0
+            ):
+                video_recorder.capture(obs, step_count=step_count)
             if args.progress_steps > 0 and step_count % args.progress_steps == 0:
                 print(f"  step {step_count}/{args.steps}...", flush=True)
             if args.debug_arm_motion > 0 and step_count % args.debug_arm_motion == 0:
                 _print_arm_motion_debug(step_count, obs, actions, device)
             if args.debug_pick_z > 0 and step_count % args.debug_pick_z == 0 and spawn_z is not None:
-                _print_pick_z_debug(step_count, env, spec, spawn_z)
+                _print_pick_z_debug(step_count, env, spec, spawn_z, obs=obs, actions=actions)
             done = terminated | truncated
             if done.all():
                 n_success = int(terminated.sum().item())
@@ -915,6 +1538,9 @@ def main() -> int:
         import traceback
         print(f"Benchmark loop error after {step_count} steps: {e}", flush=True)
         traceback.print_exc()
+    finally:
+        if video_recorder is not None:
+            video_paths = video_recorder.close()
 
     success = n_success > 0
     # Print result before closing: simulation_app.close() tears down Isaac Sim and exits the process.
@@ -929,6 +1555,35 @@ def main() -> int:
     if not success and step_count >= args.steps:
         print("Tip: task may need more time; try increasing --steps (e.g. --steps 2000).", flush=True)
     exit_code = 0 if success else 1
+    _write_results_json(
+        args.results_json,
+        {
+            "benchmark_dir": str(resolved_bench_dir) if resolved_bench_dir else None,
+            "episode_indices": [int(getattr(args, "episode_idx", 0))] if resolved_bench_dir else None,
+            "policy_type": args.policy_type,
+            "steps": args.steps,
+            "num_envs": num_envs,
+            "pi_trace_dir": str(args.pi_trace_dir) if args.pi_trace_dir else None,
+            "video_paths": video_paths,
+            "success_count": int(n_success),
+            "total_count": int(num_envs),
+            "success_rate": (float(n_success) / float(num_envs)) if num_envs else None,
+            "results": [
+                {
+                    **_episode_result_metadata(
+                        int(getattr(args, "episode_idx", 0)) if resolved_bench_dir else 0,
+                        episode_dict,
+                        spec=spec,
+                    ),
+                    "status": "ran",
+                    "success": bool(success),
+                    "step_count": int(step_count),
+                    "reason": None if success else "failed_or_timed_out",
+                    "video_paths": video_paths,
+                }
+            ],
+        },
+    )
 
     try:
         env.close()

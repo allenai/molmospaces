@@ -11,6 +11,10 @@ set -e
 EPISODE_IDX=${1:-4}
 NUM_ENVS=${2:-1}
 ENV_SPACING=${3:-}
+HEADLESS_ARG=()
+if [[ "${MOLMO_ARENA_HEADLESS:-1}" != "0" ]]; then
+  HEADLESS_ARG=(--headless)
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -26,6 +30,7 @@ ISAACLAB_ARENA_PATH="$ARENA_PATH" \
 ./submodules/IsaacLab/isaaclab.sh -p \
   "$REPO_ROOT/scripts/run_arena_benchmark_episode.py" \
   -- \
+  "${HEADLESS_ARG[@]}" \
   --assets_root "$ASSETS_ROOT" \
   --benchmark_dir "$REPO_ROOT/examples/benchmark_ithor_pick_hard_simple" \
   --episode_idx "$EPISODE_IDX" \

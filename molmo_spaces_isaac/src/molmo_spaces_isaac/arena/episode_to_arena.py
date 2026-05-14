@@ -1,4 +1,8 @@
-"""Convert MolmoSpaces benchmark episode (JSON/EpisodeSpec) to Arena scene + task. Pick only; THOR and Objaverse (require_thor_only=False)."""
+"""Convert MolmoSpaces benchmark episode (JSON/EpisodeSpec) to Arena scene + task.
+
+Pick only. Pickup objects can be added THOR/Objaverse assets or existing objects in
+the referenced MolmoSpaces scene USD.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +26,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 # Pose in benchmark: [x, y, z, qw, qx, qy, qz]
-# THOR assets in Isaac often need 90° around X for correct up-axis (same as viewer)
+# THOR object meshes keep the original local frame; callers decide whether to apply the correction.
 THOR_UP_AXIS_QUAT_WXYZ = (0.70710678, 0.70710678, 0.0, 0.0)
 
 
@@ -31,13 +35,15 @@ class ArenaEpisodeSpec:
     """Arena-ready spec for pick: scene (MolmoSpaces USD or fallback background_key), objects, pickup_name, robot_base_pose, success threshold."""
 
     background_key: str
-    objects: list[tuple[str, str, list[float], str]]  # (name, asset_id, pose_7, "thor"|"objaverse")
+    objects: list[tuple[str, str, list[float], str]]  # (name, asset_id/scene_prim, pose_7, "thor"|"objaverse"|"scene")
     pickup_name: str
     robot_base_pose: list[float]
     task_type: str  # "pick"
     succ_pos_threshold: float = 0.12  # lift height >= this for pick success
     scene_usd_path: Path | None = None  # When set, use this MolmoSpaces scene as environment (same as benchmark)
     robot_init_joint_pos: dict[str, float] | None = None  # Isaac Panda joint_pos from episode robot.init_qpos (arm+gripper)
+    camera_specs: list[dict] | None = None  # Episode camera specs from benchmark JSON.
+    img_resolution: tuple[int, int] | None = None  # (width, height), when provided by benchmark JSON.
 
 
 def _quat_mul_wxyz(q1: tuple[float, float, float, float], q2: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
@@ -127,14 +133,21 @@ def _ithor_floorplan_usd(scenes_root: Path, house_index: int) -> Path | None:
     """Find scene.usda for ithor FloorPlan{house_index}_physics under ms-download layouts."""
     root = Path(scenes_root).resolve()
     fp_dir = f"FloorPlan{int(house_index)}_physics"
+    scene_bases = [
+        root,
+        root / "ithor",
+        root / "scenes" / "ithor",
+        root / "usd" / "scenes" / "ithor",
+    ]
     for ext in ("scene.usda", "scene.usdc"):
-        for base in (root / "ithor", root / "scenes" / "ithor"):
+        for base in scene_bases:
             p = base / fp_dir / ext
             if p.is_file():
                 return p
         # USD layout: scenes/ithor/ithor/<version>/FloorPlanN_physics/
-        nested = root / "scenes" / "ithor" / "ithor"
-        if nested.is_dir():
+        for nested in [base / "ithor" for base in scene_bases]:
+            if not nested.is_dir():
+                continue
             env_ver = (os.environ.get("MOLMO_ITHOR_SCENES_VERSION") or "").strip()
             version_order: list[Path] = []
             if env_ver:
@@ -171,14 +184,15 @@ def resolve_episode_scene_usd_path(episode: dict, scenes_root: Path | None) -> P
     dataset_split = f"{scene_dataset}-{data_split}"
     for folder in (f"{data_split}_{hi}_physics", f"{data_split}_{hi}"):
         for ext in ("scene.usda", "scene.usdc"):
-            p = root / dataset_split / folder / ext
-            if p.is_file():
-                return p
+            for base in (root, root / "scenes", root / "usd" / "scenes"):
+                p = base / dataset_split / folder / ext
+                if p.is_file():
+                    return p
     return None
 
 
 def _pose_7_to_arena_pose(pose_7: list[float], apply_thor_up_axis: bool = True) -> tuple[tuple[float, float, float], tuple[float, float, float, float]]:
-    """Convert [x,y,z,qw,qx,qy,qz] to (position_xyz, rotation_wxyz). Optionally apply 90° X for THOR up-axis."""
+    """Convert [x,y,z,qw,qx,qy,qz] to (position_xyz, rotation_wxyz). Optionally apply 90° X for Y-up THOR assets."""
     x, y, z = pose_7[0], pose_7[1], pose_7[2]
     qw, qx, qy, qz = pose_7[3], pose_7[4], pose_7[5], pose_7[6]
     if not apply_thor_up_axis:
@@ -262,7 +276,8 @@ def episode_dict_to_arena_spec(
             return list(task[fallback_pose_key][:7])
         return None
 
-    # Resolve pickup object: from added_objects (path) or fallback: pose + Objaverse UUID from name
+    # Resolve pickup object: from added_objects (path), existing scene object pose, or
+    # fallback Objaverse UUID from name when explicitly allowed.
     pickup_asset_id = None
     pickup_source = "thor"
     pickup_pose = get_pose(pickup_obj_name, "pickup_obj_start_pose")
@@ -273,6 +288,12 @@ def episode_dict_to_arena_spec(
         if not pickup_asset_id:
             pickup_asset_id = _path_to_objaverse_asset_id(pickup_path)
             pickup_source = "objaverse"
+    elif pickup_pose:
+        # Real MolmoSpaces pick benchmarks usually target an object already present in the
+        # loaded iTHOR/ProcTHOR scene. Keep the scene prim name as the asset id; the Arena
+        # builder wraps that existing prim as a dynamic RigidObject.
+        pickup_asset_id = pickup_obj_name
+        pickup_source = "scene"
     else:
         log.debug("Pickup object '%s' not in added_objects, trying Objaverse UUID from name", pickup_obj_name)
         if pickup_pose and not require_thor_only:
@@ -286,7 +307,7 @@ def episode_dict_to_arena_spec(
             pickup_obj_name,
         )
         return None
-    if require_thor_only and pickup_source != "thor":
+    if require_thor_only and pickup_source not in ("thor", "scene"):
         log.debug("Pickup object is Objaverse but require_thor_only=True")
         return None
     if not pickup_pose:
@@ -306,6 +327,12 @@ def episode_dict_to_arena_spec(
     scene_usd_path = resolve_episode_scene_usd_path(episode, scenes_root)
     robot_init_joint_pos = init_qpos_to_panda_joint_pos(episode.get("robot"))
 
+    img_resolution = episode.get("img_resolution")
+    if isinstance(img_resolution, (list, tuple)) and len(img_resolution) >= 2:
+        img_resolution_tuple = (int(img_resolution[0]), int(img_resolution[1]))
+    else:
+        img_resolution_tuple = None
+
     return ArenaEpisodeSpec(
         background_key=background_key,
         scene_usd_path=scene_usd_path,
@@ -315,6 +342,8 @@ def episode_dict_to_arena_spec(
         task_type=task_type,
         succ_pos_threshold=succ_pos_threshold,
         robot_init_joint_pos=robot_init_joint_pos,
+        camera_specs=list(episode.get("cameras") or []),
+        img_resolution=img_resolution_tuple,
     )
 
 

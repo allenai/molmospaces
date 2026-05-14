@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import logging
 import os
+import site
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -20,6 +22,10 @@ _OPENPI_VENV_SITE = os.environ.get(
     os.path.expanduser("~/openpi/.venv/lib/python3.11/site-packages"),
 )
 if os.path.isdir(_OPENPI_VENV_SITE) and _OPENPI_VENV_SITE not in sys.path:
+    site.addsitedir(_OPENPI_VENV_SITE)
+if os.path.isdir(_OPENPI_VENV_SITE):
+    if _OPENPI_VENV_SITE in sys.path:
+        sys.path.remove(_OPENPI_VENV_SITE)
     sys.path.insert(0, _OPENPI_VENV_SITE)
     log.debug("Prepended openpi venv site-packages for websockets 15.x: %s", _OPENPI_VENV_SITE)
 
@@ -30,6 +36,14 @@ try:
 except ImportError:
     _HAS_OPENPI_CLIENT = False
     websocket_client_policy = None
+
+
+def _normalize_task_prompt(task_description: str | None) -> str:
+    """Match MolmoSpaces PI_Policy prompt formatting for remote OpenPI calls."""
+    prompt = (task_description or "pick up the object.").strip().lower()
+    if prompt and prompt[-1] not in ".!?":
+        prompt += "."
+    return prompt
 
 
 def _resize_with_pad(img: np.ndarray, height: int, width: int) -> np.ndarray:
@@ -56,8 +70,8 @@ class PiRemotePolicy:
         host: str = "localhost",
         port: int = 8000,
         task_description: str = "pick up the object.",
-        grasping_threshold: float = 0.5,
-        chunk_size: int = 8,
+        grasping_threshold: float = 0.01,
+        chunk_size: int = 15,
         connect_timeout_s: float = 10.0,
         inference_timeout_s: float = 120.0,
     ):
@@ -80,20 +94,98 @@ class PiRemotePolicy:
             ) from e
         sock.close()
         self._client = websocket_client_policy.WebsocketClientPolicy(host=host, port=port)
-        self._task_description = task_description
+        self._task_description = _normalize_task_prompt(task_description)
         self._grasping_threshold = grasping_threshold
         self._chunk_size = chunk_size
         self._inference_timeout_s = inference_timeout_s
         self._actions_buffer: np.ndarray | None = None
         self._current_buffer_index = 0
+        self._current_chunk_index = -1
         self._starting_time: float | None = None
         self._executor = ThreadPoolExecutor(max_workers=1)
-        log.info("Pi remote policy connected to %s:%s (inference_timeout_s=%s)", host, port, inference_timeout_s)
+        trace_dir = (os.environ.get("MOLMO_PI_TRACE_DIR") or "").strip()
+        self._trace_dir = Path(trace_dir).expanduser().resolve() if trace_dir else None
+        self._trace_call_index = 0
+        self._trace_chunk_index = 0
+        if self._trace_dir is not None:
+            self._trace_dir.mkdir(parents=True, exist_ok=True)
+            log.info("Pi remote trace enabled: %s", self._trace_dir)
+        log.info(
+            "Pi remote policy connected to %s:%s (chunk_size=%s, grasping_threshold=%s, inference_timeout_s=%s)",
+            host,
+            port,
+            chunk_size,
+            grasping_threshold,
+            inference_timeout_s,
+        )
 
     def reset(self) -> None:
         self._actions_buffer = None
         self._current_buffer_index = 0
+        self._current_chunk_index = -1
         self._starting_time = None
+
+    def set_task_description(self, task_description: str) -> None:
+        self._task_description = _normalize_task_prompt(task_description)
+
+    def _write_trace_chunk(self, chunk_index: int, model_input: dict[str, Any], raw_actions: np.ndarray) -> None:
+        if self._trace_dir is None:
+            return
+        chunk_dir = self._trace_dir / f"chunk_{chunk_index:04d}"
+        chunk_dir.mkdir(parents=True, exist_ok=True)
+        np.save(chunk_dir / "actions.npy", np.asarray(raw_actions))
+        np.save(chunk_dir / "joint_position.npy", np.asarray(model_input.get("observation/joint_position")))
+        np.save(chunk_dir / "gripper_position.npy", np.asarray(model_input.get("observation/gripper_position")))
+        metadata = {
+            "chunk_index": chunk_index,
+            "prompt": model_input.get("prompt"),
+            "actions_shape": list(np.asarray(raw_actions).shape),
+        }
+        try:
+            from PIL import Image
+
+            for key, name in (
+                ("observation/exterior_image_1_left", "exterior_image_1_left.png"),
+                ("observation/wrist_image_left", "wrist_image_left.png"),
+            ):
+                img = np.asarray(model_input.get(key))
+                metadata[f"{key}_shape"] = list(img.shape)
+                if img.ndim == 3 and img.shape[-1] >= 3:
+                    Image.fromarray(img[:, :, :3].astype(np.uint8)).save(chunk_dir / name)
+        except Exception as e:
+            metadata["image_write_error"] = str(e)
+            for key, name in (
+                ("observation/exterior_image_1_left", "exterior_image_1_left.npy"),
+                ("observation/wrist_image_left", "wrist_image_left.npy"),
+            ):
+                np.save(chunk_dir / name, np.asarray(model_input.get(key)))
+        with open(chunk_dir / "metadata.json", "w") as f:
+            import json
+
+            json.dump(metadata, f, indent=2)
+
+    def _write_trace_call(
+        self,
+        call_index: int,
+        chunk_index: int,
+        buffer_index: int,
+        model_output: np.ndarray,
+        action: dict[str, np.ndarray],
+    ) -> None:
+        if self._trace_dir is None:
+            return
+        import json
+
+        out = {
+            "call_index": call_index,
+            "chunk_index": chunk_index,
+            "buffer_index": buffer_index,
+            "model_output": np.asarray(model_output, dtype=float).tolist(),
+            "arm": np.asarray(action.get("arm", []), dtype=float).tolist(),
+            "gripper": np.asarray(action.get("gripper", []), dtype=float).tolist(),
+        }
+        with open(self._trace_dir / f"call_{call_index:05d}.json", "w") as f:
+            json.dump(out, f, indent=2)
 
     def _obs_to_model_input(self, obs: dict[str, Any]) -> dict[str, Any]:
         """Build the dict the OpenPI server expects (same as PI_Policy.obs_to_model_input)."""
@@ -109,7 +201,7 @@ class PiRemotePolicy:
             exo_img = _resize_with_pad(np.asarray(exo_img), 224, 224)
         if wrist_img.shape[:2] != (224, 224):
             wrist_img = _resize_with_pad(np.asarray(wrist_img), 224, 224)
-        prompt = (self._task_description or "pick up the object.").lower()
+        prompt = _normalize_task_prompt(self._task_description)
         return {
             "observation/exterior_image_1_left": exo_img,
             "observation/wrist_image_left": wrist_img,
@@ -130,6 +222,8 @@ class PiRemotePolicy:
 
     def get_action(self, observation: list[dict]) -> dict[str, np.ndarray]:
         """observation is a list of one obs dict (policy_obs format pi)."""
+        call_index = self._trace_call_index
+        self._trace_call_index += 1
         if not observation:
             return {"arm": np.zeros(7), "gripper": np.array([0.0])}
         obs = observation[0]
@@ -148,11 +242,17 @@ class PiRemotePolicy:
                 ) from None
             self._actions_buffer = np.asarray(raw) if not isinstance(raw, np.ndarray) else raw
             self._current_buffer_index = 0
+            self._current_chunk_index = self._trace_chunk_index
+            self._trace_chunk_index += 1
+            self._write_trace_chunk(self._current_chunk_index, model_input, self._actions_buffer)
         model_output = self._actions_buffer[self._current_buffer_index]
         if not isinstance(model_output, np.ndarray):
             model_output = np.asarray(model_output, dtype=np.float64)
+        buffer_index = self._current_buffer_index
         self._current_buffer_index += 1
-        return self._model_output_to_action(model_output)
+        action = self._model_output_to_action(model_output)
+        self._write_trace_call(call_index, self._current_chunk_index, buffer_index, model_output, action)
+        return action
 
 
 def get_pi_remote_action(
@@ -162,11 +262,15 @@ def get_pi_remote_action(
     default_image_shape: tuple[int, int, int],
     device,
     use_joint_pos_control: bool = False,
+    use_joint_velocity_control: bool = False,
 ) -> "torch.Tensor":
     """Build policy obs (pi format), get action from Pi server, return Arena action tensor.
 
     use_joint_pos_control=True: 8D (7 arm joint angles + 1 binary gripper), for pi0 DROID
     joint-position policies. Requires Arena Franka configured with JointPositionActionCfg.
+    use_joint_velocity_control=True: 8D (7 arm joint velocities + 1 binary gripper), for
+    OpenPI DROID checkpoints such as pi05_droid. Requires Arena DROID configured with
+    JointVelocityActionCfg.
     use_joint_pos_control=False (default): 7D delta EEF pose, for normalized EEF policies.
     """
     import torch
@@ -174,6 +278,7 @@ def get_pi_remote_action(
         arena_obs_to_policy_obs,
         policy_action_to_arena_action,
         policy_joint_pos_action_to_arena_action,
+        policy_joint_velocity_action_to_arena_action,
     )
     policy_obs = arena_obs_to_policy_obs(
         arena_obs,
@@ -185,6 +290,12 @@ def get_pi_remote_action(
     )
     action_dict = pi_policy.get_action([policy_obs])
     _dev = torch.device(device) if not isinstance(device, torch.device) else device
+    if use_joint_velocity_control:
+        return policy_joint_velocity_action_to_arena_action(
+            action_dict,
+            action_gripper_open_threshold=0.5,
+            device=_dev,
+        )
     if use_joint_pos_control:
         return policy_joint_pos_action_to_arena_action(
             action_dict,

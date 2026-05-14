@@ -66,6 +66,33 @@ def _thor_usd_candidates(asset_id: str, base: Path) -> list[Path]:
     return [flat, mesh] if prefer_flat else [mesh, flat]
 
 
+def get_usd_up_axis(usd_path: Path | str) -> str | None:
+    """Return the root-layer USD upAxis token when it can be read cheaply."""
+    path = Path(usd_path)
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")[:4096]
+    except OSError:
+        return None
+    if 'upAxis = "Y"' in text:
+        return "Y"
+    if 'upAxis = "Z"' in text:
+        return "Z"
+    return None
+
+
+def should_apply_thor_up_axis_correction(usd_path: Path | str) -> bool:
+    """Whether the benchmark pose needs a Y-up to Z-up correction for this THOR USD."""
+    override = (os.environ.get("MOLMO_ARENA_THOR_APPLY_UP_AXIS") or "").strip().lower()
+    if override in ("1", "true", "yes"):
+        return True
+    if override in ("0", "false", "no"):
+        return False
+    # Current Ai2 THOR USD layers declare Z-up, but the converted object meshes still use
+    # the original THOR/Unity local frame for object geometry. Empirically, pick objects
+    # such as Bowl_27 match MuJoCo only when the legacy +90 deg X correction is applied.
+    return True
+
+
 def get_thor_usd_path(asset_id: str, assets_dir: Path | None = None) -> Path:
     """Return the USD path for a THOR asset. Tries several roots (ms-download layouts)."""
     if assets_dir is None:

@@ -131,3 +131,25 @@ def policy_joint_pos_action_to_arena_action(
     gripper_cmd = float(np.mean(gripper) > action_gripper_open_threshold)
     action_8d = np.concatenate([arm, [gripper_cmd]], axis=0).astype(np.float32)
     return torch.from_numpy(action_8d).unsqueeze(0).to(device)
+
+
+def policy_joint_velocity_action_to_arena_action(
+    policy_action: dict[str, np.ndarray],
+    action_gripper_open_threshold: float,
+    device: torch.device,
+) -> torch.Tensor:
+    """Convert DROID joint-velocity policy output to Arena 8D (7 velocities + 1 binary gripper)."""
+    arm = policy_action.get("arm")
+    gripper = policy_action.get("gripper")
+    if arm is None:
+        arm = np.zeros(7, dtype=np.float32)
+    if gripper is None:
+        gripper = np.zeros(1, dtype=np.float32)
+    arm = np.atleast_1d(arm).astype(np.float32)[:7]
+    if arm.size < 7:
+        arm = np.pad(arm, (0, 7 - arm.size))
+    arm = np.clip(arm, -1.0, 1.0)
+    gripper = np.atleast_1d(gripper).astype(np.float32)
+    gripper_cmd = float(np.mean(gripper) > action_gripper_open_threshold)
+    action_8d = np.concatenate([arm, [gripper_cmd]], axis=0).astype(np.float32)
+    return torch.from_numpy(action_8d).unsqueeze(0).to(device)
