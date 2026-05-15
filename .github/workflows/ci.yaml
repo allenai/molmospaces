@@ -43,7 +43,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco]
+          uv pip install -e .[dev,mujoco]
 
       - name: Log disk space
         run: |
