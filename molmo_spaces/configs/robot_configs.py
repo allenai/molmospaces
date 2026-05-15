@@ -91,7 +91,6 @@ class BaseRobotConfig(Config):
     robot_namespace: (
         str  # namespace used to differentiate between one or multiple robots and the environment
     )
-    default_world_pose: list[float]
     command_mode: dict[
         str, str
     ]  # move_group to command_mode e.g., "joint", "cartesian", "velocity"
@@ -144,7 +143,6 @@ class FrankaRobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = FrankaRobot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = FrankaDroidRobotView
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     name: str = "franka_droid"
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] | None = [0.5, 0.5, 0.58]
@@ -180,7 +178,6 @@ class MobileFrankaRobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = MobileFrankaRobot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = MobileFrankaDroidRobotView
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     name: str = "franka_droid"
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] = [0.5, 0.5, 0.58]
@@ -224,7 +221,6 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = FrankaRobot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = FrankaCAPRobotView
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     name: str = "franka_cap"
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] | None = [0.5, 0.5, 0.58]
@@ -287,7 +283,6 @@ class RBY1Config(BaseRobotConfig):
         "torso": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     }
 
-    default_world_pose: list[float] = [0.0, 0.0, 0.0]
     use_holo_base: bool = True  # Whether to use virtual holonomic base joints or not
     command_mode: dict[str, str | None] = {
         "arm": "joint_position",  # e.g., "joint_position", "joint_velocity", "ee_position", "ee_velocity"
@@ -334,7 +329,6 @@ class FloatingRUMRobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = FloatingRUMRobot
     robot_view_factory: RobotViewFactory | None = FloatingRUMRobotView
     robot_namespace: str = "robot_0/"
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     ctrl_dt_ms: float = 50.0
     command_mode: dict = {}
     name: str = "floating_rum"
@@ -350,7 +344,6 @@ class FloatingRobotiq2f85RobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, BaseRobotConfig], Robot] = FloatingRobotiqRobot
     robot_view_factory: RobotViewFactory = FloatingRobotiq2f85RobotView
     robot_namespace: str = "robot_0/"
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     ctrl_dt_ms: float = 50.0
     command_mode: dict = {}
     action_spec: dict[str, int] = {"base": 7, "gripper": 2}  # Max lengths for action components
@@ -369,7 +362,6 @@ class I2rtYamRobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = I2rtYamRobot
     robot_view_factory: RobotViewFactory | None = I2rtYamRobotView
     robot_namespace: str = "robot_0/"
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     name: str = "i2rt_yam"
     robot_xml_path: Path = Path("yam.xml")
     # Base platform size [width, depth, height] - raises robot above ground
@@ -407,7 +399,6 @@ class BimanualYamRobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = BimanualYamRobot
     robot_view_factory: RobotViewFactory | None = BimanualYamRobotView
     robot_namespace: str = "robot_0/"
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]
     name: str = "i2rt_yam"  # Use same directory as single-arm YAM
     robot_xml_path: Path = Path("bimanual_yam.xml")
     # Base platform size [x, y, z] - raises robot above ground

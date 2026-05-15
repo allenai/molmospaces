@@ -20,11 +20,10 @@ Benchmark directory structure:
 
 Key fields for robot placement:
     - robot.init_qpos: Initial joint positions per move group
-    - task.robot_base_pose: Robot base pose in world frame (NOT robot.default_world_pose)
+    - task.robot_base_pose: Robot base pose in world frame
 
 The actual robot world placement comes from task.robot_base_pose, which is set
-by the task sampler and frozen into the episode. The robot_config.default_world_pose
-field in the codebase is just a default that gets overridden.
+by the task sampler and frozen into the episode.
 
 Task horizons:
     Task horizon (max steps per episode) is an EVALUATION parameter, not a task
@@ -119,7 +118,7 @@ class BaseTaskSpec(BaseModel):
     task_type: str | None = None  # Optional human-readable type (e.g. "pick", "pick_and_place")
 
     # Robot world placement [x, y, z, qw, qx, qy, qz]
-    # This is the actual field used for robot placement (not robot.default_world_pose)
+    # This is the actual field used for robot placement
     robot_base_pose: list[float] = Field(..., min_length=7, max_length=7)
 
 

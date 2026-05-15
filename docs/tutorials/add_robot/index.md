@@ -218,7 +218,6 @@ class XArm7RobotConfig(BaseRobotConfig):
     robot_factory: Callable[[MjData, Any], Robot] | None = XArm7Robot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = XArm7RobotView
-    default_world_pose: list[float] = [0, 0, 0, 1, 0, 0, 0]  # (xyz + quat)
     name: str = "xarm7"
     robot_xml_path: Path = Path("xarm7.xml")
     robot_dir: Path = Path("assets/ufactory_xarm7").resolve()

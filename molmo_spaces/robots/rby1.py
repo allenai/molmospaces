@@ -309,21 +309,11 @@ class RBY1(Robot):
         """
         return self.robot_view.get_move_group("base").pose
 
-    def reset(self, robot_joint_pos_dict=None, robot_world_pose=None) -> None:
-        """Reset the robot to its initial position or a provided set of positions and world pose."""
+    def reset(self) -> None:
+        """Reset the robot to its initial state."""
 
-        # Load default robot configuration and world pose
         init_qpos_dict = self.exp_config.robot_config.init_qpos
-        default_world_pose = self.exp_config.robot_config.default_world_pose
-        if robot_joint_pos_dict is not None:
-            for move_group_id, joint_pos in robot_joint_pos_dict.items():
-                init_qpos_dict[move_group_id] = joint_pos
-        if robot_world_pose is not None:
-            default_world_pose = robot_world_pose
-        # Set the joint positions
         self.set_joint_pos(init_qpos_dict)
-        # Set the world pose
-        self.set_world_pose(default_world_pose)
 
         # reset controllers
         for _, controller in self._controllers.items():
