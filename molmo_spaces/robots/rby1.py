@@ -489,7 +489,10 @@ class RBY1(Robot):
             strip_meshes=strip_meshes,
         )
 
-        # TODO(abhay): modify holo joints to account for insertion pose (see mobile franka for example)
+        # RBY1 doesn't support insertion not at the origin or identity rotation
+        # This can be fixed if it's worth the effort (see mobile franka for example)
+        assert np.allclose(np.array(pos), [0, 0, 0]), "RBY1 insertion position is not zero!"
+        assert np.allclose(np.array(quat), [1, 0, 0, 0]), "RBY1 insertion rotation is not identity!"
 
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int
