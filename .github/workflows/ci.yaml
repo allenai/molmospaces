@@ -27,9 +27,6 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           df -h /
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache
-          sudo apt-get clean
-          df -h /
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,7 +44,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco]
+          uv pip install -e .[dev,mujoco]
 
       - name: Run component tests
         run: |
