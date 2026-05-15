@@ -50,14 +50,16 @@ nav:
   - API Reference:
       - Overview: api/index.md
       - molmo_spaces: api/molmo_spaces.md
-      - env: api/env.md
-      - tasks: api/tasks.md
-      - robots: api/robots.md
+      - configs: api/configs.md
       - controllers: api/controllers.md
-      - kinematics: api/kinematics.md
-      - renderer: api/renderer.md
-      - policy: api/policy.md
+      - data_generation: api/data_generation.md
+      - env: api/env.md
       - evaluation: api/evaluation.md
+      - kinematics: api/kinematics.md
+      - policy: api/policy.md
+      - renderer: api/renderer.md
+      - robots: api/robots.md
+      - tasks: api/tasks.md
       - utils: api/utils.md
 
 plugins:
