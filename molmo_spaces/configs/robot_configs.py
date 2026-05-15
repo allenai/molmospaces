@@ -213,7 +213,6 @@ class MobileFrankaRobotConfig(BaseRobotConfig):
         "base_theta_act": {
             "kp": 5000,
             "kd": 0.5,
-            "ctrlrange": np.pi,
         },
     }
 

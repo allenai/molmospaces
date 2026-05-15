@@ -157,6 +157,13 @@ class MobileFrankaRobot(Robot):
         robot_body.add_site(name=f"{prefix}base_site", pos=[0, 0, 0], quat=[1, 0, 0, 0])
         base_height = robot_config.base_size[2]
 
+        init_rot = R.from_quat(quat, scalar_first=True)
+        init_rpy = init_rot.as_euler("xyz")
+        assert np.allclose(init_rpy[:2], [0, 0]), (
+            f"Initial roll and pitch are not zero: {init_rpy[:2]}"
+        )
+        init_yaw = init_rpy[2]
+
         # Add base geometry (wooden platform)
         robot_body.add_geom(
             type=mjtGeom.mjGEOM_BOX,
@@ -179,13 +186,15 @@ class MobileFrankaRobot(Robot):
         for gear_idx, jnt_name in enumerate(["base_x", "base_y"]):
             act_name = jnt_name + "_act"
             params = robot_config.base_control_params[act_name]
-            jnt_axis = [0] * 3
+            jnt_axis = np.zeros(3)
             jnt_axis[gear_idx] = 1
+            jnt_axis = init_rot.inv().apply(jnt_axis)
             robot_body.add_joint(
                 type=mujoco.mjtJoint.mjJNT_SLIDE,
                 name=f"{prefix}{jnt_name}",
                 axis=jnt_axis,
                 range=[-params["ctrlrange"], params["ctrlrange"]],
+                ref=pos[gear_idx],
             )
             add_slider_act(
                 act_name,
@@ -200,14 +209,16 @@ class MobileFrankaRobot(Robot):
             type=mujoco.mjtJoint.mjJNT_HINGE,
             name=f"{prefix}base_theta",
             axis=[0, 0, 1],
+            ref=init_yaw,
         )
-        add_slider_act(
-            "base_theta_act",
-            theta_act_params["ctrlrange"],
-            theta_act_params["kp"],
-            [0, -theta_act_params["kp"], theta_act_params["kd"]],
-            5,
+        theta_act = spec.add_actuator(
+            name=f"{prefix}base_theta_act",
+            target=f"{prefix}base_theta",
+            trntype=mujoco.mjtTrn.mjTRN_JOINT,
+            biastype=mujoco.mjtBias.mjBIAS_AFFINE,
         )
+        theta_act.gainprm[0] = theta_act_params["kp"]
+        theta_act.biasprm[:3] = [0, -theta_act_params["kp"], theta_act_params["kd"]]
 
 
 if __name__ == "__main__":
@@ -227,13 +238,14 @@ if __name__ == "__main__":
     spec = MjSpec.from_file(house_xml_path)
 
     robot_config = MobileFrankaRobotConfig(base_size=[0.5, 0.5, 0.75])
+    robot_config.init_qpos["base"] = [6.8, 9.75, np.radians(90.0)]
 
     MobileFrankaRobot.add_robot_to_scene(
         robot_config,
         spec,
         prefix=robot_config.robot_namespace,
-        pos=[6.8, 9.75],
-        quat=R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True),
+        pos=robot_config.init_qpos["base"][:2],
+        quat=R.from_euler("z", robot_config.init_qpos["base"][2]).as_quat(scalar_first=True),
     )
     MobileFrankaRobot.apply_control_overrides(spec, robot_config)
 
