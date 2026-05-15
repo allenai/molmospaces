@@ -53,6 +53,7 @@ class MoveGroup(ABC):
         """
         self.mj_model = mj_data.model
         self.mj_data = mj_data
+        self._name: str | None = None
         self._joint_ids = joint_ids
         self._robot_base_group = robot_base_group
         self._root_body_id = root_body_id
@@ -76,6 +77,15 @@ class MoveGroup(ABC):
             )
 
         self._actuator_ids = actuator_ids
+
+    @property
+    def name(self) -> str:
+        """
+        The name of this move group, which matches the move group ID in the containing robot view.
+        Not safe to call before the move group is added to a robot view.
+        """
+        assert self._name is not None, "Move group name is not set"
+        return self._name
 
     @cached_property
     def n_joints(self) -> int:
@@ -687,6 +697,9 @@ class RobotView(ABC):
         self.mj_model = mj_data.model
         self.mj_data = mj_data
         self._move_groups = move_groups
+        for mg_name, mg in move_groups.items():
+            assert mg._name is None, f"Move group {mg_name} already has a name {mg._name}"
+            mg._name = mg_name
 
     @property
     @abstractmethod
