@@ -588,6 +588,8 @@ class HoloJointsRobotBaseGroup(RobotBaseGroup, SimplyActuatedMoveGroup):
         # The theta actuator can flip the robot base from -pi to pi when crossing zero.
         # To avoid this, current solution is to just set the joint positions to the
         # flipped side ctrl position (without physics simulation)
+        # TODO(abhay): this is wrong! maybe get rid of rotation joint limits and
+        # configure this to be shortcutted angle?
         theta_qpos_idx = self.mj_model.jnt_qposadr[self._joint_ids[2]]
         current_theta = self.mj_data.qpos[theta_qpos_idx]
         if np.abs(current_theta - ctrl[2]) > np.pi:

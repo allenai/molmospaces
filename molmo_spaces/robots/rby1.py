@@ -489,6 +489,8 @@ class RBY1(Robot):
             strip_meshes=strip_meshes,
         )
 
+        # TODO(abhay): modify holo joints to account for insertion pose (see mobile franka for example)
+
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int
         ):
