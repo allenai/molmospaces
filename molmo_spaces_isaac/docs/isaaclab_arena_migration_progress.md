@@ -3,6 +3,116 @@
 This tracker is append-only at the high level. Add dated entries for completed
 work, failed attempts, decisions, and open risks.
 
+## 2026-05-14
+
+### Completed
+
+- Reviewed the generated idx `14` MuJoCo-vs-Arena policy I/O report.
+- Confirmed reset arm qpos is aligned at the policy boundary, so idx `14` is no
+  longer a basic reset-qpos mismatch.
+- Confirmed the policy camera inputs are qualitatively similar but materially
+  different: Arena is brighter/washed compared with MuJoCo, and the wrist view
+  differs enough to remain a likely policy-input contributor.
+- Inspected the converted FloorPlan20 USD lighting. The Arena scene currently
+  has a default `DistantLight` (`intensity=1000`, `rotateX=-10`) plus an iTHOR
+  `DomeLight` (`intensity=500`, warm color), while the MuJoCo base scene uses a
+  renderer headlight (`ambient=0.35`, `diffuse=0.4`). This lighting was not
+  imported as a matched rig, so lighting/render-parity is now a first-class
+  idx `14` hypothesis.
+- Added and ran a focused idx `14` lighting comparison report. It measures
+  MuJoCo/Arena policy-input luminance and tests simple image-space exposure
+  corrections. The report shows Arena is somewhat brighter, but dimming alone
+  only reduces a small part of the image error, so lighting is a contributor
+  rather than a complete explanation for the idx `14` failure.
+- Added runtime Arena scene-light ablation controls so future runs can scale or
+  disable the imported USD `DistantLight` and `DomeLight` without editing the
+  downloaded scene assets in place.
+- Fixed Arena OpenPI prompt normalization to preserve the benchmark prompt text
+  exactly after strip/lower instead of auto-adding terminal punctuation. This
+  removes the idx `14` mismatch where MuJoCo sent
+  `pick up the smooth gray bowl` but Arena sent `pick up the smooth gray bowl.`.
+- Aligned the idx `14` report builder's default Arena gripper threshold with
+  the current Arena CLI default (`0.01`) so future reports do not accidentally
+  re-use the old `0.5` no-close plotting threshold.
+- Confirmed prompt strings differ only by terminal punctuation in the traced
+  report: MuJoCo sends `pick up the smooth gray bowl`, while Arena sends
+  `pick up the smooth gray bowl.`.
+- In the initial traced report, confirmed the Arena gripper did not close
+  because the Arena raw OpenPI gripper score never exceeded the traced binary
+  close threshold `0.5`. The maximum observed Arena raw gripper score in that
+  report was about `0.268`, so the adapter decoded every gripper action as
+  open/no-close.
+
+### Evidence
+
+- Report:
+  `/home/horde/molmo-proj/diagnostics/idx14_policy_io_diff/report.html`
+- Summary:
+  `/home/horde/molmo-proj/diagnostics/idx14_policy_io_diff/summary.json`
+- Gripper plot:
+  `/home/horde/molmo-proj/diagnostics/idx14_policy_io_diff/plots/arena_raw_gripper_score.png`
+- Reset camera comparison:
+  `/home/horde/molmo-proj/diagnostics/idx14_policy_io_diff/frames/reset_policy_input_cameras.png`
+- Lighting comparison:
+  `/home/horde/molmo-proj/diagnostics/idx14_lighting_compare/report.html`
+
+### Rerun result
+
+- Restored a working local Isaac/Arena runtime by launching through the project
+  venv (`VIRTUAL_ENV=/home/horde/molmo-proj/.venv`) and using
+  `/home/horde/.molmospaces/usd/scenes` as the scene root.
+- Added the required local USD cache symlink from
+  `/home/horde/.molmospaces/usd/scenes/objects/thor` to
+  `/home/horde/.molmospaces/usd/objects/thor/20260128`. The exported iTHOR
+  scene USDs reference `scenes/objects/thor/...`, while the downloaded object
+  assets are materialized under `usd/objects/thor/20260128/...`.
+- Added an Arena-side OpenPI websocket client wrapper that disables websocket
+  ping keepalive. The first JAX inference can exceed the default 20s ping
+  timeout; `PiRemotePolicy` still owns the application-level inference timeout.
+- Reran idx `14` with the prompt fix, `pi_chunk_size=15`, and
+  `pi_grasping_threshold=0.01`:
+  `/home/horde/molmo-proj/diagnostics/idx14_policy_io_diff_promptfix_thresh001_rerun7/report.html`.
+  The rollout completed `1500` steps and still failed (`0/1` for this rerun).
+- The rerun report now shows prompt exact match and reset arm qpos exact match.
+  The gripper no-close symptom from the old `0.5` threshold is gone: with the
+  `0.01` threshold, decoded close commands are sent (`47/60` traced calls close;
+  first close at call `0`, raw gripper score `0.01085`).
+- Ran the first runtime lighting ablation with
+  `MOLMO_ARENA_SCENE_LIGHT_SCALE=0.79`:
+  `/home/horde/molmo-proj/diagnostics/idx14_policy_io_diff_promptfix_thresh001_light079/report.html`.
+  It also completed `1500` steps and failed. The log confirms `2` scene light
+  intensity attributes were scaled.
+- The `0.79` lighting ablation did not materially change the reset image gap:
+  unscaled exterior/wrist mean abs was `36.98`/`55.34`; scaled was
+  `36.98`/`55.31`. This supports the earlier finding that simple scalar light
+  dimming is not the complete idx `14` mismatch.
+
+### Current finding
+
+- The old missing-gripper-motion symptom was threshold-induced in the first
+  report. With the intended `0.01` threshold, Arena does send close commands,
+  yet idx `14` still fails. The remaining failure is now downstream of prompt
+  parity, reset arm qpos parity, and basic close-command emission.
+- The next likely causes to isolate are action/approach trajectory divergence,
+  wrist/camera policy-input mismatch, gripper contact/object interaction, and
+  policy-output stochasticity. Simple scalar light dimming did not recover the
+  visual gap or the task.
+- The old MuJoCo HDF5 still lacks raw OpenPI chunks, so the current report can
+  compare Arena raw chunks/actions against saved MuJoCo decoded/applied action
+  fields, but not perform a strict raw model-output diff.
+
+### Next planned work
+
+- Run a forced-close or known-close replay smoke in Arena to separately verify
+  that the gripper actuator/contact path closes on the bowl when commanded.
+- Add or run time-series diagnostics for TCP pose, finger-to-object distance,
+  bowl pose/lift, and commanded/actual gripper joints around the first close
+  calls in the new idx `14` traces.
+- If a strict raw policy-output comparison is needed, rerun MuJoCo with matching
+  OpenPI trace hooks; the old successful HDF5 is not enough for raw-chunk parity.
+- Continue camera/wrist parity work, but do not expect scalar scene-light
+  dimming alone to close the gap.
+
 ## 2026-05-07
 
 ### Completed
@@ -600,9 +710,9 @@ work, failed attempts, decisions, and open risks.
 - The object root Z reported by MuJoCo and Arena differs for episode 8, but the
   visual bowl/cabinet support relationship looks correct. Do not add a blind
   object Z offset without visual validation.
-- The local OpenPI fork required disabling websocket ping keepalive to avoid
-  first-inference timeout with the current server/client combination. This is a
-  local runtime patch, not intended as a MolmoSpaces repo change.
+- The Arena remote OpenPI client now disables websocket ping keepalive to avoid
+  first-inference timeout with the current server/client combination. Keep the
+  application-level inference timeout in `PiRemotePolicy` as the safety bound.
 - The Arena DROID robot model uses a flattened USD with Robotiq frames/joints
   that do not line up exactly with MolmoSpaces/MuJoCo `franka_droid`. The current
   fix path is to keep adapting through MolmoSpaces' Arena wrapper rather than

@@ -588,6 +588,107 @@ def _replicate_scene_to_all_envs(stage, scene_usd_path: str, n_envs: int) -> int
     return n_added
 
 
+def _env_float(name: str, default: float | None = None) -> float | None:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        log.warning("Ignoring invalid %s=%r; expected float.", name, raw)
+        return default
+
+
+def _env_flag(name: str) -> bool:
+    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _patch_ithor_scene_lighting_runtime(n_envs: int = 1) -> None:
+    """Optional runtime light override for MuJoCo-vs-Arena visual ablations.
+
+    The converted iTHOR USDs contain generated `UsdLux` lights.  Instead of
+    editing installed USD assets in place, expose small environment controls so
+    parity runs can scale or disable scene lights per process:
+
+    - `MOLMO_ARENA_SCENE_LIGHT_SCALE`
+    - `MOLMO_ARENA_SCENE_DOME_LIGHT_SCALE`
+    - `MOLMO_ARENA_SCENE_DISTANT_LIGHT_SCALE`
+    - `MOLMO_ARENA_SCENE_DISABLE_DOME_LIGHT`
+    - `MOLMO_ARENA_SCENE_DISABLE_DISTANT_LIGHT`
+    """
+    global_scale = _env_float("MOLMO_ARENA_SCENE_LIGHT_SCALE", None)
+    dome_scale = _env_float("MOLMO_ARENA_SCENE_DOME_LIGHT_SCALE", 1.0)
+    distant_scale = _env_float("MOLMO_ARENA_SCENE_DISTANT_LIGHT_SCALE", 1.0)
+    disable_dome = _env_flag("MOLMO_ARENA_SCENE_DISABLE_DOME_LIGHT")
+    disable_distant = _env_flag("MOLMO_ARENA_SCENE_DISABLE_DISTANT_LIGHT")
+    exposure_offset = _env_float("MOLMO_ARENA_SCENE_LIGHT_EXPOSURE_OFFSET", None)
+    if (
+        global_scale is None
+        and dome_scale == 1.0
+        and distant_scale == 1.0
+        and not disable_dome
+        and not disable_distant
+        and exposure_offset is None
+    ):
+        return
+
+    try:
+        import omni.usd
+        from pxr import Usd
+    except ImportError:
+        log.warning("omni.usd / pxr not available; skipping iTHOR scene lighting patch.")
+        return
+
+    stage = omni.usd.get_context().get_stage()
+    if stage is None:
+        log.warning("No USD stage; skipping iTHOR scene lighting patch.")
+        return
+
+    n_scaled = 0
+    n_exposure = 0
+    for env_idx in range(n_envs):
+        scene_root = f"/World/envs/env_{env_idx}/molmospaces_scene"
+        scene_prim = stage.GetPrimAtPath(scene_root)
+        if not scene_prim.IsValid():
+            continue
+        for prim in Usd.PrimRange(scene_prim):
+            type_name = prim.GetTypeName()
+            if not type_name.endswith("Light"):
+                continue
+            intensity_attr = prim.GetAttribute("inputs:intensity")
+            if intensity_attr and intensity_attr.IsValid():
+                base = intensity_attr.Get()
+                try:
+                    value = float(base)
+                except (TypeError, ValueError):
+                    value = 0.0
+                scale = 1.0 if global_scale is None else float(global_scale)
+                if type_name == "DomeLight":
+                    scale *= 0.0 if disable_dome else float(dome_scale or 1.0)
+                elif type_name == "DistantLight":
+                    scale *= 0.0 if disable_distant else float(distant_scale or 1.0)
+                intensity_attr.Set(float(value * scale))
+                n_scaled += 1
+            if exposure_offset is not None:
+                exposure_attr = prim.GetAttribute("inputs:exposure")
+                if exposure_attr and exposure_attr.IsValid():
+                    base = exposure_attr.Get()
+                    try:
+                        exposure_attr.Set(float(base) + float(exposure_offset))
+                        n_exposure += 1
+                    except (TypeError, ValueError):
+                        pass
+
+    if n_scaled or n_exposure:
+        print(
+            "[molmospaces_arena] Scene lighting patched: "
+            f"{n_scaled} light intensity attr(s) scaled"
+            + (f", {n_exposure} exposure attr(s) offset" if n_exposure else "")
+            + ".",
+            flush=True,
+        )
+
+
 def _patch_ithor_scene_physics_runtime(
     n_envs: int = 1,
     deactivate_object_types: list[str] | None = None,
@@ -958,4 +1059,5 @@ def build_arena_env_from_episode_spec(
         deactivate_object_types=deactivate_object_types,
         dynamic_scene_object_names=dynamic_scene_object_names,
     )
+    _patch_ithor_scene_lighting_runtime(n_envs=num_envs)
     return env, env_builder

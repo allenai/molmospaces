@@ -38,11 +38,44 @@ except ImportError:
     websocket_client_policy = None
 
 
+if _HAS_OPENPI_CLIENT:
+
+    class _LongInferenceWebsocketClientPolicy(websocket_client_policy.WebsocketClientPolicy):
+        """OpenPI websocket client variant that tolerates slow first inference.
+
+        The default websockets keepalive closes the connection if the OpenPI
+        server spends longer than 20s compiling or running an inference. This
+        wrapper leaves inference timeouts to PiRemotePolicy instead.
+        """
+
+        def _wait_for_server(self):
+            from openpi_client import msgpack_numpy
+            import websockets.sync.client
+
+            logging.info("Waiting for server at %s...", self._uri)
+            while True:
+                try:
+                    headers = {"Authorization": f"Api-Key {self._api_key}"} if self._api_key else None
+                    conn = websockets.sync.client.connect(
+                        self._uri,
+                        compression=None,
+                        max_size=None,
+                        additional_headers=headers,
+                        ping_interval=None,
+                        ping_timeout=None,
+                    )
+                    metadata = msgpack_numpy.unpackb(conn.recv())
+                    return conn, metadata
+                except ConnectionRefusedError:
+                    logging.info("Still waiting for server...")
+                    time.sleep(5)
+else:
+    _LongInferenceWebsocketClientPolicy = None
+
+
 def _normalize_task_prompt(task_description: str | None) -> str:
-    """Match MolmoSpaces PI_Policy prompt formatting for remote OpenPI calls."""
+    """Match MolmoSpaces PI_Policy prompt text without inventing punctuation."""
     prompt = (task_description or "pick up the object.").strip().lower()
-    if prompt and prompt[-1] not in ".!?":
-        prompt += "."
     return prompt
 
 
@@ -93,7 +126,7 @@ class PiRemotePolicy:
                 "Start the OpenPI server first in another terminal, then run this script."
             ) from e
         sock.close()
-        self._client = websocket_client_policy.WebsocketClientPolicy(host=host, port=port)
+        self._client = _LongInferenceWebsocketClientPolicy(host=host, port=port)
         self._task_description = _normalize_task_prompt(task_description)
         self._grasping_threshold = grasping_threshold
         self._chunk_size = chunk_size

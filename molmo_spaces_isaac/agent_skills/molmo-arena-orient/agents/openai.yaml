@@ -1,0 +1,4 @@
+interface:
+  display_name: "Molmo Arena Orient"
+  short_description: "Resume Arena migration context"
+  default_prompt: "Use $molmo-arena-orient to summarize the current MolmoSpaces to Isaac Lab Arena migration state and next step."

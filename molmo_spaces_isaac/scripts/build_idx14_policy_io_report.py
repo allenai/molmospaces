@@ -565,6 +565,16 @@ def _write_report(
     arena_first = (arena_result.get("results") or [{}])[0]
     prompt_exact = metrics["prompt_exact_match"]
     prompt_text = "MATCH" if prompt_exact else "MISMATCH"
+    if prompt_exact:
+        prompt_finding = (
+            "Prompt strings exactly match at the traced policy boundary: "
+            f"MuJoCo sends {mujoco['prompt_policy']!r}, Arena sends {arena['prompt_policy']!r}."
+        )
+    else:
+        prompt_finding = (
+            "Prompt strings do not exactly match at the traced policy boundary: "
+            f"MuJoCo sends {mujoco['prompt_policy']!r}, Arena sends {arena['prompt_policy']!r}."
+        )
     success_line = (
         f"MuJoCo idx14 slice: {summary['mujoco_successes']}/{summary['mujoco_total']} "
         f"({summary['mujoco_success_rate']:.0%}); "
@@ -580,8 +590,7 @@ def _write_report(
         "The camera inputs are visually comparable, but not pixel-identical; exterior mean abs "
         f"{metrics['image_metrics']['exterior']['mean_abs']:.2f}, wrist mean abs "
         f"{metrics['image_metrics']['wrist']['mean_abs']:.2f}.",
-        "Prompt strings do not exactly match at the traced policy boundary: "
-        f"MuJoCo sends {mujoco['prompt_policy']!r}, Arena sends {arena['prompt_policy']!r}.",
+        prompt_finding,
         "Arena action outputs diverge from the saved MuJoCo successful rollout immediately; "
         "the report plots this as decoded joint targets rather than raw MuJoCo OpenPI chunks "
         "because the old MuJoCo H5 does not contain raw model chunks.",
@@ -610,7 +619,7 @@ def _write_report(
         f"<p><b>Outcome context:</b> {html.escape(success_line)} This report compares a successful MuJoCo "
         "rollout (<code>traj_1</code>, success at row 88) to the traced Arena rollout "
         f"({arena_first.get('step_count', 'unknown')} steps, success={arena_first.get('success', False)}).</p>",
-        "<div class='warn'><b>Current blocker signal:</b> "
+        "<div class='warn'><b>Current signal:</b> "
         f"prompt exact match is <b>{prompt_text}</b>; qpos parity is good; camera/action traces still need inspection.</div>",
         "<h2>Key Findings</h2>",
         "<ul>",
@@ -811,8 +820,12 @@ def main() -> int:
     parser.add_argument("--summary_json", type=Path, default=DEFAULT_SUMMARY)
     parser.add_argument("--out_dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--pi_chunk_size", type=int, default=8)
-    parser.add_argument("--pi_grasping_threshold", type=float, default=0.5)
-    parser.add_argument("--pi_action_repeat", type=int, default=3)
+    parser.add_argument(
+        "--pi_grasping_threshold",
+        type=float,
+        default=float(os.environ.get("MOLMO_PI_GRASPING_THRESHOLD", "0.01")),
+    )
+    parser.add_argument("--pi_action_repeat", type=int, default=25)
     args = parser.parse_args()
 
     args.out_dir = args.out_dir.expanduser().resolve()

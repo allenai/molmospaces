@@ -1,0 +1,4 @@
+interface:
+  display_name: "Molmo Arena Visual State Parity"
+  short_description: "Compare MuJoCo and Arena views"
+  default_prompt: "Use $molmo-arena-visual-state-parity to compare MuJoCo and Arena visual/state parity for this episode."

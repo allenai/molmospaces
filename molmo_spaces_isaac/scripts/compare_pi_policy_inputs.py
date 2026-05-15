@@ -29,8 +29,6 @@ def _decode_h5_json_row(row) -> dict[str, Any]:
 
 def _normalize_prompt(prompt: str | None) -> str:
     out = (prompt or "pick up the object.").strip().lower()
-    if out and out[-1] not in ".!?":
-        out += "."
     return out
 
 

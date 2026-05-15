@@ -95,12 +95,23 @@ Remaining subgoals:
 - Verify bowl/cabinet/support relationship, robot pose, gripper pose, and
   camera view for a small representative set.
 - Compare robot body poses and camera extrinsics where available.
+- Treat lighting as a policy-input parity variable: inventory MuJoCo lights and
+  USD `UsdLux` prims, then compare resized policy image luminance statistics
+  before relying on qualitative brightness judgments.
+- Use the idx `14` lighting comparison report and runtime light scale hook for
+  ablations instead of editing downloaded USD scene assets in place. First
+  tested image-space scale target is approximately `0.79`, but brightness alone
+  does not explain the full image mismatch. The runtime
+  `MOLMO_ARENA_SCENE_LIGHT_SCALE=0.79` rerun also failed and left reset exterior
+  and wrist mean-absolute image gaps essentially unchanged.
 - Resolve or explicitly document the wrist-camera parent-frame mismatch between
   the MuJoCo `gripper/wrist_camera` MJCF frame and Arena's flattened DROID USD
   `Robotiq_2F_85/base_link` frame.
-- Compare full OpenPI inputs for the same policy step, including prompt text,
-  resized shoulder image, resized wrist image, arm qpos, gripper qpos, and first
-  action chunk.
+- Keep comparing full OpenPI inputs for the same policy step, including resized
+  shoulder image, resized wrist image, arm qpos, gripper qpos, and first action
+  chunk. Prompt text and reset arm qpos now match exactly for idx `14`; the old
+  MuJoCo HDF5 still lacks raw OpenPI chunks, so strict raw-output comparison
+  requires a new MuJoCo trace.
 - Keep scene-embedded pickup rigid bodies dynamic by matching every rigid body
   under the pickup scene-object path, not only the root prim name.
 - Keep patched pickup mass/inertia handling for scene USDs that import invalid
@@ -148,6 +159,15 @@ server reset with seed 0 fails in both MuJoCo and Arena for episode 8; seeds
 policy-parity target either a known successful HDF5/open-loop action sequence or
 a deterministic seed/action sample that first succeeds in MuJoCo.
 
+The idx `14` policy I/O rerun changed the blocker shape. Prompt text and reset
+arm qpos now match exactly, and the intended `0.01` threshold sends close
+commands in Arena (`47/60` traced calls in the unscaled rerun, `57/60` with the
+`0.79` light scale). Both reruns still fail after `1500` steps, so the current
+idx `14` gap is downstream of prompt parity, reset qpos parity, and basic
+close-command emission. The old MuJoCo HDF5 stores decoded/applied action
+fields but not raw OpenPI chunks, so a strict raw model-output diff needs a new
+MuJoCo trace with matching hooks.
+
 Remaining subgoals:
 
 - Keep the reproducible OpenPI server/client setup documented.
@@ -160,6 +180,11 @@ Remaining subgoals:
   ("Pick up the smooth gray bowl"), where MuJoCo is `7/10` and Arena is `0/10`.
 - Use the idx `14` policy I/O diff plan as the next debugging runbook:
   `/home/horde/molmo-proj/molmospaces/molmo_spaces_isaac/docs/idx14_policy_io_diff_debug_plan.md`.
+- For idx `14`, separate "Arena received close commands" from "Arena can close
+  and lift this bowl on this approach path" by running a forced-close or
+  known-close replay smoke test with finger/object/contact diagnostics.
+- Keep Arena OpenPI prompt strings exact to the benchmark/MuJoCo prompt after
+  strip/lower; do not auto-add terminal punctuation.
 - Keep episode 8 as the first MuJoCo-successful policy-parity target and smoke
   regression.
 - Run a small representative Arena batch with online OpenPI and the current
@@ -174,11 +199,9 @@ Remaining subgoals:
   stochastic success-rate measurement.
 - Compare observation image shapes, camera names, joint positions, and gripper
   action scaling against MolmoSpaces pi0 eval.
-- Keep Arena prompt formatting matched to MolmoSpaces `PI_Policy`, including
-  terminal punctuation from the default prompt templates.
-- Decide, with evidence from the representative batch, whether the Arena
-  gripper threshold should remain a documented adapter calibration or whether
-  camera/robot visual parity can bring the threshold back to MuJoCo's `0.01`.
+- Continue gripper/contact diagnostics under the MuJoCo-aligned `0.01`
+  threshold. The old no-close symptom at `0.5` is resolved, but idx `14` still
+  fails after close commands are emitted.
 - Add/keep diagnostics for arm command tracking, all Robotiq gripper joints, and
   finger-to-object distances.
 - Keep `MOLMO_ARENA_DROID_MOUNT_X/Y/Z` as diagnostic overrides for root-frame
