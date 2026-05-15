@@ -602,8 +602,8 @@ class BaseMujocoTaskSampler:
                 self.config.robot_config,
                 spec,
                 prefix="robot_0/",
-                pos=[0, -0.15],  # TOOD(abhay): is this ok?
-                quat=[1, 0, 0, 1],
+                pos=[0.0, 0.0],
+                quat=[1.0, 0.0, 0.0, 0.0],
                 randomize_textures=self.config.task_sampler_config.randomize_robot_textures,
             )
 

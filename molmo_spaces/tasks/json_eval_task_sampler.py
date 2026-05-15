@@ -638,6 +638,9 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             if "head" in robot.robot_view.move_group_ids():
                 head_mg = robot.robot_view.get_move_group("head")
                 head_mg.ctrl = head_mg.noop_ctrl
+            # recompute control
+            robot.set_stationary()
+            robot.compute_control()
         log.info("Scene setup from episode spec completed.")
 
     def _randomize_colors(self, env: CPUMujocoEnv) -> None:
@@ -844,6 +847,12 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         robot_view = env.current_robot.robot_view
         robot_pose_m = pos_quat_to_pose_mat(robot_base_pose[0:3], robot_base_pose[3:7])
         robot_view.base.pose = robot_pose_m
+
+        # Reset controllers
+        for controller in env.current_robot.controllers.values():
+            controller.reset()
+        env.current_robot.set_stationary()
+        env.current_robot.compute_control()
 
         # Forward to update positions
         mujoco.mj_forward(env.current_model, env.current_data)

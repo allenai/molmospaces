@@ -200,7 +200,6 @@ class MobileFrankaRobot(Robot):
             type=mujoco.mjtJoint.mjJNT_HINGE,
             name=f"{prefix}base_theta",
             axis=[0, 0, 1],
-            range=[-theta_act_params["ctrlrange"], theta_act_params["ctrlrange"]],
         )
         add_slider_act(
             "base_theta_act",

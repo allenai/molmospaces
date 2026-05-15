@@ -15,7 +15,7 @@ class MobileFrankaDroidBaseGroup(HoloJointsRobotBaseGroup):
         holo_base_site_id = model.site(f"{namespace}base_site").id
         joints = [model.joint(f"{namespace}base_{axis}").id for axis in ["x", "y", "theta"]]
         act = [model.actuator(f"{namespace}base_{axis}_act").id for axis in ["x", "y", "theta"]]
-        root_body_id = model.body(f"{namespace}base")
+        root_body_id = model.body(f"{namespace}base").id
         super().__init__(mj_data, world_site_id, holo_base_site_id, joints, act, root_body_id)
 
 
