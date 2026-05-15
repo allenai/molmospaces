@@ -42,6 +42,38 @@ class PackingPlannerPolicy(PickAndPlacePlannerPolicy):
     def _is_last_object(self) -> bool:
         return self._current_object_index >= len(self._packing_object_names) - 1
 
+    def _get_placement_poses(
+        self,
+        grasp_pose_world: np.ndarray,
+        pickup_obj: MlSpacesObject,
+        place_receptacle: MlSpacesObject,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        # Center the place pose at the receptacle's AABB center (geometric middle
+        # of the box) rather than the body origin, which for many box assets sits
+        # at a corner or other non-central reference and causes the object to
+        # land near the box wall instead of the middle.
+        preplace_pose, place_pose, postplace_pose = super()._get_placement_poses(
+            grasp_pose_world=grasp_pose_world,
+            pickup_obj=pickup_obj,
+            place_receptacle=place_receptacle,
+        )
+        place_receptacle_aabb_center, _ = body_aabb(
+            self.task.env.current_data.model,
+            self.task.env.current_data,
+            place_receptacle.object_id,
+        )
+        delta_xy = place_receptacle_aabb_center[:2] - place_receptacle.position[:2]
+        preplace_pose[:2, 3] += delta_xy
+        place_pose[:2, 3] += delta_xy
+        postplace_pose[:2, 3] += delta_xy
+
+        # Raise drop height to clear opened box flaps and reduce flap collisions.
+        packing_place_z_bump = 0.20
+        preplace_pose[2, 3] += packing_place_z_bump
+        place_pose[2, 3] += packing_place_z_bump
+        postplace_pose[2, 3] += packing_place_z_bump
+        return preplace_pose, place_pose, postplace_pose
+
     def _compute_trajectory(self) -> list[ActionPrimitive]:
         trajectory = super()._compute_trajectory()
         if not self._is_last_object():

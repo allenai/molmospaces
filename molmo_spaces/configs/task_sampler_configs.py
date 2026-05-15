@@ -259,7 +259,7 @@ class PickAndPlaceColorTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
 
 class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
     base_pose_sampling_radius_range: tuple[float, float] = (0.0, 0.7)
-    min_object_to_receptacle_dist: float = 0.20  # 5cm further than default (0.15)
+    min_object_to_receptacle_dist: float = 0.30  # 15cm further than default (0.15)
     robot_object_z_offset: float = -0.58
     robot_object_z_offset_random_min: float = -0.1
     robot_object_z_offset_random_max: float = 0.1

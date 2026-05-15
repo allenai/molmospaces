@@ -226,4 +226,10 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
         for group_name, joint_pos in self._init_robot_qpos.items():
             robot_view.get_move_group(group_name).joint_pos = joint_pos
 
+        # Banish clutter penetrating the robot at its home pose, then re-sync the
+        # packing target list (the helper rebinds _placed_clutter_object_names, and
+        # banished objects must not count toward the packing success condition).
+        self._resolve_robot_clutter_penetrations(env)
+        self.config.task_config.packing_object_names = self._placed_clutter_object_names
+
         return PackingTask(env, self.config)

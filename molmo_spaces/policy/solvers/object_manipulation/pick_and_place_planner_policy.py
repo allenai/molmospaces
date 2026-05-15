@@ -347,6 +347,9 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
                 }
                 for name, pose in zip(pose_names, poses):
                     self._show_poses(np.array([pose]), style="tcp", color=pose_colors[name])
+                # Place-receptacle local frame: shows where the body origin sits
+                # relative to its AABB (Stage-1 base XY anchors on this origin).
+                self._show_axes(place_receptacle.pose, length=0.15)
                 self.task.viewer.sync()
                 color_legend = ", ".join(
                     f"{name}={'FAIL' if name in failed else 'ok'}" for name in pose_names
@@ -355,6 +358,7 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
                     f"IK failed poses visualized (showing for 5s). "
                     f"Colors: Green=pregrasp, Red=grasp, Blue=lift, "
                     f"Yellow=preplace, Magenta=place, Cyan=postplace. "
+                    f"Place-receptacle axes: X=red, Y=green, Z=blue. "
                     f"Status: {color_legend}."
                 )
                 time.sleep(5)
@@ -373,6 +377,7 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
 
         if self.task.viewer is not None:
             self._show_poses(np.stack(list(target_poses.values()), axis=0), style="tcp")
+            self._show_axes(place_receptacle.pose, length=0.15)
             self.task.viewer.sync()
 
         return target_poses

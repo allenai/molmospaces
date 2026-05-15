@@ -1048,6 +1048,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         for group_name, joint_pos in self._init_robot_qpos.items():
             robot_view.get_move_group(group_name).joint_pos = joint_pos
 
+        # Clutter was placed while the arm was at the model's default qpos0; the home
+        # pose just applied may now intersect clutter in the arm's swept volume. Banish
+        # any clutter penetrating the robot so the episode doesn't start with contact
+        # penetration that the constraint solver will violently resolve.
+        self._resolve_robot_clutter_penetrations(env)
+
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("generate_context_expressions")
 
@@ -1740,6 +1746,88 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         survived_names.append(pickup_obj_name)
         self._placed_clutter_object_names = survived_names
         log.info(f"[SCENE CLUTTERING] Packing order: {self._placed_clutter_object_names}")
+
+    def _resolve_robot_clutter_penetrations(self, env: CPUMujocoEnv) -> None:
+        """Banish clutter objects penetrating the robot after final qpos is applied."""
+        if not self._placed_clutter_object_names:
+            return
+
+        pickup_obj_name = self.config.task_config.pickup_obj_name
+        om = env.object_managers[env.current_batch_index]
+
+        clutter_body_ids: set[int] = set()
+        for name in self._placed_clutter_object_names:
+            if name == pickup_obj_name:
+                continue
+            try:
+                clutter_body_ids.add(om.get_object_by_name(name).object_id)
+            except KeyError:
+                continue
+
+        pickup_body_id: int | None = None
+        if pickup_obj_name:
+            try:
+                pickup_body_id = om.get_object_by_name(pickup_obj_name).object_id
+            except KeyError:
+                pickup_body_id = None
+
+        if not clutter_body_ids and pickup_body_id is None:
+            return
+
+        robot_root_id = env.current_robot.robot_view.base.root_body_id
+        model = env.current_model
+        data = env.current_data
+
+        mujoco.mj_forward(model, data)
+
+        penetrating_body_ids: set[int] = set()
+        pickup_penetrating = False
+        for i_con in range(data.ncon):
+            contact = data.contact[i_con]
+            root1 = model.body_rootid[model.geom_bodyid[contact.geom1]]
+            root2 = model.body_rootid[model.geom_bodyid[contact.geom2]]
+            in_robot_1 = root1 == robot_root_id
+            in_robot_2 = root2 == robot_root_id
+            if in_robot_1 == in_robot_2:
+                continue
+            other_root = root2 if in_robot_1 else root1
+            if other_root in clutter_body_ids:
+                penetrating_body_ids.add(other_root)
+            elif pickup_body_id is not None and other_root == pickup_body_id:
+                pickup_penetrating = True
+
+        if pickup_penetrating:
+            log.warning(
+                f"[ROBOT-CLUTTER CLEANUP] Robot home pose penetrates pickup object "
+                f"'{pickup_obj_name}' - episode may start in unphysical state"
+            )
+
+        if not penetrating_body_ids:
+            return
+
+        away_pos = np.array([10.0, 10.0, 10.0])
+        banished_names: list[str] = []
+        for body_id in penetrating_body_ids:
+            body_jntadr = model.body_jntadr[body_id]
+            body_jntnum = model.body_jntnum[body_id]
+            if body_jntnum > 0:
+                jnt_id = body_jntadr
+                if model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_FREE:
+                    qposadr = model.jnt_qposadr[jnt_id]
+                    data.qpos[qposadr : qposadr + 3] = away_pos
+                    banished_names.append(model.body(body_id).name)
+
+        mujoco.mj_forward(model, data)
+
+        if banished_names:
+            banished_set = set(banished_names)
+            self._placed_clutter_object_names = [
+                name for name in self._placed_clutter_object_names if name not in banished_set
+            ]
+            log.info(
+                f"[ROBOT-CLUTTER CLEANUP] Banished {len(banished_names)} clutter objects "
+                f"penetrating robot at home pose: {banished_names}"
+            )
 
     def _get_pickup_asset_id(self, env: CPUMujocoEnv, pickup_obj_name: str) -> str | None:
         """Get the asset_id for a pickup object from scene metadata."""

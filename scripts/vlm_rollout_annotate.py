@@ -23,6 +23,7 @@ import argparse
 import json
 import logging
 import random
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +36,10 @@ from PIL import Image
 
 log = logging.getLogger("vlm_rollout_annotate")
 
+# Reuse the density helpers from the benchmark pipeline so the definition stays
+# in lock-step with create_json_benchmark.py / analyze_outcomes_by_density.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "benchmarks"))
+
 # Kept in sync with RESPONSE_SCHEMA["properties"]["outcome"]["enum"] in vlm_rollout_eval.py.
 CLASSES: list[str] = [
     "no_grasp_attempt",
@@ -46,13 +51,15 @@ CLASSES: list[str] = [
 
 
 class VideoJob:
-    __slots__ = ("house", "episode", "video_path", "target_image_path")
+    __slots__ = ("house", "episode", "video_path", "target_image_path", "num_nearby_graspable")
 
     def __init__(self, house: str, episode: str, video_path: Path, target_image_path: Path):
         self.house = house
         self.episode = episode
         self.video_path = video_path
         self.target_image_path = target_image_path
+        # Populated lazily by compute_density_for_jobs(); None if unavailable.
+        self.num_nearby_graspable: int | None = None
 
 
 def discover_jobs(eval_dir: Path) -> list[VideoJob]:
@@ -70,6 +77,173 @@ def discover_jobs(eval_dir: Path) -> list[VideoJob]:
                 target_image_path=target_image_path,
             ))
     return jobs
+
+def locate_h5_for_video(video_path: Path) -> Path | None:
+    """Map a rollout exo video to its trajectories H5 in the same directory.
+
+    Videos are saved as ``episode_NNNNNNNN_<sensor>{suffix}.mp4`` with the
+    matching H5 at ``trajectories{suffix}.h5`` (suffix is e.g.
+    ``_batch_K_of_M`` or empty). Returns None if no matching H5 exists.
+    """
+    m = re.search(r"_(batch_\d+_of_\d+)\.mp4$", video_path.name)
+    if m:
+        candidate = video_path.parent / f"trajectories_{m.group(1)}.h5"
+        return candidate if candidate.exists() else None
+    candidate = video_path.parent / "trajectories.h5"
+    return candidate if candidate.exists() else None
+
+
+def episode_to_traj_key(episode_str: str) -> str:
+    """'episode_00000000' -> 'traj_0'."""
+    digits = episode_str.replace("episode_", "")
+    return f"traj_{int(digits)}"
+
+
+def ensure_target_image(job: "VideoJob", frame_index: int = 10) -> bool:
+    """Lazily render ``job.target_image_path`` if it's missing.
+
+    Reuses ``eval_target_preview._process_one`` so the rendering (boxed target,
+    crop, task description text) stays identical to the offline tool. Returns
+    True if the PNG exists after this call, False if generation failed.
+    """
+    if job.target_image_path.exists():
+        return True
+
+    h5_path = locate_h5_for_video(job.video_path)
+    if h5_path is None:
+        log.warning("No trajectories H5 next to %s; cannot generate target preview.",
+                    job.video_path)
+        return False
+
+    from eval_target_preview import _process_one  # local import keeps cli help fast
+
+    traj_key = episode_to_traj_key(job.episode)
+    status, _mp4, out_path, msg = _process_one(
+        h5_path, traj_key, job.video_path, job.target_image_path,
+        frame_index=frame_index, resume=True,
+    )
+    if status == "ok":
+        log.info("Generated target preview: %s", out_path)
+        return True
+    if status == "skip":  # already existed by the time _process_one ran
+        return True
+    log.warning("Target preview generation failed for %s: %s", job.video_path, msg)
+    return False
+
+
+def compute_density_for_jobs(jobs: list["VideoJob"], radius_m: float) -> None:
+    """Mutate each job to set ``num_nearby_graspable`` from its trajectory H5.
+
+    Reuses the same definition as create_json_benchmark.compute_num_nearby_graspable
+    so buckets here line up with the benchmark/analysis tooling.
+    """
+    import h5py
+    from create_json_benchmark import (
+        compute_num_nearby_graspable,
+        extract_frozen_config,
+        parse_obs_scene,
+    )
+
+    h5_cache: dict[Path, "h5py.File"] = {}
+    n_ok = 0
+    n_no_h5 = 0
+    n_no_traj = 0
+    n_fail = 0
+    try:
+        for job in jobs:
+            h5_path = locate_h5_for_video(job.video_path)
+            if h5_path is None:
+                n_no_h5 += 1
+                continue
+            if h5_path not in h5_cache:
+                try:
+                    h5_cache[h5_path] = h5py.File(h5_path, "r")
+                except OSError as e:
+                    log.warning("Failed to open %s: %s", h5_path, e)
+                    n_no_h5 += 1
+                    continue
+            f5 = h5_cache[h5_path]
+            tk = episode_to_traj_key(job.episode)
+            if tk not in f5:
+                n_no_traj += 1
+                continue
+            try:
+                obs_scene = parse_obs_scene(f5[tk]["obs_scene"][()])
+                fc = extract_frozen_config(obs_scene)
+                job.num_nearby_graspable = compute_num_nearby_graspable(fc, radius_m)
+                if job.num_nearby_graspable is not None:
+                    n_ok += 1
+                else:
+                    n_fail += 1
+            except Exception as e:  # noqa: BLE001
+                log.debug("density compute failed for %s/%s: %s", h5_path, tk, e)
+                n_fail += 1
+    finally:
+        for f5 in h5_cache.values():
+            try:
+                f5.close()
+            except Exception:
+                pass
+    log.info(
+        "Density: %d ok, %d no-h5, %d no-traj, %d compute-fail (radius=%.3fm).",
+        n_ok, n_no_h5, n_no_traj, n_fail, radius_m,
+    )
+
+
+def balance_jobs_by_density(
+    jobs: list["VideoJob"],
+    limit: int | None,
+    seed: int,
+    max_bucket: int = 10,
+) -> list["VideoJob"]:
+    """Round-robin sample jobs across distractor-count buckets 0,1,...,max_bucket+.
+
+    - Buckets 0..max_bucket-1 hold exact counts; the final bucket holds counts
+      >= max_bucket (i.e. "10+" when max_bucket=10).
+    - Within a bucket, jobs are shuffled with ``seed``.
+    - Jobs with unknown density are appended at the end after the balanced
+      portion is exhausted, so they're still annotatable as fallback.
+    """
+    rng = random.Random(seed)
+    buckets: list[list["VideoJob"]] = [[] for _ in range(max_bucket + 1)]
+    unknown: list["VideoJob"] = []
+    for j in jobs:
+        n = j.num_nearby_graspable
+        if n is None:
+            unknown.append(j)
+            continue
+        idx = min(int(n), max_bucket)
+        buckets[idx].append(j)
+    for b in buckets:
+        rng.shuffle(b)
+    rng.shuffle(unknown)
+
+    balanced: list["VideoJob"] = []
+    bucket_pos = [0] * len(buckets)
+    while True:
+        progressed = False
+        for i, b in enumerate(buckets):
+            if bucket_pos[i] < len(b):
+                balanced.append(b[bucket_pos[i]])
+                bucket_pos[i] += 1
+                progressed = True
+                if limit is not None and len(balanced) >= limit:
+                    break
+        if limit is not None and len(balanced) >= limit:
+            break
+        if not progressed:
+            break
+
+    sizes = [len(b) for b in buckets]
+    label = [f"{i}" for i in range(max_bucket)] + [f"{max_bucket}+"]
+    log.info("Bucket sizes (n_nearby_graspable): " +
+             ", ".join(f"{label[i]}={sizes[i]}" for i in range(len(buckets))) +
+             f"; unknown={len(unknown)}")
+
+    if limit is None or len(balanced) < limit:
+        balanced.extend(unknown if limit is None else unknown[: limit - len(balanced)])
+    return balanced
+
 
 # '1'..'N' map to the classes above, in the order defined by the VLM schema.
 KEY_TO_CLASS = {ord(str(i + 1)): c for i, c in enumerate(CLASSES)}
@@ -232,11 +406,21 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True,
                         help="JSONL file to append annotations to (created if absent).")
     parser.add_argument("--shuffle", action="store_true",
-                        help="Shuffle pending videos before presenting (useful for unbiased sampling).")
+                        help="Shuffle pending videos before presenting (useful for unbiased sampling). "
+                             "Ignored if --balance-by-density is set.")
     parser.add_argument("--seed", type=int, default=0,
-                        help="RNG seed for --shuffle (default: %(default)s).")
+                        help="RNG seed for --shuffle / --balance-by-density (default: %(default)s).")
     parser.add_argument("--limit", type=int, default=None,
                         help="Max videos to present this session (after resume filter).")
+    parser.add_argument("--balance-by-density", action="store_true",
+                        help="Sample evenly across num_nearby_graspable buckets "
+                             "(0,1,...,9,10+) instead of plain shuffle. Requires the trajectories "
+                             "H5 to live next to each video.")
+    parser.add_argument("--nearby-radius-m", type=float, default=0.3,
+                        help="Radius (3D Euclidean, meters) for the nearby-graspable count "
+                             "(default: %(default)s, matching analyze_outcomes_by_density.py).")
+    parser.add_argument("--max-bucket", type=int, default=10,
+                        help="Top bucket is '>=max_bucket' (default: %(default)s -> '10+').")
     parser.add_argument("--reannotate", action="store_true",
                         help="Present already-annotated videos too; a new annotation overrides the prior one.")
     parser.add_argument("--match-annotations", type=Path, default=None,
@@ -287,11 +471,18 @@ def main() -> int:
     else:
         pending = [j for j in jobs if (j.house, j.episode) not in existing]
 
-    if args.shuffle:
-        random.Random(args.seed).shuffle(pending)
-
-    if args.limit is not None:
-        pending = pending[: args.limit]
+    if args.balance_by_density:
+        log.info("Computing num_nearby_graspable for %d pending jobs...", len(pending))
+        compute_density_for_jobs(pending, args.nearby_radius_m)
+        pending = balance_jobs_by_density(
+            pending, args.limit, args.seed, max_bucket=args.max_bucket,
+        )
+        log.info("After density-balanced sampling: %d jobs to present.", len(pending))
+    else:
+        if args.shuffle:
+            random.Random(args.seed).shuffle(pending)
+        if args.limit is not None:
+            pending = pending[: args.limit]
 
     if not pending:
         log.info("Nothing to annotate. Done.")
@@ -315,6 +506,7 @@ def main() -> int:
             job = pending[idx]
             try:
                 frames, fps = load_video_frames(job.video_path)
+                ensure_target_image(job)
                 target_bgr = load_target_bgr(job.target_image_path)
             except Exception as e:  # noqa: BLE001
                 log.warning("Load failed for %s (%s); auto-skipping.", job.video_path, e)
@@ -323,6 +515,8 @@ def main() -> int:
 
             prior = existing.get((job.house, job.episode))
             status = f"[{idx + 1}/{len(pending)}] {job.house} {job.episode}"
+            if job.num_nearby_graspable is not None:
+                status += f"  n_nearby={job.num_nearby_graspable}"
             if prior is not None:
                 status += f"  (prior: {prior.get('annotation', '?')})"
 
@@ -347,6 +541,7 @@ def main() -> int:
                     "episode": job.episode,
                     "video_path": str(job.video_path),
                     "target_image_path": str(job.target_image_path),
+                    "num_nearby_graspable": job.num_nearby_graspable,
                     "annotation": cls,
                     "annotated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 }

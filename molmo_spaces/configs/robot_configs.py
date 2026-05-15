@@ -147,15 +147,13 @@ class FrankaRobotConfig(BaseRobotConfig):
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] | None = [0.5, 0.5, 0.58]
     init_qpos: dict[str, list[float]] = {
-        "arm": [0, -0.7853, 0, -2.35619, 0, 1.57079, 0.0],
+        "arm": [0, -1 / 5 * np.pi, 0, -4 / 5 * np.pi, 0, 3 / 5 * np.pi, 0.0],
         "gripper": [0.00296, 0.00296],
     }
     init_qpos_noise_range: dict[str, list[float]] | None = {
-        # selected to allow for more displacement in later joints and keep TCP displacement <=10cm
-        # joint_weights = [1, ..., 7] (allow more movement in later joints)
-        # J_p is 3x7 Jacobian of TCP position wrt arm joints
-        # dq = joint_weights * 0.1 / ||J_p @ joint_weights||
-        "arm": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175],
+        # Arm noise disabled (was [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175] rad,
+        # Jacobian-weighted to keep TCP displacement <=10cm).
+        "arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     }
     command_mode: dict[str, str | None] = {
         "arm": "joint_position",  # e.g., "joint_position", "joint_velocity", "ee_position", "ee_velocity"
@@ -229,11 +227,9 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
         "gripper": [0.00296, 0.00296],
     }
     init_qpos_noise_range: dict[str, list[float]] | None = {
-        # selected to allow for more displacement in later joints and keep TCP displacement <=10cm
-        # joint_weights = [1, ..., 7] (allow more movement in later joints)
-        # J_p is 3x7 Jacobian of TCP position wrt arm joints
-        # dq = joint_weights * 0.1 / ||J_p @ joint_weights||
-        "arm": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175],
+        # Arm noise disabled (was [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175] rad,
+        # Jacobian-weighted to keep TCP displacement <=10cm).
+        "arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     }
     command_mode: dict[str, str | None] = {
         "arm": "joint_position",  # e.g., "joint_position", "joint_velocity", "ee_position", "ee_velocity"
@@ -272,13 +268,11 @@ class RBY1Config(BaseRobotConfig):
         "base": np.array([0.0, 0.0, 0.0]),
         # "head": np.array([0.15, 0.1]),  # (pan, tilt) noise in radians (~8.5 deg, ~5.7 deg)
         "head": np.array([0.2, 0.2]),  # (pan, tilt) noise in radians (~11.4 deg, ~11.4 deg)
-        "left_arm": np.array(
-            [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175]
-        ),  # Graduated noise: more distal = more variation
+        # Arm noise disabled (was [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175] rad).
+        "left_arm": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         "left_gripper": np.array([0.01]),
-        "right_arm": np.array(
-            [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175]
-        ),  # Graduated noise: more distal = more variation
+        # Arm noise disabled (was [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175] rad).
+        "right_arm": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         "right_gripper": np.array([0.01]),
         "torso": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     }

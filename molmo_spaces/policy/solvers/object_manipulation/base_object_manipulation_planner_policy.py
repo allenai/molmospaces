@@ -686,6 +686,41 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                 i += 1
         viewer.user_scn.ngeom = ngeom + i
 
+    def _show_axes(self, pose: np.ndarray, length: float = 0.1, radius: float = 0.004) -> None:
+        """Draw an X/Y/Z axis triad at the given 4x4 world pose.
+
+        Red=X, Green=Y, Blue=Z. Useful for confirming a body's local frame
+        (e.g. where the place-receptacle origin sits relative to its AABB).
+        """
+        if self.task.viewer is None:
+            return
+        assert pose.shape == (4, 4)
+        viewer = self.task.viewer
+        ngeom = viewer.user_scn.ngeom
+        half_length = length / 2
+        R = pose[:3, :3]
+        origin = pose[:3, 3]
+        # MuJoCo cylinders extend along their local Z. For each axis, rotate so
+        # the cylinder's Z aligns with the desired world axis, then translate the
+        # cylinder's center half_length along that axis from `origin`.
+        axes = [
+            ((1, 0, 0, 1), np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], dtype=float)),  # X
+            ((0, 1, 0, 1), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=float)),  # Y
+            ((0, 0, 1, 1), np.eye(3)),  # Z
+        ]
+        for i, (color, R_local) in enumerate(axes):
+            R_world = R @ R_local
+            center = origin + R_world @ np.array([0.0, 0.0, half_length])
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[ngeom + i],
+                type=mujoco.mjtGeom.mjGEOM_CYLINDER,
+                size=np.array([radius, half_length, 0.0]),
+                pos=center,
+                mat=R_world.flatten(),
+                rgba=color,
+            )
+        viewer.user_scn.ngeom = ngeom + 3
+
     @staticmethod
     def add_auxiliary_objects(config: MlSpacesExpConfig, spec: MjSpec) -> None:
         PlannerPolicy.add_auxiliary_objects(config, spec)
