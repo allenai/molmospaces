@@ -5,6 +5,7 @@ this is not suitable for large batches.
 """
 
 from typing import Literal, TYPE_CHECKING
+import logging
 
 import mujoco
 import numpy as np
@@ -17,6 +18,9 @@ from molmo_spaces.utils.linalg_utils import (
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.robot_configs import BaseRobotConfig
+
+
+log = logging.getLogger(__name__)
 
 
 class MlSpacesKinematics:
@@ -151,7 +155,9 @@ class MlSpacesKinematics:
 
         J = self._robot_view.get_jacobian(move_group_id, unlocked_move_group_ids)
         if (JJT_det := np.linalg.det(J @ J.T)) < 1e-20:
-            print(f"WARN: IK Jacobian is rank deficient! det(JJ^T)={JJT_det:.0e}")
+            log.warning(
+                f"[MlSpacesKinematics][{self._robot_view.name}] IK Jacobian is rank deficient! det(JJ^T)={JJT_det:.0e}"
+            )
         H = J @ J.T + damping * np.eye(J.shape[0])
         q_dot = J.T @ np.linalg.solve(H, twist)
         return q_dot
@@ -228,7 +234,9 @@ class MlSpacesKinematics:
 
             J: np.ndarray = self._robot_view.get_jacobian(move_group_id, unlocked_move_group_ids)
             if (JJT_det := np.linalg.det(J @ J.T)) < 1e-20:
-                print(f"WARN: IK Jacobian is rank deficient! det(JJ^T)={JJT_det:.0e}")
+                log.warning(
+                    f"[MlSpacesKinematics][{self._robot_view.name}] IK Jacobian is rank deficient! det(JJ^T)={JJT_det:.0e}"
+                )
 
             H = J @ J.T + damping * np.eye(J.shape[0])
             q_dot = J.T @ np.linalg.solve(H, err)
