@@ -23,8 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Free disk space (Ubuntu)
-        if: runner.os == 'Linux'
+      - name: Log disk space
         run: |
           df -h /
 
@@ -44,7 +43,11 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install -e .[dev,mujoco]
+          uv pip install --no-cache -e .[dev,mujoco]
+
+      - name: Log disk space
+        run: |
+          df -h /
 
       - name: Run component tests
         run: |
