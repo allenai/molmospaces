@@ -99,7 +99,7 @@ pip install -i https://test.pypi.org/simple/ mujoco-filament
 pip install -e .[mujoco-filament]
 ```
 
-### Installing Curobo (optional, used only for RB-Y1 tasks)
+### Installing cuRobo (optional, used only for RB-Y1 tasks)
 
 For cuRobo support, inside your conda environment, install with:
 
@@ -107,7 +107,7 @@ For cuRobo support, inside your conda environment, install with:
 # Install CUDA toolkit and build tools (conda-forge for toolkit, nvidia channel for headers)
 conda install -c conda-forge cuda-toolkit=12.8 ninja evdev cuda-nvcc cuda-cudart-dev -n mlspaces
 
-# Install torch with CUDA 12.8 support BEFORE installing curobo (Ignore warnings after this step)
+# Install torch with CUDA 12.8 support BEFORE installing cuRobo (Ignore warnings after this step)
 pip install "torch~=2.7.0" "torchvision>=0.22.0,<0.23.0" --index-url https://download.pytorch.org/whl/cu128
 
 # Then compile and install the project against the installed torch
@@ -171,6 +171,11 @@ Molmospaces provides scenes, objects, robots, and benchmarks. These can be downl
 
 Please refer to [here](./docs/assets.md) for instructions to set up data directories, but you shouldn't need to manually manage any dependencies beyond setting the appropriate environment variables. If you are interested only in data generation and evaluation using MuJoCo, you can skip the rest of this section.
 
+## Documentation
+
+The documentation for MolmoSpaces can be found [here](https://allenai.github.io/molmospaces/). 
+
+Additional documentation for dependencies are listed below:
 
 | Simulator | Documentation                                                                 |
 |---|-------------------------------------------------------------------------------|
@@ -259,7 +264,7 @@ The repositories related to this project can be found here:
 |---|---|
 | [ai2_robot_infra](https://github.com/allenai/ai2_robot_infra) | Real robot infrastructure and utilities for experiments |
 | [MolmoBot](https://github.com/allenai/MolmoBot) | MolmoBot policy code |
-| [curobo](https://github.com/allenai/curobo) | Ai2 Curobo branch |
+| [curobo](https://github.com/allenai/curobo) | Ai2 cuRobo branch |
 
 
 ## Development
