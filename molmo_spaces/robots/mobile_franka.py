@@ -41,8 +41,12 @@ class MobileFrankaRobot(Robot):
             or config.robot_config.command_mode["arm"] == "joint_position"
             else JointRelPosController
         )
+        base_controller_cls: type[Controller] = {
+            "holo_joint_planar_position": JointPosController,
+            "holo_joint_rel_planar_position": JointRelPosController,
+        }[config.robot_config.command_mode["base"]]
         self._controllers = {
-            "base": JointPosController(self._robot_view.get_move_group("base")),
+            "base": base_controller_cls(self._robot_view.get_move_group("base")),
             "arm": arm_controller_cls(self._robot_view.get_move_group("arm")),
             "gripper": JointPosController(self._robot_view.get_move_group("gripper")),
         }
@@ -196,11 +200,12 @@ class MobileFrankaRobot(Robot):
                 range=[-params["ctrlrange"], params["ctrlrange"]],
                 ref=pos[gear_idx],
             )
+            # use damping ratio if available, otherwise use kd (which should be negative in biasprm)
             add_slider_act(
                 act_name,
                 params["ctrlrange"],
                 params["kp"],
-                [0, -params["kp"], params["kd"]],
+                [0, -params["kp"], params.get("damping_ratio", -params.get("kd", 0.0))],
                 gear_idx,
             )
 
@@ -218,7 +223,11 @@ class MobileFrankaRobot(Robot):
             biastype=mujoco.mjtBias.mjBIAS_AFFINE,
         )
         theta_act.gainprm[0] = theta_act_params["kp"]
-        theta_act.biasprm[:3] = [0, -theta_act_params["kp"], theta_act_params["kd"]]
+        theta_act.biasprm[1] = -theta_act_params["kp"]
+        # use damping ratio if available, otherwise use kd (which should be negative in biasprm)
+        theta_act.biasprm[2] = theta_act_params.get(
+            "damping_ratio", -theta_act_params.get("kd", 0.0)
+        )
 
 
 if __name__ == "__main__":

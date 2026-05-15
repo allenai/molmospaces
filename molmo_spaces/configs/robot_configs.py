@@ -202,17 +202,17 @@ class MobileFrankaRobotConfig(BaseRobotConfig):
     base_control_params: dict[str, dict[str, float]] = {
         "base_x_act": {
             "kp": 25000,
-            "kd": 1,
+            "damping_ratio": 1.0,
             "ctrlrange": 25,
         },
         "base_y_act": {
             "kp": 25000,
-            "kd": 1,
+            "damping_ratio": 1.0,
             "ctrlrange": 25,
         },
         "base_theta_act": {
             "kp": 5000,
-            "kd": 0.5,
+            "damping_ratio": 1.0,
         },
     }
 
