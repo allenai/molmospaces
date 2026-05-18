@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://allenai.github.io/molmospaces/api/policy/">
       
       
-        <link rel="prev" href="../renderer/">
+        <link rel="prev" href="../kinematics/">
       
       
-        <link rel="next" href="../evaluation/">
+        <link rel="next" href="../renderer/">
       
       
         
@@ -736,6 +736,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -828,70 +832,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../env/" class="md-nav__link">
+      <a href="../configs/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    env
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../tasks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    tasks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../robots/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    robots
+    configs
   
 
     
@@ -940,14 +888,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../kinematics/" class="md-nav__link">
+      <a href="../data_generation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    kinematics
+    data_generation
   
 
     
@@ -968,14 +916,70 @@
   
   
     <li class="md-nav__item">
-      <a href="../renderer/" class="md-nav__link">
+      <a href="../env/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    renderer
+    env
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kinematics
   
 
     
@@ -6405,14 +6409,70 @@
   
   
     <li class="md-nav__item">
-      <a href="../evaluation/" class="md-nav__link">
+      <a href="../renderer/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    evaluation
+    renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../robots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    robots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tasks
   
 
     
@@ -12086,7 +12146,7 @@ that can interact with the environment to collect data.</p>
 
 
 <a href="#molmo_spaces.policy.base_policy.BasePolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BasePolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BasePolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12310,7 +12370,7 @@ for the purpose of data collection or evaluation. It declares methods that shoul
   </span>
 
 <a href="#molmo_spaces.policy.base_policy.BasePolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12334,7 +12394,7 @@ for the purpose of data collection or evaluation. It declares methods that shoul
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -12747,7 +12807,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.base_policy.InferencePolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">InferencePolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">InferencePolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -13107,7 +13167,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.base_policy.InferencePolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -13131,7 +13191,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -13660,7 +13720,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.base_policy.PlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -13893,7 +13953,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.base_policy.PlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -13917,7 +13977,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -14365,7 +14425,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.base_policy.StatefulPolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StatefulPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StatefulPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -14611,7 +14671,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.base_policy.StatefulPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -14635,7 +14695,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -15184,7 +15244,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.dummy_policy.BrownianMotionPolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BrownianMotionPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BrownianMotionPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -15549,7 +15609,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.dummy_policy.BrownianMotionPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -15573,7 +15633,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -15929,7 +15989,7 @@ Must be json serializable.</p>
 
 
 <a href="#molmo_spaces.policy.dummy_policy.DummyPolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DummyPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DummyPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -16263,7 +16323,7 @@ Must be json serializable.</p>
   </span>
 
 <a href="#molmo_spaces.policy.dummy_policy.DummyPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -16287,7 +16347,7 @@ Must be json serializable.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -16911,7 +16971,7 @@ for bimanual manipulation with the YAM robot.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.BimanualYamPiPolicy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BimanualYamPiPolicy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BimanualYamPiPolicy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -16966,7 +17026,7 @@ for bimanual manipulation with the YAM robot.</p>
                 <code>exp_config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -17808,7 +17868,7 @@ for bimanual manipulation with the YAM robot.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.BimanualYamPiPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -17832,7 +17892,7 @@ for bimanual manipulation with the YAM robot.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -19067,7 +19127,7 @@ environment state in the case of a planner.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.cap_policy.CAP_Policy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CAP_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CAP_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -19634,7 +19694,7 @@ environment state in the case of a planner.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.cap_policy.CAP_Policy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -19658,7 +19718,7 @@ environment state in the case of a planner.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -20915,7 +20975,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.dreamzero_policy.DreamZero_Policy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DreamZero_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DreamZero_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -21521,7 +21581,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.dreamzero_policy.DreamZero_Policy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -21545,7 +21605,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -22317,7 +22377,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.keyboard_policy.Keyboard_Policy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Keyboard_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Keyboard_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -22799,7 +22859,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.keyboard_policy.Keyboard_Policy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -22823,7 +22883,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -24777,7 +24837,7 @@ including connection setup, observation streaming, and action retrieval.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.phone_policy.Phone_Policy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Phone_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Phone_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -25201,7 +25261,7 @@ including connection setup, observation streaming, and action retrieval.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.phone_policy.Phone_Policy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -25225,7 +25285,7 @@ including connection setup, observation streaming, and action retrieval.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -26154,7 +26214,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.pi_policy.PI_Policy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PI_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PI_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -26737,7 +26797,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.pi_policy.PI_Policy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -26761,7 +26821,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -28563,7 +28623,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.spacemouse_policy.SpaceMouse_Policy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SpaceMouse_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SpaceMouse_Policy</span><span class="p">(</span><span class="n">exp_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -29038,7 +29098,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.spacemouse_policy.SpaceMouse_Policy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -29062,7 +29122,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -31045,7 +31105,7 @@ This relies on functionality only present when using a frozen config.</p>
 
 
 <a href="#molmo_spaces.policy.learned_policy.websocket_policy.WebsocketPolicy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">WebsocketPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">connection_timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">WebsocketPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">connection_timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -31476,7 +31536,7 @@ This relies on functionality only present when using a frozen config.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.websocket_policy.WebsocketPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -31500,7 +31560,7 @@ This relies on functionality only present when using a frozen config.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -32229,7 +32289,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.random_policy.RandomPolicy" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RandomPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RandomPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -32518,7 +32578,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.random_policy.RandomPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -32542,7 +32602,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -33139,7 +33199,7 @@ Must be json serializable.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.curobo_planner_policy.CuroboPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CuroboPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CuroboPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -33960,7 +34020,7 @@ gripper control. Subclasses should implement task-specific planning logic.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.curobo_planner_policy.CuroboPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -33984,7 +34044,7 @@ gripper control. Subclasses should implement task-specific planning logic.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -35512,7 +35572,7 @@ e.g. setting <code>plan_fail_after_waypoint_steps</code> to a value larger than 
 
 
 <a href="#molmo_spaces.policy.solvers.navigation.astar_planner_policy.AStarPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AStarPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AStarPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -36096,7 +36156,7 @@ e.g. setting <code>plan_fail_after_waypoint_steps</code> to a value larger than 
   </span>
 
 <a href="#molmo_spaces.policy.solvers.navigation.astar_planner_policy.AStarPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -36120,7 +36180,7 @@ e.g. setting <code>plan_fail_after_waypoint_steps</code> to a value larger than 
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -37247,7 +37307,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.navigation.astar_planner_policy.AStarSmoothPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AStarSmoothPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AStarSmoothPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -37831,7 +37891,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.navigation.astar_planner_policy.AStarSmoothPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -37855,7 +37915,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -39740,7 +39800,7 @@ An action primitive is a single action that can be executed by the robot.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy.BaseObjectManipulationPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BaseObjectManipulationPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BaseObjectManipulationPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -40315,7 +40375,7 @@ including concatenating multiple action primitives into a single trajectory.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy.BaseObjectManipulationPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -40339,7 +40399,7 @@ including concatenating multiple action primitives into a single trajectory.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -45003,7 +45063,7 @@ plus the settling period.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.curobo_open_close_planner_policy.CuroboOpenClosePlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CuroboOpenClosePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CuroboOpenClosePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -46367,7 +46427,7 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.curobo_open_close_planner_policy.CuroboOpenClosePlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -46391,7 +46451,7 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -48216,7 +48276,7 @@ with the request to avoid races when multiple workers share the same server.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.curobo_pick_and_place_planner_policy.CuroboPickAndPlacePlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CuroboPickAndPlacePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CuroboPickAndPlacePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -49537,7 +49597,7 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.curobo_pick_and_place_planner_policy.CuroboPickAndPlacePlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -49561,7 +49621,7 @@ Planning requests are made to a remote CuroboPlanner server via CuroboClient.</p
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -51367,7 +51427,7 @@ Must be json serializable.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.open_close_planner_policy.OpenClosePlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OpenClosePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OpenClosePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -51938,7 +51998,7 @@ Must be json serializable.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.open_close_planner_policy.OpenClosePlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -51962,7 +52022,7 @@ Must be json serializable.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -52612,7 +52672,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_color_planner_policy.PickAndPlaceColorPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickAndPlaceColorPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickAndPlaceColorPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -53185,7 +53245,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_color_planner_policy.PickAndPlaceColorPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -53209,7 +53269,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -53859,7 +53919,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_next_to_planner_policy.PickAndPlaceNextToPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickAndPlaceNextToPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickAndPlaceNextToPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -54432,7 +54492,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_next_to_planner_policy.PickAndPlaceNextToPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -54456,7 +54516,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -55157,7 +55217,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_planner_policy.PickAndPlacePlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickAndPlacePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickAndPlacePlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -55728,7 +55788,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_planner_policy.PickAndPlacePlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -55752,7 +55812,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -56453,7 +56513,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy.PickPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PickPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseMujocoTask (molmo_spaces.tasks.task.BaseMujocoTask)" href="../tasks/#molmo_spaces.tasks.task.BaseMujocoTask">BaseMujocoTask</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -57024,7 +57084,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy.PickPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h7>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -57048,7 +57108,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -58143,7 +58203,7 @@ It is typically called at the beginning of each episode or task.</p>
 
 
 <a href="#molmo_spaces.policy.solvers.opening_solver.DoorOpeningPlannerPolicy" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DoorOpeningPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            DoorOpeningTask (molmo_spaces.tasks.opening_tasks.DoorOpeningTask)" href="../tasks/#molmo_spaces.tasks.opening_tasks.DoorOpeningTask">DoorOpeningTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DoorOpeningPlannerPolicy</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            DoorOpeningTask (molmo_spaces.tasks.opening_tasks.DoorOpeningTask)" href="../tasks/#molmo_spaces.tasks.opening_tasks.DoorOpeningTask">DoorOpeningTask</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -59537,7 +59597,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.opening_solver.DoorOpeningPlannerPolicy.add_auxiliary_objects" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_auxiliary_objects</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n"><span title="mujoco.MjSpec">MjSpec</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -59561,7 +59621,7 @@ It is typically called at the beginning of each episode or task.</p>
                 <code>config</code>
             </td>
             <td>
-                  <code><span title="molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</span></code>
+                  <code><a class="autorefs autorefs-internal" title="            MlSpacesExpConfig (molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig)" href="../configs/#molmo_spaces.configs.abstract_exp_config.MlSpacesExpConfig">MlSpacesExpConfig</a></code>
             </td>
             <td>
               <div class="doc-md-description">
