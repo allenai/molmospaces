@@ -1,16 +1,9 @@
 import os
 import time
 from collections import defaultdict
-from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from threading import Semaphore
-
-import numpy as np
-import pandas as pd
-
-from molmo_spaces.utils.mp_logging import get_logger
 
 
 @dataclass
@@ -96,120 +89,6 @@ class Profiler:
         os.makedirs(save_path, exist_ok=True)
         self.save_path = Path(save_path) / f"profiling_summary_{self.start_timestamp}.txt"
         self._write_summary()
-
-
-ENABLE_PROFILING = True  # str2bool(os.environ.get("ENABLE_PROFILING", "1"))
-
-_PROFILING = dict(
-    monotonic=defaultdict(list),
-    process_time=defaultdict(list),
-    perf_counter=defaultdict(list),
-    thread_time=defaultdict(list),
-)
-
-# Mutex probably unnecessary for string keys:
-# https://stackoverflow.com/questions/17682484/is-collections-defaultdict-thread-safe
-_sem = Semaphore()
-
-
-class TimeBlockData:
-    suffix = ""
-
-
-@contextmanager
-def time_block(prefix: str, thread_time: bool = False, time_types: Sequence[str] = ("monotonic",)):
-    try:
-        tbd = TimeBlockData()
-        if ENABLE_PROFILING:
-            if thread_time and hasattr(time, "thread_time"):
-                time_types = ("thread_time",)
-            start = {time_type: getattr(time, time_type)() for time_type in time_types}
-        yield tbd
-    finally:
-        if ENABLE_PROFILING:
-            total = {
-                time_type: getattr(time, time_type)() - start[time_type] for time_type in time_types
-            }
-            entry_name = prefix + tbd.suffix
-
-            # Ensure the order is consistent across time types (perhaps unnecessary) by acquiring _sem first
-            _sem.acquire()
-            for time_type in time_types:
-                _PROFILING[time_type][entry_name].append(total[time_type])
-            _sem.release()
-
-
-@contextmanager
-def pandas_display_options(
-    precision: int = 2,
-    max_rows: int | None = None,
-    max_columns: int | None = None,
-    width: int | None = None,
-) -> None:
-    """
-    Context manager to temporarily set pandas display options.
-    """
-    original_options: dict[str, str | int | None] = {
-        "display.float_format": pd.get_option("display.float_format"),
-        "display.max_rows": pd.get_option("display.max_rows"),
-        "display.max_columns": pd.get_option("display.max_columns"),
-        "display.width": pd.get_option("display.width"),
-    }
-
-    try:
-        pd.set_option("display.float_format", f"{{:.{precision}f}}".format)
-        pd.set_option("display.max_rows", max_rows)
-        pd.set_option("display.max_columns", max_columns)
-        pd.set_option("display.width", width)
-        yield
-    finally:
-        for option, value in original_options.items():
-            pd.set_option(option, value)
-
-
-def dump() -> dict[str, pd.DataFrame]:
-    if ENABLE_PROFILING:
-        dfs = {}
-        msg = []
-        for title, profile_data in _PROFILING.items():
-            if len(profile_data) == 0:
-                continue
-            data: list[dict[str, str | int | float]] = []
-            for entry, vals in profile_data.items():
-                data.append(
-                    {
-                        "Entry": entry,
-                        "Mean (ms)": np.mean(vals) * 1000,
-                        "Calls": len(vals),
-                        "Total (s)": np.sum(vals),
-                        "Std Dev (ms)": np.std(vals) * 1000,
-                        "Min (ms)": np.min(vals) * 1000,
-                        "Max (ms)": np.max(vals) * 1000,
-                        "Median (ms)": np.median(vals) * 1000,
-                    }
-                )
-
-            df: pd.DataFrame = pd.DataFrame(data)
-            df = df.sort_values("Total (s)", ascending=False)
-
-            with pandas_display_options(precision=2, max_rows=None, max_columns=None, width=None):
-                msg.append(
-                    "\n".join(
-                        [
-                            f"PROFILING START {title} DUMP",
-                            df.to_string(index=False),
-                            f"PROFILING END {title} DUMP",
-                        ]
-                    )
-                )
-
-            dfs[title] = df
-
-        get_logger().info("\n".join(msg))
-
-        return dfs
-    else:
-        return {"monotonic": pd.DataFrame()}
 
 
 class DatagenProfiler:

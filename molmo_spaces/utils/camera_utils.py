@@ -1,22 +1,5 @@
-import mujoco
 import numpy as np
 from scipy.ndimage import binary_erosion
-from scipy.spatial.transform import Rotation as R
-
-from molmo_spaces.env.mj_extensions import MjModelBindings
-
-
-def check_camera_horizon(
-    model_bindings: MjModelBindings,
-    data: mujoco.MjData,
-    expected_angle: float = 27.0,
-    tolerance: float = 1.0,
-    namespace: str = "robot_0/",
-):
-    mujoco.mj_forward(model_bindings.model, data)
-    cam_id = model_bindings.camera_name2id[namespace + "camera_rgb"]
-    angs = R.from_matrix(data.cam_xmat[cam_id].reshape(3, 3)).as_euler("xyz", degrees=True)
-    return abs((-90.0 - angs[1]) + expected_angle) <= tolerance
 
 
 def normalize_points(

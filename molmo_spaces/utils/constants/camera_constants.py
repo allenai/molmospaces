@@ -25,26 +25,5 @@ NULL_DISTORTION_PARAMETERS = {
     "k4": 0.0,
 }
 
-# Unity-based distortion parameters (Alvaro's calibration)
-ALVARO_UNITY_DISTORTION_PARAMETERS = {
-    "zoomPercent": 0.49,
-    "k1": 0.9,
-    "k2": 5.2,
-    "k3": -13.0,
-    "k4": 16.3,
-    "intensityX": 1.0,
-    "intensityY": 0.98,
-}
-
-ALVARO_UNITY_DISTORTION_PARAMETER_RANGES = {
-    "zoomPercent": (0.45, 0.53),
-    "k1": (0.8, 1.0),
-    "k2": (5.0, 5.4),
-    "k3": (-14.0, -12.0),
-    "k4": (15.0, 17.0),
-    "intensityX": (0.95, 1.05),
-    "intensityY": (0.93, 1.03),
-}
-
 # Default crop percentage to remove edge distortion
 DEFAULT_CROP_PERCENT = 0.30

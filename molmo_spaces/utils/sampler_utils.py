@@ -3,8 +3,6 @@ from typing import NoReturn
 
 import cv2
 import numpy as np
-from scipy.spatial.transform import Rotation
-
 from molmo_spaces.utils.linalg_utils import relative_to_global_transform
 from molmo_spaces.utils.scene_maps import ProcTHORMap
 
@@ -223,57 +221,6 @@ class UniformRandomMapSampler:
         return np.column_stack(
             (np.cos(z_angles / 2), np.zeros(N), np.zeros(N), np.sin(z_angles / 2))
         )
-
-
-class UniformRandomSiteSampler:
-    """https://github.com/ARISE-Initiative/robosuite/blob/master/robosuite/utils/placement_samplers.py#L92"""
-
-    def __init__(self, sites_i2dname, site_group, site_size, site_pos, size_quat) -> None:
-        self.id2name = sites_i2dname
-        self.group = site_group  # NOTE: group 0: all, group 1: hallway, group2: frontSurface
-        self.sizes = 2 * site_size.copy()  # NOTE: site_size corresponds to half sizes of the box
-        self.compute_site_probabilities()
-
-        # center position and quaternion
-        self.positions = site_pos
-        self.quaternions = size_quat
-
-    def compute_site_probabilities(self, group: list[int] = []) -> None:
-        if len(group) == 0:  # use all groups but 0
-            group = self.group
-
-        ind = np.where(self.group == 0)[0]  # do not include group 0
-
-        areas = np.zeros(len(self.sizes))
-        for i, size in enumerate(self.sizes):
-            if ind == i or self.group[i] not in group:
-                continue
-            areas[i] = size[0] * size[1]
-        self.probabilities = areas / np.sum(areas)
-
-    def sample(
-        self,
-    ):
-        # choose a site from n_sites (based on area)
-        ind_site = np.random.choice(range(len(self.probabilities)), p=self.probabilities)
-
-        # choose a size (position) in a site
-        position = np.zeros(3)
-        position[0] = (
-            np.random.uniform(low=-0.5, high=0.5) * self.sizes[ind_site][0]
-            + self.positions[ind_site][0]
-        )
-        position[1] = (
-            np.random.uniform(low=-0.5, high=0.5) * self.sizes[ind_site][1]
-            + self.positions[ind_site][1]
-        )
-        position[2] = 0.05  # fixed offselt from the ground
-
-        # choose an Z-axis rotation angle in quaternion
-        rot_angle = np.random.uniform(high=2 * np.pi, low=0)
-        quaternion = Rotation.from_rotvec([rot_angle, 0, 0], degrees=False).as_quat()
-
-        return {"position": position, "quaternion": quaternion}
 
 
 def furthest_point_sampling(points, k):

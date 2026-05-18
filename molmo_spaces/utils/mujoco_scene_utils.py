@@ -34,17 +34,6 @@ def add_visual_capsule(scene, point1, point2, radius, rgba) -> None:
     )
 
 
-def update_visual_robot(scene_model, scene_data, robot_xml_path, joint_positions=None) -> NoReturn:
-    """Updates the visual robot's configuration in the scene.
-
-    Args:
-        scene: mjvScene object
-        robot_model: MjModel of the robot
-        joint_positions (dict, optional): Dictionary of joint name to position values
-    """
-    raise NotImplementedError("Not implemented")
-
-
 def randomize_door_joints(  # TODO: do these defaults make sense?
     spec: MjSpec,
     scene_metadata: dict,
