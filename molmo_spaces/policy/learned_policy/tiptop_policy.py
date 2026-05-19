@@ -23,7 +23,7 @@ PING_TIMEOUT_SECS = 600
 class TiptopWebsocketClient:
     """Websocket client that adds endpoint field for a Tiptop server."""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8765) -> None:
+    def __init__(self, host: str = "localhost", port: int = 8765) -> None:
         self._uri = f"ws://{host}:{port}"
         self._packer = msgpack_numpy.Packer()
         self._ws, self._server_metadata = self._wait_for_server()
@@ -171,8 +171,6 @@ class Tiptop_Policy(InferencePolicy):
         # Tiptop uses just the wrist camera for now
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         views = obs[wrist_camera_key]
-        # shoulder_camera_key = "droid_shoulder_light_randomization"
-        # views = obs[shoulder_camera_key]
         cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
         cv2.waitKey(1)
 
@@ -188,8 +186,6 @@ class Tiptop_Policy(InferencePolicy):
 
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         camera_params = obs[f"sensor_param_{wrist_camera_key}"]
-        # shoulder_camera_key = "droid_shoulder_light_randomization"
-        # camera_params = obs[f"sensor_param_{shoulder_camera_key}"]
 
         # Collect all available cameras from sensor_param_* keys
         cameras = {}

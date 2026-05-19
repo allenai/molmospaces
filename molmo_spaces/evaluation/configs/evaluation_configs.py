@@ -143,8 +143,7 @@ class JsonBenchmarkEvalConfig(MlSpacesExpConfig):
     filter_for_successful_trajectories: bool = False
 
     # Episode termination
-    # Setting this to true for tiptop
-    terminate_upon_success: bool = True
+    terminate_upon_success: bool = False
 
     @property
     def tag(self) -> str:
@@ -195,10 +194,6 @@ class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     def model_post_init(self, __context):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
-        # TODO: DEBUG: REMOVE
-        # Setting viewer to true so we can see the benchmark run
-        print(f"Setting the passive viewer to true")
-        self.use_passive_viewer = True
 
 
 class CAPPolicyEvalConfig(JsonBenchmarkEvalConfig):
@@ -324,7 +319,3 @@ class TiptopPolicyEvalConfig(JsonBenchmarkEvalConfig):
     def model_post_init(self, __context):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
-        # TODO: DEBUG: REMOVE
-        # Setting viewer to true so we can see the benchmark run
-        print(f"Setting the passive viewer to true")
-        self.use_passive_viewer = True
