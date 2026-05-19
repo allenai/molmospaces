@@ -249,6 +249,11 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
 
 
+class FrankaTiptopRobotConfig(FrankaRobotConfig):
+    """Configuration for Franka FR3 robot used with the Tiptop policy. We need this subclass since the default Franka Robot config does not include depth info, and Tiptop uses depth info.
+    The override record_depth=True is set in robot_eval_overrides.py"""
+
+
 class RBY1Config(BaseRobotConfig):
     """Configuration for RBY1 robot."""
 

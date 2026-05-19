@@ -122,3 +122,32 @@ class BimanualYamPiPolicyConfig(BasePolicyConfig):
             )
 
             self.policy_cls = BimanualYamPiPolicy
+
+class TiptopPolicyConfig(BasePolicyConfig):
+    remote_config: dict = dict(host="localhost", port=8765)
+    prompt_object_word_num: str = 1  # number of words as the object name
+    prompt_templates: list[str] | None = None
+    grasping_type: str = "binary"
+    grasping_threshold: float = 0.5
+    chunk_size: int = 8
+    # Optional pre-observation arm pose: arm moves here before sending camera data to Tiptop.
+    # Set to a list of 7 joint angles (radians) to enable; None disables the feature.
+    cam_obs_qpos: list[float] | None = None
+    # Number of interpolation steps to reach cam_obs_qpos (each step = one policy dt).
+    cam_obs_n_steps: int = 50
+    # Hold each TiPToP waypoint for roughly its serialized duration relative to policy_dt_ms.
+    repeat_waypoints_by_dt: bool = False
+    # Extra policy steps to hold the final arm waypoint before a gripper open/close action.
+    # Can set to 8
+    trajectory_settle_steps: int = 0
+
+    policy_cls: type = None
+    policy_type: str = "tamp"
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.learned_policy.tiptop_policy import Tiptop_Policy
+
+            self.policy_cls = Tiptop_Policy

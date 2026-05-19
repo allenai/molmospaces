@@ -573,24 +573,37 @@ class ParallelRolloutRunner:
         self.profiler = exp_config.profiler
 
         # WandB initialization (optional, based on environment variables)
+        # If wandb is already initialized by an outer caller (e.g. eval_main.py),
+        # attach to the existing run instead of starting a new one. Only the code
+        # that called wandb.init() is responsible for calling wandb.finish().
         self.wandb_enabled = False
-        if "WANDB_RUN_NAME" in os.environ and "WANDB_PROJECT_NAME" in os.environ:
+        self.wandb_initialized_by_runner = False
+        pipeline_config = {
+            "num_workers": exp_config.num_workers,
+            "total_houses": self.total_houses,
+            "samples_per_house": self.samples_per_house,
+            "total_expected_episodes": self.total_houses * self.samples_per_house,
+            "output_dir": str(exp_config.output_dir),
+            "filter_for_successful_trajectories": exp_config.filter_for_successful_trajectories,
+        }
+        if wandb.run is not None:
+            self.logger.info("Reusing existing WandB run")
+            try:
+                wandb.config.update(pipeline_config, allow_val_change=True)
+            except Exception as e:
+                self.logger.warning(f"WandB config update failed: {e}")
+            self.wandb_enabled = True
+        elif "WANDB_RUN_NAME" in os.environ and "WANDB_PROJECT_NAME" in os.environ:
             self.logger.info("Initializing WandB logging...")
             try:
                 wandb.init(
                     project=os.environ["WANDB_PROJECT_NAME"],
                     entity=os.environ.get("WANDB_ENTITY", None),
                     name=os.environ["WANDB_RUN_NAME"],
-                    config={
-                        "num_workers": exp_config.num_workers,
-                        "total_houses": self.total_houses,
-                        "samples_per_house": self.samples_per_house,
-                        "total_expected_episodes": self.total_houses * self.samples_per_house,
-                        "output_dir": str(exp_config.output_dir),
-                        "filter_for_successful_trajectories": exp_config.filter_for_successful_trajectories,
-                    },
+                    config=pipeline_config,
                 )
                 self.wandb_enabled = True
+                self.wandb_initialized_by_runner = True
                 self.logger.info("WandB initialized successfully")
             except Exception as e:
                 self.logger.warning(f"WandB initialization failed: {e}. Continuing without WandB.")
@@ -1180,7 +1193,7 @@ class ParallelRolloutRunner:
         """Handle SIGTERM signal gracefully."""
         self.shutdown_event.set()
         self.logger.info("Received SIGTERM. Initiating graceful shutdown...")
-        if self.wandb_enabled:
+        if self.wandb_initialized_by_runner:
             try:
                 wandb.finish()
             except Exception as e:
@@ -1348,8 +1361,9 @@ class ParallelRolloutRunner:
                         "final_elapsed_time_hours": final_elapsed_time / 3600,
                     }
                 )
-                wandb.finish()
-                self.logger.info("WandB logging finished")
+                if self.wandb_initialized_by_runner:
+                    wandb.finish()
+                    self.logger.info("WandB logging finished")
             except Exception as e:
                 self.logger.warning(f"WandB final logging failed: {e}")
 

@@ -43,9 +43,17 @@ def cap_robot_eval_override(
         "gripper": [0.00296, 0.00296],
     }
 
+def tiptop_robot_eval_override(
+    episode_spec: EpisodeSpec,
+    camera_config: CameraSystemConfig,
+) -> None:
+    log.info("Applying Tiptop robot evaluation overrides")
+    # Tiptop needs depth info
+    camera_config.cameras[0].record_depth = True
 
 ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {
     "FrankaCAPRobotConfig": cap_robot_eval_override,
+    "FrankaTiptopRobotConfig": tiptop_robot_eval_override,
 }
 
 

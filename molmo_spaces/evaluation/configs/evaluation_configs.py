@@ -37,11 +37,13 @@ from molmo_spaces.configs.policy_configs_baselines import (
     DreamZeroPolicyConfig,
     PiPolicyConfig,
     TeleopPolicyConfig,
+    TiptopPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import (
     ActionNoiseConfig,
     FrankaCAPRobotConfig,
     FrankaRobotConfig,
+    FrankaTiptopRobotConfig
 )
 from molmo_spaces.configs.task_configs import (
     BaseMujocoTaskConfig,
@@ -294,6 +296,24 @@ class BrownianMotionPickPlaceColorEvalConfig(BrownianMotionPickPlaceEvalConfig):
 class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: DreamZeroPolicyConfig = DreamZeroPolicyConfig()
+    policy_dt_ms: float = 66.0
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+class TiptopPolicyEvalConfig(JsonBenchmarkEvalConfig):
+    robot_config: FrankaTiptopRobotConfig = FrankaTiptopRobotConfig()
+    policy_config: TiptopPolicyConfig = TiptopPolicyConfig(
+        # Raise wrist camera as high as possible while pointing it down at the scene.
+        # The arm takes an "overhead bent" shape: shoulder pushed forward/up (q2),
+        # elbow folded back heavily (q4 near its -3.04 limit) so the forearm curves
+        # back over and down, and wrist (q6) adjusted to aim the camera at the workspace.
+        # Joint limits: q4 ∈ [-3.04, -0.15], q6 ∈ [0.54, 4.52].
+        # Tune these values if the camera view needs adjustment.
+        cam_obs_qpos=[0.0, -1.0, 0.0, -1.0, 0.0, 1.0, -3.0],
+        cam_obs_n_steps=50,
+    )
     policy_dt_ms: float = 66.0
 
     def model_post_init(self, __context):
