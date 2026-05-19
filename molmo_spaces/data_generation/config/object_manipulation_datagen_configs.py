@@ -854,3 +854,29 @@ class RUMPickAndPlaceMultiDataGenConfig(PickAndPlaceDataGenConfig):
     @property
     def tag(self) -> str:
         return "pnpmulti_bench"
+
+
+@register_config("FrankaPickBatchTestConfig")
+class FrankaPickBatchTestConfig(PickBaseConfig):
+    """Minimal config to test local batch-based work distribution.
+
+    Single house, 12 episodes split into 3 batches of 4, processed by 2 workers.
+    Output: house_7/trajectories_batch_{1,2,3}_of_3.h5
+    """
+
+    num_workers: int = 2
+    robot_config: BaseRobotConfig = FrankaRobotConfig()
+    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+        task_sampler_class=PickTaskSampler,
+        house_inds=[7],
+        samples_per_house=12,
+        episodes_per_batch=4, # 4 is the default value - change to 1 or 10 to test different batch sizes.
+    )
+    filter_for_successful_trajectories: bool = True
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_batch_test"
+    log_level: str = "debug"
+
+    @property
+    def tag(self) -> str:
+        return "franka_pick_batch_test"

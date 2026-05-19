@@ -16,6 +16,7 @@ class BaseMujocoTaskSamplerConfig(Config):
     house_inds: list[int] | None  # List of thor house indices to use
     scene_xml_paths: list[str] | None = None
     samples_per_house: int | None  # Number of tasks to sample per house
+    episodes_per_batch: int = 4  # Max episodes per work item; houses are split into batches of this size for parallel processing
     task_batch_size: int
     max_tasks: int | None  # Maximum number of tasks to sample
     sim_settle_timesteps: int = 500
