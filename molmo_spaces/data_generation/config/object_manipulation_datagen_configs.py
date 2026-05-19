@@ -871,7 +871,7 @@ class FrankaPickBatchTestConfig(PickBaseConfig):
         task_sampler_class=PickTaskSampler,
         house_inds=[7],
         samples_per_house=12,
-        episodes_per_batch=4, # 4 is the default value - change to 1 or 10 to test different batch sizes.
+        episodes_per_batch=4,  # 4 is the default value - change to 1 or 10 to test different batch sizes.
     )
     filter_for_successful_trajectories: bool = True
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_batch_test"
