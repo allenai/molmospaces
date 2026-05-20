@@ -107,7 +107,7 @@ class BaseMujocoEnv(ABC):
         return self._mj_base_scene_path
 
     @property
-    def current_scene_metadata(self) -> dict:
+    def current_scene_metadata(self) -> dict | None:
         """Current scene metadata instance (always the same across batches)."""
         return self._scene_metadata
 
