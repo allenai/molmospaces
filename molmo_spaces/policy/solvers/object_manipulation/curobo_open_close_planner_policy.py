@@ -348,7 +348,9 @@ class CuroboOpenClosePlannerPolicy(CuroboPlannerPolicy, OpenClosePlannerPolicy):
         data = self.task.env.current_data
 
         # Get all grasp poses
-        grasp_poses_world, object_pose = get_joint_grasps(self.task.env, pickup_obj, self.config.task_config.joint_index)
+        grasp_poses_world, object_pose = get_joint_grasps(
+            self.task.env, pickup_obj, self.config.task_config.joint_index
+        )
 
         # Get current TCP position
         tcp_pose_arr = self.task.sensor_suite.sensors["tcp_pose"].get_observation(

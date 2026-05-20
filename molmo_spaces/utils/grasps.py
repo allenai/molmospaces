@@ -122,9 +122,7 @@ def sanitize_grasp_library_list_and_cache(cache_size: int):
 
 
 @sanitize_grasp_library_list_and_cache(cache_size=10000)
-def has_pickup_grasp_path(
-    uid: str, grasp_libraries: Sequence[str] | None = None
-) -> bool:
+def has_pickup_grasp_path(uid: str, grasp_libraries: Sequence[str] | None = None) -> bool:
     return get_pickup_grasp_path(uid, grasp_libraries) is not None
 
 
@@ -237,7 +235,9 @@ def flip_grasps(grasps: np.ndarray) -> np.ndarray:
     return grasps @ flip
 
 
-def get_pickup_grasps(env: CPUMujocoEnv, obj: MlSpacesObject, include_flipped: bool = True) -> np.ndarray:
+def get_pickup_grasps(
+    env: CPUMujocoEnv, obj: MlSpacesObject, include_flipped: bool = True
+) -> np.ndarray:
     """
     Load the first available pickup grasps for a given object in the world frame.
 
@@ -252,7 +252,9 @@ def get_pickup_grasps(env: CPUMujocoEnv, obj: MlSpacesObject, include_flipped: b
     if scene_metadata is None:
         raise ValueError(f"Could not load grasps for object {obj.name}: No scene metadata found!")
     if obj.name not in scene_metadata["objects"]:
-        raise ValueError(f"Could not load grasps for object {obj.name}: Object not found in scene metadata!")
+        raise ValueError(
+            f"Could not load grasps for object {obj.name}: Object not found in scene metadata!"
+        )
 
     asset_id: str = scene_metadata["objects"][obj.name]["asset_id"]
     grasps = load_pickup_grasps(asset_id, num_grasps=int(1e6))
@@ -265,11 +267,16 @@ def get_pickup_grasps(env: CPUMujocoEnv, obj: MlSpacesObject, include_flipped: b
     else:
         all_grasp_poses = grasps_world
 
-    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses" + (" (including flipped versions)" if include_flipped else ""))
+    log.info(
+        f"Loaded {len(all_grasp_poses)} total grasp poses"
+        + (" (including flipped versions)" if include_flipped else "")
+    )
     return all_grasp_poses
 
 
-def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_idx: int, include_flipped: bool = True) -> tuple[np.ndarray, np.ndarray]:
+def get_joint_grasps(
+    env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_idx: int, include_flipped: bool = True
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Load the first available joint grasps for a given object and joint in the world frame.
 
@@ -286,7 +293,9 @@ def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_i
     if scene_metadata is None:
         raise ValueError(f"Could not load grasps for object {obj.name}: No scene metadata found!")
     if obj.name not in scene_metadata["objects"]:
-        raise ValueError(f"Could not load grasps for object {obj.name}: Object not found in scene metadata!")
+        raise ValueError(
+            f"Could not load grasps for object {obj.name}: Object not found in scene metadata!"
+        )
 
     joint_name: str = obj.joint_names[joint_idx]
     asset_joint_name = scene_metadata["objects"][obj.name]["name_map"]["joints"][joint_name]
@@ -306,5 +315,8 @@ def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_i
         all_grasp_poses = np.concatenate([grasps_world, flip_grasps(grasps_world)])
     else:
         all_grasp_poses = grasps_world
-    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses" + (" (including flipped versions)" if include_flipped else ""))
+    log.info(
+        f"Loaded {len(all_grasp_poses)} total grasp poses"
+        + (" (including flipped versions)" if include_flipped else "")
+    )
     return all_grasp_poses, joint_body_pose

@@ -126,10 +126,9 @@ def get_feasible_grasp_idx(
 
             if real_batch_size < ik_batch_size:
                 # pad to batch size to avoid triggering recompilation
-                grasps = np.concatenate([
-                    grasps,
-                    np.broadcast_to(grasps[-1:], (ik_batch_size - real_batch_size, 4, 4))
-                ])
+                grasps = np.concatenate(
+                    [grasps, np.broadcast_to(grasps[-1:], (ik_batch_size - real_batch_size, 4, 4))]
+                )
 
             ik_result = robot.parallel_kinematics.ik(
                 mg_id,
