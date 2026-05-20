@@ -34,7 +34,6 @@ def has_grasp_folder(object_name: str) -> bool:
         ASSETS_DIR / f"grasps/droid/{object_name}/{object_name}_grasps_filtered.npz",
         ASSETS_DIR / f"grasps/droid/{object_name}/{object_name}_joint_grasps_filtered.npz",
         ASSETS_DIR / f"grasps/droid_objaverse/{object_name}/{object_name}_grasps_filtered.npz",
-        ASSETS_DIR / f"grasps/rum/{object_name}/{object_name}_grasps_filtered.json",
     ]
 
     return any(grasp_file.exists() for grasp_file in grasp_files)
@@ -57,7 +56,6 @@ def has_valid_grasp_file(object_name: str, min_grasps: int = 1) -> bool:
     grasp_files = [
         ASSETS_DIR / f"grasps/droid/{object_name}/{object_name}_grasps_filtered.npz",
         ASSETS_DIR / f"grasps/droid_objaverse/{object_name}/{object_name}_grasps_filtered.npz",
-        ASSETS_DIR / f"grasps/rum/{object_name}/{object_name}_grasps_filtered.json",
     ]
 
     for grasp_file in grasp_files:
@@ -86,7 +84,6 @@ def has_joint_grasp_file(object_name: str, joint_name: str) -> bool:
     """Check if joint grasp files exist for the given object and joint."""
     grasp_files = [
         ASSETS_DIR / f"grasps/droid/{object_name}/{joint_name}_grasps_filtered.npz",
-        ASSETS_DIR / f"grasps/rum/{object_name}/{joint_name}_grasps_filtered.json",
     ]
 
     for grasp_file in grasp_files:
@@ -118,7 +115,6 @@ def load_grasps_for_object(object_name, num_grasps=50):
         ASSETS_DIR / f"grasps/droid/{object_name}/{object_name}_grasps_filtered.npz": "droid",
         ASSETS_DIR
         / f"grasps/droid_objaverse/{object_name}/{object_name}_grasps_filtered.npz": "droid",
-        ASSETS_DIR / f"grasps/rum/{object_name}/{object_name}_grasps_filtered.json": "rum",
     }
 
     combined_transforms = []
@@ -165,10 +161,8 @@ def load_grasps_for_object_per_joint(
     """Load grasps for a specific object."""
     combined_transforms = []
 
-    # "droid" or "rum" folder(s)
     source_to_pattern = dict(
         droid=grasp_dir.as_posix() + "/droid*/" + object_name + "/" + f"{joint_name}*_filtered.npz",
-        rum=grasp_dir.as_posix() + "/rum/" + object_name + "/" + f"{joint_name}*_filtered.json",
         any_npz=grasp_dir.as_posix() + "/*/" + object_name + "/" + f"{joint_name}*_filtered.npz",
     )
 
@@ -194,7 +188,7 @@ def load_grasps_for_object_per_joint(
         return None, []
 
     grasps = np.array(combined_transforms)
-    gripper = filename.split("/")[-3]  # (path) / rum / (object_name) / (joint name.json) -> rum
+    gripper = filename.split("/")[-3]  # (path) / droid / (object_name) / (joint name.json) -> droid
     return gripper, grasps  # , joint_info["parent_body"]
 
 
@@ -303,7 +297,7 @@ def get_all_grasp_poses(
     Returns:
         tuple: (all_grasp_poses, gripper_type, object_pose) where:
             - all_grasp_poses: Array of all grasp poses in world frame with shape (N, 4, 4)
-            - gripper_type: String indicating gripper type ("rum" or "droid")
+            - gripper_type: String indicating gripper type ("droid")
             - object_pose: 4x4 transformation matrix of the object pose
     """
     model = policy.task.env.current_model
@@ -345,18 +339,8 @@ def get_all_grasp_poses(
     else:
         raise ValueError(f"Invalid task type {policy.config.task_type}")
 
-    # Transform grasps to gripper TCP
-    if gripper == "rum":
-        ROT_Z_90 = pos_quat_to_pose_mat(
-            [0, 0, 0], R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True)
-        )
-        RUM_BASE_TCP = pos_quat_to_pose_mat(np.array([0.0, 0, 0.12]), [1, 0, 0, 0])
-        GRIP_BASE_TCP = RUM_BASE_TCP @ ROT_Z_90
-    elif gripper == "droid":
-        GRIP_BASE_TCP = np.eye(4)
-
     # Convert all cached grasps to world frame
-    grasp_poses_world = object_pose @ cached_grasps @ GRIP_BASE_TCP
+    grasp_poses_world = object_pose @ cached_grasps
 
     # Add flipped grasp poses (symmetric around 180 degree rotation around Z)
     flipped_grasp_poses_world = grasp_poses_world.copy()
@@ -396,15 +380,6 @@ def compute_grasp_pose(
     grasp_poses_world, gripper, object_pose = get_all_grasp_poses(policy, pickup_obj)
 
     # Get gripper TCP transform for visualization
-    if gripper == "rum":
-        ROT_Z_90 = pos_quat_to_pose_mat(
-            [0, 0, 0], R.from_euler("z", 90, degrees=True).as_quat(scalar_first=True)
-        )
-        RUM_BASE_TCP = pos_quat_to_pose_mat(np.array([0.0, 0, 0.12]), [1, 0, 0, 0])
-        GRIP_BASE_TCP = RUM_BASE_TCP @ ROT_Z_90
-    elif gripper == "droid":
-        GRIP_BASE_TCP = np.eye(4)
-
     # get the current TCP position
     tcp_pose_arr = policy.task.sensor_suite.sensors["tcp_pose"].get_observation(
         policy.task._env, policy.task
@@ -506,12 +481,6 @@ def compute_grasp_pose(
                 style="tcp",
                 color=(1, 0, 0, 1),  # red
             )
-        if gripper == "rum" and grasp_pose_world is not None:
-            policy._show_poses(
-                np.array([grasp_pose_world @ np.linalg.inv(GRIP_BASE_TCP)]),
-                style="RUM",
-                color=(0, 0, 1, 1),
-            )  # blue
         if policy.task.viewer:
             policy.task.viewer.sync()
 
