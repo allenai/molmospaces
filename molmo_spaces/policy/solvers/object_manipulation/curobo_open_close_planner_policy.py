@@ -24,7 +24,7 @@ from molmo_spaces.utils.constants.object_constants import (
     EXTENDED_ARTICULATION_TYPES_THOR,
     RECEPTACLE_TYPES_THOR,
 )
-from molmo_spaces.utils.grasp_sample import get_all_grasp_poses
+from molmo_spaces.utils.grasps import get_joint_grasps
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb, descendant_geoms, geom_aabb
 from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.profiler_utils import Timer
@@ -348,7 +348,7 @@ class CuroboOpenClosePlannerPolicy(CuroboPlannerPolicy, OpenClosePlannerPolicy):
         data = self.task.env.current_data
 
         # Get all grasp poses
-        grasp_poses_world, _, object_pose = get_all_grasp_poses(self, pickup_obj)
+        grasp_poses_world, object_pose = get_joint_grasps(self.task.env, pickup_obj, self.config.task_config.joint_index)
 
         # Get current TCP position
         tcp_pose_arr = self.task.sensor_suite.sensors["tcp_pose"].get_observation(

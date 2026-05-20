@@ -1,6 +1,17 @@
+"""
+This module contains functionality for loading grasps from registered grasp libraries.
+
+Note: this module caches aggressively, so grasp/asset libraries must be registered before the first call into this module.
+New registrations will not be visible until the caches are cleared.
+"""
+
 import logging
 import random
+from collections.abc import Sequence
 from pathlib import Path
+from functools import lru_cache, wraps
+import inspect
+import zipfile
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -18,32 +29,32 @@ from molmo_spaces.utils.lazy_loading_utils import locate_uid_package, get_user_g
 log = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=10000)
+def _locate_uid_package(uid: str):
+    return locate_uid_package(uid)
+
+
 def get_grasp_libraries_for_object(uid: str) -> list[str]:
-    package, _, _ = locate_uid_package(uid)
+    package, _, _ = _locate_uid_package(uid)
     if package not in OBJECT_LIBRARY_TO_GRASP_LIBRARIES:
         return []
     return list(OBJECT_LIBRARY_TO_GRASP_LIBRARIES[package])
 
 
 def _filter_grasp_libraries_for_object(
-    uid: str, grasp_libraries: list[str] | None = None
+    uid: str, grasp_libraries: Sequence[str] | None = None
 ) -> list[str]:
     available_grasp_libraries = get_grasp_libraries_for_object(uid)
     if grasp_libraries is None:
-        grasp_libraries = available_grasp_libraries
-    else:
-        available_grasp_libraries = set(available_grasp_libraries)
-        grasp_libraries = [
-            library for library in grasp_libraries if library in available_grasp_libraries
-        ]
-
-    return grasp_libraries
+        return available_grasp_libraries
+    available_set = set(available_grasp_libraries)
+    return [library for library in grasp_libraries if library in available_set]
 
 
-def get_grasp_path(uid: str, grasp_libraries: list[str] | None = None) -> Path | None:
-    grasp_libraries = _filter_grasp_libraries_for_object(uid, grasp_libraries)
+def get_pickup_grasp_path(uid: str, grasp_libraries: Sequence[str] | None = None) -> Path | None:
+    libs = _filter_grasp_libraries_for_object(uid, grasp_libraries)
 
-    for library in grasp_libraries:
+    for library in libs:
         if library in USER_GRASP_LIBRARIES:
             grasp_library_dir = USER_GRASP_LIBRARIES[library]
             grasp_library_index = get_user_grasp_library_index(grasp_library_dir)
@@ -61,11 +72,11 @@ def get_grasp_path(uid: str, grasp_libraries: list[str] | None = None) -> Path |
 
 
 def get_joint_grasp_path(
-    uid: str, joint_name: str, grasp_libraries: list[str] | None = None
+    uid: str, joint_name: str, grasp_libraries: Sequence[str] | None = None
 ) -> Path | None:
-    grasp_libraries = _filter_grasp_libraries_for_object(uid, grasp_libraries)
+    libs = _filter_grasp_libraries_for_object(uid, grasp_libraries)
 
-    for library in grasp_libraries:
+    for library in libs:
         if library in USER_GRASP_LIBRARIES:
             grasp_library_dir = USER_GRASP_LIBRARIES[library]
             grasp_library_index = get_user_grasp_library_index(grasp_library_dir)
@@ -86,14 +97,102 @@ def get_joint_grasp_path(
     return None
 
 
-def load_object_grasps(
+def sanitize_grasp_library_list_and_cache(cache_size: int):
+    def decorator(func):
+        sig = inspect.signature(func)
+
+        @lru_cache(maxsize=cache_size)
+        def cached(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            bound = sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+            libs = bound.arguments.get("grasp_libraries")
+            if libs is not None and not isinstance(libs, tuple):
+                bound.arguments["grasp_libraries"] = tuple(libs)
+            return cached(*bound.args, **bound.kwargs)
+
+        wrapper.cache_info = cached.cache_info  # type: ignore[attr-defined]
+        wrapper.cache_clear = cached.cache_clear  # type: ignore[attr-defined]
+        return wrapper
+
+    return decorator
+
+
+@sanitize_grasp_library_list_and_cache(cache_size=10000)
+def has_pickup_grasp_path(
+    uid: str, grasp_libraries: Sequence[str] | None = None
+) -> bool:
+    return get_pickup_grasp_path(uid, grasp_libraries) is not None
+
+
+@sanitize_grasp_library_list_and_cache(cache_size=10000)
+def has_joint_grasp_path(
+    uid: str, joint_name: str, grasp_libraries: Sequence[str] | None = None
+) -> bool:
+    return get_joint_grasp_path(uid, joint_name, grasp_libraries) is not None
+
+
+@sanitize_grasp_library_list_and_cache(cache_size=10000)
+def has_valid_pickup_grasps(
+    uid: str, num_grasps: int = 1, grasp_libraries: Sequence[str] | None = None
+) -> bool:
+    grasp_path = get_pickup_grasp_path(uid, grasp_libraries)
+    if grasp_path is None:
+        return False
+
+    # read the number of grasps from the grasp file without loading the entire file into memory
+    with zipfile.ZipFile(grasp_path) as zf:
+        with zf.open("transforms.npy") as f:
+            version = np.lib.format.read_magic(f)
+            if version[0] == 1:
+                shape, _, _ = np.lib.format.read_array_header_1_0(f)
+            else:
+                shape, _, _ = np.lib.format.read_array_header_2_0(f)
+            return shape[0] >= num_grasps
+
+
+@sanitize_grasp_library_list_and_cache(cache_size=10000)
+def has_valid_joint_grasps(
+    uid: str,
+    joint_name: str,
+    num_grasps: int = 1,
+    grasp_libraries: Sequence[str] | None = None,
+) -> bool:
+    grasp_path = get_joint_grasp_path(uid, joint_name, grasp_libraries)
+    if grasp_path is None:
+        return False
+
+    # read the number of grasps from the grasp file without loading the entire file into memory
+    with zipfile.ZipFile(grasp_path) as zf:
+        with zf.open("transforms.npy") as f:
+            version = np.lib.format.read_magic(f)
+            if version[0] == 1:
+                shape, _, _ = np.lib.format.read_array_header_1_0(f)
+            else:
+                shape, _, _ = np.lib.format.read_array_header_2_0(f)
+            return shape[0] >= num_grasps
+
+
+def load_pickup_grasps(
     uid: str, grasp_libraries: list[str] | None = None, num_grasps: int = 50
 ) -> np.ndarray:
-    grasp_path = get_grasp_path(uid, grasp_libraries)
+    """
+    Load the first available pickup grasps for a given object in the local frame.
+
+    Args:
+        uid: The asset ID of the object
+        grasp_libraries: The grasp libraries to use (defaults to all available libraries for the object)
+        num_grasps: The maximum number of grasps to load
+
+    Returns:
+        A numpy array of shape (N, 4, 4) containing the grasp poses in the local frame
+    """
+    grasp_path = get_pickup_grasp_path(uid, grasp_libraries)
     if grasp_path is None:
         raise ValueError(f"No grasp file found for {uid}")
-
-    # TODO: wire up this method (and below) into demonstrators
 
     npz_data = np.load(grasp_path)
     transforms: np.ndarray = npz_data["transforms"]
@@ -104,9 +203,21 @@ def load_object_grasps(
         return transforms[idxs]
 
 
-def load_object_joint_grasps(
+def load_joint_grasps(
     uid: str, joint_name: str, grasp_libraries: list[str] | None = None, num_grasps: int = 50
 ) -> np.ndarray:
+    """
+    Load the first available joint grasps for a given object and joint in the joint's local frame.
+
+    Args:
+        uid: The asset ID of the object
+        joint_name: The name of the joint
+        grasp_libraries: The grasp libraries to use (defaults to all available libraries for the object)
+        num_grasps: The maximum number of grasps to load
+
+    Returns:
+        A numpy array of shape (N, 4, 4) containing the grasp poses in the joint's local frame.
+    """
     grasp_path = get_joint_grasp_path(uid, joint_name, grasp_libraries)
     if grasp_path is None:
         raise ValueError(f"No joint grasp file found for {uid}/{joint_name}")
@@ -126,7 +237,17 @@ def flip_grasps(grasps: np.ndarray) -> np.ndarray:
     return grasps @ flip
 
 
-def get_pickup_grasps(env: CPUMujocoEnv, obj: MlSpacesObject) -> np.ndarray:
+def get_pickup_grasps(env: CPUMujocoEnv, obj: MlSpacesObject, include_flipped: bool = True) -> np.ndarray:
+    """
+    Load the first available pickup grasps for a given object in the world frame.
+
+    Args:
+        env: The environment
+        obj: The object
+
+    Returns:
+        A numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
+    """
     scene_metadata = env.current_scene_metadata
     if scene_metadata is None:
         raise ValueError(f"Could not load grasps for object {obj.name}: No scene metadata found!")
@@ -134,18 +255,33 @@ def get_pickup_grasps(env: CPUMujocoEnv, obj: MlSpacesObject) -> np.ndarray:
         raise ValueError(f"Could not load grasps for object {obj.name}: Object not found in scene metadata!")
 
     asset_id: str = scene_metadata["objects"][obj.name]["asset_id"]
-    grasps = load_object_grasps(asset_id, num_grasps=int(1e6))
+    grasps = load_pickup_grasps(asset_id, num_grasps=int(1e6))
     if len(grasps) == 0:
         raise ValueError(f"No grasps found for {obj.name}")
 
     grasps_world = obj.pose @ grasps
-    all_grasp_poses = np.concatenate([grasps_world, flip_grasps(grasps_world)])
+    if include_flipped:
+        all_grasp_poses = np.concatenate([grasps_world, flip_grasps(grasps_world)])
+    else:
+        all_grasp_poses = grasps_world
 
-    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses (including flipped versions)")
+    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses" + (" (including flipped versions)" if include_flipped else ""))
     return all_grasp_poses
 
 
-def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_idx: int) -> np.ndarray:
+def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_idx: int, include_flipped: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Load the first available joint grasps for a given object and joint in the world frame.
+
+    Args:
+        env: The environment
+        obj: The object
+        joint_idx: The index of the joint
+
+    Returns:
+        Numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
+        Numpy array of shape (4, 4) containing the joint body pose in the world frame.
+    """
     scene_metadata = env.current_scene_metadata
     if scene_metadata is None:
         raise ValueError(f"Could not load grasps for object {obj.name}: No scene metadata found!")
@@ -156,7 +292,7 @@ def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_i
     asset_joint_name = scene_metadata["objects"][obj.name]["name_map"]["joints"][joint_name]
     asset_id = scene_metadata["objects"][obj.name]["asset_id"]
 
-    grasps = load_object_joint_grasps(asset_id, asset_joint_name, num_grasps=int(1e6))
+    grasps = load_joint_grasps(asset_id, asset_joint_name, num_grasps=int(1e6))
     if len(grasps) == 0:
         raise ValueError(f"No grasps found for {obj.name}/{joint_name}")
 
@@ -166,6 +302,9 @@ def get_joint_grasps(env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_i
     joint_body_pose[:3, :3] = env.current_data.xmat[joint_bodyid].reshape(3, 3)
 
     grasps_world = joint_body_pose @ grasps
-    all_grasp_poses = np.concatenate([grasps_world, flip_grasps(grasps_world)])
-    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses (including flipped versions)")
-    return all_grasp_poses
+    if include_flipped:
+        all_grasp_poses = np.concatenate([grasps_world, flip_grasps(grasps_world)])
+    else:
+        all_grasp_poses = grasps_world
+    log.info(f"Loaded {len(all_grasp_poses)} total grasp poses" + (" (including flipped versions)" if include_flipped else ""))
+    return all_grasp_poses, joint_body_pose

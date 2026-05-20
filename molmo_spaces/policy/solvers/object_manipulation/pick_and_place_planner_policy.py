@@ -14,7 +14,8 @@ from molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_pl
     TCPMoveSegment,
     TCPMoveSequence,
 )
-from molmo_spaces.utils.grasp_sample import compute_grasp_pose
+from molmo_spaces.utils.grasp_sample import select_grasp_pose
+from molmo_spaces.utils.grasps import get_pickup_grasps
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb
 
 log = logging.getLogger(__name__)
@@ -243,10 +244,11 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
         pickup_obj: MlSpacesObject = om.get_object_by_name(task_config.pickup_obj_name)
         place_receptacle: MlSpacesObject = om.get_object_by_name(task_config.place_receptacle_name)
 
-        grasp_pose_world = compute_grasp_pose(
-            self,
-            pickup_obj,
-            robot_view,
+        candidate_grasps = get_pickup_grasps(self.task.env, pickup_obj)
+        grasp_pose_world = select_grasp_pose(
+            self.task.env,
+            candidate_grasps,
+            pickup_obj.pose,
             check_collision=self.policy_config.filter_colliding_grasps,
             n_collision_checks=self.policy_config.grasp_collision_max_grasps,
             collision_batch_size=self.policy_config.grasp_collision_batch_size,

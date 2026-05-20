@@ -16,7 +16,8 @@ from molmo_spaces.utils.articulation_utils import (
     step_circular_path,
     step_linear_path,
 )
-from molmo_spaces.utils.grasp_sample import compute_grasp_pose
+from molmo_spaces.utils.grasp_sample import select_grasp_pose
+from molmo_spaces.utils.grasps import get_joint_grasps
 
 log = logging.getLogger(__name__)
 
@@ -77,10 +78,15 @@ class OpenClosePlannerPolicy(BaseObjectManipulationPlannerPolicy):
         om = self.task.env.object_managers[self.task.env.current_batch_index]
         pickup_obj = om.get_object_by_name(self.config.task_config.pickup_obj_name)
 
-        grasp_pose_world = compute_grasp_pose(
-            self,
+        candidate_grasps, object_pose = get_joint_grasps(
+            self.task.env,
             pickup_obj,
-            robot_view,
+            self.config.task_config.joint_index,
+        )
+        grasp_pose_world = select_grasp_pose(
+            self.task.env,
+            candidate_grasps,
+            object_pose,
             check_collision=self.policy_config.filter_colliding_grasps,
             n_collision_checks=self.policy_config.grasp_collision_max_grasps,
             collision_batch_size=self.policy_config.grasp_collision_batch_size,

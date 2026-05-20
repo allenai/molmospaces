@@ -100,7 +100,7 @@ class EvalTaskSampler(PickTaskSampler):
         # set the pickup object joint positions
         om = env.object_managers[env.current_batch_index]
         pickup_obj = om.get_object_by_name(self.config.task_config.pickup_obj_name)
-        from molmo_spaces.utils.grasp_sample import has_joint_grasp_file
+        from molmo_spaces.utils.grasps import get_joint_grasp_path
 
         if not isinstance(pickup_obj, MlSpacesArticulationObject):
             return
@@ -122,7 +122,7 @@ class EvalTaskSampler(PickTaskSampler):
                 .get("joints", {})
                 .get(joint_name, None)
             )
-            if has_joint_grasp_file(thor_object_name, thor_joint_name):
+            if get_joint_grasp_path(thor_object_name, thor_joint_name) is not None:
                 joint_names_with_grasp_file.append(joint_name)
         if len(joint_names_with_grasp_file) == 0:
             raise ValueError(f"No joints with grasp file found for {pickup_obj.name}")

@@ -1305,13 +1305,13 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
             print(f"\n=== Loaded {len(uid_list)} pickupable UIDs from cache ===\n")
         return uid_list
 
-    from molmo_spaces.utils.grasp_sample import has_valid_grasp_file
+    from molmo_spaces.utils.grasps import has_valid_pickup_grasps
     from molmo_spaces.utils.object_metadata import ObjectMeta
 
     valid_uids = {}
 
     for uid, anno in ObjectMeta.annotation().items():
-        if has_valid_grasp_file(uid):
+        if has_valid_pickup_grasps(uid):
             valid_uids[uid] = anno
 
     if debug:

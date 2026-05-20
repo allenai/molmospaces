@@ -16,7 +16,7 @@ from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask
 from molmo_spaces.utils.constants.object_constants import (
     EXTENDED_ARTICULATION_TYPES_THOR,
 )
-from molmo_spaces.utils.grasp_sample import has_joint_grasp_file
+from molmo_spaces.utils.grasps import get_joint_grasp_path
 from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.scene_maps import ProcTHORMap
 
@@ -31,20 +31,6 @@ class OpenTaskSampler(PickTaskSampler):
         if config.task_sampler_config.pickup_types is None:
             config.task_sampler_config.pickup_types = EXTENDED_ARTICULATION_TYPES_THOR
         super().__init__(config)
-
-    def has_valid_grasp_file(self, pickup_obj, asset_uid):
-        for joint_name in pickup_obj.joint_names:
-            thor_joint_name = (
-                self.env.current_scene_metadata.get("objects", {})
-                .get(pickup_obj.name, {})
-                .get("name_map", {})
-                .get("joints", {})
-                .get(joint_name, None)
-            )
-            if has_joint_grasp_file(asset_uid, thor_joint_name):
-                return True
-
-        return False
 
     def _sample_task(self, env: CPUMujocoEnv, skip_robot_placement: bool = False) -> OpeningTask:
         """Sample an opening or closing task configuration and create the task."""
@@ -144,7 +130,7 @@ class OpenTaskSampler(PickTaskSampler):
                 .get("joints", {})
                 .get(joint_name, None)
             )
-            if has_joint_grasp_file(thor_object_name, thor_joint_name):
+            if get_joint_grasp_path(thor_object_name, thor_joint_name) is not None:
                 joint_names_with_grasp_file.append(joint_name)
         if len(joint_names_with_grasp_file) == 0:
             raise ValueError(f"No joints with grasp file found for {pickup_obj.name}")

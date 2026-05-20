@@ -25,11 +25,13 @@ from molmo_spaces.tasks.task_sampler_errors import (
 )
 from molmo_spaces.utils.asset_names import get_thor_name
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
+from molmo_spaces.utils.grasps import (
+    get_pickup_grasps,
+    has_pickup_grasp_path,
+    has_valid_pickup_grasps,
+)
 from molmo_spaces.utils.grasp_sample import (
     get_noncolliding_grasp_mask,
-    has_grasp_folder,
-    has_valid_grasp_file,
-    load_grasps_for_object,
 )
 from molmo_spaces.utils.lazy_loading_utils import install_uid
 from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
@@ -681,10 +683,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
             if asset_uid:
                 try:
-                    _gripper, cached_grasps = load_grasps_for_object(asset_uid, 512)
-                    if len(cached_grasps) > 0:
-                        object_pose = pos_quat_to_pose_mat(pickup_obj.position, pickup_obj.quat)
-                        grasp_poses_world = object_pose @ cached_grasps
+                    grasp_poses_world = get_pickup_grasps(env, pickup_obj, include_flipped=False)
+                    if len(grasp_poses_world) > 0:
                         noncolliding_mask = get_noncolliding_grasp_mask(
                             env.current_model, env.current_data, grasp_poses_world, 64
                         )
@@ -823,9 +823,6 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
         return task
 
-    def has_valid_grasp_file(self, pickup_obj, asset_uid):
-        return has_valid_grasp_file(asset_uid)
-
     def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MlSpacesObject]:
         """
         Get the list of candidate probjects in the scene for interactions.
@@ -904,11 +901,11 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 blacklisted_count += 1
                 continue
 
-            if not has_grasp_folder(asset_uid):
+            if not has_pickup_grasp_path(asset_uid):
                 log.info(f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available")
                 continue
 
-            if not self.has_valid_grasp_file(pickup_obj, asset_uid):
+            if not has_valid_pickup_grasps(asset_uid, num_grasps=1):
                 log.info(
                     f"Skipping {pickup_obj.name} (uid={asset_uid}) - grasp file exists but has no valid transforms"
                 )
