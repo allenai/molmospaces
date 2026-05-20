@@ -22,4 +22,4 @@ class Fr3Link0PoseSensor(Sensor):
             return pose_mat_to_7d(pose).astype(np.float32)
         except Exception as e:
             print(f"Warning: Could not get fr3_link0 pose: {e}")
-            return np.zeros(7, dtype=np.float32)
+            raise e

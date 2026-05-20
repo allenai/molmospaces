@@ -47,8 +47,8 @@ def tiptop_robot_eval_override(
     episode_spec: EpisodeSpec,
     camera_config: CameraSystemConfig,
 ) -> None:
-    log.info("Applying Tiptop robot evaluation overrides")
-    # Tiptop needs depth info
+    log.info("Applying TiPToP robot evaluation overrides")
+    # TiPToP needs depth info
     camera_config.cameras[0].record_depth = True
 
 ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {

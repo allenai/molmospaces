@@ -22,7 +22,7 @@ PING_TIMEOUT_SECS = 600
 
 
 class TiptopWebsocketClient:
-    """Websocket client that adds endpoint field for a Tiptop server."""
+    """Websocket client that adds endpoint field for a TiPToP server."""
 
     def __init__(self, host: str = "localhost", port: int = 8765) -> None:
         self._uri = f"ws://{host}:{port}"
@@ -145,7 +145,7 @@ class Tiptop_Policy(InferencePolicy):
             self._prepare_local_model(self.checkpoint_path)
 
     def _prepare_local_model(self, checkpoint_path: str):
-        raise Exception("Tiptop policy only supports remote model inference for now")
+        raise Exception("TiPToP policy only supports remote model inference for now")
 
     def _prepare_remote_model(self):
         host = self.remote_config.get("host", "localhost")
@@ -158,7 +158,7 @@ class Tiptop_Policy(InferencePolicy):
                     host=host,
                     port=port,
                 )
-                log.info(f"Successfully connected to Tiptop model at {host}:{port}")
+                log.info(f"Successfully connected to TiPToP model at {host}:{port}")
                 break
             except Exception as e:
                 if attempt < max_retries - 1:
@@ -169,7 +169,7 @@ class Tiptop_Policy(InferencePolicy):
                     raise
 
     def render(self, obs):
-        # Tiptop uses just the wrist camera for now
+        # TiPToP uses just the wrist camera for now
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         views = obs[wrist_camera_key]
         cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
@@ -189,10 +189,9 @@ class Tiptop_Policy(InferencePolicy):
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         camera_params = obs[f"sensor_param_{wrist_camera_key}"]
 
-        # Tiptop's planning frame is the robot base (in its real-robot setup, "world" IS
-        # the robot base). MolmoSpaces places the robot at sim-world poses, so
-        # transform every camera pose into the base frame here. The wire key stays
-        # `world_from_cam` to match tiptop's API, but the value is base_from_cam.
+        # TiPToP's planning frame is the robot base link frame. The world coordinate frame differs from the
+        # robot base link frame, so we need to compute the transformation matrix from the camera to
+        # the robot base link frame.
         world_from_base = pos_quat_to_pose_mat(np.asarray(obs["fr3_link0_pose"], dtype=np.float32))
         base_from_world = np.linalg.inv(world_from_base).astype(np.float32)
 
@@ -204,6 +203,7 @@ class Tiptop_Policy(InferencePolicy):
             if cam_name not in obs:
                 continue
             cam_params = obs[key]
+            # The TiPToP API contract (world_from_cam) assumes we are passing in the transformation matrix from the camera to the robot base link frame.
             base_from_cam = base_from_world @ np.asarray(cam_params["cam2world_gl"], dtype=np.float32)
             cam_data = {
                 "rgb": np.array(obs[cam_name], dtype=np.uint8),
@@ -215,6 +215,7 @@ class Tiptop_Policy(InferencePolicy):
                 cam_data["depth"] = np.array(obs[depth_key], dtype=np.float32)
             cameras[cam_name] = cam_data
 
+        # The TiPToP API contract (world_from_cam) assumes we are passing in the transformation matrix from the camera to the robot base link frame.
         wrist_base_from_cam = base_from_world @ np.asarray(camera_params["cam2world_gl"], dtype=np.float32)
 
         model_input = {
