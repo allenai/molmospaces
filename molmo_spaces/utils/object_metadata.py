@@ -1,11 +1,17 @@
 import gzip
 import json
+from pathlib import Path
 import pickle
 from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from functools import cache, lru_cache
+from itertools import chain
 
 import numpy as np
 from filelock import FileLock
 from tqdm import tqdm
+
+from molmo_spaces.utils.lazy_loading_utils import UserLibraryIndexEntry, get_user_library_index
 
 try:
     import open_clip
@@ -17,6 +23,7 @@ from molmospaces_resources import PickleLMDBMap
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
     DATA_TYPE_TO_SOURCE_TO_VERSION,
+    USER_ASSET_LIBRARIES,
     get_resource_manager,
 )
 
@@ -64,6 +71,76 @@ def get_clip_model():
     return _CLIP
 
 
+class UserLibraryMetadata(Mapping):
+    """
+    Class which provides dict-like access to a user library metadata.
+    """
+
+    def __init__(
+        self,
+        user_library_index: dict[str, UserLibraryIndexEntry],
+        lru_cache_size: int = 100,
+    ):
+        self._user_library_index = user_library_index
+
+        @lru_cache(maxsize=lru_cache_size)
+        def _get(key):
+            with open(self._user_library_index[key].metadata_path, "r") as f:
+                return json.load(f)
+
+        self._get = _get
+
+    def __contains__(self, key):
+        return key in self._user_library_index
+
+    def __getitem__(self, key):
+        return self._get(key)
+
+    def __len__(self):
+        return len(self._user_library_index)
+
+    def __iter__(self):
+        return iter(self._user_library_index)
+
+
+class DictUnion(Mapping):
+    """
+    Union of multiple nonoverlapping dictionaries.
+    This will not check for key collisions between dictionaries!
+
+    Args:
+        *dicts: The dictionaries to union.
+        raise_on_missing: Whether to raise an error if a key is not found in any of the dictionaries.
+    """
+
+    def __init__(self, *dicts, raise_on_missing: bool = False):
+        self._dicts = list(dicts)
+        self._raise_on_missing = raise_on_missing
+
+    def __contains__(self, key):
+        return any(key in d for d in self._dicts)
+
+    def get(self, key, default=None):
+        for d in self._dicts:
+            if key in d:
+                return d[key]
+        return default
+
+    def __getitem__(self, key):
+        for d in self._dicts:
+            if key in d:
+                return d[key]
+        if self._raise_on_missing:
+            raise KeyError(f"Key {key} not found in any of the dictionaries")
+        return None
+
+    def __len__(self):
+        return sum(len(d) for d in self._dicts)
+
+    def __iter__(self):
+        return chain.from_iterable(self._dicts)
+
+
 def get_db():
     global _DB
 
@@ -100,7 +177,15 @@ def get_db():
 
         _DB = PickleLMDBMap(lmb_dir)
 
-    return _DB
+    dicts = [_DB]
+    for user_library_dir in USER_ASSET_LIBRARIES.values():
+        dicts.append(_get_user_library_metadata(user_library_dir))
+    return DictUnion(*dicts)
+
+
+@cache
+def _get_user_library_metadata(user_library_path: Path) -> "UserLibraryMetadata":
+    return UserLibraryMetadata(get_user_library_index(user_library_path))
 
 
 def compute_text_clip(text_list: str | list[str] | list[list[str]]):
@@ -156,7 +241,7 @@ class ObjectMeta:
         return list(get_db().keys())
 
     @staticmethod
-    def annotation(asset_ids: str | list[str] | None = None) -> list[str]:
+    def annotation(asset_ids: str | list[str] | None = None) -> list[dict | None] | dict | None:
         container = get_db()
 
         if asset_ids is None:

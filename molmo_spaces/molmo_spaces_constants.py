@@ -131,7 +131,33 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     },
 )
 
+
+USER_ASSET_LIBRARIES: dict[str, Path] = {}
+
+
 _RESOURCE_MANAGER = None
+
+
+def register_user_asset_library(name: str, path: Path):
+    """
+    Register a user-provided asset library. The library dir should contain an index.json
+    which contains a dict[str, UserLibraryIndexEntry].
+
+    The library name must not conflict with a built-in object source or any other user-provided library.
+
+    Args:
+        name: The name of the user-provided asset library.
+        path: The path to the user-provided asset library directory.
+    """
+    if name in USER_ASSET_LIBRARIES:
+        raise ValueError(f"User library {name} already registered")
+    if name in DATA_TYPE_TO_SOURCE_TO_VERSION["objects"]:
+        raise ValueError(f"User library {name} name conflicts with a built-in object source")
+    if not path.is_dir():
+        raise ValueError(f"User library {name} path {path} is not a directory")
+    if not (path / "index.json").exists():
+        raise ValueError(f"User library {name} path {path} does not contain an index.json file")
+    USER_ASSET_LIBRARIES[name] = path
 
 
 def _select_storage():

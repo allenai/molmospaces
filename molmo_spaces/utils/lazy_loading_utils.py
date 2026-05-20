@@ -1,14 +1,31 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from functools import cache
 
 from molmospaces_resources import split_query_tokens
+from pydantic import BaseModel, TypeAdapter
 
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
     DATA_TYPE_TO_SOURCE_TO_VERSION,
+    USER_ASSET_LIBRARIES,
     get_resource_manager,
     get_scenes_root,
 )
+
+
+class UserLibraryIndexEntry(BaseModel):
+    # UID of the object
+    uid: str
+    # Path to object MJCF
+    object_path: Path
+    # Path to a json file which contains the object metadata
+    metadata_path: Path
+    # Path to a NPZ file which contains "transforms" -> (N, 4, 4) array of grasp poses in object frame
+    grasps_path: Path | None = None
+
+
+UserLibraryIndex = TypeAdapter(dict[str, UserLibraryIndexEntry])
 
 
 def install_scene_from_source_index(source, idx):
@@ -111,10 +128,31 @@ def add_install_prefixes(data_type, source, relative_path):
     return ASSETS_DIR / data_type / source / relative_path
 
 
-def locate_uid_package(uid, extension="xml"):
+@cache
+def get_user_library_index(user_library_path: Path):
+    assert user_library_path.is_dir()
+    with open(user_library_path / "index.json", "r") as f:
+        return UserLibraryIndex.validate_json(f.read())
+
+
+def locate_uid_package(
+    uid: str,
+    extension: str = "xml",
+) -> tuple[str, str | None, Path] | tuple[None, None, None]:
+    """
+    Locate the package containing the given object UID.
+
+    Args:
+        uid: The UID of the object to locate.
+        extension: The extension of the file to locate.
+
+    Returns:
+        A tuple containing the source, package, and XML path of the object.
+            If the object is not found, returns (None, None, None).
+    """
+
     # Remember we install a link to each object source, so we need to resolve
     # at least until the source
-
     base = (ASSETS_DIR / "objects" / "thor").resolve()
 
     # Since thor objects are always fully installed, we just search in the file system
@@ -151,16 +189,26 @@ def locate_uid_package(uid, extension="xml"):
                             add_install_prefixes("objects", object_source, path),
                         )
 
+    for user_library_name, user_library_dir in USER_ASSET_LIBRARIES.items():
+        user_library_index = get_user_library_index(user_library_dir)
+        if uid in user_library_index:
+            # Assume the user is getting the object
+            return user_library_name, None, user_library_dir / user_library_index[uid].object_path
+
     return None, None, None
 
 
 def install_uid(uid, grasp_source="droid_objaverse", exclude_thor=True):
+    assert exclude_thor, "exclude_thor=False is unsupported behavior!"
     source, package, xml_path = locate_uid_package(uid)
 
     if source is None:
         raise ValueError(
             f"{uid} not found in object sources {sorted(DATA_TYPE_TO_SOURCE_TO_VERSION['objects'].keys())}"
         )
+
+    if source in USER_ASSET_LIBRARIES:
+        return xml_path
 
     if source != "thor" or not exclude_thor:
         get_resource_manager().install_packages("objects", {source: [package]})
