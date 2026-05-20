@@ -3,7 +3,7 @@ from pathlib import Path
 from functools import cache
 
 from molmospaces_resources import split_query_tokens
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter
 
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
@@ -14,18 +14,23 @@ from molmo_spaces.molmo_spaces_constants import (
 )
 
 
-class UserLibraryIndexEntry(BaseModel):
+class UserAssetLibraryIndexEntry(BaseModel):
     # UID of the object
     uid: str
     # Path to object MJCF
     object_path: Path
     # Path to a json file which contains the object metadata
     metadata_path: Path
-    # Path to a NPZ file which contains "transforms" -> (N, 4, 4) array of grasp poses in object frame
-    grasps_path: Path | None = None
 
 
-UserLibraryIndex = TypeAdapter(dict[str, UserLibraryIndexEntry])
+UserAssetLibraryIndex = TypeAdapter(dict[str, UserAssetLibraryIndexEntry])
+
+
+class UserGraspLibraryIndex(BaseModel):
+    # {robot_name: {uid: {joint_name: grasp_path}}} to a NPZ file which contains "transforms" -> (N, 4, 4) array of grasp poses in robot frame
+    articulated_grasp_paths: dict[str, dict[str, dict[str, Path]]] = Field(default_factory=dict)
+    # {robot_name: {uid: grasp_path}} to a NPZ file which contains "transforms" -> (N, 4, 4) array of grasp poses in robot frame
+    grasp_paths: dict[str, dict[str, Path]] = Field(default_factory=dict)
 
 
 def install_scene_from_source_index(source, idx):
@@ -130,9 +135,14 @@ def add_install_prefixes(data_type, source, relative_path):
 
 @cache
 def get_user_library_index(user_library_path: Path):
-    assert user_library_path.is_dir()
-    with open(user_library_path / "index.json", "r") as f:
-        return UserLibraryIndex.validate_json(f.read())
+    with open(user_library_path / "assets_index.json", "r") as f:
+        return UserAssetLibraryIndex.validate_json(f.read())
+
+
+@cache
+def get_user_grasp_library_index(user_library_path: Path):
+    with open(user_library_path / "grasps_index.json", "r") as f:
+        return UserGraspLibraryIndex.model_validate_json(f.read())
 
 
 def locate_uid_package(

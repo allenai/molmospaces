@@ -11,7 +11,7 @@ import numpy as np
 from filelock import FileLock
 from tqdm import tqdm
 
-from molmo_spaces.utils.lazy_loading_utils import UserLibraryIndexEntry, get_user_library_index
+from molmo_spaces.utils.lazy_loading_utils import UserAssetLibraryIndexEntry, get_user_library_index
 
 try:
     import open_clip
@@ -78,7 +78,7 @@ class UserLibraryMetadata(Mapping):
 
     def __init__(
         self,
-        user_library_index: dict[str, UserLibraryIndexEntry],
+        user_library_index: dict[str, UserAssetLibraryIndexEntry],
         lru_cache_size: int = 100,
     ):
         self._user_library_index = user_library_index

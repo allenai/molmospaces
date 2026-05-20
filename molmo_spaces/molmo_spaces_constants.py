@@ -132,7 +132,14 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
 )
 
 
+OBJECT_LIBRARY_TO_GRASP_LIBRARIES = {
+    "thor": ["droid"],
+    "objaverse": ["droid_objaverse"],
+}
+
 USER_ASSET_LIBRARIES: dict[str, Path] = {}
+
+USER_GRASP_LIBRARIES: dict[str, Path] = {}
 
 
 _RESOURCE_MANAGER = None
@@ -140,8 +147,8 @@ _RESOURCE_MANAGER = None
 
 def register_user_asset_library(name: str, path: Path):
     """
-    Register a user-provided asset library. The library dir should contain an index.json
-    which contains a dict[str, UserLibraryIndexEntry].
+    Register a user-provided asset library. The library dir should contain an assets_index.json
+    which contains a dict[str, UserAssetLibraryIndexEntry].
 
     The library name must not conflict with a built-in object source or any other user-provided library.
 
@@ -149,15 +156,51 @@ def register_user_asset_library(name: str, path: Path):
         name: The name of the user-provided asset library.
         path: The path to the user-provided asset library directory.
     """
+    assert "/" not in name, f"User library name {name} must not contain slashes"
     if name in USER_ASSET_LIBRARIES:
         raise ValueError(f"User library {name} already registered")
     if name in DATA_TYPE_TO_SOURCE_TO_VERSION["objects"]:
         raise ValueError(f"User library {name} name conflicts with a built-in object source")
-    if not path.is_dir():
-        raise ValueError(f"User library {name} path {path} is not a directory")
-    if not (path / "index.json").exists():
-        raise ValueError(f"User library {name} path {path} does not contain an index.json file")
+    if not (path / "assets_index.json").exists():
+        raise ValueError(
+            f"User library {name} path {path} does not contain an assets_index.json file"
+        )
     USER_ASSET_LIBRARIES[name] = path
+
+
+def register_user_grasp_library(root_name: str, path: Path, object_library: str):
+    grasps_index_path = path / "grasps_index.json"
+    if not grasps_index_path.exists():
+        raise ValueError(f"{grasps_index_path} does not exist")
+    if (
+        object_library not in USER_ASSET_LIBRARIES
+        and object_library not in DATA_TYPE_TO_SOURCE_TO_VERSION["objects"]
+    ):
+        raise ValueError(f"Object library {object_library} not found")
+
+    from molmo_spaces.utils.lazy_loading_utils import UserGraspLibraryIndex
+
+    with open(grasps_index_path, "r") as f:
+        grasp_index = UserGraspLibraryIndex.model_validate_json(f.read())
+
+    grasp_robots = set(grasp_index.grasp_paths.keys()) | set(
+        grasp_index.articulated_grasp_paths.keys()
+    )
+    grasp_libraries = [f"{root_name}/{robot}" for robot in grasp_robots]
+
+    for grasp_library in grasp_libraries:
+        if grasp_library in USER_GRASP_LIBRARIES:
+            raise ValueError(f"User grasp library {grasp_library} already registered")
+        if grasp_library in DATA_TYPE_TO_SOURCE_TO_VERSION["grasps"]:
+            raise ValueError(
+                f"User grasp library {grasp_library} name conflicts with a built-in grasp source"
+            )
+
+        USER_GRASP_LIBRARIES[grasp_library] = path
+
+        if object_library not in OBJECT_LIBRARY_TO_GRASP_LIBRARIES:
+            OBJECT_LIBRARY_TO_GRASP_LIBRARIES[object_library] = []
+        OBJECT_LIBRARY_TO_GRASP_LIBRARIES[object_library].append(grasp_library)
 
 
 def _select_storage():
