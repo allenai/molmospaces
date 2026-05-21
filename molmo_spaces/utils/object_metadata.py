@@ -78,14 +78,17 @@ class UserLibraryMetadata(Mapping):
 
     def __init__(
         self,
+        user_library_path: Path,
         user_library_index: dict[str, UserAssetLibraryIndexEntry],
         lru_cache_size: int = 100,
     ):
+        self._user_library_path = user_library_path
         self._user_library_index = user_library_index
 
         @lru_cache(maxsize=lru_cache_size)
         def _get(key):
-            with open(self._user_library_index[key].metadata_path, "r") as f:
+            metadata_rel_path = self._user_library_index[key].metadata_path
+            with open(self._user_library_path / metadata_rel_path, "r") as f:
                 return json.load(f)
 
         self._get = _get
@@ -185,7 +188,7 @@ def get_db():
 
 @cache
 def _get_user_library_metadata(user_library_path: Path) -> "UserLibraryMetadata":
-    return UserLibraryMetadata(get_user_library_index(user_library_path))
+    return UserLibraryMetadata(user_library_path, get_user_library_index(user_library_path))
 
 
 def compute_text_clip(text_list: str | list[str] | list[list[str]]):

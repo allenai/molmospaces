@@ -709,7 +709,7 @@ class BaseMujocoTaskSampler:
 
         return setup_empty_materials(spec, num_materials)
 
-    def update_scene(self, scene_path: str | None = None, variant: str = "base") -> None:
+    def update_scene(self, scene_path: str | None = None) -> None:
         """Update the environment's scene by loading a new scene model.
 
         Args:
@@ -717,7 +717,7 @@ class BaseMujocoTaskSampler:
             variant: The scene variant to use when scene_path is None (ceiling", "map", "base", etc.)
         """
         if scene_path is None:
-            scene_path = self._current_house_scene_path(variant=variant)
+            scene_path = self._current_house_scene_path()
 
         # If using a MolmoSpaces scene, install it
         if get_scenes_root().resolve() in Path(scene_path).resolve().parents:
@@ -938,7 +938,7 @@ class BaseMujocoTaskSampler:
                 )
                 self._samples_per_current_house = 1
 
-    def _current_house_scene_path(self, variant: str = "base") -> str | None:
+    def _current_house_scene_path(self) -> str | None:
         """Get the scene path for the current house index and specified variant.
 
         Args:
@@ -952,6 +952,7 @@ class BaseMujocoTaskSampler:
         split_map = mapping[self.config.data_split]
         idx = self.current_house_index
         house_variants = split_map.get(idx, None)
+        variant = self.config.task_sampler_config.house_variant
 
         if house_variants is None:
             raise RuntimeError(f"No scene file for split '{self.config.data_split}' index {idx}")
@@ -1030,7 +1031,6 @@ class BaseMujocoTaskSampler:
         self,
         force_advance_scene=False,
         house_index=None,
-        variant: str = "ceiling",
     ) -> None | BaseMujocoTask:
         """Returns a task with batch size task_batch_size.
 
@@ -1055,7 +1055,7 @@ class BaseMujocoTaskSampler:
         )
         assert house_index is None or self.current_house_index == house_index
 
-        scene_path = self._current_house_scene_path(variant=variant)
+        scene_path = self._current_house_scene_path()
 
         need_load = (
             self._env is None
@@ -1079,7 +1079,7 @@ class BaseMujocoTaskSampler:
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("scene_load")
             try:
-                self.update_scene(scene_path=scene_path, variant=variant)
+                self.update_scene(scene_path=scene_path)
             finally:
                 if self._datagen_profiler is not None:
                     self._datagen_profiler.end("scene_load")

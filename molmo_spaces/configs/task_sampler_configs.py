@@ -49,6 +49,7 @@ class BaseMujocoTaskSamplerConfig(Config):
 
     # Scene configuration
     enable_texture_randomization: bool = False
+    house_variant: str = "ceiling"
 
 
 class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
