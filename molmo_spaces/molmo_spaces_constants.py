@@ -169,6 +169,16 @@ def register_user_asset_library(name: str, path: Path):
 
 
 def register_user_grasp_library(root_name: str, path: Path, object_library: str):
+    """
+    Register a user-provided grasp library. The library dir should contain a grasps_index.json
+    which contains a UserGraspLibraryIndex.
+
+    Args:
+        root_name: The root name of the grasp library, will be used with the robot name to form the grasp library name.
+        path: The path to the user-provided grasp library directory.
+        object_library: The object library (user-provided or built-in) which this grasp library is for.
+            It must have already been registered.
+    """
     grasps_index_path = path / "grasps_index.json"
     if not grasps_index_path.exists():
         raise ValueError(f"{grasps_index_path} does not exist")
