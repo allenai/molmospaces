@@ -5,7 +5,7 @@ Optionally, the script can also compute some unprovided metadata for the assets.
 The asset library can have any directory structure, but asset XMLs should be named <uid>.xml.
 Their corresponding metadata JSONs should be named <uid>.json.
 If these assets have array-valued metadata (e.g. clip features), they should be stored in an npz file named <uid>.npz,
-    keys are /-delimited representing the hierarchy of the metadata.
+    keys are forward-slash-delimited representing the hierarchy of the metadata.
 """
 
 import argparse
@@ -26,8 +26,6 @@ def hydrate_asset_metadata(asset_path: Path, metadata: dict):
 
     assert model.nbody == 2, "Expected a single body in the asset (other than worldbody)"
     body = model.body(1)
-
-    # TODO: check articulated metadata
 
     if "mass" not in metadata:
         metadata["mass"] = body.mass.item()
