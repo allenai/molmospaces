@@ -648,6 +648,10 @@ class ObjectManager:
 
         return cache_in_use[oname]["structural"]
 
+    def _has_visible_geom(self, body_id: int) -> bool:
+        geom_ids = descendant_geoms(self.model, body_id, visual_only=False)
+        return np.any(self.model.geom_group[geom_ids] < 3).item()
+
     def is_excluded(self, object_or_name_or_id: ObjectOrNameOrIdType) -> bool:
         cache_in_use = self._model_cache
 
@@ -656,9 +660,7 @@ class ObjectManager:
         if "excluded" not in cache_in_use[oname]:
             is_excluded = (
                 self._env.config.robot_config.robot_namespace in oname
-            ) or not descendant_geoms(
-                self.model, self.get_object(object_or_name_or_id).body_id, True
-            )
+            ) or not self._has_visible_geom(self.get_object_body_id(object_or_name_or_id))
             if self._caching_enabled:
                 cache_in_use[oname]["excluded"] = is_excluded
             else:

@@ -632,7 +632,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             reference_obj_id = om.get_object_body_id(reference_obj_name)
 
             supporting_geom_id = get_supporting_geom(env.current_data, reference_obj_id)
-            if supporting_geom_id is None or supporting_geom_id < 1:
+            if supporting_geom_id is None:
                 log.info(f"Failed to get a valid supporting geom_id for {reference_obj_name}")
                 self._remove_candidate_object(reference_obj_name)
                 continue
