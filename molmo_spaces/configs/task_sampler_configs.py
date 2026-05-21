@@ -91,7 +91,9 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     max_robot_to_obj_dist: float = 0.6
 
     # House iteration configuration
-    house_inds: list[int] = list(range(0, 4))  # order of house indices to iterate over
+    house_inds: list[int] | None = list(
+        range(0, 4)
+    )  # houses to iterate over, if None use all houses
     samples_per_house: int = 2  # number of tasks to sample per house before advancing
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 

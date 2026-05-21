@@ -1076,11 +1076,15 @@ class ObjectManager:
             try:
                 img.append(ObjectMeta.img_features(asset_id))
                 kept_asset_ids.append(asset_id)
-            except ValueError:
+            except (ValueError, KeyError):
                 log.warning(f"No image features for {asset_id}, ignoring.")
 
         if name_to_uid[target_name] not in kept_asset_ids:
-            raise ValueError(f"Missing asset id {name_to_uid[target_name]} from {target_name}")
+            log.warning(
+                f"Could not get image features for {target_name}, using dummy description scores."
+            )
+            names = self.get_natural_object_names(object_or_name_or_id, [])
+            return [(1.0, 1.0, name) for name in names]
 
         img = np.concatenate(img, axis=0)
         asset_ids = kept_asset_ids
