@@ -236,7 +236,10 @@ def flip_grasps(grasps: np.ndarray) -> np.ndarray:
 
 
 def get_pickup_grasps(
-    env: CPUMujocoEnv, obj: MlSpacesObject, include_flipped: bool = True
+    env: CPUMujocoEnv,
+    obj: MlSpacesObject,
+    include_flipped: bool = True,
+    grasp_libraries: list[str] | None = None,
 ) -> np.ndarray:
     """
     Load the first available pickup grasps for a given object in the world frame.
@@ -245,6 +248,7 @@ def get_pickup_grasps(
         env: The environment
         obj: The object
         include_flipped: Whether to include flipped grasps
+        grasp_libraries: The grasp libraries to use (defaults to all available libraries for the object)
 
     Returns:
         A numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
@@ -258,7 +262,7 @@ def get_pickup_grasps(
         )
 
     asset_id: str = scene_metadata["objects"][obj.name]["asset_id"]
-    grasps = load_pickup_grasps(asset_id, num_grasps=int(1e6))
+    grasps = load_pickup_grasps(asset_id, grasp_libraries, num_grasps=int(1e6))
     if len(grasps) == 0:
         raise ValueError(f"No grasps found for {obj.name}")
 
@@ -276,7 +280,11 @@ def get_pickup_grasps(
 
 
 def get_joint_grasps(
-    env: CPUMujocoEnv, obj: MlSpacesArticulationObject, joint_idx: int, include_flipped: bool = True
+    env: CPUMujocoEnv,
+    obj: MlSpacesArticulationObject,
+    joint_idx: int,
+    include_flipped: bool = True,
+    grasp_libraries: list[str] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Load the first available joint grasps for a given object and joint in the world frame.
@@ -286,6 +294,7 @@ def get_joint_grasps(
         obj: The object
         joint_idx: The index of the joint
         include_flipped: Whether to include flipped grasps
+        grasp_libraries: The grasp libraries to use (defaults to all available libraries for the object)
 
     Returns:
         Numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
@@ -303,7 +312,7 @@ def get_joint_grasps(
     asset_joint_name = scene_metadata["objects"][obj.name]["name_map"]["joints"][joint_name]
     asset_id = scene_metadata["objects"][obj.name]["asset_id"]
 
-    grasps = load_joint_grasps(asset_id, asset_joint_name, num_grasps=int(1e6))
+    grasps = load_joint_grasps(asset_id, asset_joint_name, grasp_libraries, num_grasps=int(1e6))
     if len(grasps) == 0:
         raise ValueError(f"No grasps found for {obj.name}/{joint_name}")
 

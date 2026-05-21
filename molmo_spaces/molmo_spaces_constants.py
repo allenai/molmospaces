@@ -132,6 +132,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
 )
 
 
+# Maps asset libraries to a list of corresponding grasp libraries, in descending priority
 OBJECT_LIBRARY_TO_GRASP_LIBRARIES = {
     "thor": ["droid"],
     "objaverse": ["droid_objaverse"],
@@ -210,7 +211,8 @@ def register_user_grasp_library(root_name: str, path: Path, object_library: str)
 
         if object_library not in OBJECT_LIBRARY_TO_GRASP_LIBRARIES:
             OBJECT_LIBRARY_TO_GRASP_LIBRARIES[object_library] = []
-        OBJECT_LIBRARY_TO_GRASP_LIBRARIES[object_library].append(grasp_library)
+        # newer grasp libraries have precedence over older ones
+        OBJECT_LIBRARY_TO_GRASP_LIBRARIES[object_library].insert(0, grasp_library)
 
 
 def _select_storage():

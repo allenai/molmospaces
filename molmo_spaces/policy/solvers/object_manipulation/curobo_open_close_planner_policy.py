@@ -349,7 +349,10 @@ class CuroboOpenClosePlannerPolicy(CuroboPlannerPolicy, OpenClosePlannerPolicy):
 
         # Get all grasp poses
         grasp_poses_world, object_pose = get_joint_grasps(
-            self.task.env, pickup_obj, self.config.task_config.joint_index
+            self.task.env,
+            pickup_obj,
+            self.config.task_config.joint_index,
+            grasp_libraries=self.config.policy_config.grasp_libraries,
         )
 
         # Get current TCP position

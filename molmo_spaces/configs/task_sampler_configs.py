@@ -69,6 +69,10 @@ class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     # final distributions of samples. (Roughly 20% objaverse assets in data)
     objaverse_oversampling_factor: int = 30
 
+    filter_for_grasps: bool = True  # only sample objects with valid grasp files
+    # grasp libraries to use for filtering, if None all available libraries will be used
+    grasp_libraries: list[str] | None = None
+
 
 class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     """Configuration for Franka move-to-pose task sampler."""

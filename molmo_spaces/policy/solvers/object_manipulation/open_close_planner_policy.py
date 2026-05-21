@@ -82,6 +82,7 @@ class OpenClosePlannerPolicy(BaseObjectManipulationPlannerPolicy):
             self.task.env,
             pickup_obj,
             self.config.task_config.joint_index,
+            grasp_libraries=self.policy_config.grasp_libraries,
         )
         grasp_pose_world = select_grasp_pose(
             self.task.env,

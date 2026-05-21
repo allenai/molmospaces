@@ -244,7 +244,9 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
         pickup_obj: MlSpacesObject = om.get_object_by_name(task_config.pickup_obj_name)
         place_receptacle: MlSpacesObject = om.get_object_by_name(task_config.place_receptacle_name)
 
-        candidate_grasps = get_pickup_grasps(self.task.env, pickup_obj)
+        candidate_grasps = get_pickup_grasps(
+            self.task.env, pickup_obj, grasp_libraries=self.policy_config.grasp_libraries
+        )
         grasp_pose_world = select_grasp_pose(
             self.task.env,
             candidate_grasps,

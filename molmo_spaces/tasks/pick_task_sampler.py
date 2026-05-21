@@ -683,7 +683,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             asset_uid = self.get_asset_uid_from_object(env, pickup_obj_name)
             if asset_uid:
                 try:
-                    grasp_poses_world = get_pickup_grasps(env, pickup_obj, include_flipped=False)
+                    grasp_poses_world = get_pickup_grasps(
+                        env,
+                        pickup_obj,
+                        include_flipped=False,
+                        grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+                    )
                     if len(grasp_poses_world) > 0:
                         noncolliding_mask = get_noncolliding_grasp_mask(
                             env.current_model, env.current_data, grasp_poses_world, 64
@@ -901,15 +906,25 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 blacklisted_count += 1
                 continue
 
-            if not has_pickup_grasp_path(asset_uid):
-                log.info(f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available")
-                continue
+            if self.config.task_sampler_config.filter_for_grasps:
+                if not has_pickup_grasp_path(
+                    asset_uid,
+                    grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+                ):
+                    log.info(
+                        f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available"
+                    )
+                    continue
 
-            if not has_valid_pickup_grasps(asset_uid, num_grasps=1):
-                log.info(
-                    f"Skipping {pickup_obj.name} (uid={asset_uid}) - grasp file exists but has no valid transforms"
-                )
-                continue
+                if not has_valid_pickup_grasps(
+                    asset_uid,
+                    grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+                    num_grasps=1,
+                ):
+                    log.info(
+                        f"Skipping {pickup_obj.name} (uid={asset_uid}) - grasp file exists but has no valid transforms"
+                    )
+                    continue
 
             # Mass computation
             masses = [model.body_mass[bid] for bid in get_children(pickup_obj.object_id)]

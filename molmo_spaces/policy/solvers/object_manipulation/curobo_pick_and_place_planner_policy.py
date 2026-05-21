@@ -94,7 +94,9 @@ class CuroboPickAndPlacePlannerPolicy(CuroboPlannerPolicy, PickAndPlacePlannerPo
         data = self.task.env.current_data
 
         # Get all grasp poses
-        grasp_poses_world = get_pickup_grasps(self.task.env, pickup_obj)
+        grasp_poses_world = get_pickup_grasps(
+            self.task.env, pickup_obj, grasp_libraries=self.config.policy_config.grasp_libraries
+        )
 
         # Get current TCP position
         tcp_pose_arr = self.task.sensor_suite.sensors["tcp_pose"].get_observation(
