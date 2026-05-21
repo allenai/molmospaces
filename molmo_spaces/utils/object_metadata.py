@@ -80,16 +80,33 @@ class UserLibraryMetadata(Mapping):
         self,
         user_library_path: Path,
         user_library_index: dict[str, UserAssetLibraryIndexEntry],
-        lru_cache_size: int = 100,
+        lru_cache_size: int = 1000,
     ):
         self._user_library_path = user_library_path
         self._user_library_index = user_library_index
 
         @lru_cache(maxsize=lru_cache_size)
         def _get(key):
-            metadata_rel_path = self._user_library_index[key].metadata_path
+            metadata_entry = self._user_library_index[key]
+            metadata_rel_path = metadata_entry.metadata_path
             with open(self._user_library_path / metadata_rel_path, "r") as f:
-                return json.load(f)
+                metadata: dict = json.load(f)
+
+            if metadata_entry.metadata_npz_path is not None:
+                metadata_npz = np.load(self._user_library_path / metadata_entry.metadata_npz_path)
+
+                for npz_key, npz_value in metadata_npz.items():
+                    d = metadata
+                    key_parts = npz_key.split("/")
+                    for k_part in key_parts[:-1]:
+                        d = d.setdefault(k_part, {})
+                    k = key_parts[-1]
+                    assert k not in d, (
+                        f"Key {npz_key} from npz metadata already exists in metadata for uid={key}"
+                    )
+                    d[k] = npz_value
+
+            return metadata
 
         self._get = _get
 

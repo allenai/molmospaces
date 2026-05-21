@@ -4,6 +4,8 @@ Optionally, the script can also compute some unprovided metadata for the assets.
 
 The asset library can have any directory structure, but asset XMLs should be named <uid>.xml.
 Their corresponding metadata JSONs should be named <uid>.json.
+If these assets have array-valued metadata (e.g. clip features), they should be stored in an npz file named <uid>.npz,
+    keys are /-delimited representing the hierarchy of the metadata.
 """
 
 import argparse
@@ -47,6 +49,7 @@ def build_asset_index(source_dir: Path, args) -> dict[str, UserAssetLibraryIndex
     for object_xml in sorted(source_dir.rglob("*.xml")):
         asset_id = object_xml.stem
         metadata_json = object_xml.with_suffix(".json")
+        metadata_npz = object_xml.with_suffix(".npz")
         if not metadata_json.exists():
             if args.suppress_missing_metadata:
                 print(
@@ -60,6 +63,9 @@ def build_asset_index(source_dir: Path, args) -> dict[str, UserAssetLibraryIndex
         if args.compute_metadata:
             computed_metadata_json = metadata_json.with_name(f"{asset_id}_computed.json")
             if computed_metadata_json.exists() and not args.overwrite:
+                print(
+                    f"Computed metadata JSON for {object_xml} already exists at {computed_metadata_json}, skipping. Pass --overwrite to recompute."
+                )
                 continue
 
             with metadata_json.open() as f:
@@ -84,6 +90,9 @@ def build_asset_index(source_dir: Path, args) -> dict[str, UserAssetLibraryIndex
             uid=asset_id,
             object_path=object_xml.relative_to(source_dir),
             metadata_path=metadata_path.relative_to(source_dir),
+            metadata_npz_path=(
+                metadata_npz.relative_to(source_dir) if metadata_npz.exists() else None
+            ),
         )
 
     return dict(sorted(asset_index.items()))

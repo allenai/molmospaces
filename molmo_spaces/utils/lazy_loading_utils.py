@@ -21,6 +21,8 @@ class UserAssetLibraryIndexEntry(BaseModel):
     object_path: Path
     # Path to a json file which contains the object metadata
     metadata_path: Path
+    # Path to an npz file which contains array-valued metadata (e.g. clip features)
+    metadata_npz_path: Path | None
 
 
 UserAssetLibraryIndex = TypeAdapter(dict[str, UserAssetLibraryIndexEntry])
