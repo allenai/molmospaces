@@ -47,6 +47,8 @@ nav:
       - Development: development.md
       - "Tutorial: Add a custom robot":
           - tutorials/add_robot/index.md
+      - "Tutorial: Add a custom asset library":
+          - tutorials/custom_assets/index.md
   - API Reference:
       - Overview: api/index.md
       - molmo_spaces: api/molmo_spaces.md
