@@ -1,0 +1,7 @@
+{
+    "red_block": {
+        "uid": "red_block",
+        "object_path": "red_block/red_block.xml",
+        "metadata_path": "red_block/red_block.json"
+    }
+}

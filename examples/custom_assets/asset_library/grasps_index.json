@@ -1,0 +1,8 @@
+{
+    "articulated_grasp_paths": {},
+    "grasp_paths": {
+        "droid": {
+            "red_block": "red_block/grasps_droid.npz"
+        }
+    }
+}

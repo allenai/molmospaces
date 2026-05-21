@@ -1,0 +1,12 @@
+{
+    "assetId": "red_block",
+    "category": "block",
+    "description_long": "This is a red block.",
+    "description": "A red block.",
+    "description_short": {
+        "one_word": "block",
+        "two_words": "red block",
+        "three_words": "red wooden block"
+    },
+    "synset": "block.n.01"
+}
