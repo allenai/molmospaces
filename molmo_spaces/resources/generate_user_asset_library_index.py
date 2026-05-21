@@ -1,6 +1,9 @@
 """
 Script to generate an asset index for a user-provided asset library.
 Optionally, the script can also compute some unprovided metadata for the assets.
+
+The asset library can have any directory structure, but asset XMLs should be named <uid>.xml.
+Their corresponding metadata JSONs should be named <uid>.json.
 """
 
 import argparse
@@ -46,7 +49,9 @@ def build_asset_index(source_dir: Path, args) -> dict[str, UserAssetLibraryIndex
         metadata_json = object_xml.with_suffix(".json")
         if not metadata_json.exists():
             if args.suppress_missing_metadata:
-                print(f"Warning: Expected metadata JSON for {object_xml} at {metadata_json}, but it was not found. Skipping.")
+                print(
+                    f"Warning: Expected metadata JSON for {object_xml} at {metadata_json}, but it was not found. Skipping."
+                )
                 continue
             raise FileNotFoundError(
                 f"Expected metadata JSON for {object_xml} at {metadata_json}, but it was not found."
@@ -85,7 +90,9 @@ def build_asset_index(source_dir: Path, args) -> dict[str, UserAssetLibraryIndex
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
         "source_dir",
         type=Path,
@@ -97,16 +104,24 @@ def main() -> None:
         type=Path,
         help="Output path for assets_index.json. Defaults to <source_dir>/assets_index.json.",
     )
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing output file if it exists.")
-    parser.add_argument("--compute-metadata", action="store_true", help="Compute metadata for the assets.")
-    parser.add_argument("--suppress-missing-metadata", action="store_true", help="Suppress missing metadata errors, skipping instead.")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing output file if it exists."
+    )
+    parser.add_argument(
+        "--compute-metadata",
+        action="store_true",
+        help="Compute metadata for the assets, write to a new JSON file next to the original.",
+    )
+    parser.add_argument(
+        "--suppress-missing-metadata",
+        action="store_true",
+        help="Suppress missing metadata errors, skipping instead.",
+    )
     args = parser.parse_args()
 
     source_dir = args.source_dir.resolve()
     output_path: Path = (
-        args.output.resolve()
-        if args.output is not None
-        else source_dir / "assets_index.json"
+        args.output.resolve() if args.output is not None else source_dir / "assets_index.json"
     )
     if output_path.exists() and not args.overwrite:
         raise FileExistsError(f"{output_path} already exists. Use --overwrite to overwrite.")
