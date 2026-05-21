@@ -244,6 +244,7 @@ def get_pickup_grasps(
     Args:
         env: The environment
         obj: The object
+        include_flipped: Whether to include flipped grasps
 
     Returns:
         A numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
@@ -284,6 +285,7 @@ def get_joint_grasps(
         env: The environment
         obj: The object
         joint_idx: The index of the joint
+        include_flipped: Whether to include flipped grasps
 
     Returns:
         Numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.

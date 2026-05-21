@@ -5,6 +5,7 @@ These configs subclass from the base_pick_config and are registered
 for use in the data generation pipeline.
 """
 
+from functools import cache
 import math
 from pathlib import Path
 
@@ -533,10 +534,19 @@ class FrankaPickOmniCamAblationConfig(FrankaPickOmniCamConfig):
 
     task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler,
-        added_pickup_objects=get_valid_pickupable_obja_uids(),
+        added_pickup_objects=None,  # will get set after instantiation
         # num_added_pickups=30, these are defaults
         # episodes_per_added_pickup=1,
     )
+
+    @cache
+    def _get_valid_pickupable_obja_uids(self) -> list[str]:
+        return get_valid_pickupable_obja_uids()
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        if self.task_sampler_config.added_pickup_objects is None:
+            self.task_sampler_config.added_pickup_objects = self._get_valid_pickupable_obja_uids()
 
     @property
     def tag(self) -> str:

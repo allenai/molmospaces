@@ -145,6 +145,12 @@ def get_user_grasp_library_index(user_library_path: Path):
         return UserGraspLibraryIndex.model_validate_json(f.read())
 
 
+@cache
+def get_thor_uid_to_xmls() -> dict[str, Path]:
+    base = (ASSETS_DIR / "objects" / "thor").resolve()
+    return {xml.stem: xml for xml in base.rglob("*.xml")}
+
+
 def locate_uid_package(
     uid: str,
     extension: str = "xml",
@@ -161,15 +167,12 @@ def locate_uid_package(
             If the object is not found, returns (None, None, None).
     """
 
-    # Remember we install a link to each object source, so we need to resolve
-    # at least until the source
-    base = (ASSETS_DIR / "objects" / "thor").resolve()
-
     # Since thor objects are always fully installed, we just search in the file system
-    candidate_receptacle_xmls = list(base.rglob(f"{uid}.xml"))
+    thor_uid_to_xmls = get_thor_uid_to_xmls()
 
-    if candidate_receptacle_xmls:
-        xml_path = candidate_receptacle_xmls[0]
+    if uid in thor_uid_to_xmls:
+        base = (ASSETS_DIR / "objects" / "thor").resolve()
+        xml_path = thor_uid_to_xmls[uid]
         return "thor", None, add_install_prefixes("objects", "thor", xml_path.relative_to(base))
 
     file_name = f"{uid}.{extension}"
