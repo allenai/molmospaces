@@ -186,6 +186,7 @@ class OpenTaskSamplerConfig(PickTaskSamplerConfig):
     target_initial_state_open_percentage: float = (
         0  # Percentage of the target joint at start to open or close the joint
     )
+    grasp_libraries: list[str] | None = ["droid"]  # only thor provides articulated grasps
 
 
 class RUMPickTaskSamplerConfig(PickTaskSamplerConfig):

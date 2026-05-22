@@ -117,6 +117,8 @@ class OpenClosePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
     speed_fast: float = 0.08  # m/s for transport movements
     move_settle_time: float = 0.2  # seconds
 
+    grasp_libraries: list[str] | None = ["droid"]  # only thor provides articulated grasps
+
     def model_post_init(self, __context) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         super().model_post_init(__context)

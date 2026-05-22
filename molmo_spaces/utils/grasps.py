@@ -74,7 +74,14 @@ def get_pickup_grasp_path(uid: str, grasp_libraries: Sequence[str] | None = None
 def get_joint_grasp_path(
     uid: str, joint_name: str, grasp_libraries: Sequence[str] | None = None
 ) -> Path | None:
-    libs = _filter_grasp_libraries_for_object(uid, grasp_libraries)
+    # If we only specify one grasp library, just use it and fail later if not found.
+    # In general we shouldn't do this, but thor articulated objects can't be looked
+    # up by uid (for whatever reason) so this serves as a workaround by skipping the lookup.
+    # Client code doing articulated object manipulation with thor should only specify one grasp library.
+    if grasp_libraries is not None and len(grasp_libraries) == 1:
+        libs = grasp_libraries
+    else:
+        libs = _filter_grasp_libraries_for_object(uid, grasp_libraries)
 
     for library in libs:
         if library in USER_GRASP_LIBRARIES:
@@ -89,6 +96,7 @@ def get_joint_grasp_path(
             if grasp_file is not None:
                 grasp_file = grasp_library_dir / grasp_file
         else:
+            # droid (thor) is the only builtin grasp library with joint grasps
             grasp_file = ASSETS_DIR / f"grasps/droid/{uid}/{joint_name}_grasps_filtered.npz"
 
         if grasp_file is not None and grasp_file.exists():

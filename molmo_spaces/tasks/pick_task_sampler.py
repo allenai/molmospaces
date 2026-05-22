@@ -907,23 +907,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 continue
 
             if self.config.task_sampler_config.filter_for_grasps:
-                if not has_pickup_grasp_path(
-                    asset_uid,
-                    grasp_libraries=self.config.task_sampler_config.grasp_libraries,
-                ):
-                    log.info(
-                        f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available"
-                    )
-                    continue
-
-                if not has_valid_pickup_grasps(
-                    asset_uid,
-                    grasp_libraries=self.config.task_sampler_config.grasp_libraries,
-                    num_grasps=1,
-                ):
-                    log.info(
-                        f"Skipping {pickup_obj.name} (uid={asset_uid}) - grasp file exists but has no valid transforms"
-                    )
+                if not self._has_grasps(pickup_obj, asset_uid):
                     continue
 
             # Mass computation
@@ -940,6 +924,25 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         )
 
         return candidate_objects
+
+    def _has_grasps(self, pickup_obj: MlSpacesObject, asset_uid: str):
+        if not has_pickup_grasp_path(
+            asset_uid,
+            grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+        ):
+            log.info(f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available")
+            return False
+
+        if not has_valid_pickup_grasps(
+            asset_uid,
+            grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+            num_grasps=1,
+        ):
+            log.info(
+                f"Skipping {pickup_obj.name} (uid={asset_uid}) - grasp file exists but has no valid transforms"
+            )
+            return False
+        return True
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         """Sample a pickup object and receptacle, place robot using occupancy map, and return sampled params.
