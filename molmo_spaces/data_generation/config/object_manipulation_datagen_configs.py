@@ -539,8 +539,9 @@ class FrankaPickOmniCamAblationConfig(FrankaPickOmniCamConfig):
         # episodes_per_added_pickup=1,
     )
 
+    @staticmethod
     @cache
-    def _get_valid_pickupable_obja_uids(self) -> list[str]:
+    def _get_valid_pickupable_obja_uids() -> list[str]:
         return get_valid_pickupable_obja_uids()
 
     def model_post_init(self, __context) -> None:
