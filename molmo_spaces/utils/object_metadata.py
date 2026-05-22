@@ -341,10 +341,10 @@ class ObjectMeta:
         if isinstance(asset_ids, str):
             if asset_ids in db:
                 return np.array([db[asset_ids][feature_type_str]])
-            raise ValueError(f"Missing {asset_ids} for {feature_type_str}")
+            raise KeyError(f"Missing {asset_ids} for {feature_type_str}")
 
         if any(asset_id not in db for asset_id in asset_ids):
-            raise ValueError(f"Missing some of {len(asset_ids)} asset_ids for {feature_type_str}")
+            raise KeyError(f"Missing some of {len(asset_ids)} asset_ids for {feature_type_str}")
 
         return np.stack([db[asset_id][feature_type_str] for asset_id in asset_ids], axis=0)
 

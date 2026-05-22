@@ -1076,7 +1076,7 @@ class ObjectManager:
             try:
                 img.append(ObjectMeta.img_features(asset_id))
                 kept_asset_ids.append(asset_id)
-            except (ValueError, KeyError):
+            except KeyError:
                 log.warning(f"No image features for {asset_id}, ignoring.")
 
         if name_to_uid[target_name] not in kept_asset_ids:
