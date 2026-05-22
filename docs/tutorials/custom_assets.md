@@ -266,7 +266,7 @@ And we're done! Run the following command to generate data.
 python -m molmo_spaces.data_generation.main datagen:CustomAssetsDataGenConfig
 ```
 
-This should result in data such as [this](./videos/datagen.mp4).
+This should result in data such as [this](./custom_assets/datagen.mp4).
 
 ## Full example code and assets
 
@@ -274,4 +274,4 @@ Full example code (including asset/grasp libraries) is provided [here](https://g
 
 ## Next steps
 
-As a fun challenge, try combining this tutorial with [this one](../add_robot/index.md) to run data generation with a custom object and scene, for a custom robot!
+As a fun challenge, try combining this tutorial with [this one](./add_robot.md) to run data generation with a custom object and scene, for a custom robot!

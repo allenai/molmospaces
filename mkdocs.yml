@@ -46,10 +46,9 @@ nav:
       - Benchmark Evaluation: evaluation_guide.md
       - Code Structure: code_structure.md
       - Development: development.md
-      - "Tutorial: Add a custom robot":
-          - tutorials/add_robot/index.md
-      - "Tutorial: Add a custom asset library":
-          - tutorials/custom_assets/index.md
+      - Tutorials:
+        - "Add a custom robot": tutorials/add_robot.md
+        - "Add a custom asset library": tutorials/custom_assets.md
   - API Reference:
       - Overview: api/index.md
       - molmo_spaces: api/molmo_spaces.md
@@ -61,6 +60,7 @@ nav:
       - kinematics: api/kinematics.md
       - policy: api/policy.md
       - renderer: api/renderer.md
+      - resources: api/resources.md
       - robots: api/robots.md
       - tasks: api/tasks.md
       - utils: api/utils.md

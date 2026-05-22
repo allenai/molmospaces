@@ -1,6 +1,6 @@
 # Tutorial: Use a custom robot
 
-This tutorial will walk you through how to use a custom robot with all the functionality provided by MolmoSpaces. Before beginning, please read through the [key concepts](../../concepts.md) documentation.
+This tutorial will walk you through how to use a custom robot with all the functionality provided by MolmoSpaces. Before beginning, please read through the [key concepts](../concepts.md) documentation.
 
 In this example, we will add and use the xarm7 from [Mujoco Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
@@ -26,7 +26,7 @@ In the viewer, visualize the world frame by selecting `Rendering > Frame > World
 
 | Before | After |
 |:------:|:-----:|
-| <img src="images/base_frame_before.png" height="500"> | <img src="images/base_frame_after.png" height="500"> |
+| ![](add_robot/base_frame_before.png) | ![](add_robot/base_frame_after.png) |
 
 ### Configure the EE frame
 
@@ -34,7 +34,7 @@ In the viewer, enable site frame visualization by selecting `Rendering > Frame >
 
 | Before | After |
 |:------:|:-----:|
-| <img src="images/ee_frame_before.png" height="500"> | <img src="images/ee_frame_after.png" height="500"> |
+| ![](add_robot/ee_frame_before.png) | ![](add_robot/ee_frame_after.png) |
 
 ### Insert cameras
 
@@ -438,7 +438,7 @@ Congratulations, your robot is now ready for data generation! The task sampler c
 python -m molmo_spaces.data_generation.main xarm7_datagen:XArm7PickDataGenConfig
 ```
 
-Results in data such as [this](./videos/datagen.mp4).
+Results in data such as [this](./add_robot/datagen.mp4).
 
 ## Full example code
 

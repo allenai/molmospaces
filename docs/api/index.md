@@ -15,6 +15,7 @@ Auto-generated documentation for the `molmo_spaces` Python package.
 | [kinematics](kinematics.md) | Kinematic utilities and solvers |
 | [policy](policy.md) | Policy interfaces and wrappers |
 | [renderer](renderer.md) | Rendering backends |
+| [resources](resources.md) | Bundled data files and helper scripts for generating user asset/grasp library indices |
 | [robots](robots.md) | Robot models and abstractions |
 | [tasks](tasks.md) | Task definitions and reward functions |
 | [utils](utils.md) | Shared utilities |

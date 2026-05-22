@@ -2,7 +2,7 @@
 
 MolmoSpaces ships a large catalog of objects and grasps, and the same machinery
 is also used to load user-provided objects (see
-[Tutorial: Add a custom asset library](tutorials/custom_assets/index.md)).
+[Tutorial: Add a custom asset library](tutorials/custom_assets.md)).
 This page explains the two library types — **asset libraries** and
 **grasp libraries** — how they are indexed, how their metadata relates to scene
 metadata, and how to look anything up by UID.
@@ -228,7 +228,7 @@ If you have your own objects or grasps, you don't need to modify MolmoSpaces or
 fork its data — you can register them as a custom asset/grasp library at
 runtime, after which they participate in UID lookup, asset metadata, and grasp
 resolution exactly like the built-in libraries. The
-[custom assets tutorial](tutorials/custom_assets/index.md) walks through the
+[custom assets tutorial](tutorials/custom_assets.md) walks through the
 full workflow: creating the directory layout, writing the per-asset metadata
 JSON, generating the asset and grasp indices, registering the libraries via
 `register_user_asset_library` / `register_user_grasp_library`, and using them
