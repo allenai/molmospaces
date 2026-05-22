@@ -91,9 +91,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     max_robot_to_obj_dist: float = 0.6
 
     # House iteration configuration
-    house_inds: list[int] | None = list(
-        range(0, 4)
-    )  # houses to iterate over, if None use all houses
+    house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over
     samples_per_house: int = 2  # number of tasks to sample per house before advancing
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
@@ -247,7 +245,7 @@ class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     random_seed: int | None = None  # Random seed for deterministic task sampling
 
     # House iteration configuration
-    house_inds: list[int] = list(
+    house_inds: list[int] | None = list(
         range(0, 22)
     )  # List of thor house indices to iterate through (first 20 for demo)
     scene_xml_paths: list[str] | None = None
@@ -300,9 +298,9 @@ class NavToObjTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     )
     task_batch_size: int = 1
 
-    house_inds: list[
-        int
-    ] = []  # list(range(0, 20))  # List of thor house indices to iterate through (first 20 for demo)
+    house_inds: (
+        list[int] | None
+    ) = []  # list(range(0, 20))  # List of thor house indices to iterate through (first 20 for demo)
     samples_per_house: int = 1  # Number of tasks per house
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
