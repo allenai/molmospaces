@@ -39,7 +39,8 @@ nav:
   - Home: index.md
   - Guides:
       - Key Concepts: concepts.md
-      - Assets: assets.md
+      - Built-In Assets: assets.md
+      - Asset and Grasp Libraries: asset_libraries.md
       - Data Format: data_format.md
       - Data Processing: data_processing.md
       - Benchmark Evaluation: evaluation_guide.md
