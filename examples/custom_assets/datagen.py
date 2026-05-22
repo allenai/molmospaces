@@ -28,8 +28,6 @@ register_user_asset_library("custom_assets", Path("asset_library"))
 
 register_user_grasp_library("custom_grasps", Path("asset_library"), "custom_assets")
 
-# TODO: handle array-valued metadata
-
 
 def random_pose(x_noise: float, y_noise: float, yaw_noise: float):
     pose = np.eye(4)
