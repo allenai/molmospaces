@@ -31,7 +31,7 @@ def hydrate_asset_metadata(asset_path: Path, metadata: dict):
         metadata["mass"] = body.mass.item()
 
     if "boundingBox" not in metadata:
-        aabb_center, aabb_size = body_aabb(model, data, body.id, visual_only=False)
+        aabb_center, aabb_size = body_aabb(model, data, body.id, visible_only=False)
         # metadata bbox is centered at origin, so grow noncentered AABB to make centered
         aabb = 2 * (aabb_center + aabb_size / 2)
         metadata["boundingBox"] = {

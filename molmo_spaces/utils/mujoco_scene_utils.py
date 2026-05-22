@@ -290,10 +290,10 @@ def get_supporting_geom(
     assert model.body_rootid[object_id] == object_id, "Object is not a root body"
 
     try:
-        body_aabb_center, _ = body_aabb(model, data, object_id, visual_only=True)
+        body_aabb_center, _ = body_aabb(model, data, object_id, visible_only=True)
     except ValueError:
-        # fallback if body doesn't have any visual geoms (usually not the case)
-        body_aabb_center, _ = body_aabb(model, data, object_id, visual_only=False)
+        # fallback if body doesn't have any visible geoms (usually not the case)
+        body_aabb_center, _ = body_aabb(model, data, object_id, visible_only=False)
     cos_threshold = np.cos(angle_threshold)
 
     for c in data.contact:

@@ -128,7 +128,7 @@ class PickAndPlaceColorTaskSampler(PickAndPlaceReceptacleTaskSampler):
 
             # Color the receptacle geoms
             receptacle_id = om.get_object_body_id(receptacle_name)
-            receptacle_geoms = descendant_geoms(model, receptacle_id, visual_only=True)
+            receptacle_geoms = descendant_geoms(model, receptacle_id, visible_only=True)
             for geom_id in receptacle_geoms:
                 model.geom_rgba[geom_id] = color_rgba
 

@@ -649,8 +649,8 @@ class ObjectManager:
         return cache_in_use[oname]["structural"]
 
     def _has_visible_geom(self, body_id: int) -> bool:
-        geom_ids = descendant_geoms(self.model, body_id, visual_only=False)
-        return np.any(self.model.geom_group[geom_ids] < 3).item()
+        geom_ids = descendant_geoms(self.model, body_id, visible_only=True)
+        return len(geom_ids) > 0
 
     def is_excluded(self, object_or_name_or_id: ObjectOrNameOrIdType) -> bool:
         cache_in_use = self._model_cache

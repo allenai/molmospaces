@@ -658,7 +658,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             om = env.object_managers[env.current_batch_index]
             for object_name, color_rgba in object_colors.items():
                 body_id = om.get_object_body_id(object_name)
-                for geom_id in descendant_geoms(model, body_id, visual_only=True):
+                for geom_id in descendant_geoms(model, body_id, visible_only=True):
                     model.geom_matid[geom_id] = -1
                     model.geom_rgba[geom_id] = color_rgba
                 log.info(f"Colored object {object_name}")
@@ -864,7 +864,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             om = env.object_managers[env.current_batch_index]
             for object_name, color_rgba in object_colors.items():
                 body_id = om.get_object_body_id(object_name)
-                for geom_id in descendant_geoms(model, body_id, visual_only=True):
+                for geom_id in descendant_geoms(model, body_id, visible_only=True):
                     model.geom_matid[geom_id] = -1
                     model.geom_rgba[geom_id] = color_rgba
                 log.info(f"Colored object {object_name}")

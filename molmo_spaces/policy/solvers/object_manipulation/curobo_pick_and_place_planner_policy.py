@@ -262,7 +262,7 @@ class CuroboPickAndPlacePlannerPolicy(CuroboPlannerPolicy, PickAndPlacePlannerPo
 
     def _create_cuboid_for_object(self, obj, model, data) -> Cuboid | None:
         try:
-            aabb_center, aabb_size = body_aabb(model, data, obj.body_id, visual_only=False)
+            aabb_center, aabb_size = body_aabb(model, data, obj.body_id, visible_only=False)
         except ValueError:
             log.debug(f"Skipping object {obj.name} (body_id={obj.body_id}) - no geoms found")
             return None

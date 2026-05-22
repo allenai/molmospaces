@@ -309,7 +309,7 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
                     add_this_obj = True
 
             if add_this_obj:
-                geoms = descendant_geoms(model, b, visual_only=False)
+                geoms = descendant_geoms(model, b, visible_only=False)
                 for geom in geoms:
                     aabb_center, aabb_size = geom_aabb(model, data, [geom])
                     obj_center = np.concatenate([aabb_center, np.array([1.0, 0.0, 0.0, 0.0])])

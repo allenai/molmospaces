@@ -64,7 +64,7 @@ class PickAndPlaceNextToPlannerPolicy(PickAndPlacePlannerPolicy):
         data = om.data
 
         pickup_obj_body = create_mlspaces_body(data, pickup_obj.object_id)
-        body_base = body_base_pos(data, pickup_obj_body.body_id, visual_only=False)
+        body_base = body_base_pos(data, pickup_obj_body.body_id, visible_only=False)
 
         # Save original pose of pickup object (place_object_near will modify it)
         original_pose = pickup_obj_body.pose.copy()

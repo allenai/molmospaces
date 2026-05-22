@@ -576,13 +576,13 @@ class GraspStateSensor(Sensor):
             for mg_id in robot_view.get_gripper_movegroup_ids():
                 mg = robot_view.get_move_group(mg_id)
                 self._gripper_geoms[mg_id] = descendant_geoms(
-                    env.mj_model, mg.root_body_id, visual_only=False
+                    env.mj_model, mg.root_body_id, visible_only=False
                 )
 
         if self._object_geoms is None:
             object_body = create_mlspaces_body(env.mj_datas[batch_index], self.object_name)
             self._object_geoms = set(
-                descendant_geoms(model, object_body.body_id, visual_only=False)
+                descendant_geoms(model, object_body.body_id, visible_only=False)
             )
 
         held = True
