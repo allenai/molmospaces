@@ -1,3 +1,8 @@
+"""
+Convert MlSpaces h5 data to LeRobot format.
+
+This script only works for MlSpaces data with Franka-DROID robots, not RB-Y1.
+"""
 import argparse
 import json
 from pathlib import Path
@@ -14,7 +19,7 @@ from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
 decord.bridge.set_bridge("native")
 
-MLSPACES_GRIPPER_MAX_POS = 0.824033
+MLSPACES_GRIPPER_MAX_POS = 0.824033  # Franka DROID gripper max position
 GRIPPER_ACTION_SCALE = 255.0
 IMG_HW = (180, 320)
 STATE_DIM = 17
