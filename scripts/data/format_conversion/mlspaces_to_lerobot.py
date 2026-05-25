@@ -16,7 +16,6 @@ decord.bridge.set_bridge("native")
 
 MLSPACES_GRIPPER_MAX_POS = 0.824033
 GRIPPER_ACTION_SCALE = 255.0
-POLICY_FPS = 15
 IMG_HW = (180, 320)
 STATE_DIM = 17
 
@@ -46,8 +45,7 @@ def decode_json_bytes(h5_row) -> dict:
 def pose_quat_wxyz_to_eef9d(pose7: np.ndarray) -> np.ndarray:
     """[x,y,z,qw,qx,qy,qz] (scalar-first) -> eef_9d = [x,y,z, R[:,0], R[:,1]]."""
     xyz = pose7[..., :3]
-    quat_xyzw = np.concatenate([pose7[..., 4:7], pose7[..., 3:4]], axis=-1)
-    rotmat = Rotation.from_quat(quat_xyzw).as_matrix()
+    rotmat = Rotation.from_quat(pose7[..., 3:], scalar_first=True).as_matrix()
     rot6d = np.concatenate([rotmat[..., :, 0], rotmat[..., :, 1]], axis=-1)
     return np.concatenate([xyz, rot6d], axis=-1).astype(np.float32)
 
@@ -93,6 +91,13 @@ def iter_trajectories(data_dir: Path):
             h5_path = data_dir / h5_subpath
             for traj_key, traj_len in traj_lens.items():
                 yield h5_path, traj_key, int(traj_len)
+
+
+def read_policy_fps(h5_path: Path, traj_key: str) -> int:
+    """Derive policy fps from a trajectory's obs_scene metadata."""
+    with h5py.File(h5_path, "r") as f:
+        scene = decode_json_bytes(f[traj_key]["obs_scene"][()])
+    return round(1000.0 / scene["policy_dt_ms"])
 
 
 def convert_episode(dataset: LeRobotDataset, h5_path: Path, traj_key: str, traj_len: int) -> int:
@@ -167,20 +172,24 @@ def write_modality_json(root: Path):
 def main():
     args = parse_args()
 
+    trajs = list(iter_trajectories(args.data_dir))
+    if args.max_episodes:
+        trajs = trajs[: args.max_episodes]
+    if not trajs:
+        raise RuntimeError(f"No trajectories found in {args.data_dir}")
+
+    fps = read_policy_fps(*trajs[0][:2])
+    print(f"Converting {len(trajs)} episodes from {args.data_dir} (fps={fps})")
+
     dataset = LeRobotDataset.create(
         repo_id=args.repo_id,
-        fps=POLICY_FPS,
+        fps=fps,
         features=build_features(),
         robot_type="panda",
         root=args.root,
         image_writer_processes=args.image_writer_processes,
         image_writer_threads=args.image_writer_threads,
     )
-
-    trajs = list(iter_trajectories(args.data_dir))
-    if args.max_episodes:
-        trajs = trajs[: args.max_episodes]
-    print(f"Converting {len(trajs)} episodes from {args.data_dir}")
 
     total_frames = 0
     skipped = 0

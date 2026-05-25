@@ -24,7 +24,7 @@ Output schema:
 **1. example download a small sample of the pick task**
 
 ```bash
-python scripts/bulk_download.py --config FrankaPickOmniCamConfig \
+python scripts/bulk_download_mb_data.py --config FrankaPickOmniCamConfig \
   --split train --part 0 --max_part_shards 1 -y ./mbdata
 ```
 
@@ -32,7 +32,6 @@ python scripts/bulk_download.py --config FrankaPickOmniCamConfig \
 
 ```bash
 DATA=./mbdata/FrankaPickOmniCamConfig/part0/train
-python scripts/repair_video_paths.py    "$DATA"
 python scripts/validate_trajectories.py "$DATA"
 ```
 
