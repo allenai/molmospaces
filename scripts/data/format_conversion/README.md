@@ -1,4 +1,8 @@
-**mlspaces → GR00T LeRobot (v2)**
+# Conversion from MolmoSpaces → GR00T LeRobot (v2) data
+
+This converts pre-recorded data from the MolmoSpaces h5 data format to the LeRobot formation.
+
+**Note:** This script currently only works with Franka-DROID robots, not RB-Y1.
 
 ```bash
 pip install "lerobot==0.3.3" h5py decord pillow scipy tqdm zstandard datasets huggingface_hub
@@ -21,14 +25,14 @@ Output schema:
 | `action.joint_position` | (7,) |
 | `task` | — |
 
-**1. example download a small sample of the pick task**
+## 1. Example download a small sample of the pick task
 
 ```bash
 python scripts/bulk_download_mb_data.py --config FrankaPickOmniCamConfig \
   --split train --part 0 --max_part_shards 1 -y ./mbdata
 ```
 
-**2. postprocess**
+## 2. Postprocess
 
 ```bash
 DATA=./mbdata/FrankaPickOmniCamConfig/part0/train
