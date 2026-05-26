@@ -312,7 +312,7 @@ class TiptopPolicyEvalConfig(JsonBenchmarkEvalConfig):
         # Joint limits: q4 ∈ [-3.04, -0.15], q6 ∈ [0.54, 4.52].
         # Tune these values if the camera view needs adjustment.
         cam_obs_qpos=[0.0, -1.0, 0.0, -1.0, 0.0, 1.0, -3.0],
-        cam_obs_n_steps=50,
+        cam_obs_n_steps=200,
     )
     policy_dt_ms: float = 20.0
 

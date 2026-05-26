@@ -131,7 +131,7 @@ class TiptopPolicyConfig(BasePolicyConfig):
     # Set to a list of 7 joint angles (radians) to enable; None disables the feature.
     cam_obs_qpos: list[float] | None = None
     # Number of interpolation steps to reach cam_obs_qpos (each step = one policy dt).
-    cam_obs_n_steps: int = 50
+    cam_obs_n_steps: int = 200
 
     policy_cls: type = None
     policy_type: str = "tamp"
