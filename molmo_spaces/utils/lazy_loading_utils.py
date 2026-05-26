@@ -213,8 +213,7 @@ def locate_uid_package(
     return None, None, None
 
 
-def install_uid(uid, grasp_source="droid_objaverse", exclude_thor=True):
-    assert exclude_thor, "exclude_thor=False is unsupported behavior!"
+def install_uid(uid, grasp_source="droid_objaverse"):
     source, package, xml_path = locate_uid_package(uid)
 
     if source is None:
@@ -225,7 +224,7 @@ def install_uid(uid, grasp_source="droid_objaverse", exclude_thor=True):
     if source in USER_ASSET_LIBRARIES:
         return xml_path
 
-    if source != "thor" or not exclude_thor:
+    if source != "thor":
         get_resource_manager().install_packages("objects", {source: [package]})
 
         # Install grasps (on-demand for objaverse)
