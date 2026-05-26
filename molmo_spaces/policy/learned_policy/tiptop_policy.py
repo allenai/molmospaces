@@ -120,9 +120,6 @@ class Tiptop_Policy(InferencePolicy):
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.cam_obs_qpos = exp_config.policy_config.cam_obs_qpos
         self.cam_obs_n_steps = exp_config.policy_config.cam_obs_n_steps
-        self.repeat_waypoints_by_dt = getattr(exp_config.policy_config, "repeat_waypoints_by_dt", True)
-        self.trajectory_settle_steps = getattr(exp_config.policy_config, "trajectory_settle_steps", 8)
-        self.policy_dt_ms = float(exp_config.policy_dt_ms)
         self.model = None  # don't init model till inference to allow multiprocessing
 
     def reset(self):
@@ -244,18 +241,11 @@ class Tiptop_Policy(InferencePolicy):
             elif step_type == "trajectory":
                 positions = step.get("positions") if step.get("positions") is not None else step.get(b"positions")
                 positions = np.array(positions, dtype=np.float32)
-                dt = step.get("dt") if step.get("dt") is not None else step.get(b"dt")
-                repeats = 1
-                if self.repeat_waypoints_by_dt and dt is not None:
-                    repeats = max(1, int(round(float(dt) * 1000.0 / self.policy_dt_ms)))
                 for waypoint in positions:
                     last_arm_pos = waypoint[:7]
                     action = np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32)
-                    actions.extend([action.copy() for _ in range(repeats)])
+                    actions.append(action.copy())
             elif step_type == "gripper":
-                if last_arm_pos is not None and self.trajectory_settle_steps > 0:
-                    settle_action = np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32)
-                    actions.extend([settle_action.copy() for _ in range(self.trajectory_settle_steps)])
                 action_val = step.get("action") if step.get("action") is not None else step.get(b"action")
                 if isinstance(action_val, bytes):
                     action_val = action_val.decode()
@@ -330,10 +320,8 @@ class Tiptop_Policy(InferencePolicy):
             self.actions_buffer = self._unroll_plan(result["plan"])
             self.current_buffer_index = 0
             log.info(
-                "Tiptop plan unrolled into %d policy actions (repeat_by_dt=%s, settle_steps=%d)",
+                "Tiptop plan unrolled into %d policy actions",
                 len(self.actions_buffer),
-                self.repeat_waypoints_by_dt,
-                self.trajectory_settle_steps,
             )
         if self.current_buffer_index >= len(self.actions_buffer):
             log.warning("Tiptop plan exhausted; holding last waypoint and sending done action")
