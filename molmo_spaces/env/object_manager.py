@@ -797,7 +797,7 @@ class ObjectManager:
             List of door body names found in the scene.
         """
         door_body_names = []
-        for key, value in self.scene_metadata["objects"].items():
+        for key, value in (self.scene_metadata or {}).get("objects", {}).items():
             if "doorway" in key:
                 name_map = value.get("name_map", {})
                 bodies = name_map.get("bodies", {})
@@ -1546,6 +1546,8 @@ class ObjectManager:
         contactless_object_names = set()
         seen_poly_z = set()
 
+        meta_objs = (self.scene_metadata or {}).get("objects", {})
+
         # Fallback: list with objects with aabbs overlapping >= 50% in xy with the bench and "just above" in z
         for geom_id in bench_geom_ids:
             # Take full body
@@ -1580,7 +1582,7 @@ class ObjectManager:
 
                 if object_name in object_names:
                     continue
-                if object_name not in self.scene_metadata.get("objects", {}):
+                if object_name not in meta_objs:
                     continue
                 if object_name in contactless_object_names:
                     continue
