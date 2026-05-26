@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from typing import Dict, Tuple
 
@@ -11,7 +10,6 @@ import msgpack_numpy
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
-from molmo_spaces.policy.learned_policy.utils import PromptSampler
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -110,13 +108,7 @@ class Tiptop_Policy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
-        self.prompt_sampler = PromptSampler(
-            task_type=exp_config.task_type,
-            prompt_templates=exp_config.policy_config.prompt_templates,
-            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
-        )
         self.grasping_type = exp_config.policy_config.grasping_type
-        self.chunk_size = exp_config.policy_config.chunk_size
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.cam_obs_qpos = exp_config.policy_config.cam_obs_qpos
         self.cam_obs_n_steps = exp_config.policy_config.cam_obs_n_steps
@@ -125,7 +117,6 @@ class Tiptop_Policy(InferencePolicy):
     def reset(self):
         self.actions_buffer = None
         self.current_buffer_index = 0
-        self.prompt_sampler.next()
         self.starting_time = None
         self._in_pre_obs_phase = self.cam_obs_qpos is not None
         self._pre_obs_buffer = None
@@ -133,14 +124,8 @@ class Tiptop_Policy(InferencePolicy):
         self._plan_exhausted = False
 
     def prepare_model(self):
-        self.model_name = "tiptop"
-        if self.remote_config is not None:
-            self._prepare_remote_model()
-        else:
-            self._prepare_local_model(self.checkpoint_path)
-
-    def _prepare_local_model(self, checkpoint_path: str):
-        raise Exception("TiPToP policy only supports remote model inference for now")
+        assert self.remote_config is not None, "TiPToP policy only supports remote model inference"
+        self._prepare_remote_model()
 
     def _prepare_remote_model(self):
         host = self.remote_config.get("host", "localhost")
@@ -164,7 +149,7 @@ class Tiptop_Policy(InferencePolicy):
                     raise
 
     def render(self, obs):
-        # TiPToP uses just the wrist camera for now
+        # TiPToP uses just the wrist camera
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         views = obs[wrist_camera_key]
         cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
@@ -178,7 +163,6 @@ class Tiptop_Policy(InferencePolicy):
     def obs_to_model_input(self, obs):
         if isinstance(obs, list):
             obs = obs[0]
-        prompt = self.task.get_task_description()
 
         wrist_camera_key = "wrist_camera_zed_mini" if "wrist_camera_zed_mini" in obs else "wrist_camera"
         camera_params = obs[f"sensor_param_{wrist_camera_key}"]
@@ -189,27 +173,8 @@ class Tiptop_Policy(InferencePolicy):
         world_from_base = self.task.env.current_robot.robot_view.get_move_group("arm").root_frame_to_world
         base_from_world = np.linalg.inv(world_from_base).astype(np.float32)
 
-        cameras = {}
-        for key in obs:
-            if not key.startswith("sensor_param_"):
-                continue
-            cam_name = key[len("sensor_param_"):]
-            if cam_name not in obs:
-                continue
-            cam_params = obs[key]
-            # The TiPToP API contract (world_from_cam) assumes we are passing in the transformation matrix from the camera to the robot base link frame.
-            base_from_cam = base_from_world @ np.asarray(cam_params["cam2world_gl"], dtype=np.float32)
-            cam_data = {
-                "rgb": np.array(obs[cam_name], dtype=np.uint8),
-                "intrinsics": np.array(cam_params["intrinsic_cv"], dtype=np.float32),
-                "world_from_cam": base_from_cam,
-            }
-            depth_key = f"{cam_name}_depth"
-            if depth_key in obs:
-                cam_data["depth"] = np.array(obs[depth_key], dtype=np.float32)
-            cameras[cam_name] = cam_data
-
-        # The TiPToP API contract (world_from_cam) assumes we are passing in the transformation matrix from the camera to the robot base link frame.
+        # TiPToP only uses the wrist camera. The TiPToP API contract (world_from_cam) assumes we are passing
+        # in the transformation matrix from the camera to the robot base link frame.
         wrist_base_from_cam = base_from_world @ np.asarray(camera_params["cam2world_gl"], dtype=np.float32)
 
         model_input = {
@@ -217,8 +182,7 @@ class Tiptop_Policy(InferencePolicy):
             "depth": np.array(obs[f"{wrist_camera_key}_depth"], dtype=np.float32),
             "intrinsics": np.array(camera_params["intrinsic_cv"], dtype=np.float32),
             "world_from_cam": wrist_base_from_cam,
-            "cameras": cameras,
-            "task": prompt,
+            "task": self.task.get_task_description(),
             "q_init": np.array(obs["qpos"]["arm"][:7], dtype=np.float32),
         }
         return model_input
@@ -231,27 +195,19 @@ class Tiptop_Policy(InferencePolicy):
         """
         actions = []
         current_gripper = 0.0  # start open
-        last_arm_pos = None
+        last_arm_pos = np.array(plan["q_init"], dtype=np.float32)[:7]
 
         for step in plan["steps"]:
-            step_type = step["type"] if isinstance(step, dict) else step.get(b"type", b"").decode()
-            if step_type == "metadata":
-                q_init = step.get("q_init") if step.get("q_init") is not None else step.get(b"q_init")
-                last_arm_pos = np.array(q_init, dtype=np.float32)[:7]
-            elif step_type == "trajectory":
-                positions = step.get("positions") if step.get("positions") is not None else step.get(b"positions")
-                positions = np.array(positions, dtype=np.float32)
+            step_type = step["type"]
+            if step_type == "trajectory":
+                positions = np.array(step["positions"], dtype=np.float32)
                 for waypoint in positions:
                     last_arm_pos = waypoint[:7]
                     action = np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32)
                     actions.append(action.copy())
             elif step_type == "gripper":
-                action_val = step.get("action") if step.get("action") is not None else step.get(b"action")
-                if isinstance(action_val, bytes):
-                    action_val = action_val.decode()
-                current_gripper = 1.0 if action_val == "close" else 0.0
-                if last_arm_pos is not None:
-                    actions.append(np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32))
+                current_gripper = 1.0 if step["action"] == "close" else 0.0
+                actions.append(np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32))
 
         return actions
 
@@ -261,14 +217,6 @@ class Tiptop_Policy(InferencePolicy):
     #   "depth": np.array (H, W) float32 meters  # wrist camera
     #   "intrinsics": np.array (3, 3) float32    # wrist camera
     #   "world_from_cam": np.array (4, 4) float32  # wrist camera
-    #   "cameras": {                             # all cameras keyed by name
-    #     "<cam_name>": {
-    #       "rgb": np.array (H, W, 3) uint8,
-    #       "depth": np.array (H, W) float32 (if available),
-    #       "intrinsics": np.array (3, 3) float32,
-    #       "world_from_cam": np.array (4, 4) float32,
-    #     }, ...
-    #   }
     #   "task": "pick up the cup."
     #   "q_init": np.array (7,) float32
     # }
@@ -278,7 +226,7 @@ class Tiptop_Policy(InferencePolicy):
         if self.starting_time is None:
             self.starting_time = time.time()
 
-        # Pre-observation phase: move arm to cam_obs_qpos before sending camera data to Tiptop.
+        # Pre-observation phase: move arm to cam_obs_qpos before sending camera data to TiPToP.
         # We interpolate from the current joint positions (q_init) to cam_obs_qpos over
         # cam_obs_n_steps steps. Only after the arm reaches the observation pose do we call
         # infer() — ensuring Tiptop sees the scene from the elevated camera position.
@@ -353,16 +301,10 @@ class Tiptop_Policy(InferencePolicy):
 
     def get_info(self) -> dict:
         info = super().get_info()
-        info["policy_name"] = (
-            self.model.get_server_metadata().get("policy_name", "tiptop")
-            if hasattr(self.model, "get_server_metadata")
-            else "tiptop"
-        )
-        info["policy_checkpoint"] = self.model_name
-        info["policy_buffer_length"] = self.chunk_size
+        info["policy_name"] = "tiptop"
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        info["prompt"] = self.task.get_task_description()
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()
         return info
