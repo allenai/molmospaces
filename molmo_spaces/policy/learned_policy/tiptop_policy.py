@@ -187,7 +187,7 @@ class Tiptop_Policy(InferencePolicy):
         }
         return model_input
 
-    def _unroll_plan(self, plan: list) -> list:
+    def _unroll_plan(self, plan: dict) -> list:
         """Unroll a serialized tiptop plan into a flat list of (8,) [arm(7) | gripper(1)] arrays.
 
         Gripper is encoded as 0.0 (open) or 1.0 (closed), matching the scale expected by
