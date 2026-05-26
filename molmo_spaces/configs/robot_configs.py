@@ -250,8 +250,13 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
 
 
 class FrankaTiptopRobotConfig(FrankaRobotConfig):
-    """Configuration for Franka FR3 robot used with the TiPToP policy. We need this subclass since the default Franka Robot config does not include depth info, and Tiptop uses depth info.
-    The override record_depth=True is set in robot_eval_overrides.py"""
+    """Franka FR3 config for the TiPToP policy.
+
+    Identical to FrankaRobotConfig, but exists as a distinct class so its class
+    name can be registered in ROBOT_OVERRIDE_REGISTRY (robot_eval_overrides.py).
+    The registered tiptop_robot_eval_override sets camera record_depth=True at
+    eval time, which TiPToP requires.
+    """
 
 
 class RBY1Config(BaseRobotConfig):

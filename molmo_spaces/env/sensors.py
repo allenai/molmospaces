@@ -116,6 +116,7 @@ class TCPPoseSensor(Sensor):
             print(f"Warning: Could not get TCP pose: {e}")
             return np.zeros(7, dtype=np.float32)
 
+
 class RobotBasePoseSensor(Sensor):
     """Sensor for robot base pose in 7D format."""
 
