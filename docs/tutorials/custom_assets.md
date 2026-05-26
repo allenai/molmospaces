@@ -1,6 +1,6 @@
 # Tutorial: Use a custom asset + grasp library
 
-While MolmoSpaces provides rich support for the large-scale provided libraries of scenes and assets, MolmoSpaces can also be used for custom scenes with custom objects without extra work. However, to fully leverage the sophisticated asset-management functionality in MolmoSpaces, custom assets should be registered as a user asset library. This provides first-class custom asset support, enabling lookups via UID and asset metadata functionality.
+While MolmoSpaces provides rich support for the large-scale provided libraries of scenes and assets, it can also be used for custom scenes with custom objects without extra work. However, to fully leverage the sophisticated asset-management functionality in MolmoSpaces, custom assets should be registered as a user asset library. This provides first-class custom asset support, enabling lookups via UID and asset metadata functionality.
 
 This tutorial will walk you through how to register custom asset and grasp libraries, in order to use the built-in data engine with custom scenes and objects. In this example, we will add a simple asset library consisting of a cube (and the associated grasp library), and run the built-in Pick demonstrator to generate data with these assets.
 
@@ -132,7 +132,7 @@ Our custom scene will consist of a Franka DROID robot and single block, all sitt
 
 #### Scene model
 
-We'll use the following scene model, place it at `scene.xml`. Note how it uses an `<attach>` tag to include the object model from our asset library. This is not strictly required, our assets can be inserted into the scene at runtime by looking it up via the UID (which is `red_block`).
+We'll use the following scene model, placed at `scene.xml`. Note how it uses an `<attach>` tag to include the object model from our asset library. This is not strictly required, our assets can be inserted into the scene at runtime by looking it up via the UID (which is `red_block`).
 
 ```xml
 <mujoco model="custom_assets_scene">
@@ -178,7 +178,7 @@ Put the following metadata JSON at `scene_metadata.json`. In general, a scene fi
 }
 ```
 
-Note the key `"red_block"` is the same as the `"asset_id"` and `"object_id"`; this is not required. Only the `asset_id` must be `red_block`, since that corresponds to the UID. The key should be the name of the object body in the MuJoCo scene, which could be anything.
+Note the key `"red_block"` and the `"object_id"` are the same as the `"asset_id"`; this is not required. Only the `asset_id` must be `red_block`, since that corresponds to the UID. The key (and the value of `"object_id"`) should be the name of the object body in the MuJoCo scene, which could be anything.
 
 
 ### Configure datagen
