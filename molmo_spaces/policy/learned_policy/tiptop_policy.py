@@ -110,8 +110,6 @@ class TiptopPolicy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
-        self.grasping_type = exp_config.policy_config.grasping_type
-        self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.cam_obs_qpos = exp_config.policy_config.cam_obs_qpos
         self.cam_obs_n_steps = exp_config.policy_config.cam_obs_n_steps
         self.model = None  # don't init model till inference to allow multiprocessing
@@ -186,7 +184,7 @@ class TiptopPolicy(InferencePolicy):
 
         # TiPToP only uses the wrist camera. The TiPToP API contract (world_from_cam) assumes we are passing
         # in the transformation matrix from the camera to the robot base link frame.
-        wrist_base_from_cam = base_from_world @ np.asarray(
+        base_from_cam = base_from_world @ np.asarray(
             camera_params["cam2world_gl"], dtype=np.float32
         )
 
@@ -194,45 +192,33 @@ class TiptopPolicy(InferencePolicy):
             "rgb": np.array(obs[wrist_camera_key], dtype=np.uint8),
             "depth": np.array(obs[f"{wrist_camera_key}_depth"], dtype=np.float32),
             "intrinsics": np.array(camera_params["intrinsic_cv"], dtype=np.float32),
-            "world_from_cam": wrist_base_from_cam,
+            "world_from_cam": base_from_cam,
             "task": self.task.get_task_description(),
             "q_init": np.array(obs["qpos"]["arm"][:7], dtype=np.float32),
         }
         return model_input
 
-    def _unroll_plan(self, plan: dict) -> list:
-        """Unroll a serialized tiptop plan into a flat list of (8,) [arm(7) | gripper(1)] arrays.
-
-        Gripper is encoded as 0.0 (open) or 1.0 (closed), matching the scale expected by
-        model_output_to_action (continuous: *255, binary: threshold comparison).
-        """
-        actions = []
+    def _unroll_plan(self, plan: dict) -> np.ndarray:
+        """Unroll a serialized tiptop plan into an (N, 8) [arm(7) | gripper(1)] array."""
+        action_segments = []
         current_gripper = 0.0  # start open
-        last_arm_pos = np.array(plan["q_init"], dtype=np.float32)[:7]
+        last_arm_position = np.asarray(plan["q_init"], dtype=np.float32)[:7]
 
         for step in plan["steps"]:
             step_type = step["type"]
             if step_type == "trajectory":
-                positions = np.array(step["positions"], dtype=np.float32)
-                for waypoint in positions:
-                    last_arm_pos = waypoint[:7]
-                    action = np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32)
-                    actions.append(action.copy())
+                arm_positions = np.asarray(step["positions"], dtype=np.float32)[:, :7]  # (M, 7)
+                gripper_col = np.full((len(arm_positions), 1), current_gripper, dtype=np.float32)
+                action_segment = np.hstack([arm_positions, gripper_col])  # (M, 8)
+                action_segments.append(action_segment)
+                last_arm_position = arm_positions[-1]
             elif step_type == "gripper":
                 current_gripper = 1.0 if step["action"] == "close" else 0.0
-                actions.append(np.concatenate([last_arm_pos, [current_gripper]]).astype(np.float32))
+                action = np.concatenate([last_arm_position, [current_gripper]]).astype(np.float32)  # (8,)
+                action_segments.append(action[None])  # (1, 8)
 
-        return actions
+        return np.concatenate(action_segments, axis=0)
 
-    # model_input dictionary:
-    # {
-    #   "rgb": np.array (H, W, 3) uint8          # wrist camera
-    #   "depth": np.array (H, W) float32 meters  # wrist camera
-    #   "intrinsics": np.array (3, 3) float32    # wrist camera
-    #   "world_from_cam": np.array (4, 4) float32  # wrist camera
-    #   "task": "pick up the cup."
-    #   "q_init": np.array (7,) float32
-    # }
     def inference_model(self, model_input):
         if self.model is None:
             self.prepare_model()
@@ -248,15 +234,9 @@ class TiptopPolicy(InferencePolicy):
                 q_current = np.array(model_input["q_init"], dtype=np.float32)
                 q_target = np.array(self.cam_obs_qpos, dtype=np.float32)
                 n = self.cam_obs_n_steps
-                self._pre_obs_buffer = [
-                    np.concatenate(
-                        [
-                            q_current + (q_target - q_current) * (i + 1) / n,
-                            [0.0],  # gripper open throughout
-                        ]
-                    )
-                    for i in range(n)
-                ]
+                positions = np.linspace(q_current, q_target, n + 1, dtype=np.float32)[1:]
+                gripper_col = np.zeros((n, 1), dtype=np.float32)
+                self._pre_obs_buffer = np.hstack([positions, gripper_col])
                 self._pre_obs_index = 0
                 log.info(f"Pre-obs phase: moving to cam_obs_qpos over {n} steps")
             if self._pre_obs_index < len(self._pre_obs_buffer):
@@ -276,7 +256,7 @@ class TiptopPolicy(InferencePolicy):
                     result.get("error", "unknown error"),
                 )
                 noop = np.concatenate([model_input["q_init"][:7], [0.0]]).astype(np.float32)
-                self.actions_buffer = [noop]
+                self.actions_buffer = noop[None]  # (1, 8)
                 self.current_buffer_index = 0
                 self._plan_exhausted = True
                 return noop
@@ -294,18 +274,13 @@ class TiptopPolicy(InferencePolicy):
         self.current_buffer_index += 1
         return model_output
 
-    # model_output is an ndarray of shape (8,): arm joints (7,) + gripper scalar (1,)
     def model_output_to_action(self, model_output):
-        if self.grasping_type == "continuous":
-            gripper_pos = model_output[7] * np.array([255.0])
-        else:
-            gripper_pos = (
-                np.array([255.0]) if model_output[7] > self.grasping_threshold else np.array([0.0])
-            )
-
-        arm_output = model_output[:7].reshape(
-            7,
-        )
+        """
+        Args:
+            model_output: an ndarray of shape (8,): arm joints (7,) + gripper scalar (1,)
+        """
+        gripper_pos = np.array([model_output[7] * 255.0])
+        arm_output = model_output[:7]
         action = {
             "arm": arm_output,
             "gripper": gripper_pos,
@@ -317,8 +292,6 @@ class TiptopPolicy(InferencePolicy):
     def get_info(self) -> dict:
         info = super().get_info()
         info["policy_name"] = "tiptop"
-        info["policy_grasping_threshold"] = self.grasping_threshold
-        info["policy_grasping_type"] = self.grasping_type
         info["prompt"] = self.task.get_task_description()
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()
