@@ -16,7 +16,7 @@
         <link rel="prev" href="../../development/">
       
       
-        <link rel="next" href="../../api/">
+        <link rel="next" href="../custom_assets/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Tutorial: Use a custom robot - MolmoSpaces</title>
+        <title>Add a custom robot - MolmoSpaces</title>
       
     
     
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Tutorial: Use a custom robot
+              Add a custom robot
             
           </span>
         </div>
@@ -385,6 +385,8 @@
       
         
       
+        
+      
     
     
     
@@ -475,7 +477,35 @@
   <span class="md-ellipsis">
     
   
-    Assets
+    Built-In Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../asset_libraries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Asset and Grasp Libraries
   
 
     
@@ -641,7 +671,7 @@
     
       
         
-          
+      
         
       
     
@@ -660,18 +690,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9" checked>
         
           
-          <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
-              
+          <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Tutorial: Add a custom robot
+    Tutorials
   
 
     
@@ -679,21 +708,387 @@
   
   
 
-            </a>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_9">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Tutorial: Add a custom robot
+    Tutorials
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom robot
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom robot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#project-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-robot-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup robot assets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup robot assets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-the-base-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure the base frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-the-ee-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure the EE frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#insert-cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Insert cameras
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Insert cameras">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exo-camera" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exo camera
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrist-camera" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wrist camera
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implement-move-groups-and-robot-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implement move groups and robot view
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implement move groups and robot view">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arm-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arm group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gripper-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gripper group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot view
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implement-robot-config-and-robot-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implement robot config and robot class
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implement robot config and robot class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#robot-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot class
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#go-back-and-tweak-gripper-move-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go back and tweak gripper move group
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration test
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#camera-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Camera system
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datagen-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datagen config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generate-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate data!
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full example code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom asset library
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
           </ul>
@@ -722,6 +1117,8 @@
       
         
           
+        
+      
         
       
         
@@ -1041,6 +1438,34 @@
     
   
     renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    resources
   
 
     
@@ -1454,7 +1879,7 @@
 
 
   
-    <a href="https://github.com/allenai/molmospaces/edit/main/docs/tutorials/add_robot/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/allenai/molmospaces/edit/main/docs/tutorials/add_robot.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1486,8 +1911,8 @@
 </thead>
 <tbody>
 <tr>
-<td style="text-align: center;"><img src="images/base_frame_before.png" height="500"></td>
-<td style="text-align: center;"><img src="images/base_frame_after.png" height="500"></td>
+<td style="text-align: center;"><img alt="" src="base_frame_before.png" /></td>
+<td style="text-align: center;"><img alt="" src="base_frame_after.png" /></td>
 </tr>
 </tbody>
 </table>
@@ -1502,8 +1927,8 @@
 </thead>
 <tbody>
 <tr>
-<td style="text-align: center;"><img src="images/ee_frame_before.png" height="500"></td>
-<td style="text-align: center;"><img src="images/ee_frame_after.png" height="500"></td>
+<td style="text-align: center;"><img alt="" src="ee_frame_before.png" /></td>
+<td style="text-align: center;"><img alt="" src="ee_frame_after.png" /></td>
 </tr>
 </tbody>
 </table>
@@ -1837,7 +2262,7 @@ to a proper initial configuration. Due to the setup of the xarm's mjcf, zeros wo
 <p>Congratulations, your robot is now ready for data generation! The task sampler config can be adjusted to change the amount of generated data, or other datagen parameters.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python<span class="w"> </span>-m<span class="w"> </span>molmo_spaces.data_generation.main<span class="w"> </span>xarm7_datagen:XArm7PickDataGenConfig
 </code></pre></div>
-<p>Results in data such as <a href="videos/datagen.mp4">this</a>.</p>
+<p>Results in data such as <a href="datagen.mp4">this</a>.</p>
 <h2 id="full-example-code">Full example code<a class="headerlink" href="#full-example-code" title="Permanent link">&para;</a></h2>
 <p>Full example code (without modified robot models) is provided <a href="https://github.com/allenai/molmospaces/blob/main/examples/add_robot/">here</a>.</p>
 <h2 id="additional-resources">Additional resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>

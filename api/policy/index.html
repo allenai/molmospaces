@@ -383,6 +383,8 @@
       
         
       
+        
+      
     
     
     
@@ -470,7 +472,35 @@
   <span class="md-ellipsis">
     
   
-    Assets
+    Built-In Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../asset_libraries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Asset and Grasp Libraries
   
 
     
@@ -634,7 +664,7 @@
     
       
         
-          
+      
         
       
     
@@ -650,18 +680,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9" >
         
           
-          <div class="md-nav__link md-nav__container">
-            <a href="../../tutorials/add_robot/" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Tutorial: Add a custom robot
+    Tutorials
   
 
     
@@ -669,21 +698,74 @@
   
   
 
-            </a>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_9">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Tutorial: Add a custom robot
+    Tutorials
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/add_robot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom robot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/custom_assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom asset library
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
           </ul>
@@ -714,6 +796,8 @@
       
         
           
+        
+      
         
       
         
@@ -6417,6 +6501,34 @@
     
   
     renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    resources
   
 
     
@@ -47064,12 +47176,7 @@ environment state in the case of a planner.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_open_close_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-834">834</a></span>
-<span class="normal"><a href="#__codelineno-0-835">835</a></span>
-<span class="normal"><a href="#__codelineno-0-836">836</a></span>
-<span class="normal"><a href="#__codelineno-0-837">837</a></span>
-<span class="normal"><a href="#__codelineno-0-838">838</a></span>
-<span class="normal"><a href="#__codelineno-0-839">839</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-839">839</a></span>
 <span class="normal"><a href="#__codelineno-0-840">840</a></span>
 <span class="normal"><a href="#__codelineno-0-841">841</a></span>
 <span class="normal"><a href="#__codelineno-0-842">842</a></span>
@@ -47083,26 +47190,31 @@ environment state in the case of a planner.</p>
 <span class="normal"><a href="#__codelineno-0-850">850</a></span>
 <span class="normal"><a href="#__codelineno-0-851">851</a></span>
 <span class="normal"><a href="#__codelineno-0-852">852</a></span>
-<span class="normal"><a href="#__codelineno-0-853">853</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-835" name="__codelineno-0-835"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_noop_ctrl_dict</span><span class="p">()</span>
-<a id="__codelineno-0-836" name="__codelineno-0-836"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">HEIGHT_SELECTION</span><span class="p">:</span>
-<a id="__codelineno-0-837" name="__codelineno-0-837"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_height_selection_phase</span><span class="p">())</span>
-<a id="__codelineno-0-838" name="__codelineno-0-838"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">PREGRASP</span><span class="p">:</span>
-<a id="__codelineno-0-839" name="__codelineno-0-839"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_pre_grasp_phase</span><span class="p">())</span>
-<a id="__codelineno-0-840" name="__codelineno-0-840"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">GRASP</span><span class="p">:</span>
-<a id="__codelineno-0-841" name="__codelineno-0-841"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_grasp_phase</span><span class="p">())</span>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">ARTICULATE</span><span class="p">:</span>
-<a id="__codelineno-0-843" name="__codelineno-0-843"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_articulate_phase</span><span class="p">())</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">POSTARTICULATE</span><span class="p">:</span>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_postarticulate_phase</span><span class="p">())</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">DONE</span><span class="p">:</span>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-849" name="__codelineno-0-849"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown phase: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-850" name="__codelineno-0-850"></a>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a>    <span class="n">action_cmd</span><span class="p">[</span><span class="s2">&quot;torso&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">current_height</span><span class="p">])</span>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_to_velocity_constraint</span><span class="p">(</span><span class="n">action_cmd</span><span class="p">)</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a>    <span class="k">return</span> <span class="n">action_cmd</span>
+<span class="normal"><a href="#__codelineno-0-853">853</a></span>
+<span class="normal"><a href="#__codelineno-0-854">854</a></span>
+<span class="normal"><a href="#__codelineno-0-855">855</a></span>
+<span class="normal"><a href="#__codelineno-0-856">856</a></span>
+<span class="normal"><a href="#__codelineno-0-857">857</a></span>
+<span class="normal"><a href="#__codelineno-0-858">858</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-839" name="__codelineno-0-839"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_noop_ctrl_dict</span><span class="p">()</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">HEIGHT_SELECTION</span><span class="p">:</span>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_height_selection_phase</span><span class="p">())</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">PREGRASP</span><span class="p">:</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_pre_grasp_phase</span><span class="p">())</span>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">GRASP</span><span class="p">:</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_grasp_phase</span><span class="p">())</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">ARTICULATE</span><span class="p">:</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_articulate_phase</span><span class="p">())</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">POSTARTICULATE</span><span class="p">:</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_postarticulate_phase</span><span class="p">())</span>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">DONE</span><span class="p">:</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown phase: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>    <span class="n">action_cmd</span><span class="p">[</span><span class="s2">&quot;torso&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">current_height</span><span class="p">])</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_to_velocity_constraint</span><span class="p">(</span><span class="n">action_cmd</span><span class="p">)</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a>    <span class="k">return</span> <span class="n">action_cmd</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -47316,12 +47428,7 @@ Must be json serializable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_open_close_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-855">855</a></span>
-<span class="normal"><a href="#__codelineno-0-856">856</a></span>
-<span class="normal"><a href="#__codelineno-0-857">857</a></span>
-<span class="normal"><a href="#__codelineno-0-858">858</a></span>
-<span class="normal"><a href="#__codelineno-0-859">859</a></span>
-<span class="normal"><a href="#__codelineno-0-860">860</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-860">860</a></span>
 <span class="normal"><a href="#__codelineno-0-861">861</a></span>
 <span class="normal"><a href="#__codelineno-0-862">862</a></span>
 <span class="normal"><a href="#__codelineno-0-863">863</a></span>
@@ -47341,32 +47448,37 @@ Must be json serializable.</p>
 <span class="normal"><a href="#__codelineno-0-877">877</a></span>
 <span class="normal"><a href="#__codelineno-0-878">878</a></span>
 <span class="normal"><a href="#__codelineno-0-879">879</a></span>
-<span class="normal"><a href="#__codelineno-0-880">880</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reset_retries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a>    <span class="c1"># Call parent reset</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_arm</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-860" name="__codelineno-0-860"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">=</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">HEIGHT_SELECTION</span>
-<a id="__codelineno-0-861" name="__codelineno-0-861"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">grasping_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-862" name="__codelineno-0-862"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">opening_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-863" name="__codelineno-0-863"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">articulation_pose_index</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">height_adjustment_steps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-865" name="__codelineno-0-865"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_height</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-866" name="__codelineno-0-866"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_height_initial</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-867" name="__codelineno-0-867"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_height_target</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-868" name="__codelineno-0-868"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">pre_grasp_poses</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-869" name="__codelineno-0-869"></a>    <span class="n">dummy_pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_poses</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a>        <span class="s2">&quot;grasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a>        <span class="s2">&quot;pregrasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a>        <span class="s2">&quot;place&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a>    <span class="p">}</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">settle_steps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a>        <span class="n">NoopAction</span><span class="p">,</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a>    <span class="p">)</span>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">action_primitives</span> <span class="o">=</span> <span class="p">[</span><span class="n">NoopAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)]</span>
+<span class="normal"><a href="#__codelineno-0-880">880</a></span>
+<span class="normal"><a href="#__codelineno-0-881">881</a></span>
+<span class="normal"><a href="#__codelineno-0-882">882</a></span>
+<span class="normal"><a href="#__codelineno-0-883">883</a></span>
+<span class="normal"><a href="#__codelineno-0-884">884</a></span>
+<span class="normal"><a href="#__codelineno-0-885">885</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reset_retries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a>    <span class="c1"># Call parent reset</span>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a>    <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_arm</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">=</span> <span class="n">OpenClosePhase</span><span class="o">.</span><span class="n">HEIGHT_SELECTION</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">grasping_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">opening_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">articulation_pose_index</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">height_adjustment_steps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_height</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_height_initial</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_height_target</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">pre_grasp_poses</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a>    <span class="n">dummy_pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_poses</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a>        <span class="s2">&quot;grasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a>        <span class="s2">&quot;pregrasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a>        <span class="s2">&quot;place&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a>    <span class="p">}</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">settle_steps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a>        <span class="n">NoopAction</span><span class="p">,</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a>    <span class="p">)</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">action_primitives</span> <span class="o">=</span> <span class="p">[</span><span class="n">NoopAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -49708,9 +49820,7 @@ request to avoid races when multiple workers share the same server.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_pick_and_place_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-384">384</a></span>
-<span class="normal"><a href="#__codelineno-0-385">385</a></span>
-<span class="normal"><a href="#__codelineno-0-386">386</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-386">386</a></span>
 <span class="normal"><a href="#__codelineno-0-387">387</a></span>
 <span class="normal"><a href="#__codelineno-0-388">388</a></span>
 <span class="normal"><a href="#__codelineno-0-389">389</a></span>
@@ -49820,119 +49930,121 @@ request to avoid races when multiple workers share the same server.</p>
 <span class="normal"><a href="#__codelineno-0-493">493</a></span>
 <span class="normal"><a href="#__codelineno-0-494">494</a></span>
 <span class="normal"><a href="#__codelineno-0-495">495</a></span>
-<span class="normal"><a href="#__codelineno-0-496">496</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="k">def</span><span class="w"> </span><span class="nf">batch_plan_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plan trajectory in batches.</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">    Uses local planner or remote server depending on configuration.</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">    When using the server, obstacles are passed atomically with each planning</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="sd">    request to avoid races when multiple workers share the same server.</span>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_local_planner</span><span class="p">:</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a>        <span class="k">return</span> <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">batch_plan_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a>    <span class="n">init_config</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a>        <span class="p">[</span>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a>            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a>            <span class="p">)</span><span class="o">.</span><span class="n">joint_pos</span><span class="p">,</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a>        <span class="p">]</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a>    <span class="p">)</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="c1"># Build obstacle list for atomic world update during planning</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a>    <span class="n">obstacles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;enable_collision_avoidance&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a>        <span class="n">cuboids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_collision_cuboids</span><span class="p">()</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>        <span class="n">obstacles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cuboids_to_obstacle_list</span><span class="p">(</span><span class="n">cuboids</span><span class="p">)</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>        <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>            <span class="sa">f</span><span class="s2">&quot;Adding </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cuboids</span><span class="p">)</span><span class="si">}</span><span class="s2"> cuboids to collision avoidance for phase: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a>        <span class="p">)</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a>    <span class="c1"># Attach pickup object to EE link for place phase if configured</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PLACE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">attach_obj</span><span class="p">:</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a>        <span class="n">pickup_obj_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">task_config</span><span class="o">.</span><span class="n">pickup_obj_name</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a>        <span class="n">joint_pos_for_attach</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_current_joint_positions</span><span class="p">())</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a>        <span class="n">base_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a>        <span class="n">joint_pos_for_attach</span><span class="p">[</span><span class="n">base_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">:</span> <span class="n">base_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">attach_object</span><span class="p">(</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a>            <span class="n">object_names</span><span class="o">=</span><span class="p">[</span><span class="n">pickup_obj_name</span><span class="p">],</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a>            <span class="n">joint_position</span><span class="o">=</span><span class="n">joint_pos_for_attach</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a>            <span class="n">attach_link_names</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;attached_object_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a>        <span class="p">)</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a>            <span class="sa">f</span><span class="s2">&quot;Attached object &#39;</span><span class="si">{</span><span class="n">pickup_obj_name</span><span class="si">}</span><span class="s2">&#39; to link &#39;attached_object_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="p">)</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a>    <span class="c1"># Get goal poses based on current phase</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a>    <span class="n">goal_poses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_goal_poses</span><span class="p">()</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a>    <span class="k">if</span> <span class="n">goal_poses</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">goal_poses</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[BATCH PLAN] No goal poses available&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a>        <span class="k">return</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a>    <span class="n">total</span> <span class="o">=</span> <span class="n">goal_poses</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a>    <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a>    <span class="n">max_batches</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;max_batch_plan_attempts&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a>    <span class="n">num_poses</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_batches</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a>    <span class="n">num_batches</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_poses</span> <span class="o">+</span> <span class="n">batch_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">batch_size</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a>    <span class="n">all_successful_trajectories</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a>    <span class="n">current_phase</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;current_phase&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a>    <span class="k">for</span> <span class="n">batch_start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_poses</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a>        <span class="n">batch_end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batch_start</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">num_poses</span><span class="p">)</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a>        <span class="n">batch</span> <span class="o">=</span> <span class="n">goal_poses</span><span class="p">[</span><span class="n">batch_start</span><span class="p">:</span><span class="n">batch_end</span><span class="p">]</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_show_poses&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_show_poses</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;tcp&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">viewer</span><span class="p">:</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">viewer</span><span class="o">.</span><span class="n">sync</span><span class="p">()</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="sa">f</span><span class="s2">&quot;Processing batch </span><span class="si">{</span><span class="n">batch_start</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_batches</span><span class="si">}</span><span class="s2">: &quot;</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a>            <span class="sa">f</span><span class="s2">&quot;poses </span><span class="si">{</span><span class="n">batch_start</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">batch_end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="p">)</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="c1"># Transform poses to base frame and convert to 7D format</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>        <span class="n">batch_base_frame_7d</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="k">for</span> <span class="n">pose</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>            <span class="n">pose_base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_pose_to_base_frame</span><span class="p">(</span><span class="n">pose</span><span class="p">)</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="n">batch_base_frame_7d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pose_base</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>        <span class="n">batch_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_base_frame_7d</span><span class="p">)</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>        <span class="n">start_states</span> <span class="o">=</span> <span class="p">[</span><span class="n">init_config</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span> <span class="o">*</span> <span class="n">batch_len</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>            <span class="sa">f</span><span class="s2">&quot;Planning batch of </span><span class="si">{</span><span class="n">batch_len</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">current_phase</span><span class="si">}</span><span class="s2"> poses with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2"> arm&quot;</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="p">)</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">trajectories</span><span class="p">,</span> <span class="n">successes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">motion_plan_batch</span><span class="p">(</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>            <span class="n">joint_positions</span><span class="o">=</span><span class="n">start_states</span><span class="p">,</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>            <span class="n">goal_poses</span><span class="o">=</span><span class="n">batch_base_frame_7d</span><span class="p">,</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>            <span class="n">obstacles</span><span class="o">=</span><span class="n">obstacles</span><span class="p">,</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="p">)</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="n">num_successes</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">successes</span><span class="p">)</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2"> arm: </span><span class="si">{</span><span class="n">num_successes</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">batch_len</span><span class="si">}</span><span class="s2"> &quot;</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_phase</span><span class="si">}</span><span class="s2"> planning successes&quot;</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="p">)</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="k">for</span> <span class="n">success</span><span class="p">,</span> <span class="n">trajectory</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">successes</span><span class="p">,</span> <span class="n">trajectories</span><span class="p">):</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">trajectory</span><span class="p">:</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a>                <span class="k">continue</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_transform_traj_to_world_frame</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a>            <span class="n">all_successful_trajectories</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="k">if</span> <span class="n">all_successful_trajectories</span><span class="p">:</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>                <span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_successful_trajectories</span><span class="p">)</span><span class="si">}</span><span class="s2"> successful trajectories, &quot;</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a>                <span class="s2">&quot;skipping remaining batches&quot;</span>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>            <span class="p">)</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>            <span class="k">break</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="k">if</span> <span class="n">all_successful_trajectories</span><span class="p">:</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">planned_trajectory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_best_trajectory</span><span class="p">(</span><span class="n">all_successful_trajectories</span><span class="p">)</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[BATCH PLAN] No successful trajectories found across all batches&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="k">def</span><span class="w"> </span><span class="nf">batch_plan_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plan trajectory in batches.</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="sd">    Uses local planner or remote server depending on configuration.</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">    When using the server, obstacles are passed atomically with each planning</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">    request to avoid races when multiple workers share the same server.</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_local_planner</span><span class="p">:</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a>        <span class="k">return</span> <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">batch_plan_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">init_config</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>        <span class="p">[</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a>            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a>            <span class="p">)</span><span class="o">.</span><span class="n">joint_pos</span><span class="p">,</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a>        <span class="p">]</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="p">)</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="c1"># Build obstacle list for atomic world update during planning</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a>    <span class="n">obstacles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;enable_collision_avoidance&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a>        <span class="n">cuboids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_collision_cuboids</span><span class="p">()</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>        <span class="n">obstacles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cuboids_to_obstacle_list</span><span class="p">(</span><span class="n">cuboids</span><span class="p">)</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a>        <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>            <span class="sa">f</span><span class="s2">&quot;Adding </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cuboids</span><span class="p">)</span><span class="si">}</span><span class="s2"> cuboids to collision avoidance for phase: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a>        <span class="p">)</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a>    <span class="c1"># Attach pickup object to EE link for place phase if configured</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PLACE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">attach_obj</span><span class="p">:</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a>        <span class="n">pickup_obj_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">task_config</span><span class="o">.</span><span class="n">pickup_obj_name</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a>        <span class="n">joint_pos_for_attach</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_current_joint_positions</span><span class="p">())</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a>        <span class="n">base_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a>        <span class="n">joint_pos_for_attach</span><span class="p">[</span><span class="n">base_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">:</span> <span class="n">base_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">attach_object</span><span class="p">(</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a>            <span class="n">object_names</span><span class="o">=</span><span class="p">[</span><span class="n">pickup_obj_name</span><span class="p">],</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>            <span class="n">joint_position</span><span class="o">=</span><span class="n">joint_pos_for_attach</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a>            <span class="n">attach_link_names</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;attached_object_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>        <span class="p">)</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>            <span class="sa">f</span><span class="s2">&quot;Attached object &#39;</span><span class="si">{</span><span class="n">pickup_obj_name</span><span class="si">}</span><span class="s2">&#39; to link &#39;attached_object_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="p">)</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a>    <span class="c1"># Get goal poses based on current phase</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a>    <span class="n">goal_poses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_batch_goal_poses</span><span class="p">()</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a>    <span class="k">if</span> <span class="n">goal_poses</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">goal_poses</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[BATCH PLAN] No goal poses available&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a>        <span class="k">return</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a>    <span class="n">total</span> <span class="o">=</span> <span class="n">goal_poses</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a>    <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a>    <span class="n">max_batches</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;max_batch_plan_attempts&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="n">num_poses</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_batches</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a>    <span class="n">num_batches</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_poses</span> <span class="o">+</span> <span class="n">batch_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">batch_size</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="n">all_successful_trajectories</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a>    <span class="n">current_phase</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;current_phase&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a>    <span class="k">for</span> <span class="n">batch_start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_poses</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a>        <span class="n">batch_end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">batch_start</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">num_poses</span><span class="p">)</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="n">batch</span> <span class="o">=</span> <span class="n">goal_poses</span><span class="p">[</span><span class="n">batch_start</span><span class="p">:</span><span class="n">batch_end</span><span class="p">]</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_show_poses&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_show_poses</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;tcp&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">viewer</span><span class="p">:</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">viewer</span><span class="o">.</span><span class="n">sync</span><span class="p">()</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>            <span class="sa">f</span><span class="s2">&quot;Processing batch </span><span class="si">{</span><span class="n">batch_start</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_batches</span><span class="si">}</span><span class="s2">: &quot;</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>            <span class="sa">f</span><span class="s2">&quot;poses </span><span class="si">{</span><span class="n">batch_start</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">batch_end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="p">)</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="c1"># Transform poses to base frame and convert to 7D format</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="n">batch_base_frame_7d</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>        <span class="k">for</span> <span class="n">pose</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>            <span class="n">pose_base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_pose_to_base_frame</span><span class="p">(</span><span class="n">pose</span><span class="p">)</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="n">batch_base_frame_7d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pose_base</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="n">batch_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_base_frame_7d</span><span class="p">)</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="n">start_states</span> <span class="o">=</span> <span class="p">[</span><span class="n">init_config</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span> <span class="o">*</span> <span class="n">batch_len</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>            <span class="sa">f</span><span class="s2">&quot;Planning batch of </span><span class="si">{</span><span class="n">batch_len</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">current_phase</span><span class="si">}</span><span class="s2"> poses with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2"> arm&quot;</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="p">)</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="n">trajectories</span><span class="p">,</span> <span class="n">successes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">motion_plan_batch</span><span class="p">(</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>            <span class="n">joint_positions</span><span class="o">=</span><span class="n">start_states</span><span class="p">,</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>            <span class="n">goal_poses</span><span class="o">=</span><span class="n">batch_base_frame_7d</span><span class="p">,</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>            <span class="n">obstacles</span><span class="o">=</span><span class="n">obstacles</span><span class="p">,</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="p">)</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="n">num_successes</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">successes</span><span class="p">)</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2"> arm: </span><span class="si">{</span><span class="n">num_successes</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">batch_len</span><span class="si">}</span><span class="s2"> &quot;</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_phase</span><span class="si">}</span><span class="s2"> planning successes&quot;</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="p">)</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="k">for</span> <span class="n">success</span><span class="p">,</span> <span class="n">trajectory</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">successes</span><span class="p">,</span> <span class="n">trajectories</span><span class="p">):</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">trajectory</span><span class="p">:</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>                <span class="k">continue</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_transform_traj_to_world_frame</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>            <span class="n">all_successful_trajectories</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>        <span class="k">if</span> <span class="n">all_successful_trajectories</span><span class="p">:</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>                <span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_successful_trajectories</span><span class="p">)</span><span class="si">}</span><span class="s2"> successful trajectories, &quot;</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>                <span class="s2">&quot;skipping remaining batches&quot;</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>            <span class="p">)</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>            <span class="k">break</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="k">if</span> <span class="n">all_successful_trajectories</span><span class="p">:</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">planned_trajectory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_best_trajectory</span><span class="p">(</span><span class="n">all_successful_trajectories</span><span class="p">)</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[BATCH PLAN] No successful trajectories found across all batches&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -50257,9 +50369,7 @@ environment state in the case of a planner.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_pick_and_place_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-640">640</a></span>
-<span class="normal"><a href="#__codelineno-0-641">641</a></span>
-<span class="normal"><a href="#__codelineno-0-642">642</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-642">642</a></span>
 <span class="normal"><a href="#__codelineno-0-643">643</a></span>
 <span class="normal"><a href="#__codelineno-0-644">644</a></span>
 <span class="normal"><a href="#__codelineno-0-645">645</a></span>
@@ -50274,24 +50384,26 @@ environment state in the case of a planner.</p>
 <span class="normal"><a href="#__codelineno-0-654">654</a></span>
 <span class="normal"><a href="#__codelineno-0-655">655</a></span>
 <span class="normal"><a href="#__codelineno-0-656">656</a></span>
-<span class="normal"><a href="#__codelineno-0-657">657</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_noop_ctrl_dict</span><span class="p">()</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PREGRASP</span><span class="p">:</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_pre_grasp_phase</span><span class="p">())</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">GRASP</span><span class="p">:</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_grasp_phase</span><span class="p">())</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">LIFT</span><span class="p">:</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_lift_phase</span><span class="p">())</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PLACE</span><span class="p">:</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_place_phase</span><span class="p">())</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">POSTPLACE</span><span class="p">:</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_postplace_phase</span><span class="p">())</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">DONE</span><span class="p">:</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown phase: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_to_velocity_constraint</span><span class="p">(</span><span class="n">action_cmd</span><span class="p">)</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="k">return</span> <span class="n">action_cmd</span>
+<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
+<span class="normal"><a href="#__codelineno-0-659">659</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_noop_ctrl_dict</span><span class="p">()</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PREGRASP</span><span class="p">:</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_pre_grasp_phase</span><span class="p">())</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">GRASP</span><span class="p">:</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_grasp_phase</span><span class="p">())</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">LIFT</span><span class="p">:</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_lift_phase</span><span class="p">())</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PLACE</span><span class="p">:</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_place_phase</span><span class="p">())</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">POSTPLACE</span><span class="p">:</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>        <span class="n">action_cmd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_execute_postplace_phase</span><span class="p">())</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">==</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">DONE</span><span class="p">:</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown phase: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="n">action_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_to_velocity_constraint</span><span class="p">(</span><span class="n">action_cmd</span><span class="p">)</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="k">return</span> <span class="n">action_cmd</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -50505,9 +50617,7 @@ Must be json serializable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_pick_and_place_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-659">659</a></span>
-<span class="normal"><a href="#__codelineno-0-660">660</a></span>
-<span class="normal"><a href="#__codelineno-0-661">661</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-661">661</a></span>
 <span class="normal"><a href="#__codelineno-0-662">662</a></span>
 <span class="normal"><a href="#__codelineno-0-663">663</a></span>
 <span class="normal"><a href="#__codelineno-0-664">664</a></span>
@@ -50524,26 +50634,28 @@ Must be json serializable.</p>
 <span class="normal"><a href="#__codelineno-0-675">675</a></span>
 <span class="normal"><a href="#__codelineno-0-676">676</a></span>
 <span class="normal"><a href="#__codelineno-0-677">677</a></span>
-<span class="normal"><a href="#__codelineno-0-678">678</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-659" name="__codelineno-0-659"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reset_retries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="c1"># Call parent reset</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_arm</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">=</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PREGRASP</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">grasping_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">opening_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="n">dummy_pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_poses</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>        <span class="s2">&quot;grasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="s2">&quot;pregrasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>        <span class="s2">&quot;place&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a>    <span class="p">}</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">settle_steps</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="n">NoopAction</span><span class="p">,</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="p">)</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">action_primitives</span> <span class="o">=</span> <span class="p">[</span><span class="n">NoopAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)]</span>
+<span class="normal"><a href="#__codelineno-0-678">678</a></span>
+<span class="normal"><a href="#__codelineno-0-679">679</a></span>
+<span class="normal"><a href="#__codelineno-0-680">680</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-661" name="__codelineno-0-661"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reset_retries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="c1"># Call parent reset</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_arm</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">current_phase</span> <span class="o">=</span> <span class="n">PickAndPlacePhase</span><span class="o">.</span><span class="n">PREGRASP</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">grasping_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">opening_timesteps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="n">dummy_pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_poses</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>        <span class="s2">&quot;grasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>        <span class="s2">&quot;pregrasp&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>        <span class="s2">&quot;place&quot;</span><span class="p">:</span> <span class="n">dummy_pose</span><span class="p">,</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="p">}</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">settle_steps</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>        <span class="n">NoopAction</span><span class="p">,</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="p">)</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">action_primitives</span> <span class="o">=</span> <span class="p">[</span><span class="n">NoopAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -50568,9 +50680,7 @@ Must be json serializable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_pick_and_place_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-289">289</a></span>
-<span class="normal"><a href="#__codelineno-0-290">290</a></span>
-<span class="normal"><a href="#__codelineno-0-291">291</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-291">291</a></span>
 <span class="normal"><a href="#__codelineno-0-292">292</a></span>
 <span class="normal"><a href="#__codelineno-0-293">293</a></span>
 <span class="normal"><a href="#__codelineno-0-294">294</a></span>
@@ -50608,47 +50718,49 @@ Must be json serializable.</p>
 <span class="normal"><a href="#__codelineno-0-326">326</a></span>
 <span class="normal"><a href="#__codelineno-0-327">327</a></span>
 <span class="normal"><a href="#__codelineno-0-328">328</a></span>
-<span class="normal"><a href="#__codelineno-0-329">329</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="k">def</span><span class="w"> </span><span class="nf">select_arm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Select which arm to use and set up the planner (local or remote).&quot;&quot;&quot;</span>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a>    <span class="n">task_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">task_config</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="n">om</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">object_managers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_batch_index</span><span class="p">]</span>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="n">pickup_obj</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">get_object_by_name</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">pickup_obj_name</span><span class="p">)</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="n">pickup_obj_pos</span> <span class="o">=</span> <span class="n">pickup_obj</span><span class="o">.</span><span class="n">position</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>
-<a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="n">left_tcp_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>        <span class="s2">&quot;left_gripper&quot;</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="p">)</span><span class="o">.</span><span class="n">leaf_frame_to_world</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">right_tcp_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>        <span class="s2">&quot;right_gripper&quot;</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="p">)</span><span class="o">.</span><span class="n">leaf_frame_to_world</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="n">left_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">left_tcp_pose</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">pickup_obj_pos</span><span class="p">)</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="n">right_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">right_tcp_pose</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">pickup_obj_pos</span><span class="p">)</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a>    <span class="n">selected_arm</span> <span class="o">=</span> <span class="s2">&quot;left&quot;</span> <span class="k">if</span> <span class="n">left_dist</span> <span class="o">&lt;</span> <span class="n">right_dist</span> <span class="k">else</span> <span class="s2">&quot;right&quot;</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>        <span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="n">selected_arm</span><span class="si">}</span><span class="s2"> arm (left dist: </span><span class="si">{</span><span class="n">left_dist</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">m, right dist: </span><span class="si">{</span><span class="n">right_dist</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">m)&quot;</span>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="p">)</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span> <span class="o">=</span> <span class="n">selected_arm</span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="k">def</span><span class="w"> </span><span class="nf">select_arm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Select which arm to use and set up the planner (local or remote).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="n">task_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">task_config</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="n">om</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">object_managers</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_batch_index</span><span class="p">]</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="n">pickup_obj</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">get_object_by_name</span><span class="p">(</span><span class="n">task_config</span><span class="o">.</span><span class="n">pickup_obj_name</span><span class="p">)</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="n">pickup_obj_pos</span> <span class="o">=</span> <span class="n">pickup_obj</span><span class="o">.</span><span class="n">position</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="n">left_tcp_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>        <span class="s2">&quot;left_gripper&quot;</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="p">)</span><span class="o">.</span><span class="n">leaf_frame_to_world</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="n">right_tcp_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="s2">&quot;right_gripper&quot;</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="p">)</span><span class="o">.</span><span class="n">leaf_frame_to_world</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="n">left_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">left_tcp_pose</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">pickup_obj_pos</span><span class="p">)</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>    <span class="n">right_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">right_tcp_pose</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">pickup_obj_pos</span><span class="p">)</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>    <span class="n">selected_arm</span> <span class="o">=</span> <span class="s2">&quot;left&quot;</span> <span class="k">if</span> <span class="n">left_dist</span> <span class="o">&lt;</span> <span class="n">right_dist</span> <span class="k">else</span> <span class="s2">&quot;right&quot;</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a>        <span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="n">selected_arm</span><span class="si">}</span><span class="s2"> arm (left dist: </span><span class="si">{</span><span class="n">left_dist</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">m, right dist: </span><span class="si">{</span><span class="n">right_dist</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">m)&quot;</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="p">)</span>
 <a id="__codelineno-0-312" name="__codelineno-0-312"></a>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_local_planner</span><span class="p">:</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_select_arm_local</span><span class="p">(</span><span class="n">selected_arm</span><span class="p">)</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a>        <span class="n">server_url</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">server_urls</span><span class="p">)</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connecting to CuroboPlanner server at </span><span class="si">{</span><span class="n">server_url</span><span class="si">}</span><span class="s2"> (arm=</span><span class="si">{</span><span class="n">selected_arm</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="n">server_timeout</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;server_timeout&quot;</span><span class="p">,</span> <span class="mf">120.0</span><span class="p">)</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">CuroboClient</span><span class="p">(</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a>            <span class="n">base_url</span><span class="o">=</span><span class="n">server_url</span><span class="p">,</span> <span class="n">arm</span><span class="o">=</span><span class="n">selected_arm</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">server_timeout</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a>        <span class="p">)</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a>    <span class="k">if</span> <span class="n">selected_arm</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">left_planner_joint_ranges</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">right_planner_joint_ranges</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">arm_start_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">arm_end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span> <span class="o">=</span> <span class="n">selected_arm</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_local_planner</span><span class="p">:</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_select_arm_local</span><span class="p">(</span><span class="n">selected_arm</span><span class="p">)</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="n">server_url</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">server_urls</span><span class="p">)</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connecting to CuroboPlanner server at </span><span class="si">{</span><span class="n">server_url</span><span class="si">}</span><span class="s2"> (arm=</span><span class="si">{</span><span class="n">selected_arm</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>        <span class="n">server_timeout</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="p">,</span> <span class="s2">&quot;server_timeout&quot;</span><span class="p">,</span> <span class="mf">120.0</span><span class="p">)</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">CuroboClient</span><span class="p">(</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>            <span class="n">base_url</span><span class="o">=</span><span class="n">server_url</span><span class="p">,</span> <span class="n">arm</span><span class="o">=</span><span class="n">selected_arm</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">server_timeout</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="p">)</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="k">if</span> <span class="n">selected_arm</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">left_planner_joint_ranges</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">policy_config</span><span class="o">.</span><span class="n">right_planner_joint_ranges</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">arm_start_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">arm_end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">planner_joint_ranges</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -50705,9 +50817,7 @@ Must be json serializable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/policy/solvers/object_manipulation/curobo_pick_and_place_planner_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-345">345</a></span>
-<span class="normal"><a href="#__codelineno-0-346">346</a></span>
-<span class="normal"><a href="#__codelineno-0-347">347</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-347">347</a></span>
 <span class="normal"><a href="#__codelineno-0-348">348</a></span>
 <span class="normal"><a href="#__codelineno-0-349">349</a></span>
 <span class="normal"><a href="#__codelineno-0-350">350</a></span>
@@ -50742,44 +50852,46 @@ Must be json serializable.</p>
 <span class="normal"><a href="#__codelineno-0-379">379</a></span>
 <span class="normal"><a href="#__codelineno-0-380">380</a></span>
 <span class="normal"><a href="#__codelineno-0-381">381</a></span>
-<span class="normal"><a href="#__codelineno-0-382">382</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="k">def</span><span class="w"> </span><span class="nf">solve_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Solve IK and create an interpolated trajectory.</span>
-<a id="__codelineno-0-347" name="__codelineno-0-347"></a>
-<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">    Uses local planner or remote server depending on configuration.</span>
+<span class="normal"><a href="#__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#__codelineno-0-384">384</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="k">def</span><span class="w"> </span><span class="nf">solve_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_pose</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Solve IK and create an interpolated trajectory.</span>
 <a id="__codelineno-0-349" name="__codelineno-0-349"></a>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">        target_pose: 4x4 transformation matrix for target end-effector pose in world frame.</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_local_planner</span><span class="p">:</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a>        <span class="k">return</span> <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">solve_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_pose</span><span class="p">)</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a>    <span class="n">init_config</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="p">[</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a>            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a>            <span class="p">)</span><span class="o">.</span><span class="n">joint_pos</span><span class="p">,</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a>        <span class="p">]</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="p">)</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="n">target_pose_7d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_pose_to_base_frame</span><span class="p">(</span><span class="n">target_pose</span><span class="p">)</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a>    <span class="n">joint_config</span><span class="p">,</span> <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a>        <span class="n">goal_pose</span><span class="o">=</span><span class="n">target_pose_7d</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a>        <span class="n">seed_config</span><span class="o">=</span><span class="n">init_config</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a>        <span class="n">disable_collision</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-370" name="__codelineno-0-370"></a>    <span class="p">)</span>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>
-<a id="__codelineno-0-372" name="__codelineno-0-372"></a>    <span class="n">current_phase</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;current_phase&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-373" name="__codelineno-0-373"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
-<a id="__codelineno-0-374" name="__codelineno-0-374"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not solve </span><span class="si">{</span><span class="n">current_phase</span><span class="si">}</span><span class="s2"> phase IK.&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-375" name="__codelineno-0-375"></a>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a>    <span class="n">trajectory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate_joint_trajectory</span><span class="p">(</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>        <span class="n">init_config</span><span class="p">,</span>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a>        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">joint_config</span><span class="p">),</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a>        <span class="n">num_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a>    <span class="p">)</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_transform_traj_to_world_frame</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">planned_trajectory</span> <span class="o">=</span> <span class="n">trajectory</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    Uses local planner or remote server depending on configuration.</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">        target_pose: 4x4 transformation matrix for target end-effector pose in world frame.</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_local_planner</span><span class="p">:</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="k">return</span> <span class="n">CuroboPlannerPolicy</span><span class="o">.</span><span class="n">solve_ik</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_pose</span><span class="p">)</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>    <span class="n">init_config</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a>        <span class="p">[</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a>            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">current_robot</span><span class="o">.</span><span class="n">robot_view</span><span class="o">.</span><span class="n">get_move_group</span><span class="p">(</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">arm_side</span><span class="si">}</span><span class="s2">_arm&quot;</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a>            <span class="p">)</span><span class="o">.</span><span class="n">joint_pos</span><span class="p">,</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a>        <span class="p">]</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="p">)</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a>    <span class="n">target_pose_7d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_pose_to_base_frame</span><span class="p">(</span><span class="n">target_pose</span><span class="p">)</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a>    <span class="n">joint_config</span><span class="p">,</span> <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ik</span><span class="p">(</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a>        <span class="n">goal_pose</span><span class="o">=</span><span class="n">target_pose_7d</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a>        <span class="n">seed_config</span><span class="o">=</span><span class="n">init_config</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a>        <span class="n">disable_collision</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a>    <span class="p">)</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a>    <span class="n">current_phase</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;current_phase&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not solve </span><span class="si">{</span><span class="n">current_phase</span><span class="si">}</span><span class="s2"> phase IK.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a>    <span class="n">trajectory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate_joint_trajectory</span><span class="p">(</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>        <span class="n">init_config</span><span class="p">,</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">joint_config</span><span class="p">),</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>        <span class="n">num_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="p">)</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_transform_traj_to_world_frame</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">planned_trajectory</span> <span class="o">=</span> <span class="n">trajectory</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
