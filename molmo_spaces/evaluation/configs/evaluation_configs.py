@@ -302,6 +302,7 @@ class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
 
+
 class TiptopPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaTiptopRobotConfig = FrankaTiptopRobotConfig()
     policy_config: TiptopPolicyConfig = TiptopPolicyConfig(

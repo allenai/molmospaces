@@ -214,7 +214,9 @@ class TiptopPolicy(InferencePolicy):
                 last_arm_position = arm_positions[-1]
             elif step_type == "gripper":
                 current_gripper = 1.0 if step["action"] == "close" else 0.0
-                action = np.concatenate([last_arm_position, [current_gripper]]).astype(np.float32)  # (8,)
+                action = np.concatenate([last_arm_position, [current_gripper]]).astype(
+                    np.float32
+                )  # (8,)
                 action_segments.append(action[None])  # (1, 8)
 
         return np.concatenate(action_segments, axis=0)
