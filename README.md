@@ -138,9 +138,9 @@ Run a quick sample of data generation. For machines with a display, use the `--v
 
 ```bash
 # Linux
-python scripts/datagen/run_pipeline.py --viewer --seed 3
+python scripts/datagen/run_pipeline.py --viewer --seed 1
 # Mac
-mjpython scripts/datagen/run_pipeline.py --viewer --seed 3
+mjpython scripts/datagen/run_pipeline.py --viewer --seed 1
 ```
 
 The MolmoSpaces codebase has three entry points for data generation, evaluation, and debugging. The two initial entry points make use of experiment configs to configure runs. The third is more easily modifiable, with some logic for constructing runs on the fly; however, constructing experiments is complicated, and not all permutations have been tested fully.
