@@ -7,6 +7,7 @@ import os
 import site
 import sys
 import time
+import inspect
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from pathlib import Path
 from typing import Any
@@ -56,14 +57,16 @@ if _HAS_OPENPI_CLIENT:
             while True:
                 try:
                     headers = {"Authorization": f"Api-Key {self._api_key}"} if self._api_key else None
-                    conn = websockets.sync.client.connect(
-                        self._uri,
-                        compression=None,
-                        max_size=None,
-                        additional_headers=headers,
-                        ping_interval=None,
-                        ping_timeout=None,
-                    )
+                    connect_kwargs = {
+                        "compression": None,
+                        "max_size": None,
+                        "additional_headers": headers,
+                        "ping_interval": None,
+                        "ping_timeout": None,
+                    }
+                    supported = inspect.signature(websockets.sync.client.connect).parameters
+                    connect_kwargs = {k: v for k, v in connect_kwargs.items() if k in supported}
+                    conn = websockets.sync.client.connect(self._uri, **connect_kwargs)
                     metadata = msgpack_numpy.unpackb(conn.recv())
                     return conn, metadata
                 except ConnectionRefusedError:

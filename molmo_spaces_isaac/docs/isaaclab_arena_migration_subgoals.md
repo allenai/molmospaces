@@ -159,14 +159,16 @@ server reset with seed 0 fails in both MuJoCo and Arena for episode 8; seeds
 policy-parity target either a known successful HDF5/open-loop action sequence or
 a deterministic seed/action sample that first succeeds in MuJoCo.
 
-The idx `14` policy I/O rerun changed the blocker shape. Prompt text and reset
-arm qpos now match exactly, and the intended `0.01` threshold sends close
-commands in Arena (`47/60` traced calls in the unscaled rerun, `57/60` with the
-`0.79` light scale). Both reruns still fail after `1500` steps, so the current
-idx `14` gap is downstream of prompt parity, reset qpos parity, and basic
-close-command emission. The old MuJoCo HDF5 stores decoded/applied action
-fields but not raw OpenPI chunks, so a strict raw model-output diff needs a new
-MuJoCo trace with matching hooks.
+The idx `14` policy I/O reruns changed the blocker shape. Prompt text and
+reset arm qpos now match exactly, and the intended `0.01` threshold sends close
+commands in Arena (`47/60` traced calls in the unscaled rerun, `57/60` in the
+first `0.79` light-scale rerun, and `60/60` in the latest `0.79` rerun). These
+runs still fail after `1500` steps. The latest rerun kept the end-effector far
+from the bowl (`~0.43m` to `~0.49m` near the sampled debug points), so the
+current idx `14` gap is downstream of prompt parity, reset qpos parity, and
+basic close-command emission. The old MuJoCo HDF5 stores decoded/applied
+action fields but not raw OpenPI chunks, so a strict raw model-output diff
+needs a new MuJoCo trace with matching hooks.
 
 Remaining subgoals:
 
@@ -183,6 +185,8 @@ Remaining subgoals:
 - For idx `14`, separate "Arena received close commands" from "Arena can close
   and lift this bowl on this approach path" by running a forced-close or
   known-close replay smoke test with finger/object/contact diagnostics.
+  Latest evidence says the arm does not approach closely enough yet, so prefer
+  TCP/finger/object trajectory comparison before contact-only debugging.
 - Keep Arena OpenPI prompt strings exact to the benchmark/MuJoCo prompt after
   strip/lower; do not auto-add terminal punctuation.
 - Keep episode 8 as the first MuJoCo-successful policy-parity target and smoke
@@ -220,8 +224,4 @@ Status: not started.
 
 Remaining subgoals:
 
-- Minimize custom scripts or clearly mark them as diagnostics.
-- Keep production code changes localized under `molmo_spaces_isaac/arena`.
-- Add concise docs for setup, conversion, diagnosis, and policy smoke tests.
-- Add focused tests or offline checks for conversion behavior.
-- Remove or quarantine temporary artifacts before proposing merge.
+- Minimize custom scripts or cle

@@ -801,6 +801,80 @@ def _patch_ithor_scene_physics_runtime(
     print(msg + ".", flush=True)
 
 
+def _scene_rigid_body_suffix_for_object(scene_usd: Path | str | None, scene_object_name: str) -> str | None:
+    """Return a primary rigid-body suffix for scene objects with multiple rigid bodies.
+
+    Isaac Lab ``RigidObjectCfg`` must resolve to exactly one rigid body. Most
+    iTHOR scene pickups satisfy that when pointed at the object root, but a few
+    assets, such as boxes with flaps, contain several rigid bodies under one
+    object subtree. For those, bind Arena's pickup handle to the primary body
+    while the physics patch keeps the full scene object subtree dynamic.
+    """
+    if scene_usd is None or not Path(scene_usd).is_file():
+        return None
+    try:
+        from pxr import Usd, UsdPhysics
+
+        stage = Usd.Stage.Open(str(Path(scene_usd).resolve()))
+        if stage is None:
+            return None
+
+        object_root = None
+        default_prim = stage.GetDefaultPrim()
+        if default_prim and default_prim.IsValid():
+            candidate = stage.GetPrimAtPath(f"{default_prim.GetPath()}/Geometry/{scene_object_name}")
+            if candidate and candidate.IsValid():
+                object_root = candidate
+        if object_root is None:
+            for prim in stage.Traverse():
+                if prim.GetName() == scene_object_name:
+                    object_root = prim
+                    break
+        if object_root is None or not object_root.IsValid():
+            return None
+
+        rigid_prims = [
+            prim
+            for prim in Usd.PrimRange(object_root)
+            if prim.HasAPI(UsdPhysics.RigidBodyAPI)
+        ]
+        if len(rigid_prims) <= 1:
+            return None
+
+        object_base = scene_object_name.split("_", 1)[0].lower()
+
+        def _score(prim) -> tuple[int, int, int, int, str]:
+            name = prim.GetName()
+            low = name.lower()
+            partish = any(token in low for token in ("flap", "door", "drawer", "hinge", "handle"))
+            base_match = 0 if low.startswith(object_base) else 1
+            direct_child = 0 if prim.GetParent().GetParent() == object_root else 1
+            return (
+                1 if partish else 0,
+                base_match,
+                direct_child,
+                len(name),
+                str(prim.GetPath()),
+            )
+
+        chosen = sorted(rigid_prims, key=_score)[0]
+        root_path = str(object_root.GetPath()).rstrip("/")
+        chosen_path = str(chosen.GetPath())
+        if not chosen_path.startswith(f"{root_path}/"):
+            return None
+        suffix = chosen_path[len(root_path) + 1 :]
+        print(
+            "[molmospaces_arena] Scene pickup "
+            f"'{scene_object_name}' has {len(rigid_prims)} rigid bodies; "
+            f"binding pickup handle to primary body '{suffix}'.",
+            flush=True,
+        )
+        return suffix
+    except Exception as e:
+        log.warning("Could not resolve primary rigid body for %s in %s: %s", scene_object_name, scene_usd, e)
+        return None
+
+
 
 def build_arena_env_from_episode_spec(
     spec: ArenaEpisodeSpec,
@@ -918,9 +992,11 @@ def build_arena_env_from_episode_spec(
                     "Pass --assets_root to your ms-download install (with --assets thor), or set MOLMO_ISAAC_ASSETS_ROOT / MOLMO_THOR_USD_DIR."
                 )
         if source == "scene":
+            body_prim_suffix = _scene_rigid_body_suffix_for_object(scene_usd, asset_id)
             obj = SceneRigidObjectReference(
                 name=arena_name,
                 scene_object_name=asset_id,
+                body_prim_suffix=body_prim_suffix,
                 initial_pose=pose,
             )
             dynamic_scene_object_names.append(asset_id)

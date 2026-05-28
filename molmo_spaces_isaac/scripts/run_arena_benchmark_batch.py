@@ -20,6 +20,13 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 EPISODE_RUNNER = SCRIPT_DIR / "run_arena_benchmark_episode.py"
 
+# Match the episode runner: `isaaclab.sh -p script.py -- --flag` leaves a
+# standalone `--` that would otherwise make argparse stop parsing parent args.
+for _i in range(1, len(sys.argv)):
+    sys.argv[_i] = sys.argv[_i].lstrip()
+while len(sys.argv) > 1 and sys.argv[1] == "--":
+    sys.argv.pop(1)
+
 
 def _load_all_episode_dicts(benchmark_dir: Path) -> list[dict]:
     try:
@@ -36,6 +43,18 @@ def _load_all_episode_dicts(benchmark_dir: Path) -> list[dict]:
         if not isinstance(data, list):
             raise SystemExit(f"{bench_file} does not contain a benchmark episode list")
         return data
+
+
+def _load_all_manifest_episode_rows(manifest_path: Path) -> list[dict]:
+    with open(manifest_path, encoding="utf-8") as f:
+        data = json.load(f)
+    episodes = data.get("episodes") if isinstance(data, dict) else None
+    if not isinstance(episodes, list):
+        raise SystemExit(f"{manifest_path} does not contain an episodes list")
+    for idx, row in enumerate(episodes):
+        if not isinstance(row, dict) or not isinstance(row.get("arena_spec"), dict):
+            raise SystemExit(f"Arena spec manifest row {idx} has no arena_spec")
+    return episodes
 
 
 def _parse_episode_indices(raw: str | None, n_total: int) -> list[int]:
@@ -64,11 +83,12 @@ def _parse_episode_indices(raw: str | None, n_total: int) -> list[int]:
 
 def _episode_metadata(idx: int, episode_dict: dict) -> dict:
     task = episode_dict.get("task") or {}
+    arena_spec = episode_dict.get("arena_spec") or {}
     return {
         "idx": int(idx),
         "house_index": episode_dict.get("house_index"),
         "scene_dataset": episode_dict.get("scene_dataset"),
-        "pickup_obj_name": task.get("pickup_obj_name"),
+        "pickup_obj_name": episode_dict.get("pickup_obj_name") or task.get("pickup_obj_name") or arena_spec.get("pickup_name"),
         "task_description": ((episode_dict.get("language") or {}).get("task_description")),
     }
 
@@ -108,7 +128,13 @@ def main() -> int:
             "processes and aggregate result JSON."
         )
     )
-    parser.add_argument("--benchmark_dir", type=Path, required=True)
+    parser.add_argument("--benchmark_dir", type=Path, default=None)
+    parser.add_argument(
+        "--arena_spec_manifest",
+        type=Path,
+        default=None,
+        help="Exported Arena episode spec manifest JSON to run instead of a benchmark directory.",
+    )
     parser.add_argument(
         "--episode_indices",
         type=str,
@@ -139,13 +165,29 @@ def main() -> int:
     if args.max_episodes is not None and args.episode_indices is not None:
         raise SystemExit("Use either --max_episodes or --episode_indices, not both.")
 
-    benchmark_dir = args.benchmark_dir.expanduser().resolve()
-    if not benchmark_dir.is_dir():
-        raise SystemExit(f"Benchmark directory not found: {benchmark_dir}")
+    source_count = sum(1 for source in (args.benchmark_dir, args.arena_spec_manifest) if source is not None)
+    if source_count != 1:
+        raise SystemExit("Use exactly one of --benchmark_dir or --arena_spec_manifest.")
 
-    episode_dicts = _load_all_episode_dicts(benchmark_dir)
+    benchmark_dir = None
+    arena_spec_manifest = None
+    source_child_args: list[str]
+    if args.arena_spec_manifest is not None:
+        arena_spec_manifest = args.arena_spec_manifest.expanduser().resolve()
+        if not arena_spec_manifest.is_file():
+            raise SystemExit(f"Arena spec manifest not found: {arena_spec_manifest}")
+        episode_dicts = _load_all_manifest_episode_rows(arena_spec_manifest)
+        source_child_args = ["--arena_spec_manifest", str(arena_spec_manifest)]
+        source_label = str(arena_spec_manifest)
+    else:
+        benchmark_dir = args.benchmark_dir.expanduser().resolve()
+        if not benchmark_dir.is_dir():
+            raise SystemExit(f"Benchmark directory not found: {benchmark_dir}")
+        episode_dicts = _load_all_episode_dicts(benchmark_dir)
+        source_child_args = ["--benchmark_dir", str(benchmark_dir)]
+        source_label = str(benchmark_dir)
     if not episode_dicts:
-        raise SystemExit(f"No episodes found in {benchmark_dir}")
+        raise SystemExit(f"No episodes found in {source_label}")
 
     if args.max_episodes is not None:
         n_run = len(episode_dicts) if args.max_episodes == 0 else min(args.max_episodes, len(episode_dicts))
@@ -175,8 +217,7 @@ def main() -> int:
         cmd = [
             sys.executable,
             str(EPISODE_RUNNER),
-            "--benchmark_dir",
-            str(benchmark_dir),
+            *source_child_args,
             "--episode_idx",
             str(idx),
             "--results_json",
@@ -208,6 +249,7 @@ def main() -> int:
                         "success": bool(episode_rows[0].get("success")),
                         "step_count": episode_rows[0].get("step_count"),
                         "reason": episode_rows[0].get("reason"),
+                        "video_paths": episode_rows[0].get("video_paths") or episode_result.get("video_paths"),
                     }
                 )
             else:
@@ -226,7 +268,8 @@ def main() -> int:
 
     success_count = sum(1 for row in rows if row.get("success"))
     payload = {
-        "benchmark_dir": str(benchmark_dir),
+        "benchmark_dir": str(benchmark_dir) if benchmark_dir is not None else None,
+        "arena_spec_manifest": str(arena_spec_manifest) if arena_spec_manifest is not None else None,
         "episode_indices": indices,
         "completed_count": len(rows),
         "success_count": success_count,

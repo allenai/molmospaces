@@ -21,11 +21,18 @@ class SceneRigidObjectReference(ObjectBase):
         *,
         name: str,
         scene_object_name: str,
+        body_prim_suffix: str | None = None,
         initial_pose: Pose | None = None,
     ):
-        prim_path = f"{{ENV_REGEX_NS}}/molmospaces_scene/Geometry/{scene_object_name}"
+        scene_object_root = f"{{ENV_REGEX_NS}}/molmospaces_scene/Geometry/{scene_object_name}"
+        if body_prim_suffix:
+            prim_path = f"{scene_object_root}/{body_prim_suffix.strip('/')}"
+        else:
+            prim_path = scene_object_root
         super().__init__(name=name, prim_path=prim_path, object_type=ObjectType.RIGID)
         self.scene_object_name = scene_object_name
+        self.scene_object_root_prim_path = scene_object_root
+        self.body_prim_suffix = body_prim_suffix
         self.initial_pose = initial_pose
         self.object_cfg = self._init_object_cfg()
         self.event_cfg = self._init_event_cfg()

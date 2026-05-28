@@ -4,7 +4,8 @@
 Default: one bundled episode JSON (``examples/pick_episode_ithor_thor_only.json``) when present;
 otherwise a pick benchmark directory (see ``MOLMO_PICK_BENCHMARK_DIR`` / ``--benchmark_dir``).
 Scene vertical placement uses inverse ``robot_base_pose`` plus ``--scene_extra_xyz`` and optional
-``MOLMO_ARENA_SCENE_FINE_Z`` only (no automatic iTHOR Z offsets). Success = lift_height >= threshold.
+``MOLMO_ARENA_SCENE_FINE_Z`` only (no automatic iTHOR Z offsets). Pick success mirrors
+MolmoSpaces/MuJoCo: lift above threshold and no non-robot scene support.
 ``--assets_root`` needs ``objects/thor/``. OpenPI: ``--policy_type pi_remote``."""
 
 from __future__ import annotations
@@ -80,6 +81,24 @@ parser.add_argument(
     help=(
         "Pick benchmark directory (benchmark.json). Used when no episode JSON is selected and the demo JSON is missing. "
         f"Fallback dir: {_DEFAULT_PICK_BENCHMARK_DIR}."
+    ),
+)
+parser.add_argument(
+    "--arena_spec_manifest",
+    type=Path,
+    default=None,
+    help=(
+        "Exported Arena episode spec manifest JSON. Uses --episode_idx to select one "
+        "already-converted ArenaEpisodeSpec row."
+    ),
+)
+parser.add_argument(
+    "--task_description_map",
+    type=Path,
+    default=None,
+    help=(
+        "Optional JSON mapping pickup object names to task descriptions when running "
+        "from --arena_spec_manifest."
     ),
 )
 parser.add_argument(
@@ -365,6 +384,137 @@ simulation_app = app_launcher.app
 def load_episode_dict_from_json(path: Path) -> dict:
     with open(path) as f:
         return json.load(f)
+
+
+def _resolve_input_file(path: Path, *, label: str) -> Path:
+    p = Path(path).expanduser()
+    candidates = [p]
+    if not p.is_absolute():
+        candidates.extend([REPO_ROOT / p, MOLMOSPACES_ROOT / p])
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate.resolve()
+    raise SystemExit(f"{label} not found: {path}")
+
+
+def _load_task_description_map(path: Path | None) -> dict[str, str]:
+    if path is None:
+        return {}
+    p = _resolve_input_file(path, label="Task description map")
+    with open(p, encoding="utf-8") as f:
+        data = json.load(f)
+    entries = data.get("by_pickup_obj_name", data) if isinstance(data, dict) else {}
+    if not isinstance(entries, dict):
+        return {}
+    out: dict[str, str] = {}
+    for name, value in entries.items():
+        if isinstance(value, dict):
+            text = value.get("task_description")
+        else:
+            text = value
+        if text:
+            out[str(name)] = str(text)
+    return out
+
+
+def _arena_manifest_objects_to_tuples(raw_objects) -> list[tuple[str, str, list[float], str]]:
+    out: list[tuple[str, str, list[float], str]] = []
+    if not isinstance(raw_objects, list):
+        raise SystemExit("Arena spec manifest row has no object list")
+    for item in raw_objects:
+        if isinstance(item, dict):
+            name = str(item.get("name") or "")
+            asset_id = str(item.get("asset_id") or item.get("scene_prim") or name)
+            pose = item.get("pose_7_world") or item.get("pose_7") or item.get("pose")
+            source = str(item.get("source") or "thor")
+        else:
+            if not isinstance(item, (list, tuple)) or len(item) < 4:
+                raise SystemExit(f"Invalid Arena manifest object entry: {item!r}")
+            name = str(item[0])
+            asset_id = str(item[1])
+            pose = item[2]
+            source = str(item[3])
+        if not name or not pose or len(pose) < 7:
+            raise SystemExit(f"Invalid Arena manifest object entry: {item!r}")
+        out.append((name, asset_id, list(pose[:7]), source))
+    return out
+
+
+def _task_description_for_manifest_row(row: dict, pickup_name: str, task_descriptions: dict[str, str]) -> str:
+    language = row.get("language") if isinstance(row, dict) else None
+    if isinstance(language, dict) and language.get("task_description"):
+        return str(language["task_description"])
+    if pickup_name in task_descriptions:
+        return task_descriptions[pickup_name]
+    short_name = (pickup_name or "object").split("_", 1)[0]
+    short_name = short_name.replace("Irishpotato", "potato")
+    return f"Pick up the {short_name}"
+
+
+def load_arena_manifest_rows(manifest_path: Path) -> tuple[Path, list[dict]]:
+    path = _resolve_input_file(manifest_path, label="Arena spec manifest")
+    with open(path, encoding="utf-8") as f:
+        manifest = json.load(f)
+    episodes = manifest.get("episodes") if isinstance(manifest, dict) else None
+    if not isinstance(episodes, list) or not episodes:
+        raise SystemExit(f"No episodes found in Arena spec manifest: {path}")
+    for idx, row in enumerate(episodes):
+        if not isinstance(row, dict) or not isinstance(row.get("arena_spec"), dict):
+            raise SystemExit(f"Arena spec manifest row {idx} has no arena_spec")
+    return path, episodes
+
+
+def load_arena_spec_from_manifest(
+    manifest_path: Path,
+    episode_idx: int,
+    *,
+    scenes_root: Path | None,
+    task_descriptions: dict[str, str],
+):
+    from molmo_spaces_isaac.arena.episode_to_arena import ArenaEpisodeSpec, resolve_episode_scene_usd_path
+
+    path, episodes = load_arena_manifest_rows(manifest_path)
+    if episode_idx < 0 or episode_idx >= len(episodes):
+        raise SystemExit(
+            f"episode_idx {episode_idx} out of range [0, {len(episodes) - 1}] "
+            f"(manifest has {len(episodes)} episodes)"
+        )
+
+    row = episodes[episode_idx]
+    spec_payload = row.get("arena_spec") if isinstance(row, dict) else None
+    if not isinstance(spec_payload, dict):
+        raise SystemExit(f"Arena spec manifest row {episode_idx} has no arena_spec")
+    spec_data = dict(spec_payload)
+    spec_data["objects"] = _arena_manifest_objects_to_tuples(spec_data.get("objects"))
+
+    scene_usd_path = spec_data.get("scene_usd_path")
+    if scene_usd_path:
+        spec_data["scene_usd_path"] = Path(scene_usd_path).expanduser()
+    if not spec_data.get("scene_usd_path") or not Path(spec_data["scene_usd_path"]).is_file():
+        resolved = resolve_episode_scene_usd_path(row, scenes_root)
+        if resolved is not None:
+            spec_data["scene_usd_path"] = resolved
+        elif spec_data.get("scene_usd_path") and not Path(spec_data["scene_usd_path"]).is_file():
+            spec_data["scene_usd_path"] = None
+
+    spec = ArenaEpisodeSpec(**spec_data)
+    pickup_name = str(row.get("pickup_obj_name") or spec.pickup_name)
+    task_description = _task_description_for_manifest_row(row, pickup_name, task_descriptions)
+    episode_dict = {
+        "house_index": row.get("house_index"),
+        "scene_dataset": row.get("scene_dataset"),
+        "data_split": row.get("data_split", "val"),
+        "task": {
+            "task_type": getattr(spec, "task_type", "pick"),
+            "pickup_obj_name": pickup_name,
+            "succ_pos_threshold": getattr(spec, "succ_pos_threshold", 0.01),
+            "robot_base_pose": list(getattr(spec, "robot_base_pose", []) or []),
+        },
+        "language": {"task_description": task_description},
+        "cameras": list(getattr(spec, "camera_specs", None) or []),
+        "img_resolution": list(getattr(spec, "img_resolution", None) or []),
+    }
+    return spec, episode_dict, path
 
 
 def _resolve_asset_dirs(assets_root: Path | None):
@@ -889,8 +1039,9 @@ def _run_one_episode(
     pi_remote_policy=None,
     pi_remote_camera_key_map=None,
     env_name: str = "molospaces_arena_benchmark",
+    episode_idx_for_artifacts: int | None = None,
 ):
-    """Build env from spec, run episode, close env. Returns (success, step_count). Use unique env_name per episode to avoid gym duplicate registration."""
+    """Build env from spec, run episode, close env. Use unique env_name per episode to avoid gym duplicate registration."""
     import torch
     from molmo_spaces_isaac.arena.build_from_spec import build_arena_env_from_episode_spec
 
@@ -935,6 +1086,22 @@ def _run_one_episode(
     except Exception:
         pass
 
+    video_recorder = None
+    video_paths: dict[str, str] = {}
+    if getattr(args, "record_video_dir", None) is not None:
+        artifact_idx = (
+            int(episode_idx_for_artifacts)
+            if episode_idx_for_artifacts is not None
+            else int(getattr(args, "episode_idx", 0))
+        )
+        video_recorder = ArenaVideoRecorder(
+            args.record_video_dir,
+            episode_idx=artifact_idx,
+            camera_keys=_record_camera_keys(args),
+            fps=getattr(args, "record_video_fps", 15),
+        )
+        video_recorder.capture(obs, step_count=0)
+
     step_count = 0
     success = False
     device = env.unwrapped.device
@@ -978,6 +1145,11 @@ def _run_one_episode(
             step_count += 1
             if args.progress_steps > 0 and step_count % args.progress_steps == 0:
                 print(f"  step {step_count}/{args.steps}...", flush=True)
+            if (
+                video_recorder is not None
+                and step_count % max(1, int(getattr(args, "record_video_stride", 1))) == 0
+            ):
+                video_recorder.capture(obs, step_count=step_count)
             if args.debug_arm_motion > 0 and step_count % args.debug_arm_motion == 0:
                 _print_arm_motion_debug(step_count, obs, actions, device)
             if args.debug_pick_z > 0 and step_count % args.debug_pick_z == 0 and spawn_z is not None:
@@ -991,25 +1163,38 @@ def _run_one_episode(
         print(f"Episode loop error after {step_count} steps: {e}", flush=True)
         traceback.print_exc()
         success = False
+    finally:
+        if video_recorder is not None:
+            try:
+                if step_count > 0 and step_count % max(1, int(getattr(args, "record_video_stride", 1))) != 0:
+                    video_recorder.capture(obs, step_count=step_count)
+            except Exception:
+                pass
+            video_paths = video_recorder.close()
 
     try:
         env.close()
     except Exception:
         pass
-    return success, step_count
+    return success, step_count, video_paths
 
 
 def main() -> int:
     if getattr(args, "scenes_root", None) is None and os.environ.get("MOLMO_SCENES_ROOT"):
         args.scenes_root = Path(os.environ["MOLMO_SCENES_ROOT"]).resolve()
-    if args.episode_json is not None and args.benchmark_dir is not None:
-        raise SystemExit("Use either --episode_json or --benchmark_dir, not both.")
+    source_count = sum(
+        1
+        for source in (args.episode_json, args.benchmark_dir, args.arena_spec_manifest)
+        if source is not None
+    )
+    if source_count > 1:
+        raise SystemExit("Use only one of --episode_json, --benchmark_dir, or --arena_spec_manifest.")
     if getattr(args, "pi_trace_dir", None) is not None:
         os.environ["MOLMO_PI_TRACE_DIR"] = str(Path(args.pi_trace_dir).expanduser().resolve())
 
     _bundled_simple_bench = REPO_ROOT / "examples" / "benchmark_ithor_pick_hard_simple"
 
-    if args.episode_json is None and args.benchmark_dir is None:
+    if args.episode_json is None and args.benchmark_dir is None and args.arena_spec_manifest is None:
         # --episode_idx only selects a row from benchmark.json; it is ignored for a single JSON file.
         if args.episode_idx != 0:
             if (_bundled_simple_bench / "benchmark.json").is_file():
@@ -1054,7 +1239,34 @@ def main() -> int:
     require_thor_only_mode = (not args.allow_objaverse) or args.require_thor_only
 
     resolved_bench_dir: Path | None = None
-    if args.benchmark_dir is not None:
+    resolved_arena_spec_manifest: Path | None = None
+    manifest_task_descriptions: dict[str, str] | None = None
+    spec = None
+    _maybe_default_scenes_root_from_assets(args, resolved_bench_dir)
+    if args.arena_spec_manifest is not None:
+        task_descriptions = _load_task_description_map(args.task_description_map)
+        if args.max_episodes is not None or args.episode_indices is not None:
+            resolved_arena_spec_manifest, manifest_rows = load_arena_manifest_rows(args.arena_spec_manifest)
+            n_total = len(manifest_rows)
+            parsed_indices = _parse_episode_indices(args.episode_indices, n_total)
+            if parsed_indices is not None:
+                indices_to_run = parsed_indices
+            else:
+                n_run = n_total if args.max_episodes == 0 else min(args.max_episodes, n_total)
+                indices_to_run = list(range(n_run))
+            manifest_task_descriptions = task_descriptions
+            episode_dict = None
+            episode_dicts = None
+        else:
+            spec, episode_dict, resolved_arena_spec_manifest = load_arena_spec_from_manifest(
+                args.arena_spec_manifest,
+                args.episode_idx,
+                scenes_root=args.scenes_root,
+                task_descriptions=task_descriptions,
+            )
+            episode_dicts = None
+            indices_to_run = None
+    elif args.benchmark_dir is not None:
         bench_dir = Path(args.benchmark_dir)
         if not bench_dir.is_dir() and not bench_dir.is_absolute():
             bench_dir = REPO_ROOT / bench_dir
@@ -1165,14 +1377,45 @@ def main() -> int:
                 return 1
 
         results: list[dict] = []
-        for idx in indices_to_run:
-            episode_dict = episode_dicts[idx]
-            spec = episode_dict_to_arena_spec(
-                episode_dict,
-                require_thor_only=require_thor_only_mode,
-                background_key=args.background,
-                scenes_root=args.scenes_root,
+
+        def _write_multi_episode_results() -> None:
+            n_ok_so_far = sum(1 for row in results if row.get("success"))
+            n_done = len(results)
+            _write_results_json(
+                args.results_json,
+                {
+                    "benchmark_dir": str(resolved_bench_dir) if resolved_bench_dir else None,
+                    "arena_spec_manifest": str(resolved_arena_spec_manifest) if resolved_arena_spec_manifest else None,
+                    "episode_indices": indices_to_run,
+                    "completed_count": n_done,
+                    "planned_count": len(indices_to_run),
+                    "policy_type": args.policy_type,
+                    "steps": args.steps,
+                    "num_envs": getattr(args, "num_envs", 1),
+                    "pi_trace_dir": str(args.pi_trace_dir) if args.pi_trace_dir else None,
+                    "success_count": n_ok_so_far,
+                    "total_count": n_done,
+                    "success_rate": (float(n_ok_so_far) / float(n_done)) if n_done else None,
+                    "results": results,
+                },
             )
+
+        for idx in indices_to_run:
+            if resolved_arena_spec_manifest is not None and manifest_task_descriptions is not None:
+                spec, episode_dict, _ = load_arena_spec_from_manifest(
+                    resolved_arena_spec_manifest,
+                    idx,
+                    scenes_root=args.scenes_root,
+                    task_descriptions=manifest_task_descriptions,
+                )
+            else:
+                episode_dict = episode_dicts[idx]
+                spec = episode_dict_to_arena_spec(
+                    episode_dict,
+                    require_thor_only=require_thor_only_mode,
+                    background_key=args.background,
+                    scenes_root=args.scenes_root,
+                )
             if spec is None:
                 why = (
                     "needs Objaverse or not THOR-only (use --allow-objaverse to run)"
@@ -1196,11 +1439,12 @@ def main() -> int:
                 task_description = (episode_dict.get("language") or {}).get("task_description")
                 if hasattr(pi_remote_policy, "set_task_description"):
                     pi_remote_policy.set_task_description(task_description or "pick up the object.")
-            success, step_count = _run_one_episode(
+            success, step_count, video_paths = _run_one_episode(
                 spec, episode_dict, args,
                 thor_assets_dir, thor_metadata_path, objaverse_assets_dir,
                 cli_args_list, pi_remote_policy, pi_remote_camera_key_map,
                 env_name=f"molospaces_arena_benchmark_{idx}",
+                episode_idx_for_artifacts=idx,
             )
             results.append(
                 {
@@ -1209,9 +1453,11 @@ def main() -> int:
                     "success": bool(success),
                     "step_count": int(step_count),
                     "reason": None if success else "failed_or_timed_out",
+                    "video_paths": video_paths,
                 }
             )
             print(f"  Episode {idx}: {'SUCCESS' if success else 'FAIL'} ({step_count} steps)", flush=True)
+            _write_multi_episode_results()
 
         n_ok = sum(1 for row in results if row.get("success"))
         n_total = len(results)
@@ -1219,21 +1465,7 @@ def main() -> int:
             print("\nNo episodes run.", flush=True)
         else:
             print(f"\nBenchmark complete: {n_ok}/{n_total} successful ({100.0 * n_ok / n_total:.1f}%)", flush=True)
-        _write_results_json(
-            args.results_json,
-            {
-                "benchmark_dir": str(resolved_bench_dir) if resolved_bench_dir else None,
-                "episode_indices": indices_to_run,
-                "policy_type": args.policy_type,
-                "steps": args.steps,
-                "num_envs": getattr(args, "num_envs", 1),
-                "pi_trace_dir": str(args.pi_trace_dir) if args.pi_trace_dir else None,
-                "success_count": n_ok,
-                "total_count": n_total,
-                "success_rate": (float(n_ok) / float(n_total)) if n_total else None,
-                "results": results,
-            },
-        )
+        _write_multi_episode_results()
         try:
             if simulation_app is not None:
                 simulation_app.close()
@@ -1241,12 +1473,13 @@ def main() -> int:
             pass
         os._exit(0 if n_ok == n_total else 1)
 
-    spec = episode_dict_to_arena_spec(
-        episode_dict,
-        require_thor_only=require_thor_only_mode,
-        background_key=args.background,
-        scenes_root=args.scenes_root,
-    )
+    if spec is None:
+        spec = episode_dict_to_arena_spec(
+            episode_dict,
+            require_thor_only=require_thor_only_mode,
+            background_key=args.background,
+            scenes_root=args.scenes_root,
+        )
     if spec is None and require_thor_only_mode and resolved_bench_dir is not None:
         for j, ep in enumerate(_load_all_episode_dicts(resolved_bench_dir)):
             s = episode_dict_to_arena_spec(
@@ -1540,6 +1773,11 @@ def main() -> int:
         traceback.print_exc()
     finally:
         if video_recorder is not None:
+            try:
+                if step_count > 0 and step_count % max(1, int(getattr(args, "record_video_stride", 1))) != 0:
+                    video_recorder.capture(obs, step_count=step_count)
+            except Exception:
+                pass
             video_paths = video_recorder.close()
 
     success = n_success > 0
@@ -1559,7 +1797,10 @@ def main() -> int:
         args.results_json,
         {
             "benchmark_dir": str(resolved_bench_dir) if resolved_bench_dir else None,
-            "episode_indices": [int(getattr(args, "episode_idx", 0))] if resolved_bench_dir else None,
+            "arena_spec_manifest": str(resolved_arena_spec_manifest) if resolved_arena_spec_manifest else None,
+            "episode_indices": [int(getattr(args, "episode_idx", 0))]
+            if (resolved_bench_dir or resolved_arena_spec_manifest)
+            else None,
             "policy_type": args.policy_type,
             "steps": args.steps,
             "num_envs": num_envs,
@@ -1571,7 +1812,9 @@ def main() -> int:
             "results": [
                 {
                     **_episode_result_metadata(
-                        int(getattr(args, "episode_idx", 0)) if resolved_bench_dir else 0,
+                        int(getattr(args, "episode_idx", 0))
+                        if (resolved_bench_dir or resolved_arena_spec_manifest)
+                        else 0,
                         episode_dict,
                         spec=spec,
                     ),
@@ -1598,4 +1841,17 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except SystemExit:
+        raise
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
+        try:
+            if simulation_app is not None:
+                simulation_app.close()
+        except Exception:
+            pass
+        os._exit(1)

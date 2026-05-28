@@ -94,6 +94,9 @@ When lighting is suspected:
   to test, not as the whole explanation unless policy-output evidence confirms
   it. The first runtime `MOLMO_ARENA_SCENE_LIGHT_SCALE=0.79` policy rerun also
   failed and left the reset exterior/wrist image gaps essentially unchanged.
+  The latest `0.79` rerun still failed with reset exterior/wrist mean-absolute
+  image gaps around `36.97` / `55.10`, so scalar light dimming should not be
+  treated as the primary remaining fix without new evidence.
 
 ## Output
 

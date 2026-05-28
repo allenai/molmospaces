@@ -81,7 +81,9 @@ scene from the `ithor` dataset:
 
 ## Isaac Lab Arena (MolmoSpaces pick demo)
 
-Pick task only (THOR by default; add `--allow-objaverse` for Objaverse). Success = `lift_height >= succ_pos_threshold` (default 0.01 m).
+Pick task only (THOR by default; add `--allow-objaverse` for Objaverse). Success mirrors
+MolmoSpaces/MuJoCo pick: `lift_height >= succ_pos_threshold` (default 0.01 m) and the
+object is not supported by non-robot scene geometry.
 
 Project tracking docs for the MolmoSpaces to Isaac Lab Arena PoC live in
 `docs/isaaclab_arena_migration_goals.md`,
