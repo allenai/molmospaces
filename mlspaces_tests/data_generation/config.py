@@ -130,7 +130,7 @@ class FrankaPickAndPlaceDroidTestConfig(FrankaPickAndPlaceDroidDataGenConfig):
         self.policy_config.place_z_offset = 0.02  # lower the lift pose so its not out of reach
 
         # Set fixed seed and task horizon for deterministic tests
-        self.seed = 1
+        self.seed = 2
         self.task_horizon = 6
 
         self.filter_for_successful_trajectories = False
@@ -165,7 +165,7 @@ class FrankaPickAndPlaceGoProD405D455TestConfig(FrankaPickAndPlaceDroidDataGenCo
         self.policy_config.place_z_offset = 0.02  # lower the lift pose so its not out of reach
 
         # Set fixed seed and task horizon for deterministic tests
-        self.seed = 14
+        self.seed = 1
         self.task_horizon = 6
 
         self.filter_for_successful_trajectories = False
