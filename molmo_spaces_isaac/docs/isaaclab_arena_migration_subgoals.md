@@ -224,4 +224,8 @@ Status: not started.
 
 Remaining subgoals:
 
-- Minimize custom scripts or cle
+- Minimize custom scripts or clearly mark them as diagnostics.
+- Keep migration-facing docs current with known limitations.
+- Separate customer-review artifacts from local diagnostics and generated media.
+- Before review, make the target branch buildable without local-only state beyond
+  documented asset/cache paths.
