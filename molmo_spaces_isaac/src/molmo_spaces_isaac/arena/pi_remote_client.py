@@ -83,19 +83,24 @@ def _normalize_task_prompt(task_description: str | None) -> str:
 
 
 def _resize_with_pad(img: np.ndarray, height: int, width: int) -> np.ndarray:
-    """Resize image to (height, width) with letterbox padding. Requires cv2."""
-    import cv2
-    h, w = img.shape[:2]
-    if h == height and w == width:
-        return np.asarray(img, dtype=np.uint8)
-    ratio = max(w / width, h / height)
-    new_w, new_h = int(w / ratio), int(h / ratio)
-    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-    out = np.zeros((height, width, img.shape[2]) if img.ndim == 3 else (height, width), dtype=np.uint8)
-    y0 = (height - new_h) // 2
-    x0 = (width - new_w) // 2
-    out[y0 : y0 + new_h, x0 : x0 + new_w] = resized
-    return out
+    """Resize image like MolmoSpaces ``PI_Policy`` / ``openpi_client``."""
+    from PIL import Image
+
+    img = np.asarray(img, dtype=np.uint8)
+    if img.shape[:2] == (height, width):
+        return img
+
+    cur_height, cur_width = img.shape[:2]
+    ratio = max(cur_width / width, cur_height / height)
+    resized_height = int(cur_height / ratio)
+    resized_width = int(cur_width / ratio)
+    resized_image = Image.fromarray(img).resize((resized_width, resized_height), resample=Image.BILINEAR)
+
+    zero_image = Image.new(resized_image.mode, (width, height), 0)
+    pad_height = max(0, int((height - resized_height) / 2))
+    pad_width = max(0, int((width - resized_width) / 2))
+    zero_image.paste(resized_image, (pad_width, pad_height))
+    return np.asarray(zero_image, dtype=np.uint8)
 
 
 class PiRemotePolicy:
