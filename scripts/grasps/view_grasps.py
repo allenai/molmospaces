@@ -13,14 +13,20 @@ from pathlib import Path
 import argparse
 
 from mujoco import MjSpec
-from molmo_spaces.molmo_spaces_constants import get_scenes, get_resource_manager, get_scenes_root
+from molmo_spaces.molmo_spaces_constants import get_scenes
+from molmo_spaces.utils.lazy_loading_utils import (
+    install_scene_from_path,
+    install_scene_from_source_index,
+)
 from molmo_spaces.utils.grasp_sample import (
-    has_grasp_folder,
-    has_joint_grasp_file,
-    load_grasps_for_object,
-    load_grasps_for_object_per_joint,
     add_grasp_collision_bodies,
     get_noncolliding_grasp_mask,
+)
+from molmo_spaces.utils.grasps import (
+    has_pickup_grasp_path,
+    has_joint_grasp_path,
+    load_pickup_grasps,
+    load_joint_grasps,
 )
 from molmo_spaces.configs.policy_configs import ObjectManipulationPlannerPolicyConfig
 from molmo_spaces.utils.constants.object_constants import (
@@ -175,14 +181,14 @@ def extract_objects_from_metadata(model, scene_metadata):
             continue
 
         # Handle pickup objects
-        if category in pickup_categories and has_grasp_folder(asset_id):
+        if category in pickup_categories and has_pickup_grasp_path(asset_id):
             pickup_objects[asset_id] = body_name
             print(
                 f"Found pickup object: {object_name} -> asset_id={asset_id}, body={body_name}, category={category}"
             )
 
         # Handle Objaverse pickup objects
-        if "obja" in category and has_grasp_folder(asset_id):
+        if "obja" in category and has_pickup_grasp_path(asset_id):
             pickup_objects[asset_id] = body_name
             print(
                 f"Found Objaverse pickup object: {object_name} -> asset_id={asset_id}, body={body_name}, category={category}"
@@ -193,7 +199,7 @@ def extract_objects_from_metadata(model, scene_metadata):
             joint_info = {}
             for model_joint_name, metadata_joint_name in joints_map.items():
                 # Check if this joint has grasp files
-                if has_joint_grasp_file(asset_id, metadata_joint_name):
+                if has_joint_grasp_path(asset_id, metadata_joint_name):
                     # Get joint body name
                     joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, model_joint_name)
                     if joint_id >= 0:
@@ -224,10 +230,10 @@ def load_grasps_for_visualization(object_name, num_grasps=50, load_all_for_colli
     try:
         if load_all_for_collision:
             # Load all available grasps for collision filtering (use a very large number)
-            # load_grasps_for_object samples randomly, so we use a large number to get all
-            gripper, grasp_transforms = load_grasps_for_object(object_name, num_grasps=10000)
+            # load_pickup_grasps samples randomly, so we use a large number to get all
+            grasp_transforms = load_pickup_grasps(object_name, num_grasps=10000)
         else:
-            gripper, grasp_transforms = load_grasps_for_object(object_name, num_grasps=num_grasps)
+            grasp_transforms = load_pickup_grasps(object_name, num_grasps=num_grasps)
 
         # grasp_transforms is a numpy array of shape (N, 4, 4) - transform matrices
         # If not loading all, limit to num_grasps if more were loaded
@@ -252,10 +258,7 @@ def load_grasps_for_joint_visualization(
         load_all_for_collision: If True, load all available grasps (for collision filtering)
     """
     try:
-        # load_grasps_for_object_per_joint already returns all grasps (doesn't use num_grasps)
-        gripper, grasp_transforms = load_grasps_for_object_per_joint(
-            object_name, joint_name, num_grasps=num_grasps
-        )
+        grasp_transforms = load_joint_grasps(object_name, joint_name, num_grasps=num_grasps)
 
         if len(grasp_transforms) == 0:
             return []
@@ -492,30 +495,21 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
                 f"Unknown dataset {dataset_name}, cannot determine scene source for installation"
             )
 
-        # Try to find archive containing this scene index number
+        # Install the archive containing this scene index via the current API.
+        # archives_with_number / install_scenes were removed in the resource
+        # manager rework; install_scene_from_source_index does the equivalent
+        # index_lookup + install_packages.
         try:
-            resource_manager = get_resource_manager()
-            archives = resource_manager.archives_with_number(
-                scene_source, str(scene_index), data_type="scenes"
-            )
-            if archives:
-                print(f"Found archive(s) containing scene {scene_index}: {archives}")
-                print(f"Installing scene archive(s): {archives}")
-                resource_manager.install_scenes({scene_source: list(archives)})
+            install_scene_from_source_index(scene_source, scene_index)
 
-                # Clear cache and refresh the scene index map after installation
-                from molmo_spaces.molmo_spaces_constants import _DATASET_INDEX_CACHE
+            # Clear cache and refresh the scene index map after installation
+            from molmo_spaces.molmo_spaces_constants import _DATASET_INDEX_CACHE
 
-                cache_key = dataset_name
-                if cache_key in _DATASET_INDEX_CACHE:
-                    del _DATASET_INDEX_CACHE[cache_key]
+            if dataset_name in _DATASET_INDEX_CACHE:
+                del _DATASET_INDEX_CACHE[dataset_name]
 
-                # Refresh the scene index map
-                scenes = get_scenes(dataset_name, split=split)
-            else:
-                raise ValueError(
-                    f"Could not find archive containing scene index {scene_index} for {scene_source}"
-                )
+            # Refresh the scene index map
+            scenes = get_scenes(dataset_name, split=split)
         except Exception as e:
             print(f"Error: Failed to install scene by index: {e}")
             import traceback
@@ -546,13 +540,10 @@ def get_scene_path(dataset_name: str, scene_index: int, split: str = "train") ->
     # If scene file doesn't exist, install it using the same pattern as fetch_scene
     if not scene_path.exists():
         print(f"Scene file not found at {scene_path}, attempting to install...")
-        # Reuse fetch_scene pattern: get scene_source and rel_path from the path
-        scenes_root = get_scenes_root()
-        resource_manager = get_resource_manager()
-        scene_source = scene_path.relative_to(scenes_root).parts[0]
-        rel_path = scene_path.relative_to(scenes_root / scene_source)
-        archives = resource_manager.archives_for_paths(scene_source, [rel_path])
-        resource_manager.install_scenes({scene_source: archives})
+        # PR #97/#99 reworked the ResourceManager API (archives_for_paths /
+        # install_scenes were removed). install_scene_from_path resolves the
+        # archive for a scene path and installs it via the current API.
+        install_scene_from_path(scene_path)
 
     # Verify the file exists after installation
     if not scene_path.exists():
