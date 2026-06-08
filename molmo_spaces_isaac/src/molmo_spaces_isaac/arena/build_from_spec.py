@@ -1060,8 +1060,7 @@ def build_arena_env_from_episode_spec(
         if source == "scene" and not (scene_usd is not None and Path(scene_usd).is_file()):
             raise ValueError(
                 f"Scene pickup '{asset_id}' requires a resolved scene USD, but spec.scene_usd_path={scene_usd!r}. "
-                "Pass --scenes_root/--assets_root pointing at the Isaac-ready USD scene root "
-                "(for this workspace, /home/horde/molmo-proj/assets or /home/horde/molmo-proj/assets/usd)."
+                "Pass --scenes_root/--assets_root pointing at the Isaac-ready USD scene root."
             )
         thor_usd_path = get_thor_usd_path(asset_id, thor_assets_dir) if source == "thor" else None
         apply_thor_up_axis = bool(

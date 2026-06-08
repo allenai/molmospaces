@@ -1,4 +1,0 @@
-interface:
-  display_name: "Molmo Arena Port Benchmark"
-  short_description: "Port benchmarks into Arena"
-  default_prompt: "Use $molmo-arena-port-benchmark to port this MolmoSpaces benchmark into Isaac Lab Arena episode specs."

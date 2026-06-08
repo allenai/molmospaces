@@ -16,14 +16,12 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-import h5py
-import numpy as np
 
 
 MOLMOSPACES_ROOT = Path(__file__).resolve().parents[2]
@@ -47,16 +45,21 @@ def _default_arena_root() -> Path:
 
 
 def _default_ffmpeg() -> Path | None:
-    candidates = [
-        WORKSPACE_ROOT
-        / "openpi-omarrayyann/.venv/lib/python3.11/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2",
-        WORKSPACE_ROOT
-        / "openpi/.venv/lib/python3.11/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2",
-    ]
-    return next((path for path in candidates if path.is_file()), None)
+    try:
+        import imageio_ffmpeg
+
+        path = Path(imageio_ffmpeg.get_ffmpeg_exe())
+        if path.is_file():
+            return path
+    except Exception:
+        pass
+    ffmpeg = shutil.which("ffmpeg")
+    return Path(ffmpeg) if ffmpeg else None
 
 
 def _decode_h5_json_row(row: Any) -> dict[str, Any]:
+    import numpy as np
+
     arr = np.asarray(row)
     data = bytes(arr[arr != 0]).decode("utf-8")
     return json.loads(data) if data else {}
@@ -70,6 +73,9 @@ def _traj_index(traj: str) -> int:
 
 
 def _trajectory_info(h5_path: Path, traj: str) -> TrajectoryInfo:
+    import h5py
+    import numpy as np
+
     with h5py.File(h5_path, "r") as h5:
         if traj not in h5:
             raise KeyError(f"{traj!r} not found in {h5_path}; available: {sorted(h5.keys())}")
@@ -92,6 +98,8 @@ def _trajectory_info(h5_path: Path, traj: str) -> TrajectoryInfo:
 
 
 def _choose_success_traj(h5_path: Path) -> TrajectoryInfo:
+    import h5py
+
     with h5py.File(h5_path, "r") as h5:
         trajs = sorted((k for k in h5.keys() if k.startswith("traj_")), key=_traj_index)
     if not trajs:
@@ -194,8 +202,6 @@ def _build_arena_command(args: argparse.Namespace, info: TrajectoryInfo, out_dir
         str(args.assets_root.resolve()),
         "--scenes_root",
         str(args.scenes_root.resolve()),
-        "--task_description_map",
-        str(args.task_description_map.resolve()),
         "--policy_type",
         "h5_replay",
         "--replay_h5",
@@ -224,6 +230,8 @@ def _build_arena_command(args: argparse.Namespace, info: TrajectoryInfo, out_dir
         "--progress_steps",
         str(args.progress_steps),
     ]
+    if args.task_description_map is not None:
+        cmd.extend(["--task_description_map", str(args.task_description_map.resolve())])
     if args.replay_init_from_h5_qpos:
         cmd.append("--replay_init_from_h5_qpos")
     return cmd
@@ -231,6 +239,7 @@ def _build_arena_command(args: argparse.Namespace, info: TrajectoryInfo, out_dir
 
 def _read_frame(cap, frame_index: int, size: tuple[int, int]) -> np.ndarray:
     import cv2
+    import numpy as np
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, int(frame_index)))
     ok, frame = cap.read()
@@ -254,6 +263,7 @@ def _open_video(path: Path):
 
 
 def _label(frame: np.ndarray, text: str, height: int = 30) -> np.ndarray:
+    import numpy as np
     from PIL import Image, ImageDraw
 
     img = Image.fromarray(frame)
@@ -275,6 +285,7 @@ def compose_side_by_side_video(
     tile_size: tuple[int, int],
 ) -> dict[str, Any]:
     import cv2
+    import numpy as np
 
     videos = {
         "mujoco_external": mujoco_external,
@@ -362,17 +373,19 @@ def _write_report(out_dir: Path, summary: dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--episode_idx", type=int, default=14)
+    parser.add_argument("--episode_idx", type=int, default=0)
     parser.add_argument("--arena_root", type=Path, default=_default_arena_root())
     parser.add_argument(
         "--arena_spec_manifest",
         type=Path,
-        default=WORKSPACE_ROOT / "diagnostics/real_ithor_pick_ep8/arena_episode_specs_real_ithor_pick_hard.json",
+        required=True,
+        help="Arena episode spec manifest produced by export_arena_episode_specs.py.",
     )
     parser.add_argument(
         "--task_description_map",
         type=Path,
-        default=WORKSPACE_ROOT / "diagnostics/real_ithor_pick_ep8/task_description_from_mujoco_h5.json",
+        default=None,
+        help="Optional JSON task-description map to pass through to the Arena episode runner.",
     )
     parser.add_argument("--assets_root", type=Path, default=Path.home() / ".molmospaces/usd")
     parser.add_argument("--scenes_root", type=Path, default=Path.home() / ".molmospaces/usd/scenes")
@@ -380,8 +393,8 @@ def main() -> int:
     parser.add_argument(
         "--mujoco_summary_json",
         type=Path,
-        default=WORKSPACE_ROOT
-        / "diagnostics/episode_sweep_3x10_20260505/mujoco_vs_arena_3eps_x10_summary.json",
+        default=None,
+        help="Optional summary JSON used to infer --mujoco_h5 when --mujoco_h5 is not provided.",
     )
     parser.add_argument("--mujoco_traj", default="auto_success")
     parser.add_argument("--mujoco_external_video", type=Path, default=None)
@@ -421,6 +434,8 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.mujoco_h5 is None:
+        if args.mujoco_summary_json is None:
+            raise SystemExit("Pass --mujoco_h5, or pass --mujoco_summary_json so the HDF5 path can be inferred.")
         inferred = _infer_h5_from_summary(args.episode_idx, args.mujoco_summary_json)
         if inferred is None:
             raise SystemExit("--mujoco_h5 was not provided and could not be inferred from summary.")

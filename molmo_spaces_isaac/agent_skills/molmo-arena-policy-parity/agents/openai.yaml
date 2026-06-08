@@ -1,4 +1,0 @@
-interface:
-  display_name: "Molmo Arena Policy Parity"
-  short_description: "Compare policy success rates"
-  default_prompt: "Use $molmo-arena-policy-parity to compare pi0 policy behavior between MuJoCo and Isaac Lab Arena."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Molmo Arena Policy I/O Diff"
-  short_description: "Trace policy I/O divergence"
-  default_prompt: "Use $molmo-arena-policy-io-diff to build a MuJoCo versus Arena policy I/O diff report for this episode."

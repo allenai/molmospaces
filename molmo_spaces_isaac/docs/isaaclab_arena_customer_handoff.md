@@ -139,12 +139,15 @@ To compare a successful MuJoCo trajectory against Arena open-loop replay:
 python3 molmo_spaces_isaac/scripts/run_mujoco_arena_replay_parity.py \
   --episode_idx 14 \
   --arena_spec_manifest /tmp/arena_episode_specs_real_ithor_pick_hard.json \
+  --mujoco_h5 /path/to/successful_mujoco_eval/house_XX/trajectories_batch_1_of_1.h5 \
   --assets_root /home/$USER/.molmospaces/usd \
   --scenes_root /home/$USER/.molmospaces/usd/scenes
 ```
 
 This writes a report, Arena replay videos, and a MuJoCo/Arena side-by-side video
-under the chosen `--out_dir`.
+under the chosen `--out_dir`. The helper infers MuJoCo camera videos from the
+HDF5 directory when they follow MolmoSpaces eval naming; otherwise pass
+`--mujoco_external_video` and `--mujoco_wrist_video`.
 
 ## Open questions
 

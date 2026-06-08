@@ -1,4 +1,0 @@
-interface:
-  display_name: "MolmoSpaces Migration Validate"
-  short_description: "Validate MolmoSpaces Arena migrations"
-  default_prompt: "Use $molmospaces-migration-validate to build a migration validation dashboard for MolmoSpaces Arena episodes."
