@@ -107,6 +107,10 @@ Optional agent-facing runbooks for extending the migration are kept in
 `agent_skills/`.
 
 **Prerequisites:** Isaac Lab Arena installed from source ([Arena installation][3]).
+The iTHOR pick migration was validated with Arena branch
+`feature/arena_v0.2_on_lab_2.3` at commit `aad4f25f4`, using Isaac Lab 2.3.x
+and Isaac Sim 5.1.x. Conversion/preflight can run without launching Isaac Sim;
+Arena smoke eval, policy eval, and HDF5 replay require the Arena checkout.
 
 **Assets:** Download THOR USDs and iTHOR scene USDs into one root:
 

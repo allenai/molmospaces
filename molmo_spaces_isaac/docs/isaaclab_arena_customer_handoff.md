@@ -26,6 +26,36 @@ not as final simulator parity. The conversion, asset resolution, reset state,
 camera plumbing, success check, post-success recording, and replay tooling are
 now in place for customer review.
 
+## Environment setup
+
+Episode conversion and preflight are offline checks and do not launch Isaac Sim.
+Arena smoke eval, policy eval, and HDF5 replay require an Isaac Lab Arena source
+checkout with Isaac Lab/Isaac Sim available.
+
+Validated stack for the results above:
+
+- Isaac Lab Arena branch: `feature/arena_v0.2_on_lab_2.3`
+- Isaac Lab Arena commit: `aad4f25f4`
+- Isaac Lab: `2.3.x`
+- Isaac Sim: `5.1.x`
+- Python: `3.11` for the MolmoSpaces side
+
+Install Isaac Lab Arena from source using the Arena installation guide, then use
+that checkout's Isaac launcher in the eval commands:
+
+```bash
+git clone https://github.com/isaac-sim/IsaacLab-Arena.git /path/to/IsaacLab-Arena
+cd /path/to/IsaacLab-Arena
+git checkout feature/arena_v0.2_on_lab_2.3
+git submodule update --init --recursive
+
+export ARENA_ROOT=/path/to/IsaacLab-Arena
+```
+
+If testing against another Arena branch or release, first run the zero-agent
+smoke eval below. Arena APIs are still changing, so a different branch may need
+small compatibility updates even when conversion/preflight succeeds.
+
 ## What changed
 
 - Convert MolmoSpaces pick benchmark episodes into `ArenaEpisodeSpec`.
@@ -86,7 +116,7 @@ it is not expected to solve the pick task.
 ```bash
 cd /path/to/molmospaces
 python3 molmo_spaces_isaac/scripts/run_arena_benchmark_batch.py \
-  --isaac_python "/path/to/IsaacLab-Arena/submodules/IsaacLab/isaaclab.sh -p" \
+  --isaac_python "$ARENA_ROOT/submodules/IsaacLab/isaaclab.sh -p" \
   --work_dir /path/to/molmospaces \
   --arena_spec_manifest /tmp/arena_episode_specs_real_ithor_pick_hard.json \
   --episode_indices 0 \
@@ -111,7 +141,7 @@ Start the OpenPI policy server separately, then run the converted Arena episodes
 ```bash
 cd /path/to/molmospaces
 python3 molmo_spaces_isaac/scripts/run_arena_benchmark_batch.py \
-  --isaac_python "/path/to/IsaacLab-Arena/submodules/IsaacLab/isaaclab.sh -p" \
+  --isaac_python "$ARENA_ROOT/submodules/IsaacLab/isaaclab.sh -p" \
   --work_dir /path/to/molmospaces \
   --arena_spec_manifest /tmp/arena_episode_specs_real_ithor_pick_hard.json \
   --episode_indices 0-68 \
