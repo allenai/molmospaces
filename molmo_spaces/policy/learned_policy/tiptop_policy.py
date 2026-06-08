@@ -10,6 +10,7 @@ import msgpack_numpy
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
+from molmo_spaces.tasks.task import BaseMujocoTask
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +108,11 @@ class TiptopPolicy(InferencePolicy):
     def __init__(
         self,
         exp_config: MlSpacesExpConfig,
+        task: BaseMujocoTask | None = None,
     ) -> None:
+        # `task` is accepted so all policies share a uniform (config, task)
+        # constructor signature used by the rollout pipeline; planner policies
+        # require it, but this inference policy does not use it.
         super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
         self.cam_obs_qpos = exp_config.policy_config.cam_obs_qpos

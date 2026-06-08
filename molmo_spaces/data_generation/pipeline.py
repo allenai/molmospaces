@@ -129,7 +129,7 @@ def setup_policy(
     if preloaded_policy is not None:
         policy = preloaded_policy
     else:
-        policy = exp_config.policy_config.policy_cls(exp_config)
+        policy = exp_config.policy_config.policy_cls(exp_config, task)
 
     task.register_policy(policy)
 
