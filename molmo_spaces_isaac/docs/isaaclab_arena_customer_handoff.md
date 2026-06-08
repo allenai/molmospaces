@@ -44,7 +44,16 @@ Do not commit generated converted episode manifests or videos to the repo. The
 manifest contains machine-local absolute paths such as the USD asset root and
 benchmark directory, and the videos are large diagnostic artifacts.
 
-Instead, regenerate the Arena spec manifest after installing assets:
+Install the preconverted USD assets/scenes with:
+
+```bash
+ms-download --type usd --install-dir /home/$USER/.molmospaces/usd \
+  --assets thor --scenes ithor
+```
+
+## Convert episodes
+
+Regenerate the Arena spec manifest after installing assets:
 
 ```bash
 python3 molmo_spaces_isaac/scripts/export_arena_episode_specs.py \
@@ -53,12 +62,7 @@ python3 molmo_spaces_isaac/scripts/export_arena_episode_specs.py \
   --out /tmp/arena_episode_specs_real_ithor_pick_hard.json
 ```
 
-Install the preconverted USD assets/scenes with:
-
-```bash
-ms-download --type usd --install-dir /home/$USER/.molmospaces/usd \
-  --assets thor --scenes ithor
-```
+Expected for the current iTHOR target: `69 ready / 0 failed`.
 
 ## Preflight
 
@@ -73,10 +77,36 @@ python3 molmo_spaces_isaac/scripts/preflight_arena_benchmark.py \
 
 Expected for the current iTHOR target: `69 ready`.
 
-## Arena policy eval
+## Arena zero-agent smoke eval
 
 Use Isaac Lab Arena with Isaac Lab 2.3 / Isaac Sim 5.1 for the current working
-stack. Example:
+stack. A zero-agent run is useful as a quick launch/assets/camera smoke test;
+it is not expected to solve the pick task.
+
+```bash
+cd /path/to/molmospaces
+python3 molmo_spaces_isaac/scripts/run_arena_benchmark_batch.py \
+  --isaac_python "/path/to/IsaacLab-Arena/submodules/IsaacLab/isaaclab.sh -p" \
+  --work_dir /path/to/molmospaces \
+  --arena_spec_manifest /tmp/arena_episode_specs_real_ithor_pick_hard.json \
+  --episode_indices 0 \
+  --results_json /tmp/molmo_arena_zero_smoke_result.json \
+  -- \
+  --assets_root /home/$USER/.molmospaces/usd \
+  --scenes_root /home/$USER/.molmospaces/usd/scenes \
+  --policy_type zero \
+  --with_cameras \
+  --steps 200 \
+  --record_video_dir /tmp/molmo_arena_zero_smoke_videos \
+  --headless
+```
+
+The zero-agent command can return a non-zero eval status because the zero policy
+usually times out; use the per-episode JSON/log/video to confirm launch health.
+
+## Arena policy eval
+
+Start the OpenPI policy server separately, then run the converted Arena episodes:
 
 ```bash
 cd /path/to/molmospaces
@@ -116,7 +146,7 @@ python3 molmo_spaces_isaac/scripts/run_mujoco_arena_replay_parity.py \
 This writes a report, Arena replay videos, and a MuJoCo/Arena side-by-side video
 under the chosen `--out_dir`.
 
-## Suggested customer questions
+## Open questions
 
 - Should acceptance be based on spec/preflight parity, replay parity, policy
   success rate, or a combination?
