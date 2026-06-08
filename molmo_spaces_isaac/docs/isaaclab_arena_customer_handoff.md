@@ -159,5 +159,3 @@ HDF5 directory when they follow MolmoSpaces eval naming; otherwise pass
   slides, or briefly loses contact with the support surface?
 - Are post-success videos enough for visual review, or should we add a formal
   dashboard/report?
-- Is sequential evaluation acceptable for this migration, or is deeper
-  heterogeneous parallel evaluation a required deliverable?
