@@ -103,6 +103,9 @@ The reusable scripts for this workflow are:
 - `scripts/run_mujoco_arena_replay_parity.py`: replay a MuJoCo HDF5 trajectory
   in Arena and build side-by-side external/wrist camera videos.
 
+Optional agent-facing runbooks for extending the migration are kept in
+`agent_skills/`.
+
 **Prerequisites:** Isaac Lab Arena installed from source ([Arena installation][3]).
 
 **Assets:** Download THOR USDs and iTHOR scene USDs into one root:
