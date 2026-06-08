@@ -7,6 +7,13 @@ from isaaclab_arena.assets.object_base import ObjectBase, ObjectType
 from isaaclab_arena.utils.pose import Pose
 
 
+def _pose_rotation_for_init_state(pose: Pose):
+    rot_xyzw = getattr(pose, "rotation_xyzw", None)
+    if rot_xyzw is not None:
+        return rot_xyzw
+    return getattr(pose, "rotation_wxyz")
+
+
 class SceneRigidObjectReference(ObjectBase):
     """Track and reset a scene-embedded rigid object as an Arena pickup object.
 
@@ -42,7 +49,7 @@ class SceneRigidObjectReference(ObjectBase):
         initial_pose = self._get_initial_pose_as_pose()
         if initial_pose is not None:
             object_cfg.init_state.pos = initial_pose.position_xyz
-            object_cfg.init_state.rot = initial_pose.rotation_wxyz
+            object_cfg.init_state.rot = _pose_rotation_for_init_state(initial_pose)
         return object_cfg
 
     def _generate_articulation_cfg(self) -> ArticulationCfg:

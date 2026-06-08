@@ -8,20 +8,32 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from dataclasses import dataclass
+from importlib import util as importlib_util
 from pathlib import Path
 
 # Matches molmo_spaces_isaac downloader SOURCE_TO_VERSION["scenes"]["usd"]["ithor"]
 _DEFAULT_ITHOR_USD_SCENES_VERSION = "20260121"
 
-# Optional: use molmo_spaces EpisodeSpec when available
-try:
-    from molmo_spaces.evaluation.benchmark_schema import EpisodeSpec
+def _load_episode_spec_type():
+    """Load only MolmoSpaces' benchmark schema module, avoiding eager evaluation imports."""
+    for parent in Path(__file__).resolve().parents:
+        schema_path = parent / "molmo_spaces" / "evaluation" / "benchmark_schema.py"
+        if not schema_path.is_file():
+            continue
+        spec = importlib_util.spec_from_file_location("_molmospaces_benchmark_schema_for_arena", schema_path)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib_util.module_from_spec(spec)
+        sys.modules.setdefault(spec.name, module)
+        spec.loader.exec_module(module)
+        return getattr(module, "EpisodeSpec", None)
+    return None
 
-    _HAS_MOLMO_SPACES = True
-except ImportError:
-    _HAS_MOLMO_SPACES = False
-    EpisodeSpec = None
+
+EpisodeSpec = _load_episode_spec_type()
+_HAS_MOLMO_SPACES = EpisodeSpec is not None
 
 log = logging.getLogger(__name__)
 

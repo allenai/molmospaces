@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -160,7 +161,24 @@ def main() -> int:
         action="store_true",
         help="Stop after the first failed child process or failed episode.",
     )
+    parser.add_argument(
+        "--continue_on_process_error",
+        action="store_true",
+        help="Continue after a child process error or missing per-episode JSON.",
+    )
+    parser.add_argument(
+        "--isaac_python",
+        type=str,
+        default=None,
+        help=(
+            "Command used to launch each isolated episode process. Defaults to "
+            "the current Python executable. Quote multi-token launchers, e.g. "
+            "'/path/to/IsaacLab/isaaclab.sh -p'."
+        ),
+    )
     args, child_args = parser.parse_known_args()
+    while child_args and child_args[0] == "--":
+        child_args.pop(0)
 
     if args.max_episodes is not None and args.episode_indices is not None:
         raise SystemExit("Use either --max_episodes or --episode_indices, not both.")
@@ -209,13 +227,17 @@ def main() -> int:
         flush=True,
     )
     print(f"[molmospaces_arena_batch] Per-episode artifacts: {per_episode_dir}", flush=True)
+    launcher_cmd = shlex.split(args.isaac_python) if args.isaac_python else [sys.executable]
+    if not launcher_cmd:
+        raise SystemExit("--isaac_python resolved to an empty command")
+    print(f"[molmospaces_arena_batch] Episode launcher: {' '.join(launcher_cmd)}", flush=True)
 
     rows: list[dict] = []
     for ordinal, idx in enumerate(indices, start=1):
         episode_json = per_episode_dir / f"episode_{ordinal:03d}_idx_{idx:04d}.json"
         log_path = per_episode_dir / f"episode_{ordinal:03d}_idx_{idx:04d}.log"
         cmd = [
-            sys.executable,
+            *launcher_cmd,
             str(EPISODE_RUNNER),
             *source_child_args,
             "--episode_idx",
@@ -248,6 +270,8 @@ def main() -> int:
                     {
                         "success": bool(episode_rows[0].get("success")),
                         "step_count": episode_rows[0].get("step_count"),
+                        "success_step_count": episode_rows[0].get("success_step_count"),
+                        "recorded_step_count": episode_rows[0].get("recorded_step_count"),
                         "reason": episode_rows[0].get("reason"),
                         "video_paths": episode_rows[0].get("video_paths") or episode_result.get("video_paths"),
                     }
@@ -263,6 +287,14 @@ def main() -> int:
             f"(exit={exit_code}, steps={row.get('step_count')})",
             flush=True,
         )
+        process_error = exit_code != 0 or episode_result is None
+        if process_error and not args.continue_on_process_error:
+            print(
+                "[molmospaces_arena_batch] Stopping after process error "
+                "(pass --continue_on_process_error to override).",
+                flush=True,
+            )
+            break
         if args.stop_on_failure and (exit_code != 0 or not row["success"]):
             break
 
@@ -276,6 +308,7 @@ def main() -> int:
         "total_count": len(rows),
         "success_rate": (float(success_count) / float(len(rows))) if rows else None,
         "per_episode_dir": str(per_episode_dir),
+        "episode_launcher": launcher_cmd,
         "child_args": child_args,
         "results": rows,
     }

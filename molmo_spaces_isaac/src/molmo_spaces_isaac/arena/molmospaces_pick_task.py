@@ -18,13 +18,49 @@ try:
     from isaaclab_arena.environments.isaaclab_arena_manager_based_env import (
         IsaacLabArenaManagerBasedRLEnvCfg,
     )
-    from isaaclab_arena.tasks.task_base import TaskBase
-
-    _ARENA_AVAILABLE = True
-except ImportError:
+except Exception:
     IsaacLabArenaManagerBasedRLEnvCfg = None  # type: ignore[misc, assignment]
-    TaskBase = None
-    _ARENA_AVAILABLE = False
+
+try:
+    from isaaclab_arena.tasks.task_base import TaskBase
+except Exception:
+
+    class TaskBase:  # type: ignore[no-redef]
+        """Small compatibility base when Arena's TaskBase import pulls optional embodiments."""
+
+        def __init__(self, episode_length_s: float | None = None, task_description: str | None = None):
+            self.episode_length_s = episode_length_s
+            self.task_description = task_description
+
+        def get_observation_cfg(self):
+            return None
+
+        def get_rewards_cfg(self):
+            return None
+
+        def get_curriculum_cfg(self):
+            return None
+
+        def get_commands_cfg(self):
+            return None
+
+        def get_recorder_term_cfg(self):
+            return None
+
+        def modify_env_cfg(self, env_cfg):
+            return env_cfg
+
+        def get_viewer_cfg(self):
+            return None
+
+        def get_episode_length_s(self) -> float | None:
+            return self.episode_length_s
+
+        def get_task_description(self) -> str | None:
+            return self.task_description
+
+
+_ARENA_AVAILABLE = True
 
 
 # MuJoCo's ``PickTask`` treats an object as supported when a contact point is in
@@ -371,6 +407,7 @@ class MolmoSpacesPickTask(TaskBase):
         episode_length_s: float | None = None,
         pick_start_z: float | None = None,
         pick_lift_threshold_m: float = 0.01,
+        terminate_on_success: bool = True,
     ):
         if not _ARENA_AVAILABLE:
             raise ImportError("isaaclab_arena is required for MolmoSpacesPickTask.")
@@ -385,15 +422,15 @@ class MolmoSpacesPickTask(TaskBase):
         pick_prim_path = getattr(pick_up_object, "prim_path", f"{{ENV_REGEX_NS}}/{pick_name}")
         support_exclude_prim_path = getattr(pick_up_object, "scene_object_root_prim_path", pick_prim_path)
         self._termination_cfg = MolmoSpacesPickTerminationsCfg()
-        self._termination_cfg.object_picked = TerminationTermCfg(
-            func=_make_pick_success_func(
-                pick_name,
-                pick_prim_path,
-                pick_start_z,
-                pick_lift_threshold_m,
-                support_exclude_prim_path=support_exclude_prim_path,
-            )
+        self._pick_success_func = _make_pick_success_func(
+            pick_name,
+            pick_prim_path,
+            pick_start_z,
+            pick_lift_threshold_m,
+            support_exclude_prim_path=support_exclude_prim_path,
         )
+        if terminate_on_success:
+            self._termination_cfg.object_picked = TerminationTermCfg(func=self._pick_success_func)
 
     def get_episode_length_s(self) -> float:
         return self.episode_length_s
@@ -403,6 +440,9 @@ class MolmoSpacesPickTask(TaskBase):
 
     def get_termination_cfg(self):
         return self._termination_cfg
+
+    def pick_success(self, env):
+        return self._pick_success_func(env)
 
     def get_events_cfg(self):
         return None

@@ -24,9 +24,12 @@ def get_thor_assets_root() -> Path:
     root = os.environ.get("MOLMO_ISAAC_ASSETS_ROOT")
     if root:
         base = Path(root).expanduser().resolve()
-        versioned = base / "objects" / "thor" / "thor" / THOR_DEFAULT_VERSION
-        if versioned.is_dir():
-            return versioned
+        for versioned in (
+            base / "objects" / "thor" / THOR_DEFAULT_VERSION,
+            base / "objects" / "thor" / "thor" / THOR_DEFAULT_VERSION,
+        ):
+            if versioned.is_dir():
+                return versioned
         # Fallback: objects/thor without version
         flat = base / "objects" / "thor"
         if flat.is_dir():
@@ -99,13 +102,17 @@ def get_thor_usd_path(asset_id: str, assets_dir: Path | None = None) -> Path:
         assets_dir = get_thor_assets_root()
 
     search_roots: list[Path] = [assets_dir]
+    # Flat `objects/thor` given but objects live under `objects/thor/20260128/`.
+    direct_versioned = assets_dir / THOR_DEFAULT_VERSION
+    if direct_versioned.is_dir() and direct_versioned not in search_roots:
+        search_roots.append(direct_versioned)
     # Flat `objects/thor` given but objects live under `objects/thor/thor/20260128/` (common ms-download layout)
     nested = assets_dir / "thor" / THOR_DEFAULT_VERSION
     if nested.is_dir() and nested not in search_roots:
         search_roots.append(nested)
     # If assets_dir is already versioned, also try parent flat `objects/thor` (symlink / mixed installs)
     if assets_dir.name == THOR_DEFAULT_VERSION and assets_dir.parent.name == "thor":
-        flat_sibling = assets_dir.parent.parent
+        flat_sibling = assets_dir.parent
         if flat_sibling.is_dir() and flat_sibling not in search_roots:
             search_roots.append(flat_sibling)
 

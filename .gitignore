@@ -53,3 +53,7 @@ mlspaces_tests/**/test_data
 # pytest
 .pytest_cache/
 __pycache__/
+
+# local simulator crash/cache artifacts
+core.*
+nv_shadercache/

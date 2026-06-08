@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import re
 
 from pathlib import Path
 from molmo_spaces_isaac.arena.episode_to_arena import (
@@ -31,21 +32,100 @@ from molmo_spaces_isaac.arena.thor_asset import (
 
 log = logging.getLogger(__name__)
 
+
+def _make_scene_compat_class():
+    """Minimal Arena Scene equivalent that avoids importing optional USD export helpers."""
+    from isaaclab_arena.utils.configclass import make_configclass
+
+    class SceneCompat:
+        def __init__(self, assets=None):
+            self.assets = {}
+            self.observation_cfg = None
+            self.events_cfg = None
+            self.termination_cfg = None
+            self.rewards_cfg = None
+            self.curriculum_cfg = None
+            self.commands_cfg = None
+            if assets is not None:
+                self.add_assets(assets)
+
+        def add_asset(self, asset):
+            if getattr(asset, "name", None) is None:
+                return
+            self.assets[asset.name] = asset
+
+        def add_assets(self, assets):
+            for asset in sorted(assets, key=lambda a: a.__class__.__name__ == "ObjectReference"):
+                self.add_asset(asset)
+
+        def get_scene_cfg(self):
+            fields = []
+            for asset in self.assets.values():
+                asset_cfg_name, asset_cfg = asset.get_object_cfg()
+                fields.append((asset_cfg_name, type(asset_cfg), asset_cfg))
+            return make_configclass("SceneCfg", fields)()
+
+        def get_observation_cfg(self):
+            return self.observation_cfg
+
+        def get_events_cfg(self):
+            fields = []
+            for asset in self.assets.values():
+                event_cfg_name, event_cfg = asset.get_event_cfg()
+                if event_cfg is not None:
+                    fields.append((event_cfg_name, type(event_cfg), event_cfg))
+            return make_configclass("EventCfg", fields)()
+
+        def get_termination_cfg(self):
+            return self.termination_cfg
+
+        def get_rewards_cfg(self):
+            return self.rewards_cfg
+
+        def get_curriculum_cfg(self):
+            return self.curriculum_cfg
+
+        def get_commands_cfg(self):
+            return self.commands_cfg
+
+        def modify_env_cfg(self, env_cfg):
+            return env_cfg
+
+    return SceneCompat
+
+
 try:
     from isaaclab_arena.assets.asset_registry import AssetRegistry
     from isaaclab_arena.assets.object_base import ObjectType
     from isaaclab_arena.environments.arena_env_builder import ArenaEnvBuilder
     from isaaclab_arena.environments.isaaclab_arena_environment import IsaacLabArenaEnvironment
-    from isaaclab_arena.scene.scene import Scene
     from isaaclab_arena.utils.pose import Pose
 
     from molmo_spaces_isaac.arena.arena_collision_objects import get_arena_object_class
+
+    try:
+        from isaaclab_arena.scene.scene import Scene
+    except ImportError as e:
+        log.warning("Using local Arena Scene compatibility shim: %s", e)
+        Scene = _make_scene_compat_class()
 
     _ARENA_AVAILABLE = True
 except ImportError:
     _ARENA_AVAILABLE = False
     ObjectType = None
+    Pose = None  # type: ignore[assignment]
     get_arena_object_class = None  # type: ignore[misc, assignment]
+
+
+def _arena_pose_from_wxyz(position_xyz, rotation_wxyz):
+    """Create an Arena Pose from MolmoSpaces' wxyz quaternion convention."""
+    pos_xyz = tuple(float(v) for v in position_xyz)
+    rot_wxyz = tuple(float(v) for v in rotation_wxyz)
+    try:
+        return Pose(position_xyz=pos_xyz, rotation_wxyz=rot_wxyz)
+    except TypeError:
+        w, x, y, z = rot_wxyz
+        return Pose(position_xyz=pos_xyz, rotation_xyzw=(x, y, z, w))
 
 
 def _apply_franka_episode_init_qpos(embodiment, embodiment_key: str, spec: ArenaEpisodeSpec) -> None:
@@ -875,6 +955,32 @@ def _scene_rigid_body_suffix_for_object(scene_usd: Path | str | None, scene_obje
         return None
 
 
+def _scene_thor_asset_id_for_object(scene_usd: Path | str | None, scene_object_name: str) -> str | None:
+    """Resolve a scene-embedded iTHOR object name to its referenced THOR asset id."""
+    if scene_usd is None or not Path(scene_usd).is_file():
+        return None
+    geometry_usda = Path(scene_usd).resolve().parent / "Payload" / "Geometry.usda"
+    if not geometry_usda.is_file():
+        return None
+    try:
+        text = geometry_usda.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return None
+    pattern = (
+        r'def\s+Xform\s+"'
+        + re.escape(scene_object_name)
+        + r'"\s*\(\s*prepend\s+references\s*=\s*@(?P<ref>[^@]+)@'
+    )
+    match = re.search(pattern, text, flags=re.MULTILINE)
+    if match is None:
+        return None
+    asset_dir = Path(match.group("ref")).parent.name
+    for suffix in ("_mesh", "_prim"):
+        if asset_dir.endswith(suffix):
+            return asset_dir[: -len(suffix)]
+    return asset_dir
+
+
 
 def build_arena_env_from_episode_spec(
     spec: ArenaEpisodeSpec,
@@ -892,6 +998,7 @@ def build_arena_env_from_episode_spec(
     use_joint_velocity_control: bool = False,
     num_envs: int = 1,
     env_spacing: float | None = None,
+    terminate_on_success: bool = True,
 ):
     """Build a registered Arena env from ArenaEpisodeSpec. Uses the episode's MolmoSpaces scene USD when spec.scene_usd_path is set; otherwise Arena background by background_key. Returns (env, env_builder)."""
     if not _ARENA_AVAILABLE or get_arena_object_class is None:
@@ -926,7 +1033,7 @@ def build_arena_env_from_episode_spec(
         else:
             scene_z = pos_xyz[2] + ex[2] + fine_z
         pos_xyz = (pos_xyz[0] + ex[0], pos_xyz[1] + ex[1], scene_z)
-        scene_pose = Pose(position_xyz=pos_xyz, rotation_wxyz=rot_wxyz)
+        scene_pose = _arena_pose_from_wxyz(pos_xyz, rot_wxyz)
         background = arena_object_cls(
             name="molmospaces_scene",
             prim_path=None,
@@ -969,7 +1076,7 @@ def build_arena_env_from_episode_spec(
             pose_7,
             apply_thor_up_axis=bool(source == "thor" and apply_thor_up_axis),
         )
-        pose = Pose(position_xyz=pos_xyz, rotation_wxyz=rot_wxyz)
+        pose = _arena_pose_from_wxyz(pos_xyz, rot_wxyz)
         if source == "scene" and arena_name == spec.pickup_name:
             print(
                 f"[molmospaces_arena] Pick existing scene object '{asset_id}': "
@@ -992,14 +1099,34 @@ def build_arena_env_from_episode_spec(
                     "Pass --assets_root to your ms-download install (with --assets thor), or set MOLMO_ISAAC_ASSETS_ROOT / MOLMO_THOR_USD_DIR."
                 )
         if source == "scene":
-            body_prim_suffix = _scene_rigid_body_suffix_for_object(scene_usd, asset_id)
-            obj = SceneRigidObjectReference(
-                name=arena_name,
-                scene_object_name=asset_id,
-                body_prim_suffix=body_prim_suffix,
-                initial_pose=pose,
-            )
-            dynamic_scene_object_names.append(asset_id)
+            if _env_flag("MOLMO_ARENA_USE_EMBEDDED_SCENE_PICKUP"):
+                body_prim_suffix = _scene_rigid_body_suffix_for_object(scene_usd, asset_id)
+                obj = SceneRigidObjectReference(
+                    name=arena_name,
+                    scene_object_name=asset_id,
+                    body_prim_suffix=body_prim_suffix,
+                    initial_pose=pose,
+                )
+                dynamic_scene_object_names.append(asset_id)
+            else:
+                scene_asset_id = _scene_thor_asset_id_for_object(scene_usd, asset_id)
+                if not scene_asset_id:
+                    raise ValueError(
+                        f"Could not resolve THOR asset id for scene pickup '{asset_id}' "
+                        f"from {scene_usd}."
+                    )
+                print(
+                    f"[molmospaces_arena] Materializing scene pickup '{asset_id}' "
+                    f"as THOR asset '{scene_asset_id}' at the benchmark pose.",
+                    flush=True,
+                )
+                obj = create_thor_object_for_arena(
+                    scene_asset_id,
+                    instance_name=arena_name,
+                    initial_pose=pose,
+                    assets_dir=thor_assets_dir,
+                    metadata_path=thor_metadata_path,
+                )
         elif source == "objaverse":
             obj = create_objaverse_object_for_arena(
                 asset_id,
@@ -1034,6 +1161,7 @@ def build_arena_env_from_episode_spec(
         episode_length_s=episode_length_s,
         pick_start_z=pick_start_z,
         pick_lift_threshold_m=success_radius,
+        terminate_on_success=terminate_on_success,
     )
     embodiment = asset_registry.get_asset_by_name(embodiment_key)(enable_cameras=enable_cameras)
     if str(embodiment_key).startswith("droid"):
@@ -1120,6 +1248,10 @@ def build_arena_env_from_episode_spec(
         _env_cfg.scene.env_spacing = float(env_spacing)
         print(f"[molmospaces_arena] env_spacing set to {env_spacing} m.", flush=True)
     env = _gym.make(_env_name, cfg=_env_cfg).unwrapped
+    try:
+        setattr(env, "molmospaces_pick_success_func", task.pick_success)
+    except Exception:
+        pass
     if num_envs > 1 and scene_usd is not None and Path(scene_usd).is_file():
         try:
             import omni.usd as _ousd

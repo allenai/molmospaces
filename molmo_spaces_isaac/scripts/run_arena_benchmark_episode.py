@@ -283,6 +283,17 @@ parser.add_argument(
     ),
 )
 parser.add_argument(
+    "--post_success_record_steps",
+    type=int,
+    default=0,
+    help=(
+        "After the first success frame, keep stepping and recording this many extra "
+        "Arena env steps before ending the episode (0=off). The reported success "
+        "and step_count still use the first success frame. Arena dt is 0.02 s, "
+        "so 100 steps is about 2 seconds and 150 is about 3 seconds."
+    ),
+)
+parser.add_argument(
     "--replay_h5",
     type=Path,
     default=None,
@@ -365,7 +376,10 @@ parser.add_argument(
 )
 # AppLauncher must see --enable_cameras before parse_args to initialize the RTX sensor pipeline.
 _argv_needs_cameras = (
-    ("--policy_type" in sys.argv and "pi_remote" in sys.argv[sys.argv.index("--policy_type") + 1 :])
+    (
+        "--policy_type" in sys.argv
+        and any(policy in sys.argv[sys.argv.index("--policy_type") + 1 :] for policy in ("pi_remote", "h5_replay"))
+    )
     or "--with_cameras" in sys.argv
 )
 if _argv_needs_cameras and "--enable_cameras" not in sys.argv:
@@ -736,6 +750,25 @@ class ArenaVideoRecorder:
         return dict(self._paths)
 
 
+def _post_success_record_steps(args: argparse.Namespace) -> int:
+    return max(0, int(getattr(args, "post_success_record_steps", 0) or 0))
+
+
+def _manual_pick_success(env) -> bool:
+    """Evaluate the MolmoSpaces pick success predicate without terminating the env."""
+    func = getattr(getattr(env, "unwrapped", env), "molmospaces_pick_success_func", None)
+    if not callable(func):
+        return False
+    try:
+        result = func(env)
+        if hasattr(result, "any"):
+            return bool(result.any().item())
+        return bool(result)
+    except Exception as e:
+        print(f"[molmospaces_arena] manual success check failed: {e}", flush=True)
+        return False
+
+
 def _maybe_default_scenes_root_from_assets(args: argparse.Namespace, _resolved_bench_dir: Path | None) -> None:
     """If scenes_root is unset, use the same root as assets (typical ms-download: objects/ + scenes/ under one dir).
 
@@ -1047,8 +1080,11 @@ def _run_one_episode(
 
     episode_length_s = args.steps * 0.02
     extra = tuple(getattr(args, "scene_extra_xyz", [0.0, 0.0, 0.0])[:3])
-    _enable_cameras = getattr(args, "with_cameras", False) or (getattr(args, "policy_type", "zero") == "pi_remote")
+    _enable_cameras = getattr(args, "with_cameras", False) or (
+        getattr(args, "policy_type", "zero") in ("pi_remote", "h5_replay")
+    )
     embodiment_key = _selected_embodiment_key(args)
+    post_success_steps = _post_success_record_steps(args)
     env, _ = build_arena_env_from_episode_spec(
         spec,
         env_name=env_name,
@@ -1064,6 +1100,7 @@ def _run_one_episode(
         num_envs=getattr(args, "num_envs", 1),
         env_spacing=getattr(args, "env_spacing", None),
         enable_cameras=_enable_cameras,
+        terminate_on_success=post_success_steps <= 0,
     )
     try:
         obs, _ = env.reset()
@@ -1073,7 +1110,7 @@ def _run_one_episode(
             env.close()
         except Exception:
             pass
-        return False, 0
+        return False, 0, {}, 0, None
 
     # Capture pick spawn Z for per-step tunneling debug (--debug_pick_z).
     spawn_z: float | None = None
@@ -1085,6 +1122,26 @@ def _run_one_episode(
             spawn_z = float(_rp[0, 2].item()) if _rp.dim() > 1 else float(_rp[2].item())
     except Exception:
         pass
+
+    h5_replay_policy = None
+    if args.policy_type == "h5_replay":
+        if args.replay_h5 is None:
+            try:
+                env.close()
+            except Exception:
+                pass
+            raise SystemExit("--policy_type h5_replay requires --replay_h5")
+        h5_replay_policy = H5ReplayPolicy(
+            args.replay_h5,
+            traj=args.replay_traj,
+            start_index=getattr(args, "replay_start_index", 0),
+        )
+        if getattr(args, "replay_init_from_h5_qpos", False):
+            _write_arena_robot_qpos_from_mujoco(
+                env,
+                h5_replay_policy.qpos_at(getattr(args, "replay_start_index", 0)),
+            )
+            obs = env.unwrapped.obs_buf
 
     video_recorder = None
     video_paths: dict[str, str] = {}
@@ -1104,6 +1161,8 @@ def _run_one_episode(
 
     step_count = 0
     success = False
+    success_step_count: int | None = None
+    post_success_until_step: int | None = None
     device = env.unwrapped.device
     pi_repeat = _pi_action_repeat(args)
     pi_repeat_left = 0
@@ -1113,6 +1172,12 @@ def _run_one_episode(
             f"[molmospaces_arena] pi_remote action mode: "
             f"{'joint_velocity' if _use_pi_joint_velocity_control(args) else 'joint_position' if getattr(args, 'joint_pos_policy', False) else 'delta_eef'}; "
             f"action_repeat={pi_repeat}.",
+            flush=True,
+        )
+    elif args.policy_type == "h5_replay":
+        print(
+            f"[molmospaces_arena] h5_replay action mode: joint_position; "
+            f"action_repeat={max(1, args.replay_action_repeat)}.",
             flush=True,
         )
     try:
@@ -1137,17 +1202,43 @@ def _run_one_episode(
                     else:
                         actions = pi_last_actions
                     pi_repeat_left -= 1
+                elif args.policy_type == "h5_replay" and h5_replay_policy is not None:
+                    if pi_last_actions is None or pi_repeat_left <= 0:
+                        actions = h5_replay_policy.next_action(device)
+                        pi_last_actions = actions
+                        pi_repeat_left = max(1, args.replay_action_repeat)
+                    else:
+                        actions = pi_last_actions
+                    pi_repeat_left -= 1
                 elif args.policy_type == "random":
                     actions = torch.randn(env.action_space.shape, device=device) * 0.05
                 else:
                     actions = torch.zeros(env.action_space.shape, device=device)
                 obs, _reward, terminated, truncated, info = env.step(actions)
             step_count += 1
+            if post_success_steps > 0 and success_step_count is None:
+                if _manual_pick_success(env):
+                    success = True
+                    success_step_count = step_count
+                    post_success_until_step = min(args.steps, step_count + post_success_steps)
+                    print(
+                        "[molmospaces_arena] Success at step "
+                        f"{success_step_count}; recording through step {post_success_until_step}.",
+                        flush=True,
+                    )
             if args.progress_steps > 0 and step_count % args.progress_steps == 0:
                 print(f"  step {step_count}/{args.steps}...", flush=True)
+            captured_this_step = False
             if (
                 video_recorder is not None
                 and step_count % max(1, int(getattr(args, "record_video_stride", 1))) == 0
+            ):
+                video_recorder.capture(obs, step_count=step_count)
+                captured_this_step = True
+            if (
+                video_recorder is not None
+                and success_step_count == step_count
+                and not captured_this_step
             ):
                 video_recorder.capture(obs, step_count=step_count)
             if args.debug_arm_motion > 0 and step_count % args.debug_arm_motion == 0:
@@ -1155,8 +1246,14 @@ def _run_one_episode(
             if args.debug_pick_z > 0 and step_count % args.debug_pick_z == 0 and spawn_z is not None:
                 _print_pick_z_debug(step_count, env, spec, spawn_z, obs=obs, actions=actions)
             done = terminated | truncated
+            if post_success_until_step is not None:
+                if step_count >= post_success_until_step or bool(truncated.any().item()):
+                    break
+                continue
             if done.any():
                 success = bool(terminated.any().item())
+                if success:
+                    success_step_count = step_count
                 break
     except Exception as e:
         import traceback
@@ -1176,7 +1273,8 @@ def _run_one_episode(
         env.close()
     except Exception:
         pass
-    return success, step_count, video_paths
+    result_step_count = success_step_count if success_step_count is not None else step_count
+    return success, result_step_count, video_paths, step_count, success_step_count
 
 
 def main() -> int:
@@ -1391,6 +1489,7 @@ def main() -> int:
                     "planned_count": len(indices_to_run),
                     "policy_type": args.policy_type,
                     "steps": args.steps,
+                    "post_success_record_steps": _post_success_record_steps(args),
                     "num_envs": getattr(args, "num_envs", 1),
                     "pi_trace_dir": str(args.pi_trace_dir) if args.pi_trace_dir else None,
                     "success_count": n_ok_so_far,
@@ -1439,7 +1538,7 @@ def main() -> int:
                 task_description = (episode_dict.get("language") or {}).get("task_description")
                 if hasattr(pi_remote_policy, "set_task_description"):
                     pi_remote_policy.set_task_description(task_description or "pick up the object.")
-            success, step_count, video_paths = _run_one_episode(
+            success, step_count, video_paths, recorded_step_count, success_step_count = _run_one_episode(
                 spec, episode_dict, args,
                 thor_assets_dir, thor_metadata_path, objaverse_assets_dir,
                 cli_args_list, pi_remote_policy, pi_remote_camera_key_map,
@@ -1452,11 +1551,17 @@ def main() -> int:
                     "status": "ran",
                     "success": bool(success),
                     "step_count": int(step_count),
+                    "success_step_count": success_step_count,
+                    "recorded_step_count": int(recorded_step_count),
                     "reason": None if success else "failed_or_timed_out",
                     "video_paths": video_paths,
                 }
             )
-            print(f"  Episode {idx}: {'SUCCESS' if success else 'FAIL'} ({step_count} steps)", flush=True)
+            print(
+                f"  Episode {idx}: {'SUCCESS' if success else 'FAIL'} "
+                f"({step_count} steps, recorded {recorded_step_count})",
+                flush=True,
+            )
             _write_multi_episode_results()
 
         n_ok = sum(1 for row in results if row.get("success"))
@@ -1577,8 +1682,11 @@ def main() -> int:
     episode_length_s = args.steps * 0.02
     extra = tuple(getattr(args, "scene_extra_xyz", [0.0, 0.0, 0.0])[:3])
     env_id = f"molmospaces_arena_hi{hi}_ep{args.episode_idx}" if hi is not None else "molmospaces_arena_benchmark"
-    _enable_cameras = getattr(args, "with_cameras", False) or (getattr(args, "policy_type", "zero") == "pi_remote")
+    _enable_cameras = getattr(args, "with_cameras", False) or (
+        getattr(args, "policy_type", "zero") in ("pi_remote", "h5_replay")
+    )
     embodiment_key = _selected_embodiment_key(args)
+    post_success_steps = _post_success_record_steps(args)
     print(f"[molmospaces_arena] Arena embodiment: {embodiment_key}", flush=True)
     env, _ = build_arena_env_from_episode_spec(
         spec,
@@ -1595,6 +1703,7 @@ def main() -> int:
         num_envs=getattr(args, "num_envs", 1),
         env_spacing=getattr(args, "env_spacing", None),
         enable_cameras=_enable_cameras,
+        terminate_on_success=post_success_steps <= 0,
     )
     try:
         obs, _ = env.reset()
@@ -1696,6 +1805,8 @@ def main() -> int:
 
     step_count = 0
     n_success = 0
+    success_step_count: int | None = None
+    post_success_until_step: int | None = None
     num_envs = getattr(args, "num_envs", 1)
     terminated = truncated = None
     device = env.unwrapped.device
@@ -1752,9 +1863,27 @@ def main() -> int:
                     actions = torch.zeros(env.action_space.shape, device=device)
                 obs, _reward, terminated, truncated, info = env.step(actions)
             step_count += 1
+            if post_success_steps > 0 and success_step_count is None:
+                if _manual_pick_success(env):
+                    n_success = 1
+                    success_step_count = step_count
+                    post_success_until_step = min(args.steps, step_count + post_success_steps)
+                    print(
+                        "[molmospaces_arena] Success at step "
+                        f"{success_step_count}; recording through step {post_success_until_step}.",
+                        flush=True,
+                    )
+            captured_this_step = False
             if (
                 video_recorder is not None
                 and step_count % max(1, int(getattr(args, "record_video_stride", 1))) == 0
+            ):
+                video_recorder.capture(obs, step_count=step_count)
+                captured_this_step = True
+            if (
+                video_recorder is not None
+                and success_step_count == step_count
+                and not captured_this_step
             ):
                 video_recorder.capture(obs, step_count=step_count)
             if args.progress_steps > 0 and step_count % args.progress_steps == 0:
@@ -1764,8 +1893,14 @@ def main() -> int:
             if args.debug_pick_z > 0 and step_count % args.debug_pick_z == 0 and spawn_z is not None:
                 _print_pick_z_debug(step_count, env, spec, spawn_z, obs=obs, actions=actions)
             done = terminated | truncated
+            if post_success_until_step is not None:
+                if step_count >= post_success_until_step or bool(truncated.any().item()):
+                    break
+                continue
             if done.all():
                 n_success = int(terminated.sum().item())
+                if n_success > 0:
+                    success_step_count = step_count
                 break
     except Exception as e:
         import traceback
@@ -1780,6 +1915,8 @@ def main() -> int:
                 pass
             video_paths = video_recorder.close()
 
+    recorded_step_count = step_count
+    result_step_count = success_step_count if success_step_count is not None else step_count
     success = n_success > 0
     # Print result before closing: simulation_app.close() tears down Isaac Sim and exits the process.
     if num_envs > 1:
@@ -1789,7 +1926,12 @@ def main() -> int:
             flush=True,
         )
     else:
-        print(f"Benchmark episode finished in {step_count} steps. Result: {'SUCCESS (object placed)' if success else 'FAIL (timeout or incomplete)'}.", flush=True)
+        print(
+            f"Benchmark episode finished in {result_step_count} steps "
+            f"(recorded {recorded_step_count}). Result: "
+            f"{'SUCCESS (object placed)' if success else 'FAIL (timeout or incomplete)'}.",
+            flush=True,
+        )
     if not success and step_count >= args.steps:
         print("Tip: task may need more time; try increasing --steps (e.g. --steps 2000).", flush=True)
     exit_code = 0 if success else 1
@@ -1803,6 +1945,7 @@ def main() -> int:
             else None,
             "policy_type": args.policy_type,
             "steps": args.steps,
+            "post_success_record_steps": post_success_steps,
             "num_envs": num_envs,
             "pi_trace_dir": str(args.pi_trace_dir) if args.pi_trace_dir else None,
             "video_paths": video_paths,
@@ -1820,7 +1963,9 @@ def main() -> int:
                     ),
                     "status": "ran",
                     "success": bool(success),
-                    "step_count": int(step_count),
+                    "step_count": int(result_step_count),
+                    "success_step_count": success_step_count,
+                    "recorded_step_count": int(recorded_step_count),
                     "reason": None if success else "failed_or_timed_out",
                     "video_paths": video_paths,
                 }
