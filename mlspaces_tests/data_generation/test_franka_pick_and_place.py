@@ -89,8 +89,8 @@ def droid_policy_results(droid_config, droid_task):
 
     # Instantiate policy with config and task
     policy_config = droid_config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(droid_config, droid_task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(droid_config, droid_task)
     policy.reset()
 
     # Run policy for 10 steps and get both qpos and observations
@@ -144,8 +144,8 @@ def gopro_policy_results(gopro_config, gopro_task):
 
     # Instantiate policy with config and task
     policy_config = gopro_config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(gopro_config, gopro_task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(gopro_config, gopro_task)
     policy.reset()
 
     # Run policy for 10 steps and get both qpos and observations

@@ -127,8 +127,8 @@ Extend `InferencePolicy`. Must implement `prepare_model`, `reset`, and `get_acti
 from molmo_spaces.policy.base_policy import InferencePolicy
 
 class MyPolicy(InferencePolicy):
-    def __init__(self, config, task_type):
-        super().__init__(config, task_type)
+    def __init__(self, config, task):
+        super().__init__(config, task)
         self.camera_names = config.policy_config.camera_names
         self.action_spec = config.policy_config.action_spec
         self.prepare_model()
@@ -160,16 +160,19 @@ Extend `BasePolicyConfig`. Define your model's interface.
 ```python
 # my_repo/configs.py
 from molmo_spaces.configs.policy_configs import BasePolicyConfig
+from molmo_spaces.policy.base_policy import PolicyFactory
 
 class MyPolicyConfig(BasePolicyConfig):
     policy_type: str = "learned"
     action_type: str = "joint_pos_rel"
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
 
     def model_post_init(self, __context):
         if self.policy_cls is None:
             from my_repo.policy import MyPolicy
-            object.__setattr__(self, "policy_cls", MyPolicy)
+            self.policy_cls = MyPolicy
+            self.policy_factory = MyPolicy
 
     checkpoint_path: str
     camera_names: list[str] = ["exo_camera_1", "wrist_camera"]

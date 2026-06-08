@@ -63,14 +63,9 @@ def main(args: argparse.ArgumentParser) -> None:
         / f"{exp_config.task_type}_v1"
         / datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     )
-    # exp_config.policy_config = PiPolicyConfig()
-    # policy constructor takes (config, task)
-    # policy = exp_config.policy_config.policy_cls(exp_config, None)
-    # policy.prepare_model()
-    policy = None
     exp_config.save_config()
     runner = MyRunner(exp_config)
-    runner.run(preloaded_policy=policy)
+    runner.run()
 
 
 if __name__ == "__main__":

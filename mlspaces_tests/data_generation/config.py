@@ -54,6 +54,7 @@ class FrankaPickDroidTestConfig(FrankaPickDroidDataGenConfig):
         super().model_post_init(__context)
 
         self.policy_config.policy_cls = PickPlannerPolicy
+        self.policy_config.policy_factory = PickPlannerPolicy
 
         # Override house to use for testing (use house 8, the default)
         self.task_sampler_config.house_inds = [8]
@@ -88,6 +89,7 @@ class FrankaPickRandomizedTestConfig(FrankaPickRandomizedDataGenConfig):
         super().model_post_init(__context)
 
         self.policy_config.policy_cls = PickPlannerPolicy
+        self.policy_config.policy_factory = PickPlannerPolicy
 
         # Override house to use for testing (use house 8, the default)
         self.task_sampler_config.house_inds = [8]

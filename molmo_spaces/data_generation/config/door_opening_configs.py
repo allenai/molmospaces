@@ -108,6 +108,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
 
         return DoorOpeningPolicyConfig(
             policy_cls=DoorOpeningPlannerPolicy,
+            policy_factory=DoorOpeningPlannerPolicy,
             left_curobo_planner_config=left_curobo_planner_config,
             right_curobo_planner_config=right_curobo_planner_config,
         )

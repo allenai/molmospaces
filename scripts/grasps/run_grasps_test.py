@@ -950,7 +950,7 @@ def test_grasps_for_scene(
                     from molmo_spaces.tasks.pick_task import PickTask
 
                     task = PickTask(task_sampler.env, datagen_cfg)
-                    policy = datagen_cfg.policy_config.policy_cls(datagen_cfg, task)
+                    policy = datagen_cfg.policy_config.policy_factory(datagen_cfg, task)
 
                     # Override _compute_target_poses to use our specific grasp pose
                     def compute_target_poses_with_grasp(self):
@@ -1455,7 +1455,7 @@ def test_grasps_for_scene(
                         from molmo_spaces.tasks.opening_tasks import OpeningTask
 
                         task = OpeningTask(task_sampler.env, datagen_cfg)
-                        policy = datagen_cfg.policy_config.policy_cls(datagen_cfg, task)
+                        policy = datagen_cfg.policy_config.policy_factory(datagen_cfg, task)
 
                         # Set postgrasp_z_offset to 0.05
                         policy.policy_config.postgrasp_z_offset = 0.05

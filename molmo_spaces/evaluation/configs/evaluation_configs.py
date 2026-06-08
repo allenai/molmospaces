@@ -238,6 +238,7 @@ class DummyPickPlaceEvalConfig(FrankaPickAndPlaceDataGenConfig):
 
     def _init_policy_config(self) -> DummyPolicyConfig:
         self.policy_config.policy_cls = DummyPolicy
+        self.policy_config.policy_factory = lambda config, task: DummyPolicy(config)
         return self.policy_config
 
     def model_post_init(self, __context) -> None:
@@ -269,6 +270,7 @@ class BrownianMotionPickPlaceEvalConfig(FrankaPickAndPlaceDataGenConfig):
 
     def _init_policy_config(self) -> BrownianMotionPolicyConfig:
         self.policy_config.policy_cls = BrownianMotionPolicy
+        self.policy_config.policy_factory = lambda config, task: BrownianMotionPolicy(config)
         return self.policy_config
 
     def model_post_init(self, __context) -> None:

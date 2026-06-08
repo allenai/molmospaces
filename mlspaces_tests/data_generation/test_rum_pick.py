@@ -73,8 +73,8 @@ def rum_policy_results(rum_config, rum_task):
 
     # Instantiate policy with config and task
     policy_config = rum_config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(rum_config, rum_task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(rum_config, rum_task)
     policy.reset()
 
     # Run policy for 10 steps and get both qpos and observations

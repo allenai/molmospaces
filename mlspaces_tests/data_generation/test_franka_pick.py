@@ -107,8 +107,8 @@ def droid_policy_results(droid_config, droid_task):
 
     # Instantiate policy with config and task
     policy_config = droid_config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(droid_config, droid_task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(droid_config, droid_task)
     policy.reset()
 
     # Run policy for 10 steps and get both qpos and observations
@@ -134,8 +134,8 @@ def randomized_policy_results(randomized_config, randomized_task):
 
     # Instantiate policy with config and task
     policy_config = randomized_config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(randomized_config, randomized_task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(randomized_config, randomized_task)
     policy.reset()
 
     # Run policy for 10 steps and get both qpos and observations

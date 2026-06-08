@@ -1,4 +1,5 @@
 from molmo_spaces.configs.policy_configs import BasePolicyConfig
+from molmo_spaces.policy.base_policy import PolicyFactory
 
 
 class PiPolicyConfig(BasePolicyConfig):
@@ -11,6 +12,7 @@ class PiPolicyConfig(BasePolicyConfig):
     chunk_size: int = 8
 
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
     def model_post_init(self, __context) -> None:
@@ -20,6 +22,7 @@ class PiPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.pi_policy import PI_Policy
 
             self.policy_cls = PI_Policy
+            self.policy_factory = lambda config, task: PI_Policy(config)
 
 
 class DreamZeroPolicyConfig(BasePolicyConfig):
@@ -30,6 +33,7 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
     chunk_size: int = 24
 
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
     def model_post_init(self, __context) -> None:
@@ -39,6 +43,7 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
 
             self.policy_cls = DreamZero_Policy
+            self.policy_factory = lambda config, task: DreamZero_Policy(config)
 
 
 class CAPPolicyConfig(BasePolicyConfig):
@@ -46,6 +51,7 @@ class CAPPolicyConfig(BasePolicyConfig):
     grasping_type: str = "binary"
     grasping_threshold: float = 0.7
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
     use_vlm: bool = False  # required for non-pick tasks
     exo_vlm: bool = True  # not used if use_vlm is False
@@ -57,11 +63,13 @@ class CAPPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.cap_policy import CAP_Policy
 
             self.policy_cls = CAP_Policy
+            self.policy_factory = lambda config, task: CAP_Policy(config)
 
 
 class TeleopPolicyConfig(BasePolicyConfig):
     device: str = "keyboard"  # "spacemouse", "keyboard", "phone"
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
     policy_type: str = "teleop"
     # keyboard params
     step_size: float = 0.005
@@ -79,14 +87,17 @@ class TeleopPolicyConfig(BasePolicyConfig):
                 from molmo_spaces.policy.learned_policy.keyboard_policy import Keyboard_Policy
 
                 self.policy_cls = Keyboard_Policy
+                self.policy_factory = lambda config, task: Keyboard_Policy(config)
             elif self.device == "spacemouse":
                 from molmo_spaces.policy.learned_policy.spacemouse_policy import SpaceMouse_Policy
 
                 self.policy_cls = SpaceMouse_Policy
+                self.policy_factory = lambda config, task: SpaceMouse_Policy(config)
             elif self.device == "phone":
                 from molmo_spaces.policy.learned_policy.phone_policy import Phone_Policy
 
                 self.policy_cls = Phone_Policy
+                self.policy_factory = lambda config, task: Phone_Policy(config)
 
 
 class BimanualYamPiPolicyConfig(BasePolicyConfig):
@@ -111,6 +122,7 @@ class BimanualYamPiPolicyConfig(BasePolicyConfig):
     )
 
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
     def model_post_init(self, __context) -> None:
@@ -122,3 +134,4 @@ class BimanualYamPiPolicyConfig(BasePolicyConfig):
             )
 
             self.policy_cls = BimanualYamPiPolicy
+            self.policy_factory = lambda config, task: BimanualYamPiPolicy(config)

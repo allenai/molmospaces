@@ -302,6 +302,7 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
         )
         return CuroboOpenClosePlannerPolicyConfig(
             policy_cls=CuroboOpenClosePlannerPolicy,
+            policy_factory=CuroboOpenClosePlannerPolicy,
             left_curobo_planner_config=left_curobo_planner_config,
             right_curobo_planner_config=right_curobo_planner_config,
         )
@@ -357,6 +358,7 @@ class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
         )
         return CuroboPickAndPlacePlannerPolicyConfig(
             policy_cls=CuroboPickAndPlacePlannerPolicy,
+            policy_factory=CuroboPickAndPlacePlannerPolicy,
             left_curobo_planner_config=left_curobo_planner_config,
             right_curobo_planner_config=right_curobo_planner_config,
             enable_collision_avoidance=True,
@@ -433,6 +435,7 @@ class RBY1PickDataGenConfig(PickBaseConfig):
         )
         return CuroboPickAndPlacePlannerPolicyConfig(
             policy_cls=CuroboPickAndPlacePlannerPolicy,
+            policy_factory=CuroboPickAndPlacePlannerPolicy,
             left_curobo_planner_config=left_curobo_planner_config,
             right_curobo_planner_config=right_curobo_planner_config,
             enable_collision_avoidance=True,

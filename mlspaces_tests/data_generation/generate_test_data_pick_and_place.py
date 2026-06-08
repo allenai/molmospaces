@@ -70,8 +70,8 @@ def generate_test_data_for_config(config, config_name: str):
     # Run policy - follow pipeline.py pattern (line 295)
     print("\n=== Running policy and capturing observations after steps ===")
     policy_config = config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(config, task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(config, task)
     policy.reset()
 
     # Run policy for 10 steps using shared utility and capture observations

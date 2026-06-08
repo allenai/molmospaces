@@ -27,8 +27,9 @@ class DoorOpeningTestConfig(DoorOpeningSingleSceneConfig):
         policy_cls = DummyPolicy
 
         policy_config = BasePolicyConfig(
-            policy_dt_ms=self.policy_dt_ms,
-            type="dummy",
+            policy_cls=DummyPolicy,
+            policy_factory=lambda config, task: DummyPolicy(config),
+            policy_type="dummy",
         )
 
         return (policy_cls, policy_config)

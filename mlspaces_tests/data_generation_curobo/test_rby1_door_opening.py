@@ -91,8 +91,8 @@ def policy_results(config, task):
 
     # Instantiate policy with config and task
     policy_config = config.policy_config
-    policy_cls = policy_config.policy_cls
-    policy = policy_cls(config, task)
+    policy_factory = policy_config.policy_factory
+    policy = policy_factory(config, task)
     policy.reset()
 
     # Run policy for 10 steps and get both qpos and observations
