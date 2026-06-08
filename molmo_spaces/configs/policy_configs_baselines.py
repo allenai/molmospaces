@@ -1,5 +1,6 @@
 from molmo_spaces.configs.policy_configs import BasePolicyConfig
 from molmo_spaces.policy.base_policy import PolicyFactory
+from molmo_spaces.utils.function_utils import make_lenient
 
 
 class PiPolicyConfig(BasePolicyConfig):
@@ -22,7 +23,7 @@ class PiPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.pi_policy import PI_Policy
 
             self.policy_cls = PI_Policy
-            self.policy_factory = lambda config, task: PI_Policy(config)
+            self.policy_factory = make_lenient(PI_Policy)
 
 
 class DreamZeroPolicyConfig(BasePolicyConfig):
@@ -43,7 +44,7 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
 
             self.policy_cls = DreamZero_Policy
-            self.policy_factory = lambda config, task: DreamZero_Policy(config)
+            self.policy_factory = make_lenient(DreamZero_Policy)
 
 
 class CAPPolicyConfig(BasePolicyConfig):
@@ -63,7 +64,7 @@ class CAPPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.cap_policy import CAP_Policy
 
             self.policy_cls = CAP_Policy
-            self.policy_factory = lambda config, task: CAP_Policy(config)
+            self.policy_factory = make_lenient(CAP_Policy)
 
 
 class TeleopPolicyConfig(BasePolicyConfig):
@@ -87,17 +88,17 @@ class TeleopPolicyConfig(BasePolicyConfig):
                 from molmo_spaces.policy.learned_policy.keyboard_policy import Keyboard_Policy
 
                 self.policy_cls = Keyboard_Policy
-                self.policy_factory = lambda config, task: Keyboard_Policy(config)
+                self.policy_factory = make_lenient(Keyboard_Policy)
             elif self.device == "spacemouse":
                 from molmo_spaces.policy.learned_policy.spacemouse_policy import SpaceMouse_Policy
 
                 self.policy_cls = SpaceMouse_Policy
-                self.policy_factory = lambda config, task: SpaceMouse_Policy(config)
+                self.policy_factory = make_lenient(SpaceMouse_Policy)
             elif self.device == "phone":
                 from molmo_spaces.policy.learned_policy.phone_policy import Phone_Policy
 
                 self.policy_cls = Phone_Policy
-                self.policy_factory = lambda config, task: Phone_Policy(config)
+                self.policy_factory = make_lenient(Phone_Policy)
 
 
 class BimanualYamPiPolicyConfig(BasePolicyConfig):
@@ -134,4 +135,4 @@ class BimanualYamPiPolicyConfig(BasePolicyConfig):
             )
 
             self.policy_cls = BimanualYamPiPolicy
-            self.policy_factory = lambda config, task: BimanualYamPiPolicy(config)
+            self.policy_factory = make_lenient(BimanualYamPiPolicy)

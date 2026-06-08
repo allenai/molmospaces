@@ -66,6 +66,7 @@ from molmo_spaces.tasks.pick_and_place_task_sampler import (
     PickAndPlaceTaskSampler,
 )
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
+from molmo_spaces.utils.function_utils import make_lenient
 
 TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -238,7 +239,7 @@ class DummyPickPlaceEvalConfig(FrankaPickAndPlaceDataGenConfig):
 
     def _init_policy_config(self) -> DummyPolicyConfig:
         self.policy_config.policy_cls = DummyPolicy
-        self.policy_config.policy_factory = lambda config, task: DummyPolicy(config)
+        self.policy_config.policy_factory = make_lenient(DummyPolicy)
         return self.policy_config
 
     def model_post_init(self, __context) -> None:
@@ -270,7 +271,7 @@ class BrownianMotionPickPlaceEvalConfig(FrankaPickAndPlaceDataGenConfig):
 
     def _init_policy_config(self) -> BrownianMotionPolicyConfig:
         self.policy_config.policy_cls = BrownianMotionPolicy
-        self.policy_config.policy_factory = lambda config, task: BrownianMotionPolicy(config)
+        self.policy_config.policy_factory = make_lenient(BrownianMotionPolicy)
         return self.policy_config
 
     def model_post_init(self, __context) -> None:

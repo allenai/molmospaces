@@ -2,6 +2,7 @@ from molmo_spaces.configs.policy_configs import BasePolicyConfig
 from molmo_spaces.data_generation.config.door_opening_configs import DoorOpeningSingleSceneConfig
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.policy.dummy_policy import DummyPolicy
+from molmo_spaces.utils.function_utils import make_lenient
 
 
 @register_config("DoorOpeningTestConfig")
@@ -28,7 +29,7 @@ class DoorOpeningTestConfig(DoorOpeningSingleSceneConfig):
 
         policy_config = BasePolicyConfig(
             policy_cls=DummyPolicy,
-            policy_factory=lambda config, task: DummyPolicy(config),
+            policy_factory=make_lenient(DummyPolicy),
             policy_type="dummy",
         )
 

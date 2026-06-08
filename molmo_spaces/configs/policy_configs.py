@@ -9,6 +9,7 @@ import numpy as np
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.planner.astar_planner import AStarPlannerConfig
 from molmo_spaces.policy.base_policy import BasePolicy, PolicyFactory
+from molmo_spaces.utils.function_utils import make_lenient
 
 # Import CuroboPlannerConfig if available (requires GPU), otherwise create a stub
 try:
@@ -434,7 +435,7 @@ class DummyPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.dummy_policy import DummyPolicy
 
             self.policy_cls = DummyPolicy
-            self.policy_factory = lambda config, task: DummyPolicy(config)
+            self.policy_factory = make_lenient(DummyPolicy)
 
 
 class BrownianMotionPolicyConfig(BasePolicyConfig):
@@ -451,4 +452,4 @@ class BrownianMotionPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy
 
             self.policy_cls = BrownianMotionPolicy
-            self.policy_factory = lambda config, task: BrownianMotionPolicy(config)
+            self.policy_factory = make_lenient(BrownianMotionPolicy)

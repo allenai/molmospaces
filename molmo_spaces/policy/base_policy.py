@@ -94,10 +94,7 @@ class BasePolicy(ABC):
 
 
 # Intended signature: Callable[[MlSpacesExpConfig, BaseMujocoTask | None], BasePolicy].
-# Relaxed to Callable[..., BasePolicy] to avoid forward-reference resolution issues
-# when this alias is used as a Pydantic model field type: MlSpacesExpConfig lives in
-# a module that already imports from this one, so a precise annotation would either
-# require a circular runtime import or fail to be resolved by Pydantic at schema build.
+# Relaxed to Callable[..., BasePolicy] to avoid forward-reference resolution issues with Pydantic.
 PolicyFactory: TypeAlias = Callable[..., BasePolicy]
 
 
