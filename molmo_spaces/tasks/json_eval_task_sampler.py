@@ -243,6 +243,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
 
         # Override depth if the policy requires it
         if exp_config.policy_config.force_enable_depth:
+            log.info("Force enabling depth for all cameras")
             for camera in exp_config.camera_config.cameras:
                 camera.record_depth = True
 
