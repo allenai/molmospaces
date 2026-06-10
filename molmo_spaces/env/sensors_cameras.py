@@ -122,9 +122,9 @@ class CameraParameterSensor(Sensor):
 
     def __init__(
         self,
-        camera_name: str = "camera",
+        camera_name: str,
+        img_resolution: tuple[int, int],
         uuid: str | None = None,
-        img_resolution: tuple[int, int] = (480, 480),
     ) -> None:
         self.img_resolution = img_resolution
         self.camera_name = camera_name
@@ -149,7 +149,7 @@ class CameraParameterSensor(Sensor):
         extrinsic_cv = np.linalg.inv(world2cam)[:3, :]  # 3x4 matrix
         cam2world_gl = world2cam
 
-        height, width = self.img_resolution
+        width, height = self.img_resolution
         fovy_degrees = camera.fov
 
         # Convert field of view to focal length

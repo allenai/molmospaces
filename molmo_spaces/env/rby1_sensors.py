@@ -214,7 +214,9 @@ def get_rby1_door_opening_sensors(exp_config):
         camera_name = camera_spec.name
         camera_name = camera_name.split("/")[-1]
         cam_params = CameraParameterSensor(
-            camera_name=camera_name, uuid=f"sensor_param_{camera_name}"
+            camera_name=camera_name,
+            img_resolution=exp_config.camera_config.img_resolution,
+            uuid=f"sensor_param_{camera_name}",
         )
         sensors.append(cam_params)
 
