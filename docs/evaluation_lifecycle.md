@@ -155,7 +155,11 @@ the benchmark JSON (e.g. different intrinsics on the wrist camera, depth
 recording, a slightly different robot base pose). These are implemented as
 **robot eval overrides** in `molmo_spaces/evaluation/robot_eval_overrides.py`.
 
-```
+```python
+def cap_robot_eval_override(
+    episode_spec: EpisodeSpec,
+    camera_config: CameraSystemConfig,
+) -> None:
     camera_config.cameras[0] = MjcfCameraConfig(
         name="wrist_camera",
         mjcf_name="wrist_camera",
@@ -183,39 +187,29 @@ recording, a slightly different robot base pose). These are implemented as
     }
 
 
-ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {
-    "FrankaCAPRobotConfig": cap_robot_eval_override,
+ROBOT_OVERRIDE_REGISTRY: dict[type[BaseRobotConfig], OverrideFn] = {
+    FrankaCAPRobotConfig: cap_robot_eval_override,
 }
-
-
-def get_robot_override(robot_config) -> OverrideFn | None:
-    robot_class_name = robot_config.__class__.__name__
-    override_fn = ROBOT_OVERRIDE_REGISTRY.get(robot_class_name)
-
-    if override_fn is not None:
-        log.info(f"Found robot override for {robot_class_name}")
-        return override_fn
-
-    return None
 ```
 
 How it gets wired in:
 
-1. `JsonEvalRunner.adjust_robot(exp_config)` looks up an override for the
-   robot config's class name in `ROBOT_OVERRIDE_REGISTRY`.
-2. If one is registered, it's stashed on the config as
-   `exp_config._robot_eval_override`.
+1. `JsonEvalRunner.adjust_robot(exp_config)` looks up an override for
+   `exp_config.robot_config`'s class in `ROBOT_OVERRIDE_REGISTRY`. The lookup
+   walks the class MRO, so subclasses inherit their parent's override.
+2. The resolved function (or `None`) is stored on the config as
+   `exp_config.eval_runtime_params.robot_override_fn`.
 3. Inside `JsonEvalTaskSampler.__init__`, after the recorded camera config and
    task type have been wired up but before `super().__init__`, the override is
-   invoked: `robot_override(episode_spec, exp_config.camera_config)`. Because
-   it receives the live `episode_spec` and the assembled `CameraSystemConfig`,
-   it can mutate either or both for that episode.
+   invoked: `robot_override_fn(episode_spec, exp_config.camera_config)`.
+   Because it receives the live `episode_spec` and the assembled
+   `CameraSystemConfig`, it can mutate either or both for that episode.
 
 To add an override for a new robot class:
 
 1. Implement an `OverrideFn` (`(EpisodeSpec, CameraSystemConfig) -> None`).
-2. Register it in `ROBOT_OVERRIDE_REGISTRY` keyed on the **robot config class
-   name** (e.g. `"FrankaRobotConfig"`, `"FrankaCAPRobotConfig"`).
+2. Call `register_robot_override(MyRobotConfig, my_override_fn)` from an importing
+   module with the robot config class and an override function.
 3. The override is only applied during JSON evaluation (it's wired through
    `JsonEvalRunner.adjust_robot`), so datagen behavior is unaffected.
 
@@ -405,12 +399,15 @@ def my_robot_eval_override(episode_spec, camera_config):
     episode_spec.task["robot_base_pose"][2] -= 0.05
 
 ROBOT_OVERRIDE_REGISTRY = {
-    "MyRobotConfig": my_robot_eval_override,
+    MyRobotConfig: my_robot_eval_override,
 }
+# or, from another module:
+# register_robot_override(MyRobotConfig, my_robot_eval_override)
 ```
 
-The override is selected by the **robot config class name**, applied per
-episode by `JsonEvalTaskSampler`, and only active during JSON evaluation.
+The override is selected by the **robot config class** (with MRO traversal so
+subclasses inherit), applied per episode by `JsonEvalTaskSampler`, and only
+active during JSON evaluation.
 
 ## Where to look in code
 
