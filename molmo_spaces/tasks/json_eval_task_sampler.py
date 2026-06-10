@@ -241,6 +241,11 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             # No eval system — use recorded cameras as-is
             exp_config.camera_config = self._recorded_camera_config
 
+        # Override depth if the policy requires it
+        if exp_config.policy_config.force_enable_depth:
+            for camera in exp_config.camera_config.cameras:
+                camera.record_depth = True
+
         # Override exp_config.task_type to match the episode spec's task
         # The task class's judge_success() method checks config.task_type, so it must match.
         exp_config.task_type = self._infer_task_type(episode_spec)

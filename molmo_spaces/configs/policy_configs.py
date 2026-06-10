@@ -35,6 +35,11 @@ class BasePolicyConfig(Config):
         PolicyFactory  # factory function to create the policy instance, can be same as policy_cls
     )
     policy_type: str  # Type of the policy, e.g., "planner", "teleop", "learned", etc.
+    force_enable_depth: bool = False
+    """
+    If true, require all cameras to record depth.
+    In eval the cameras will be overridden, otherwise it will just require the camera system config to enable depth.
+    """
 
 
 class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):

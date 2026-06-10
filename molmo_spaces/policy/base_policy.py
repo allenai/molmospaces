@@ -31,6 +31,13 @@ class BasePolicy(ABC):
         self.config = config
         self.task = task
 
+        if self.config.policy_config.force_enable_depth:
+            for camera in self.config.camera_config.cameras:
+                if not camera.record_depth:
+                    raise ValueError(
+                        f"Camera {camera.name} must record depth when force_enable_depth is True"
+                    )
+
     @abstractmethod
     def reset(self):
         """
