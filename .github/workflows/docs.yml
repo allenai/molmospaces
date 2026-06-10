@@ -40,7 +40,8 @@ jobs:
             "mkdocstrings[python]>=0.27.0" \
             "mkdocs-autorefs>=1.2.0" \
             "mkdocs-git-revision-date-localized-plugin" \
-            "griffe-inherited-docstrings"
+            "griffe-inherited-docstrings" \
+            "markdown-callouts>=0.4.0"
 
       - name: Install package (no heavy deps, for static analysis)
         run: |

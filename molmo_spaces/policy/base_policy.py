@@ -100,9 +100,11 @@ class BasePolicy(ABC):
         return {"unknown": 0}
 
 
-# Intended signature: Callable[[MlSpacesExpConfig, BaseMujocoTask | None], BasePolicy].
-# Relaxed to Callable[..., BasePolicy] to avoid forward-reference resolution issues with Pydantic.
 PolicyFactory: TypeAlias = Callable[..., BasePolicy]
+"""
+Factory function with signature ``Callable[[MlSpacesExpConfig, BaseMujocoTask | None], BasePolicy]``.
+To avoid forward-reference resolution issues with Pydantic, the type is relaxed to Callable[..., BasePolicy].
+"""
 
 
 class PlannerPolicy(BasePolicy):

@@ -31,9 +31,10 @@ class BasePolicyConfig(Config):
     """Base configuration for policies."""
 
     policy_cls: type[BasePolicy]
-    policy_factory: (
-        PolicyFactory  # factory function to create the policy instance, can be same as policy_cls
-    )
+    policy_factory: PolicyFactory
+    """
+    Factory function to create the policy instance from a config and task, can be same as ``policy_cls``.
+    """
     policy_type: str  # Type of the policy, e.g., "planner", "teleop", "learned", etc.
     force_enable_depth: bool = False
     """

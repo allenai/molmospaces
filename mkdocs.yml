@@ -44,6 +44,7 @@ nav:
       - Data Format: data_format.md
       - Data Processing: data_processing.md
       - Benchmark Evaluation: evaluation_guide.md
+      - Evaluation Lifecycle: evaluation_lifecycle.md
       - Code Structure: code_structure.md
       - Development: development.md
       - Tutorials:
@@ -108,8 +109,10 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - admonition
+  - def_list
   - pymdownx.details
   - attr_list
   - md_in_html
+  - github-callouts
   - toc:
       permalink: true

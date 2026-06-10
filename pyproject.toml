@@ -99,6 +99,7 @@ docs = [
     "mkdocs-autorefs>=1.2.0",
     "mkdocs-git-revision-date-localized-plugin",
     "griffe-inherited-docstrings",
+    "markdown-callouts>=0.4.0",
 ]
 
 [build-system]
