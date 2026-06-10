@@ -108,14 +108,6 @@ class MlSpacesExpConfig(Config, ABC):
             "ctrl_dt_ms must be a multiple of sim_dt"
         )
 
-        # Initialize eval_runtime_params if not set (for backward compatibility)
-        # This ensures it's always available, even for configs created outside evaluation
-        if self.eval_runtime_params is None:
-            # Import here to avoid circular dependency
-            from molmo_spaces.evaluation.eval_main import EvalRuntimeParams
-
-            self.eval_runtime_params = EvalRuntimeParams()
-
     @property
     @abstractmethod
     def tag(self) -> str:

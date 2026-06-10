@@ -300,8 +300,6 @@ class ObjectMeta:
             if eval_params and eval_params.custom_object_name:
                 # Return the provided custom object name directly
                 return eval_params.custom_object_name.capitalize()
-                # Fall through to default handling
-                raise ValueError(f"No custom object name provided for {pickup_obj_name}")
 
         return cls.get_short_description(cls.get_target_object_uid(task))[0]
 

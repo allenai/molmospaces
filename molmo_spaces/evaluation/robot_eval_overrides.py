@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 from scipy.spatial.transform import Rotation as R
 
+from molmo_spaces.configs.robot_configs import BaseRobotConfig, FrankaCAPRobotConfig
 from molmo_spaces.configs.camera_configs import CameraSystemConfig, MjcfCameraConfig
 from molmo_spaces.evaluation.benchmark_schema import EpisodeSpec
 
@@ -44,17 +45,42 @@ def cap_robot_eval_override(
     }
 
 
-ROBOT_OVERRIDE_REGISTRY: dict[str, OverrideFn] = {
-    "FrankaCAPRobotConfig": cap_robot_eval_override,
+ROBOT_OVERRIDE_REGISTRY: dict[type[BaseRobotConfig], OverrideFn] = {
+    FrankaCAPRobotConfig: cap_robot_eval_override,
 }
 
 
-def get_robot_override(robot_config) -> OverrideFn | None:
-    robot_class_name = robot_config.__class__.__name__
-    override_fn = ROBOT_OVERRIDE_REGISTRY.get(robot_class_name)
+def register_robot_override(robot_config_cls: type[BaseRobotConfig], override_fn: OverrideFn):
+    """
+    Register a robot override for a given robot config class.
 
-    if override_fn is not None:
-        log.info(f"Found robot override for {robot_class_name}")
-        return override_fn
+    Args:
+        robot_config_cls: The robot config class to register the override for.
+        override_fn: The override function to register.
+    """
+    if robot_config_cls in ROBOT_OVERRIDE_REGISTRY:
+        raise ValueError(f"Robot override already registered for {robot_config_cls.__name__}")
+    ROBOT_OVERRIDE_REGISTRY[robot_config_cls] = override_fn
+
+
+def get_robot_override(robot_config: BaseRobotConfig) -> OverrideFn | None:
+    """
+    Get the robot override for a given robot config. This handles inheritance,
+    so if the robot config is a subclass of a registered override, the registered
+    override will be returned.
+
+    Args:
+        robot_config: The robot config to get the override for.
+
+    Returns:
+        The robot override function, or None if no override is found.
+    """
+    robot_class = type(robot_config)
+
+    # Traverse the MRO to find the first override, handles inheritance
+    for cls in robot_class.mro():
+        if cls in ROBOT_OVERRIDE_REGISTRY:
+            log.info(f"Found robot override for {robot_class.__name__} ({cls.__name__})")
+            return ROBOT_OVERRIDE_REGISTRY[cls]
 
     return None

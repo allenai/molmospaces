@@ -82,12 +82,6 @@ class JsonEvalRunner(ParallelRolloutRunner):
 
         Returns:
             The patched config (same object, modified in place)
-
-        Note:
-            These parameters are stored in an EvalRuntimeParams dataclass attached to
-            the config object as `exp_config.eval_runtime_params` for access by worker
-            processes. They are not part of the base MlSpacesExpConfig schema but are
-            necessary for runtime evaluation customization.
         """
         # Import here to avoid circular dependency
         from molmo_spaces.evaluation.eval_main import EvalRuntimeParams
@@ -107,8 +101,11 @@ class JsonEvalRunner(ParallelRolloutRunner):
     def adjust_robot(exp_config: MlSpacesExpConfig) -> None:
         """Apply robot-specific evaluation overrides if configured."""
         robot_override = get_robot_override(exp_config.robot_config)
-        if robot_override is not None:
-            exp_config._robot_eval_override = robot_override
+        if exp_config.eval_runtime_params is None:
+            from molmo_spaces.evaluation.eval_main import EvalRuntimeParams
+
+            exp_config.eval_runtime_params = EvalRuntimeParams()
+        exp_config.eval_runtime_params.robot_override_fn = robot_override
 
     def __init__(
         self,

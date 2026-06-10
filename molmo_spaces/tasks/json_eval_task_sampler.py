@@ -263,9 +263,8 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             exp_config.robot_config.action_noise_config.enabled = False
 
         # Apply robot-specific evaluation overrides. This is a little hacky, so use sparingly.
-        robot_override = getattr(exp_config, "_robot_eval_override", None)
-        if robot_override is not None:
-            robot_override(episode_spec, exp_config.camera_config)
+        if exp_config.eval_runtime_params and exp_config.eval_runtime_params.robot_override_fn:
+            exp_config.eval_runtime_params.robot_override_fn(episode_spec, exp_config.camera_config)
 
         super().__init__(exp_config)
 

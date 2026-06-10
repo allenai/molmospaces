@@ -45,6 +45,7 @@ from typing import TYPE_CHECKING, Any
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.robot_configs import ActionNoiseConfig
 from molmo_spaces.data_generation.config_registry import get_config_class
+from molmo_spaces.evaluation.robot_eval_overrides import OverrideFn
 from molmo_spaces.evaluation.benchmark_schema import (
     EpisodeSpec,
     load_all_episodes,
@@ -365,6 +366,10 @@ class EvalRuntimeParams:
     add_custom_object: bool = False
     custom_object_path: str | Path | None = None
     custom_object_name: str | None = None
+    robot_override_fn: OverrideFn | None = None
+    """
+    Hook that mutates the experiment config with robot-specific overrides.
+    """
 
 
 def create_eval_config(
