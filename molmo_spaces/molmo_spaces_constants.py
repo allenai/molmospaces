@@ -84,7 +84,9 @@ PINNED_ASSETS_FILE = (
     else None
 )
 
-STORAGE_IN_USE: Literal["gc", "hf", "r2"] = "gc"  # If using hf, HF_TOKEN needs to exist in the environment
+STORAGE_IN_USE: Literal["gc", "hf", "r2"] = (
+    "gc"  # If using hf, HF_TOKEN needs to exist in the environment
+)
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     robots={
@@ -219,7 +221,9 @@ def register_user_grasp_library(root_name: str, path: Path, object_library: str)
 
 def _select_storage():
     if STORAGE_IN_USE == "hf":
-        return HFRemoteStorage("allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN"))
+        return HFRemoteStorage(
+            "allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN")
+        )
     elif STORAGE_IN_USE == "r2":
         return R2RemoteStorage("mujoco-thor-resources")
     elif STORAGE_IN_USE == "gc":
