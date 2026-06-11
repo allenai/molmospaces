@@ -3,20 +3,23 @@ from collections.abc import Callable
 
 from scipy.spatial.transform import Rotation as R
 
+from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+from molmo_spaces.configs.camera_configs import MjcfCameraConfig
 from molmo_spaces.configs.robot_configs import BaseRobotConfig, FrankaCAPRobotConfig
-from molmo_spaces.configs.camera_configs import CameraSystemConfig, MjcfCameraConfig
 from molmo_spaces.evaluation.benchmark_schema import EpisodeSpec
 
 log = logging.getLogger(__name__)
 
-OverrideFn = Callable[[EpisodeSpec, CameraSystemConfig], None]
+OverrideFn = Callable[[EpisodeSpec, MlSpacesExpConfig], None]
 
 
 def cap_robot_eval_override(
     episode_spec: EpisodeSpec,
-    camera_config: CameraSystemConfig,
+    exp_config: MlSpacesExpConfig,
 ) -> None:
     log.info("Applying CAP robot evaluation overrides")
+
+    camera_config = exp_config.camera_config
 
     camera_config.cameras[0] = MjcfCameraConfig(
         name="wrist_camera",

@@ -264,7 +264,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
 
         # Apply robot-specific evaluation overrides. This is a little hacky, so use sparingly.
         if exp_config.eval_runtime_params and exp_config.eval_runtime_params.robot_override_fn:
-            exp_config.eval_runtime_params.robot_override_fn(episode_spec, exp_config.camera_config)
+            exp_config.eval_runtime_params.robot_override_fn(episode_spec, exp_config)
 
         super().__init__(exp_config)
 

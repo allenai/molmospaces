@@ -158,8 +158,10 @@ recording, a slightly different robot base pose). These are implemented as
 ```python
 def cap_robot_eval_override(
     episode_spec: EpisodeSpec,
-    camera_config: CameraSystemConfig,
+    exp_config: MlSpacesExpConfig,
 ) -> None:
+    camera_config = exp_config.camera_config
+
     camera_config.cameras[0] = MjcfCameraConfig(
         name="wrist_camera",
         mjcf_name="wrist_camera",
@@ -201,13 +203,14 @@ How it gets wired in:
    `exp_config.eval_runtime_params.robot_override_fn`.
 3. Inside `JsonEvalTaskSampler.__init__`, after the recorded camera config and
    task type have been wired up but before `super().__init__`, the override is
-   invoked: `robot_override_fn(episode_spec, exp_config.camera_config)`.
-   Because it receives the live `episode_spec` and the assembled
-   `CameraSystemConfig`, it can mutate either or both for that episode.
+   invoked: `robot_override_fn(episode_spec, exp_config)`. Because it receives
+   the live `episode_spec` and the full `MlSpacesExpConfig`, it can mutate the
+   camera config, robot config, or any other part of the experiment config for
+   that episode.
 
 To add an override for a new robot class:
 
-1. Implement an `OverrideFn` (`(EpisodeSpec, CameraSystemConfig) -> None`).
+1. Implement an `OverrideFn` (`(EpisodeSpec, MlSpacesExpConfig) -> None`).
 2. Call `register_robot_override(MyRobotConfig, my_override_fn)` from an importing
    module with the robot config class and an override function.
 3. The override is only applied during JSON evaluation (it's wired through
@@ -394,8 +397,8 @@ particular robot, register an `OverrideFn` in
 `molmo_spaces/evaluation/robot_eval_overrides.py`:
 
 ```python
-def my_robot_eval_override(episode_spec, camera_config):
-    camera_config.cameras[0].record_depth = True
+def my_robot_eval_override(episode_spec, exp_config):
+    exp_config.camera_config.cameras[0].record_depth = True
     episode_spec.task["robot_base_pose"][2] -= 0.05
 
 ROBOT_OVERRIDE_REGISTRY = {
