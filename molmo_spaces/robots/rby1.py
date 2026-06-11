@@ -5,6 +5,7 @@ import numpy as np
 from mujoco import MjData, MjModel, MjSpec
 
 from molmo_spaces.controllers.abstract import Controller
+from molmo_spaces.env.rby1_sensors import RBY1GraspStateSensor
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
@@ -207,6 +208,12 @@ class RBY1(Robot):
     def parallel_kinematics(self):
         raise NotImplementedError("Parallel kinematics not implemented for RBY1")
 
+    def create_robot_sensors(self):
+        return super().create_robot_sensors() + [
+            RBY1GraspStateSensor(uuid="rby1_left_grasp_state", arm_side="left"),
+            RBY1GraspStateSensor(uuid="rby1_right_grasp_state", arm_side="right"),
+        ]
+
     def get_arm_move_group_ids(self) -> list[str]:
         """RBY1 has two independent arms - each gets independent noise."""
         return ["left_arm", "right_arm"]
@@ -344,107 +351,6 @@ class RBY1(Robot):
             )
             count += self._robot_view.get_move_group(move_group_id).n_joints
         return joint_ranges
-
-    def _read_from_sensor(self, sensor_name: str, data: MjData) -> None:
-        # TODO
-        pass
-        # s_adr = self.model.sensor(self.namespace + sensor_name).adr.item()
-        # s_dim = self.model.sensor(self.namespace + sensor_name).dim.item()
-        # return data.sensordata[s_adr : s_adr + s_dim].copy()
-
-    def check_collision(self, model: MjModel, data: MjData, grasped_objs: set[int] = None) -> bool:
-        # TODO
-        pass
-        # # TODO: ignore finger collision with grasped objects
-        # # check if the agent is in collision with any geoms in the scene
-        # agent_id = self.root_id
-        # contacts = data.contact
-        # for c in contacts:
-        #     if c.exclude != 0:
-        #         continue
-        #     body1 = self.model.geom_bodyid[c.geom1]
-        #     body2 = self.model.geom_bodyid[c.geom2]
-
-        #     rootbody1 = self.model.body_rootid[body1]
-        #     rootbody2 = self.model.body_rootid[body2]
-
-        #     if rootbody1 == agent_id or rootbody2 == agent_id:
-        #         # Ignore Collision with gripper tips and target object
-        #         if (
-        #             self.model.body(body1).name == self.left_gripper_geom_name
-        #             or self.model.body(body1).name == self.right_gripper_geom_name
-        #         ) or (
-        #             self.model.body(body2).name == self.left_gripper_geom_name
-        #             or self.model.body(body2).name == self.right_gripper_geom_name
-        #         ):
-        #             if grasped_objs is not None and grasped_objs:
-        #                 if (
-        #                     self.model.body(body1).id in grasped_objs
-        #                     or self.model.body(body2).id in grasped_objs
-        #                 ):
-        #                     continue
-        #             else:
-        #                 continue
-
-        #             # Ignore Collision with itself
-        #             if self.model.body(rootbody1).name == self.model.body(rootbody2).name:
-        #                 continue
-
-        #         # Collision with the floor
-        #         if (
-        #             self.model.body(rootbody2).name == "floor"
-        #             or self.model.body(rootbody1).name == "floor"
-        #         ):
-        #             other_body = body1 if self.model.body(rootbody2).name == "floor" else body2
-        #             if self.model.body(other_body).name in [
-        #                 self.namespace + "fl_wheel_link",
-        #                 self.namespace + "fr_wheel_link",
-        #                 self.namespace + "rl_wheel_link",
-        #                 self.namespace + "rr_wheel_link",
-        #             ]:
-        #                 # print("Collision with floor detected", model.body(body1).name, model.body(body2).name)
-        #                 continue
-        #             # print(
-        #             #    "Collision with floor detected",
-        #             #    self.model.body(body1).name,
-        #             #    self.model.body(body2).name,
-        #             # )
-        #             # return False
-
-        #         print(
-        #             "Collision detected",
-        #             self.model.body(body1).name,
-        #             self.model.body(body2).name,
-        #         )
-        #         return True
-        # return False
-
-    def get_grasped_objs(self, model: MjModel, data: MjData) -> set[int]:
-        """Return a set of grasped object body IDs."""
-        # TODO
-        pass
-        # root_id = model.body_rootid[next(iter(self.finger_body_ids))]
-        # grasped_objs = set()
-        # for c in data.contact:
-        #     if c.exclude != 0:
-        #         continue
-        #     b1 = model.geom_bodyid[c.geom1]
-        #     b2 = model.geom_bodyid[c.geom2]
-
-        #     # ignore all collisions not involving only one finger
-        #     if not ((b1 in self.finger_body_ids) ^ (b2 in self.finger_body_ids)):
-        #         continue
-        #     # ignore self-collisions
-        #     if model.body_rootid[b1] == root_id and model.body_rootid[b2] == root_id:
-        #         continue
-
-        #     if b1 in self.finger_body_ids:
-        #         grasped_objs.add(b2)
-        #     else:
-        #         grasped_objs.add(b1)
-        # grasped_objs = {model.body_rootid[obj_id] for obj_id in grasped_objs}
-
-        # return grasped_objs
 
     @staticmethod
     def robot_model_root_name() -> str:

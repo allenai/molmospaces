@@ -70,7 +70,7 @@ class Robot:
             if not controller.stationary:
                 controller.set_to_stationary()
 
-    def create_robot_sensors(self) -> list[Sensor]:
+    def create_robot_sensors(self) -> list["Sensor"]:
         """Get robot-specific sensors that should be registerd with a Task's sensor suite."""
         return []
 

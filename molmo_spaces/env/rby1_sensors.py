@@ -201,7 +201,10 @@ class RBY1GraspPoseSensor(Sensor):
 
 
 def get_rby1_door_opening_sensors(exp_config):
-    """Get core sensors for RBY1 door opening data generation.
+    """
+    Get core sensors for RBY1 door opening data generation.
+
+    This is a bit of a hack, future users should use get_core_sensors and register task- and robot-specific sensors separately.
 
     Args:
         exp_config: Experiment configuration object with sensor parameters
@@ -235,6 +238,8 @@ def get_rby1_door_opening_sensors(exp_config):
             )
             sensors.append(cam_depth)
 
+    assert "rby1" in exp_config.robot_config.name, "RBY1 sensor suite only works for RBY1 robots"
+
     # Agent data sensors - RBY1 has more joints (dual arm + base + torso + head + grippers)
     sensors.append(RobotJointVelocitySensor(uuid="qvel", max_joints=25))
     sensors.append(RobotJointPositionSensor(uuid="qpos", max_joints=25))
@@ -259,10 +264,6 @@ def get_rby1_door_opening_sensors(exp_config):
     sensors.append(RBY1TCPPoseSensor(uuid="left_tcp_pose", arm_side="left"))
     sensors.append(RBY1TCPPoseSensor(uuid="right_tcp_pose", arm_side="right"))
     sensors.append(RobotBasePoseSensor(uuid="robot_base_pose"))
-
-    # Grasp state for both arms
-    sensors.append(RBY1GraspStateSensor(uuid="rby1_left_grasp_state", arm_side="left"))
-    sensors.append(RBY1GraspStateSensor(uuid="rby1_right_grasp_state", arm_side="right"))
 
     # Environment state sensors
     sensors.append(EnvStateSensor(uuid="env_states"))

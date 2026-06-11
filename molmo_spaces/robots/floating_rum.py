@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from mujoco import MjData, MjSpec, mjtEq, mjtObj
 
+from molmo_spaces.env.sensors import TCPPoseSensor
 from molmo_spaces.kinematics.floating_rum_kinematics import FloatingRUMKinematics
 from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyParallelKinematics
 from molmo_spaces.robots.abstract import Robot
@@ -51,6 +52,11 @@ class FloatingRUMRobot(Robot):
     @property
     def controllers(self):
         return {}
+
+    def create_robot_sensors(self):
+        return super().create_robot_sensors() + [
+            TCPPoseSensor(uuid="tcp_pose"),
+        ]   
 
     def update_control(self, action_command_dict: dict[str, Any]):
         action_command_dict = self._apply_action_noise_and_save_unnoised_cmd_jp(action_command_dict)
