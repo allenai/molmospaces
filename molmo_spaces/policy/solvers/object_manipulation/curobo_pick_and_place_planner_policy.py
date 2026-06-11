@@ -99,11 +99,10 @@ class CuroboPickAndPlacePlannerPolicy(CuroboPlannerPolicy, PickAndPlacePlannerPo
         )
 
         # Get current TCP position
-        tcp_pose_arr = self.task.sensor_suite.sensors["tcp_pose"].get_observation(
-            self.task._env, self.task
-        )
-        tcp_pose = pos_quat_to_pose_mat(tcp_pose_arr[0:3], tcp_pose_arr[3:7])
-        tcp_pose_world = self.task._env.current_robot.robot_view.base.pose @ tcp_pose
+        gripper_mg_id = self.task.env.current_robot.robot_view.get_gripper_movegroup_ids()[0]
+        tcp_pose_world = self.task.env.current_robot.robot_view.get_move_group(
+            gripper_mg_id
+        ).leaf_frame_to_world
         tcp_pose_inv = np.linalg.inv(tcp_pose_world)
 
         dist_tcp = tcp_pose_inv @ grasp_poses_world

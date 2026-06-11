@@ -257,9 +257,6 @@ def get_rby1_door_opening_sensors(exp_config):
     # Door opening specific sensors
     sensors.append(DoorStateSensor(uuid="door_state"))
 
-    # Door opening policy phase sensor
-    sensors.append(PolicyPhaseSensor(uuid="policy_phase"))
-
     # TCP poses for both arms (RBY1 is dual-arm) - use separate sensors for each arm
     sensors.append(RBY1TCPPoseSensor(uuid="left_tcp_pose", arm_side="left"))
     sensors.append(RBY1TCPPoseSensor(uuid="right_tcp_pose", arm_side="right"))
