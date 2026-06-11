@@ -1,0 +1,2494 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Large scale assets and benchmarks for vision language policies">
+      
+      
+      
+        <link rel="canonical" href="https://allenai.github.io/molmospaces/evaluation_lifecycle/">
+      
+      
+        <link rel="prev" href="../evaluation_guide/">
+      
+      
+        <link rel="next" href="../code_structure/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Evaluation Lifecycle - MolmoSpaces</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/timeago.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#json-evaluation-pipeline-lifecycle" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="MolmoSpaces" class="md-header__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MolmoSpaces
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Evaluation Lifecycle
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../concepts/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="MolmoSpaces" class="md-nav__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    MolmoSpaces
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-In Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../asset_libraries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Asset and Grasp Libraries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-level flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-by-stage-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage-by-stage detail
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage-by-stage detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-entrypoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Entrypoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-loading-the-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Loading the benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-resolving-task_horizon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Resolving task_horizon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-building-the-experiment-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Building the experiment config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-patching-runtime-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Patching runtime parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-robot-eval-override-per-robot-evaluation-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Robot eval override (per-robot evaluation hooks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-runner-construction-jsonevalrunner__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Runner construction (JsonEvalRunner.__init__)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-per-episode-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Per-episode execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-result-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Result collection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-users-can-configure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What users can configure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What users can configure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy / checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#episode-horizon-and-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Episode horizon and selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cameras
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-objects-asset-swap-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom objects (asset-swap experiments)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-and-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output and logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eval-config-your-own-subclass-of-jsonbenchmarkevalconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eval config (your own subclass of JsonBenchmarkEvalConfig)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-eval-overrides-advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot eval overrides (advanced)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-look-in-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to look in code
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_10" id="__nav_2_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/add_robot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom robot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/custom_assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom asset library
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/molmo_spaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    molmo_spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/configs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/controllers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    controllers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/data_generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    data_generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    env
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kinematics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/renderer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/robots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    robots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-level flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stage-by-stage-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stage-by-stage detail
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stage-by-stage detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-entrypoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Entrypoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-loading-the-benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Loading the benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-resolving-task_horizon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Resolving task_horizon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-building-the-experiment-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Building the experiment config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-patching-runtime-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Patching runtime parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-robot-eval-override-per-robot-evaluation-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Robot eval override (per-robot evaluation hooks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-runner-construction-jsonevalrunner__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Runner construction (JsonEvalRunner.__init__)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-per-episode-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Per-episode execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-result-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Result collection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-users-can-configure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What users can configure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What users can configure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy / checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#episode-horizon-and-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Episode horizon and selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cameras
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-objects-asset-swap-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom objects (asset-swap experiments)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-and-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output and logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eval-config-your-own-subclass-of-jsonbenchmarkevalconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eval config (your own subclass of JsonBenchmarkEvalConfig)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#robot-eval-overrides-advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot eval overrides (advanced)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-look-in-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to look in code
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/allenai/molmospaces/edit/main/docs/evaluation_lifecycle.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="json-evaluation-pipeline-lifecycle">JSON Evaluation Pipeline Lifecycle<a class="headerlink" href="#json-evaluation-pipeline-lifecycle" title="Permanent link">&para;</a></h1>
+<p>This document describes the end-to-end lifecycle of a JSON benchmark evaluation
+in <code>molmo_spaces</code>, what happens at each stage, and which knobs are available
+to customize behavior. For a getting-started/setup guide, see
+<a href="../evaluation_guide/"><code>evaluation_guide.md</code></a>. For schema details on a single
+episode, see the "Sample Episode Spec" section there or
+<code>molmo_spaces/evaluation/benchmark_schema.py</code>.</p>
+<h2 id="high-level-flow">High-level flow<a class="headerlink" href="#high-level-flow" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CLI args / programmatic call
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        ▼
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>run_evaluation()  (molmo_spaces/evaluation/eval_main.py)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  ├─ resolve eval config class (registry name or &quot;module:Class&quot;)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  ├─ load benchmark episodes from JSON
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  ├─ resolve task_horizon (CLI override &gt; benchmark task_horizon_sec)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  ├─ create_eval_config(): instantiate eval config, force eval-mode flags
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  │     (no action noise, no datagen profiler, seed=42, output_dir, ...)
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  ├─ apply CLI overrides (camera_config, camera_names, light intensity)
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  ├─ JsonEvalRunner.patch_config(): attach EvalRuntimeParams
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  └─ JsonEvalRunner.adjust_robot(): wire robot_eval_override (if any)
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        ▼
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>JsonEvalRunner.__init__()
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  ├─ load_all_episodes(benchmark_dir)
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  ├─ truncate to max_episodes / single episode_idx
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>  ├─ derive task_sampler_config.house_inds + samples_per_house
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>  └─ super().__init__()  -&gt; ParallelRolloutRunner sets up workers
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        ▼
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>JsonEvalRunner.run() -&gt; ParallelRolloutRunner.run()
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>  └─ for each (house_id, batch) work item, dispatch to workers
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        │
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        ▼
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>ParallelRolloutRunner.process_single_house()  (per worker)
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>  ├─ load_episodes_for_house()       # JsonEvalRunner override
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>  ├─ for each EpisodeSpec:
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>  │     prepare_episode_config()
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>  │     get_episode_task_sampler()    -&gt; JsonEvalTaskSampler(exp_config, ep)
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>  │     sample_task_from_spec()       -&gt; task = sampler.sample_task(...)
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>  │     run_single_rollout()          -&gt; step env at policy_dt_ms
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>  │     should_close_episode_task_sampler()  (True for JSON eval)
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>  └─ write trajectories.h5 + per-episode artifacts under output_dir
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        │
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>        ▼
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>collect_episode_results() + (optional) wandb logging
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        │
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>        ▼
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>EvaluationResults (success_count, total_count, output_dir, episode_results, exp_config)
+</code></pre></div>
+<h2 id="stage-by-stage-detail">Stage-by-stage detail<a class="headerlink" href="#stage-by-stage-detail" title="Permanent link">&para;</a></h2>
+<h3 id="1-entrypoints">1. Entrypoints<a class="headerlink" href="#1-entrypoints" title="Permanent link">&para;</a></h3>
+<p>There are two equivalent entrypoints, both implemented in
+<code>molmo_spaces/evaluation/eval_main.py</code>:</p>
+<ul>
+<li>CLI: <code>python molmo_spaces/evaluation/eval_main.py &lt;eval_config_cls&gt; --benchmark_dir ...</code></li>
+<li>Programmatic: <code>run_evaluation(eval_config_cls=..., benchmark_dir=..., ...)</code></li>
+</ul>
+<p><code>eval_config_cls</code> may be:</p>
+<ul>
+<li>a Python class object (subclass of <code>MlSpacesExpConfig</code>),</li>
+<li>a registry name (looked up via <code>get_config_class</code>), or</li>
+<li>a fully qualified <code>"module.path:ClassName"</code> string.</li>
+</ul>
+<p>A small data-version sanity check (<code>_assert_data_versions_match</code>) runs at import
+time to ensure the assets pinned in <code>_EXPECTED_DATA_VERSIONS</code> match
+<code>DATA_TYPE_TO_SOURCE_TO_VERSION</code>. Mismatches raise immediately so benchmarks are
+not silently evaluated against the wrong assets.</p>
+<h3 id="2-loading-the-benchmark">2. Loading the benchmark<a class="headerlink" href="#2-loading-the-benchmark" title="Permanent link">&para;</a></h3>
+<p><code>load_all_episodes(benchmark_dir)</code> reads either a single <code>benchmark.json</code> or
+the legacy <code>house_*/episode_*.json</code> layout and returns a flat list of
+<code>EpisodeSpec</code> objects (defined in
+<code>molmo_spaces/evaluation/benchmark_schema.py</code>). Each <code>EpisodeSpec</code> is
+<strong>fully self-contained</strong>:</p>
+<ul>
+<li><code>source</code>: provenance (h5 file, traj key, dates)</li>
+<li><code>house_index</code>, <code>scene_dataset</code>, <code>data_split</code>, <code>seed</code></li>
+<li><code>robot</code>: <code>robot_name</code> and <code>init_qpos</code> per move group</li>
+<li><code>img_resolution</code> and <code>cameras</code> (robot-mounted or exocentric specs)</li>
+<li><code>scene_modifications</code>: <code>added_objects</code>, <code>removed_objects</code>, <code>object_poses</code></li>
+<li><code>task</code>: <code>task_cls</code>, <code>robot_base_pose</code>, and task-specific fields</li>
+<li><code>task_relevant_objects</code>: bodies used for camera visibility checks</li>
+<li><code>language</code>: <code>task_description</code>, referral expressions, and priorities</li>
+</ul>
+<p>Notably, <strong>timing parameters (<code>policy_dt_ms</code>, <code>ctrl_dt_ms</code>, <code>sim_dt_ms</code>) and
+<code>task_horizon</code> are NOT stored on the episode</strong> — they come from the eval
+config or CLI so the same benchmark can be replayed at different control rates.</p>
+<h3 id="3-resolving-task_horizon">3. Resolving <code>task_horizon</code><a class="headerlink" href="#3-resolving-task_horizon" title="Permanent link">&para;</a></h3>
+<p><code>determine_task_horizon()</code> picks the horizon (in policy steps) using this
+priority:</p>
+<ol>
+<li>Explicit CLI override (<code>--task_horizon_steps</code> or <code>--task_horizon_sec</code>,
+   mutually exclusive). With <code>--task_horizon_sec</code> the value is converted to
+   steps using <code>eval_config.policy_dt_ms</code>.</li>
+<li>Per-episode <code>task.task_horizon_sec</code> from the benchmark JSON, converted
+   using <code>policy_dt_ms</code>. All episodes must agree on the value, otherwise
+   evaluation fails loudly.</li>
+</ol>
+<p>If neither is available, evaluation aborts rather than silently picking a
+default.</p>
+<h3 id="4-building-the-experiment-config">4. Building the experiment config<a class="headerlink" href="#4-building-the-experiment-config" title="Permanent link">&para;</a></h3>
+<p><code>create_eval_config()</code> instantiates the user's eval config class
+(typically a subclass of <code>JsonBenchmarkEvalConfig</code>) and applies eval-mode
+defaults:</p>
+<ul>
+<li><code>policy_config.checkpoint_path</code> overridden if <code>--checkpoint_path</code> was given.</li>
+<li><code>output_dir</code> set to <code>eval_output/&lt;config&gt;/&lt;timestamp&gt;</code> (or
+  <code>&lt;output_dir&gt;/&lt;config&gt;/&lt;timestamp&gt;</code> if <code>--output_dir</code> is provided).</li>
+<li><code>num_workers</code> from the CLI / argument.</li>
+<li><code>robot_config.action_noise_config = ActionNoiseConfig(enabled=False)</code> —
+  evaluation is always deterministic w.r.t. the policy's actions.</li>
+<li><code>datagen_profiler = False</code>, <code>profile = False</code> for clean output.</li>
+<li><code>filter_for_successful_trajectories = False</code> — every rollout is saved.</li>
+<li><code>seed = 42</code>.</li>
+<li><code>task_horizon</code> set to the resolved value from the previous step.</li>
+<li><code>camera_config</code> replaced with the override if provided (only honored for
+  <code>FrankaEvalCameraSystem</code>).</li>
+<li><code>eval_runtime_params</code> populated with an <code>EvalRuntimeParams</code> object.</li>
+</ul>
+<p><code>run_evaluation</code> then applies a few late overrides:</p>
+<ul>
+<li><code>environment_light_intensity</code> (filament renderer only) from CLI.</li>
+<li><code>policy_config.camera_names</code> from <code>--camera_names</code>.</li>
+</ul>
+<h3 id="5-patching-runtime-parameters">5. Patching runtime parameters<a class="headerlink" href="#5-patching-runtime-parameters" title="Permanent link">&para;</a></h3>
+<p><code>JsonEvalRunner.patch_config(...)</code> stores an <code>EvalRuntimeParams</code> dataclass on
+the experiment config:</p>
+<ul>
+<li><code>episode_idx</code>: only evaluate this single episode (<code>--idx</code>).</li>
+<li><code>max_episodes</code>: cap the number of episodes pulled from the benchmark.</li>
+<li><code>add_custom_object</code>, <code>custom_object_path</code>, <code>custom_object_name</code>: replace the
+  target object of <code>pick</code>/<code>pick_and_place</code>-style episodes with a user-provided
+  XML asset (<code>--add_custom_object --custom_object_path ...</code>).</li>
+</ul>
+<p>These parameters are read by both the runner (when shaping work items) and the
+worker (when loading episodes for its house).</p>
+<h3 id="6-robot-eval-override-per-robot-evaluation-hooks">6. Robot eval override (per-robot evaluation hooks)<a class="headerlink" href="#6-robot-eval-override-per-robot-evaluation-hooks" title="Permanent link">&para;</a></h3>
+<p>Some robots need small environment tweaks at eval time that are not part of
+the benchmark JSON (e.g. different intrinsics on the wrist camera, depth
+recording, a slightly different robot base pose). These are implemented as
+<strong>robot eval overrides</strong> in <code>molmo_spaces/evaluation/robot_eval_overrides.py</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">cap_robot_eval_override</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">episode_spec</span><span class="p">:</span> <span class="n">EpisodeSpec</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">exp_config</span><span class="p">:</span> <span class="n">MlSpacesExpConfig</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">camera_config</span> <span class="o">=</span> <span class="n">exp_config</span><span class="o">.</span><span class="n">camera_config</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">camera_config</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">MjcfCameraConfig</span><span class="p">(</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;wrist_camera&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="n">mjcf_name</span><span class="o">=</span><span class="s2">&quot;wrist_camera&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="n">robot_namespace</span><span class="o">=</span><span class="s2">&quot;robot_0/gripper/&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="n">fov</span><span class="o">=</span><span class="mf">53.0</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="n">fov_noise_degrees</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">pos_noise_range</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">orientation_noise_degrees</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="n">record_depth</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="p">)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">camera_config</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">record_depth</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">camera_config</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">fov</span> <span class="o">=</span> <span class="mi">71</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">rot_base</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">from_quat</span><span class="p">(</span><span class="n">episode_spec</span><span class="o">.</span><span class="n">task</span><span class="p">[</span><span class="s2">&quot;robot_base_pose&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">],</span> <span class="n">scalar_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">episode_spec</span><span class="o">.</span><span class="n">task</span><span class="p">[</span><span class="s2">&quot;robot_base_pose&quot;</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="n">rot_base</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="n">episode_spec</span><span class="o">.</span><span class="n">task</span><span class="p">[</span><span class="s2">&quot;robot_base_pose&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">0.2</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    <span class="n">camera_config</span><span class="o">.</span><span class="n">img_resolution</span> <span class="o">=</span> <span class="p">(</span><span class="mi">960</span><span class="p">,</span> <span class="mi">720</span><span class="p">)</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="n">episode_spec</span><span class="o">.</span><span class="n">robot</span><span class="o">.</span><span class="n">init_qpos</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>        <span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="p">[],</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="s2">&quot;arm&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">0.116</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.45</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.842</span><span class="p">,</span> <span class="mf">0.965</span><span class="p">]],</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>        <span class="s2">&quot;gripper&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.00296</span><span class="p">,</span> <span class="mf">0.00296</span><span class="p">],</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="p">}</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">ROBOT_OVERRIDE_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">BaseRobotConfig</span><span class="p">],</span> <span class="n">OverrideFn</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    <span class="n">FrankaCAPRobotConfig</span><span class="p">:</span> <span class="n">cap_robot_eval_override</span><span class="p">,</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="p">}</span>
+</code></pre></div>
+<p>How it gets wired in:</p>
+<ol>
+<li><code>JsonEvalRunner.adjust_robot(exp_config)</code> looks up an override for
+   <code>exp_config.robot_config</code>'s class in <code>ROBOT_OVERRIDE_REGISTRY</code>. The lookup
+   walks the class MRO, so subclasses inherit their parent's override.</li>
+<li>The resolved function (or <code>None</code>) is stored on the config as
+   <code>exp_config.eval_runtime_params.robot_override_fn</code>.</li>
+<li>Inside <code>JsonEvalTaskSampler.__init__</code>, after the recorded camera config and
+   task type have been wired up but before <code>super().__init__</code>, the override is
+   invoked: <code>robot_override_fn(episode_spec, exp_config)</code>. Because it receives
+   the live <code>episode_spec</code> and the full <code>MlSpacesExpConfig</code>, it can mutate the
+   camera config, robot config, or any other part of the experiment config for
+   that episode.</li>
+</ol>
+<p>To add an override for a new robot class:</p>
+<ol>
+<li>Implement an <code>OverrideFn</code> (<code>(EpisodeSpec, MlSpacesExpConfig) -&gt; None</code>).</li>
+<li>Call <code>register_robot_override(MyRobotConfig, my_override_fn)</code> from an importing
+   module with the robot config class and an override function.</li>
+<li>The override is only applied during JSON evaluation (it's wired through
+   <code>JsonEvalRunner.adjust_robot</code>), so datagen behavior is unaffected.</li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Use robot eval overrides sparingly: the JSON benchmark is meant to be
+authoritative, and overrides defeat that contract.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If all you need is depth recording on every camera, prefer
+<code>policy_config.force_enable_depth = True</code> over a robot eval override. When
+set, <code>JsonEvalTaskSampler</code> flips <code>record_depth = True</code> on every camera in
+<code>exp_config.camera_config</code> before the sampler is initialized (see
+<code>molmo_spaces/tasks/json_eval_task_sampler.py</code>), so you don't need to mutate
+the camera config from a robot-specific hook.</p>
+</div>
+<h3 id="7-runner-construction-jsonevalrunner__init__">7. Runner construction (<code>JsonEvalRunner.__init__</code>)<a class="headerlink" href="#7-runner-construction-jsonevalrunner__init__" title="Permanent link">&para;</a></h3>
+<p>The runner re-loads the benchmark, then:</p>
+<ul>
+<li>Truncates to the first <code>max_episodes</code> if requested.</li>
+<li>Groups episodes by <code>house_index</code> (so each house can be processed
+  independently across workers).</li>
+<li>If <code>episode_idx</code> is set, narrows <code>task_sampler_config.house_inds</code> to the
+  single house that owns that episode and sets <code>samples_per_house = 1</code>.</li>
+<li>Otherwise sets <code>house_inds</code> to all houses present in the benchmark and
+  <code>samples_per_house</code> to the maximum number of episodes any single house has.</li>
+<li>Stores <code>benchmark_path</code> on the config so worker processes can re-load
+  episodes inside their own process.</li>
+</ul>
+<p>Then <code>super().__init__(exp_config)</code> runs <code>ParallelRolloutRunner.__init__</code>,
+which builds the work-item list <code>(house_id, batch_samples, batch_num,
+total_batches)</code> and prepares multiprocessing primitives.</p>
+<h3 id="8-per-episode-execution">8. Per-episode execution<a class="headerlink" href="#8-per-episode-execution" title="Permanent link">&para;</a></h3>
+<p>Inside each worker, <code>ParallelRolloutRunner.process_single_house()</code> iterates
+the episodes for a single house. The <code>JsonEvalRunner</code> overrides hook out the
+JSON-specific behavior:</p>
+<ul>
+<li><code>load_episodes_for_house()</code> re-reads the benchmark from
+  <code>exp_config.benchmark_path</code> and applies <code>EvalRuntimeParams</code> filters
+  (<code>max_episodes</code>, <code>episode_idx</code>, custom-object replacement via
+  <code>replace_target_object_with_custom</code>).</li>
+<li><code>get_max_episode_attempts()</code> returns <code>len(episode_specs)</code> — every benchmark
+  episode is run exactly once (no retries, unlike datagen).</li>
+<li><code>should_stop_early()</code> returns <code>True</code> once a single-episode run has
+  collected its one rollout.</li>
+<li><code>prepare_episode_config()</code> deep-copies <code>exp_config</code> and sets
+  <code>scene_dataset</code> / <code>data_split</code> from the spec. <code>task_horizon</code> is kept from
+  <code>exp_config</code>.</li>
+<li><code>get_episode_task_sampler()</code> constructs a fresh <code>JsonEvalTaskSampler</code> per
+  episode (mixed task types within one benchmark are supported).</li>
+<li><code>sample_task_from_spec()</code> calls <code>sampler.sample_task(house_index=house_id)</code>,
+  which sets robot base pose, applies the per-task config, applies any
+  <code>_randomize_colors</code>, calls <code>setup_cameras</code>, and instantiates the right
+  task class (<code>task.task_cls</code> is imported dynamically).</li>
+<li><code>get_episode_seed()</code> uses <code>episode_spec.seed</code> if set, else the index.</li>
+<li><code>should_close_episode_task_sampler()</code> returns <code>True</code> so the sampler is torn
+  down each episode (avoids leaking state between mixed-task episodes).</li>
+</ul>
+<p><code>JsonEvalTaskSampler.randomize_scene</code> does <strong>not</strong> randomize — it deterministically
+sets:</p>
+<ul>
+<li>object poses from <code>scene_modifications.object_poses</code>,</li>
+<li>robot per-move-group joint positions from <code>robot.init_qpos</code>,</li>
+<li>pickup-object joint state when applicable,</li>
+<li>per-object colors from <code>task.object_colors</code> (e.g. for
+  <code>PickAndPlaceColorTask</code>).</li>
+</ul>
+<p>Cameras come either from the JSON-recorded specs (default) or from a
+<code>FrankaEvalCameraSystem</code> that performs deterministic, per-episode
+visibility-aware spherical perturbation when <code>--use_eval_cameras</code> is passed.</p>
+<h3 id="9-result-collection">9. Result collection<a class="headerlink" href="#9-result-collection" title="Permanent link">&para;</a></h3>
+<p>After <code>runner.run(...)</code> returns <code>(success_count, total_count)</code>,
+<code>collect_episode_results(output_dir)</code> walks the output tree and produces a
+list of <code>EpisodeResult</code> records (<code>house_id</code>, <code>episode_idx</code>, <code>success</code>, paths
+to per-episode artifacts, etc.). These are returned in the
+<code>EvaluationResults</code> dataclass, alongside <code>success_rate</code>,  <code>output_dir</code>, and
+the resolved <code>exp_config</code>.</p>
+<p>If <code>use_wandb=True</code>:</p>
+<ul>
+<li>A run is initialized with run name <code>"&lt;ckpt_name&gt;_&lt;timestamp&gt;"</code> and config
+  including the resolved checkpoint path, benchmark dir, horizon (steps and
+  seconds), config class, and episode/house counts.</li>
+<li>Composed videos per episode are built via <code>compose_episode_videos</code> (when
+  <code>policy_config.camera_names</code> is non-empty) and uploaded with
+  <code>log_eval_results_to_wandb</code>.</li>
+</ul>
+<p>After everything finishes, the user typically runs
+<code>scripts/benchmarks/eval_to_csv.py &lt;output_dir&gt; ...</code> to aggregate per-episode
+results into a CSV (see <code>evaluation_guide.md</code>).</p>
+<h2 id="what-users-can-configure">What users can configure<a class="headerlink" href="#what-users-can-configure" title="Permanent link">&para;</a></h2>
+<p>The table below summarizes each user-facing knob, where it lives, and what it
+affects. For full details on a flag, see <code>get_args()</code> in
+<code>eval_main.py</code> or the docstring on <code>run_evaluation()</code>.</p>
+<h3 id="required-selection">Required selection<a class="headerlink" href="#required-selection" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>CLI flag</th>
+<th><code>run_evaluation</code> arg</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>positional <code>exp_config_cls</code></td>
+<td><code>eval_config_cls</code></td>
+<td>The eval config class (object, registry name, or <code>"module:Class"</code>). Provides <code>policy_config</code>, <code>robot_config</code>, and timing.</td>
+</tr>
+<tr>
+<td><code>--benchmark_dir</code></td>
+<td><code>benchmark_dir</code></td>
+<td>Path to the benchmark (<code>benchmark.json</code> or legacy directory layout).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="policy-checkpoint">Policy / checkpoint<a class="headerlink" href="#policy-checkpoint" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>CLI flag</th>
+<th><code>run_evaluation</code> arg</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--checkpoint_path</code></td>
+<td><code>checkpoint_path</code></td>
+<td>Override <code>policy_config.checkpoint_path</code>.</td>
+</tr>
+<tr>
+<td>(none)</td>
+<td><code>preloaded_policy</code></td>
+<td>Pass an already-instantiated <code>BasePolicy</code>. Single-worker only — multi-worker requires creating connections inside each worker.</td>
+</tr>
+<tr>
+<td><code>--camera_names</code></td>
+<td><code>camera_names_override</code></td>
+<td>Replace <code>policy_config.camera_names</code> (e.g. <code>--camera_names randomized_zed2_analogue_1 wrist_camera</code>).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="episode-horizon-and-selection">Episode horizon and selection<a class="headerlink" href="#episode-horizon-and-selection" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>CLI flag</th>
+<th><code>run_evaluation</code> arg</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--task_horizon_steps</code></td>
+<td><code>task_horizon_steps</code></td>
+<td>Hard-cap policy steps per episode. Mutually exclusive with <code>--task_horizon_sec</code>.</td>
+</tr>
+<tr>
+<td><code>--task_horizon_sec</code></td>
+<td><code>task_horizon_sec</code></td>
+<td>Same, but expressed in seconds; converted via <code>policy_dt_ms</code>.</td>
+</tr>
+<tr>
+<td><code>--max_episodes</code></td>
+<td><code>max_episodes</code></td>
+<td>Evaluate only the first N episodes (filtered before house grouping).</td>
+</tr>
+<tr>
+<td><code>--idx</code></td>
+<td><code>episode_idx</code></td>
+<td>Run a single episode by its index in the benchmark.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cameras">Cameras<a class="headerlink" href="#cameras" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>CLI flag</th>
+<th><code>run_evaluation</code> arg</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--use_eval_cameras</code></td>
+<td>(via <code>camera_config_override</code>)</td>
+<td>Enable <code>FrankaEvalCameraSystem</code> — replaces JSON-recorded cameras with a deterministic, visibility-checked spherical perturbation.</td>
+</tr>
+<tr>
+<td><code>--camera_rand_level</code></td>
+<td>(via <code>camera_config_override</code>)</td>
+<td>0–100 randomization scale for the eval camera system. Only relevant with <code>--use_eval_cameras</code>.</td>
+</tr>
+<tr>
+<td><code>--use-filament</code></td>
+<td>(build separately)</td>
+<td>Switch to the filament renderer (requires the custom wheel).</td>
+</tr>
+<tr>
+<td><code>--environment-light-intensity</code></td>
+<td><code>environment_light_intensity</code></td>
+<td>Override default ambient intensity (filament only).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="custom-objects-asset-swap-experiments">Custom objects (asset-swap experiments)<a class="headerlink" href="#custom-objects-asset-swap-experiments" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>CLI flag</th>
+<th><code>run_evaluation</code> arg</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--add_custom_object</code></td>
+<td><code>add_custom_object</code></td>
+<td>Replace the target object in <code>pick</code> / <code>pick_and_place</code>-type episodes with a custom XML asset.</td>
+</tr>
+<tr>
+<td><code>--custom_object_path</code></td>
+<td><code>custom_object_path</code></td>
+<td>Path to the replacement object XML (required when <code>add_custom_object</code> is set).</td>
+</tr>
+<tr>
+<td><code>--custom_object_name</code></td>
+<td><code>custom_object_name</code></td>
+<td>Natural-language name used in instructions (defaults to the file stem if omitted).</td>
+</tr>
+</tbody>
+</table>
+<p>These are typically combined with <code>--idx</code> to do focused per-episode swaps.</p>
+<h3 id="output-and-logging">Output and logging<a class="headerlink" href="#output-and-logging" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>CLI flag</th>
+<th><code>run_evaluation</code> arg</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output_dir</code></td>
+<td><code>output_dir</code></td>
+<td>Root output directory. Final path is <code>&lt;output_dir&gt;/&lt;config&gt;/&lt;timestamp&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>--num_workers</code></td>
+<td><code>num_workers</code></td>
+<td>Multiprocessing workers (one process per worker).</td>
+</tr>
+<tr>
+<td><code>--no_wandb</code></td>
+<td><code>use_wandb=False</code></td>
+<td>Disable wandb logging.</td>
+</tr>
+<tr>
+<td><code>--wandb_project</code></td>
+<td><code>wandb_project</code></td>
+<td>wandb project name (default: <code>mlspaces-json-eval</code>).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="eval-config-your-own-subclass-of-jsonbenchmarkevalconfig">Eval config (your own subclass of <code>JsonBenchmarkEvalConfig</code>)<a class="headerlink" href="#eval-config-your-own-subclass-of-jsonbenchmarkevalconfig" title="Permanent link">&para;</a></h3>
+<p>Your eval config controls everything that is not part of the per-episode JSON:</p>
+<ul>
+<li><code>policy_config</code>: model class/factory, checkpoint, <code>camera_names</code>,
+  <code>action_move_group_names</code>, <code>action_spec</code>. Set
+  <code>policy_config.force_enable_depth = True</code> to require depth from every camera
+  — at JSON eval time <code>JsonEvalTaskSampler</code> will set <code>record_depth = True</code> on
+  all cameras automatically, which is the lightweight alternative to a robot
+  eval override when depth is the only thing you need to flip.</li>
+<li><code>robot_config</code>: which <code>*RobotConfig</code> subclass — also drives whether a
+  <code>robot_eval_override</code> from the registry is applied.</li>
+<li><code>policy_dt_ms</code>, <code>ctrl_dt_ms</code>, <code>sim_dt_ms</code>: timing rates. The same benchmark
+  can be replayed at different rates by changing these.</li>
+<li><code>end_on_success</code>: stop the rollout as soon as the task is judged successful
+  (e.g. <code>PiPolicyEvalConfig</code>).</li>
+<li>Anything else inherited from <code>MlSpacesExpConfig</code> (renderer, profiling
+  knobs, etc.).</li>
+</ul>
+<p>See <code>molmo_spaces/evaluation/configs/evaluation_configs.py</code> for examples
+(<code>PiPolicyEvalConfig</code>, <code>CAPPolicyEvalConfig</code>, <code>TeleopPolicyEvalConfig</code>).</p>
+<h3 id="robot-eval-overrides-advanced">Robot eval overrides (advanced)<a class="headerlink" href="#robot-eval-overrides-advanced" title="Permanent link">&para;</a></h3>
+<p>If you need to tweak environment setup specifically at evaluation time for a
+particular robot, register an <code>OverrideFn</code> in
+<code>molmo_spaces/evaluation/robot_eval_overrides.py</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_robot_eval_override</span><span class="p">(</span><span class="n">episode_spec</span><span class="p">,</span> <span class="n">exp_config</span><span class="p">):</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">exp_config</span><span class="o">.</span><span class="n">camera_config</span><span class="o">.</span><span class="n">cameras</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">record_depth</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">episode_spec</span><span class="o">.</span><span class="n">task</span><span class="p">[</span><span class="s2">&quot;robot_base_pose&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">0.05</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">ROBOT_OVERRIDE_REGISTRY</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">MyRobotConfig</span><span class="p">:</span> <span class="n">my_robot_eval_override</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># or, from another module:</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># register_robot_override(MyRobotConfig, my_robot_eval_override)</span>
+</code></pre></div>
+<p>The override is selected by the <strong>robot config class</strong> (with MRO traversal so
+subclasses inherit), applied per episode by <code>JsonEvalTaskSampler</code>, and only
+active during JSON evaluation.</p>
+<h2 id="where-to-look-in-code">Where to look in code<a class="headerlink" href="#where-to-look-in-code" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>molmo_spaces/evaluation/eval_main.py</code> — entrypoints, config building,
+  result collection.</li>
+<li><code>molmo_spaces/evaluation/json_eval_runner.py</code> — <code>JsonEvalRunner</code> and the
+  hook overrides on top of <code>ParallelRolloutRunner</code>.</li>
+<li><code>molmo_spaces/evaluation/robot_eval_overrides.py</code> — robot-specific eval
+  overrides registry.</li>
+<li><code>molmo_spaces/tasks/json_eval_task_sampler.py</code> — per-episode
+  <code>JsonEvalTaskSampler</code> (scene modifications, cameras, task class loading).</li>
+<li><code>molmo_spaces/evaluation/benchmark_schema.py</code> — <code>EpisodeSpec</code> and all
+  related Pydantic schemas.</li>
+<li><code>molmo_spaces/data_generation/pipeline.py</code> — base
+  <code>ParallelRolloutRunner.process_single_house</code> loop the JSON runner plugs
+  into.</li>
+<li><code>molmo_spaces/utils/eval_camera_randomization_utils.py</code> — <code>--use_eval_cameras</code>
+  / <code>--camera_rand_level</code> CLI handling and the spherical perturbation logic.</li>
+<li><code>molmo_spaces/evaluation/configs/evaluation_configs.py</code> — example eval
+  configs (<code>JsonBenchmarkEvalConfig</code>, <code>PiPolicyEvalConfig</code>, etc.).</li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 11, 2026 20:00:35 UTC"><span class="timeago" datetime="2026-06-11T20:00:35+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 11, 2026 20:00:35 UTC">2026-06-11</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 11, 2026 20:00:35 UTC"><span class="timeago" datetime="2026-06-11T20:00:35+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 11, 2026 20:00:35 UTC">2026-06-11</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Allen Institute for Artificial Intelligence
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../js/timeago.min.js"></script>
+      
+        <script src="../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>
