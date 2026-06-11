@@ -7,7 +7,12 @@ from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.task_configs import PickAndPlaceTaskConfig
 from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.data_views import create_mlspaces_body
-from molmo_spaces.env.sensors import GraspStateSensor, ObjectEndPoseSensor, ObjectStartPoseSensor, get_core_sensors
+from molmo_spaces.env.sensors import (
+    GraspStateSensor,
+    ObjectEndPoseSensor,
+    ObjectStartPoseSensor,
+    get_core_sensors,
+)
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb
 from molmo_spaces.utils.mujoco_scene_utils import is_object_supported_by_body
@@ -44,22 +49,24 @@ class PickAndPlaceTask(BaseMujocoTask):
         sensors = get_core_sensors(config)
         assert config.task_config.place_receptacle_name
 
-        sensors.extend([
-            ObjectStartPoseSensor(
-                object_name=config.task_config.pickup_obj_name, uuid="obj_start_pose"
-            ),
-            GraspStateSensor(
-                object_name=config.task_config.pickup_obj_name,
-                uuid="grasp_state_pickup_obj",
-            ),
-            ObjectEndPoseSensor(
-                object_name=config.task_config.place_target_name, uuid="obj_end_pose"
-            ),
-            GraspStateSensor(
-                object_name=config.task_config.place_receptacle_name,
-                uuid="grasp_state_place_receptacle",
-            ),
-        ])
+        sensors.extend(
+            [
+                ObjectStartPoseSensor(
+                    object_name=config.task_config.pickup_obj_name, uuid="obj_start_pose"
+                ),
+                GraspStateSensor(
+                    object_name=config.task_config.pickup_obj_name,
+                    uuid="grasp_state_pickup_obj",
+                ),
+                ObjectEndPoseSensor(
+                    object_name=config.task_config.place_target_name, uuid="obj_end_pose"
+                ),
+                GraspStateSensor(
+                    object_name=config.task_config.place_receptacle_name,
+                    uuid="grasp_state_place_receptacle",
+                ),
+            ]
+        )
 
         return SensorSuite(sensors)
 

@@ -15,6 +15,7 @@ from molmo_spaces.tasks.task import BaseMujocoTask
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+    from molmo_spaces.env.abstract_sensors import Sensor
 
 NONE_PHASE = -1
 
@@ -85,19 +86,11 @@ class BasePolicy(ABC):
         """
         return {}
 
-    def get_phase(self) -> str:
+    def create_policy_sensors(self) -> list["Sensor"]:
         """
-        Returns:
-            The policy phase
+        Create a list of policy-specific sensors.
         """
-        return "unknown"
-
-    def get_all_phases(self) -> dict[str | int]:
-        """
-        Returns:
-            A dictionary of all possible policy phases
-        """
-        return {"unknown": 0}
+        return []
 
 
 PolicyFactory: TypeAlias = Callable[..., BasePolicy]
@@ -113,15 +106,40 @@ class PlannerPolicy(BasePolicy):
         """Abstract property representing the list or dict of planner instances."""
         pass
 
+    @abstractmethod
+    def get_phase(self) -> str:
+        """
+        Returns:
+            The current policy phase
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_all_phases(self) -> dict[str | int]:
+        """
+        Returns:
+            A dictionary of all possible policy phases
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def retry_count(self) -> int:
+        """
+        The number of retries the policy has taken.
+        """
+        raise NotImplementedError
+
+    def create_policy_sensors(self) -> list["Sensor"]:
+        from molmo_spaces.env.sensors import PolicyPhaseSensor, PolicyNumRetriesSensor
+
+        return super().create_policy_sensors() + [
+            PolicyPhaseSensor(uuid="policy_phase"),
+            PolicyNumRetriesSensor(uuid="policy_num_retries"),
+        ]
+
 
 class InferencePolicy(BasePolicy):
-    def __init__(self, config: "MlSpacesExpConfig") -> None:
-        super().__init__(config)
-
-        # TODO(max): remove these (added to silence warnings)
-        self.target_poses = {"grasp": np.eye(4)}
-        self.current_phase = NONE_PHASE
-
     def get_action(self, observation):
         model_input = self.obs_to_model_input(observation)
         model_output = self.inference_model(model_input)

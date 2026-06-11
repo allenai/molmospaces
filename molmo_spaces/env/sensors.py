@@ -12,6 +12,7 @@ from molmo_spaces.env.sensors_cameras import (
     CameraSensor,
     DepthSensor,
 )
+from molmo_spaces.policy.base_policy import PlannerPolicy
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.camera_utils import erode_segmentation_mask, normalize_points
@@ -954,6 +955,9 @@ class PolicyPhaseSensor(Sensor):
     def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> int:
         """Return the current phase of the policy as a string encoded as uint8 array."""
         if task._registered_policy is not None:
+            assert isinstance(task._registered_policy, PlannerPolicy), (
+                "PolicyPhaseSensor requires a planner policy"
+            )
             phase_name = task._registered_policy.get_phase()
             all_phases = task._registered_policy.get_all_phases()
             try:
@@ -979,18 +983,13 @@ class PolicyNumRetriesSensor(Sensor):
     def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> int:
         """Return the number of retries of the object manipulation policy."""
         policy = task._registered_policy
+        assert isinstance(policy, PlannerPolicy), "PolicyNumRetriesSensor requires a planner policy"
         if policy is None:
             if not self._logged_warning:
                 log.warning("No registered policy, cannot track retries.")
                 self._logged_warning = True
             return 0
-        elif hasattr(policy, "retry_count"):
-            return policy.retry_count
-        else:
-            if not self._logged_warning:
-                log.warning(f"Policy {type(policy)} does not support tracking retries.")
-                self._logged_warning = True
-            return 0
+        return policy.retry_count
 
     def reset(self) -> None:
         super().reset()
@@ -1068,11 +1067,6 @@ def get_core_sensors(exp_config):
     # Environment state sensors
     sensors.append(EnvStateSensor(uuid="env_states"))
     sensors.append(TaskInfoSensor(uuid="task_info"))
-
-    # Policy sensors
-    sensors.append(GraspPoseSensor(uuid="grasp_pose"))
-    sensors.append(PolicyPhaseSensor(uuid="policy_phase"))
-    sensors.append(PolicyNumRetriesSensor(uuid="policy_num_retries"))
 
     # Action sensors
     sensors.append(

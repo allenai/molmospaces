@@ -37,7 +37,7 @@ class CuroboPlannerPolicy(PlannerPolicy):
         self.planned_trajectory: list[list[float]] | None = None
         self.trajectory_index: int = 0
         self.steps_spent_in_waypoint: int = 0
-        self.retry_count: int = 0
+        self._retry_count: int = 0
 
         # Arm selection
         self.arm_side: str | None = None
@@ -51,6 +51,10 @@ class CuroboPlannerPolicy(PlannerPolicy):
         self.profiler = Profiler()
 
     @property
+    def retry_count(self) -> int:
+        return self._retry_count
+
+    @property
     @abstractmethod
     def planners(self) -> dict[str, CuroboPlanner]:
         """Return dictionary of planner instances."""
@@ -62,22 +66,12 @@ class CuroboPlannerPolicy(PlannerPolicy):
         """Property to expose completion state for task checking."""
         pass
 
-    @abstractmethod
-    def get_phase(self) -> Any:
-        """Return the current phase."""
-        pass
-
-    @abstractmethod
-    def get_all_phases(self) -> dict[str, int]:
-        """Return dictionary mapping phase names to values."""
-        pass
-
     def reset(self) -> None:
         """Reset the policy state."""
         self.planned_trajectory = None
         self.trajectory_index = 0
         self.steps_spent_in_waypoint = 0
-        self.retry_count = 0
+        self._retry_count = 0
         self.current_gripper_command = {}
 
     # ========== Joint Position Methods ==========
@@ -283,7 +277,7 @@ class CuroboPlannerPolicy(PlannerPolicy):
                     raise ValueError("Max planning reattempts reached.")
                 self.planned_trajectory = None
                 self.trajectory_index = 0
-                self.retry_count += 1
+                self._retry_count += 1
                 self.steps_spent_in_waypoint = 0
 
         return action

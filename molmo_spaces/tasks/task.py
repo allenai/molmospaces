@@ -170,9 +170,15 @@ class BaseMujocoTask(ABC):
         raise NotImplementedError
 
     def register_policy(self, policy: "BasePolicy") -> None:
-        """Register a policy with the task for completion tracking and phase sensing."""
+        """
+        Register a policy with the task for completion tracking and phase sensing.
+        This should only be called once in the task's lifetime.
+        """
+        if self._registered_policy is not None:
+            raise ValueError("Policy already registered")
         self._registered_policy = policy
         policy.task = self
+        self._sensor_suite.extend(policy.create_policy_sensors())
 
     def num_steps_taken(self) -> int:
         """Get the number of steps taken in the current episode."""
@@ -445,8 +451,12 @@ class BaseMujocoTask(ABC):
             "referral_expressions": self.get_referral_expressions(),
         }
         if self._registered_policy is not None:
-            phases_dict = self._registered_policy.get_all_phases()
-            obs_scene["policy_phases"] = phases_dict
+            from molmo_spaces.policy.base_policy import PlannerPolicy
+
+            # A bit of a hack - why do we need phases in the obs_scene?
+            if isinstance(self._registered_policy, PlannerPolicy):
+                phases_dict = self._registered_policy.get_all_phases()
+                obs_scene["policy_phases"] = phases_dict
             obs_scene.update(self._registered_policy.get_info())
 
         if self.frozen_config is not None:

@@ -56,7 +56,7 @@ class FloatingRUMRobot(Robot):
     def create_robot_sensors(self):
         return super().create_robot_sensors() + [
             TCPPoseSensor(uuid="tcp_pose"),
-        ]   
+        ]
 
     def update_control(self, action_command_dict: dict[str, Any]):
         action_command_dict = self._apply_action_noise_and_save_unnoised_cmd_jp(action_command_dict)

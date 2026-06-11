@@ -8,14 +8,17 @@ import mujoco
 import numpy as np
 from mujoco import MjSpec
 from scipy.spatial.transform import Rotation as R
+import gymnasium.spaces as gyms
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.policy_configs import ObjectManipulationPlannerPolicyConfig
+from molmo_spaces.env.abstract_sensors import Sensor
 from molmo_spaces.policy.base_policy import PlannerPolicy
 from molmo_spaces.robots.robot_views.abstract import RobotView
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.grasp_sample import add_grasp_collision_bodies
 from molmo_spaces.utils.linalg_utils import transform_to_twist, twist_to_transform
+from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.profiler_utils import Timer
 
 log = logging.getLogger(__name__)
@@ -380,6 +383,29 @@ class NoopAction(ActionPrimitive):
         return self._action
 
 
+class GraspPoseSensor(Sensor):
+    """Sensor for the planned grasp pose in 7D format."""
+
+    def __init__(self, uuid: str = "grasp_pose") -> None:
+        observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
+        super().__init__(uuid=uuid, observation_space=observation_space)
+        self._logged_warning = False
+
+    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
+        """Get grasp pose (using current TCP pose as proxy)."""
+        if task._registered_policy is not None:
+            assert isinstance(task._registered_policy, BaseObjectManipulationPlannerPolicy)
+            return np.array(
+                pose_mat_to_7d(task._registered_policy.target_poses["grasp"]),
+                dtype=np.float32,
+            )
+        else:
+            if not self._logged_warning:
+                log.warning("Policy is not registered or does not support grasp pose sensing.")
+                self._logged_warning = True
+            return np.zeros(7, dtype=np.float32)
+
+
 class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
     """
     Base class for object manipulation (open/close/pick/pick-place) planner policies.
@@ -395,19 +421,28 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
 
         self.action_primitives = []
         self.action_idx = 0
-        self.retry_count = 0
+        self._retry_count = 0
         self.target_poses = {}
         self.ik_warmed_up = False
         self.sequential_ik_failures = 0
 
     @property
+    def retry_count(self) -> int:
+        return self._retry_count
+
+    @property
     def planners(self):
         return {}
 
+    def create_policy_sensors(self) -> list[Sensor]:
+        return super().create_policy_sensors() + [
+            GraspPoseSensor(uuid="grasp_pose"),
+        ]
+
     def get_all_phases(self):
-        phases = super().get_all_phases()
         # Collect all possible phases here, even those not used for a particular trajectory computation
-        new_phases = {
+        phases = {
+            "unknown": 0,
             "gripper-open": 1,
             "pregrasp": 2,
             "grasp": 3,
@@ -418,7 +453,6 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
             "retreat": 8,
             "go_home": 9,
         }
-        phases.update(new_phases)
         return phases
 
     def reset(self, reset_retries: bool = True):
@@ -434,7 +468,7 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
 
         self.action_idx = 0
         if reset_retries:
-            self.retry_count = 0
+            self._retry_count = 0
 
         self.target_poses = {}
         for action_primitive in self.action_primitives:
@@ -495,7 +529,7 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
             log.info(f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed.")
             return {"done": True, "success": False}
 
-        self.retry_count += 1
+        self._retry_count += 1
         log.info(
             f"🔄 Failure detected! Initiating retry {self.retry_count}/{self.policy_config.max_retries}"
         )

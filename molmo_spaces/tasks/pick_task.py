@@ -7,7 +7,12 @@ from scipy.spatial.transform import Rotation as R
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.data_views import MlSpacesObject
-from molmo_spaces.env.sensors import ObjectEndPoseSensor, get_core_sensors, GraspStateSensor, ObjectStartPoseSensor
+from molmo_spaces.env.sensors import (
+    ObjectEndPoseSensor,
+    get_core_sensors,
+    GraspStateSensor,
+    ObjectStartPoseSensor,
+)
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms
 from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom
@@ -35,18 +40,20 @@ class PickTask(BaseMujocoTask):
     def _create_sensor_suite_from_config(self, config: MlSpacesExpConfig) -> SensorSuite:
         sensors = get_core_sensors(config)
 
-        sensors.extend([
-            ObjectStartPoseSensor(
-                object_name=config.task_config.pickup_obj_name, uuid="obj_start_pose"
-            ),
-            GraspStateSensor(
-                object_name=config.task_config.pickup_obj_name,
-                uuid="grasp_state_pickup_obj",
-            ),
-            ObjectEndPoseSensor(
-                object_name=config.task_config.place_target_name, uuid="obj_end_pose"
-            ),
-        ])
+        sensors.extend(
+            [
+                ObjectStartPoseSensor(
+                    object_name=config.task_config.pickup_obj_name, uuid="obj_start_pose"
+                ),
+                GraspStateSensor(
+                    object_name=config.task_config.pickup_obj_name,
+                    uuid="grasp_state_pickup_obj",
+                ),
+                ObjectEndPoseSensor(
+                    object_name=config.task_config.place_target_name, uuid="obj_end_pose"
+                ),
+            ]
+        )
 
         return SensorSuite(sensors)
 

@@ -17,13 +17,6 @@ class DummyPolicy(BasePolicy):
     def type(self):
         return "dummy"
 
-    def __init__(self, config: "MlSpacesExpConfig") -> None:
-        super().__init__(config)
-        self.config = config
-        # Required attributes for sensors that expect a policy with target poses
-        self.target_poses = {"grasp": np.eye(4)}
-        self.current_phase = NONE_PHASE
-
     def reset(self):
         """
         Reset the policy state. No state to reset for DummyPolicy.
