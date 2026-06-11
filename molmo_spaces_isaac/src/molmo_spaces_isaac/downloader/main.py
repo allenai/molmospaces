@@ -114,10 +114,10 @@ def main() -> int:
 
     if args.storage == "hf":
         remote_storage = HFRemoteStorage(
-                repo_id="allenai/molmospaces",
-                repo_prefix=TYPE_TO_PREFIX[args.type],
-                token=args.hf_token or os.getenv("HF_TOKEN"),
-            )
+            repo_id="allenai/molmospaces",
+            repo_prefix=TYPE_TO_PREFIX[args.type],
+            token=args.hf_token or os.getenv("HF_TOKEN"),
+        )
     elif args.storage == "r2":
         remote_storage = R2RemoteStorage(f"{TYPE_TO_PREFIX[args.type]}-thor-resources")
     else:
