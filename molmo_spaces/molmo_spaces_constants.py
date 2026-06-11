@@ -85,7 +85,7 @@ PINNED_ASSETS_FILE = (
 )
 
 STORAGE_IN_USE: Literal["gc", "hf", "r2"] = (
-    "gc"  # If using hf, HF_TOKEN needs to exist in the environment
+    "r2"  # If using hf, HF_TOKEN needs to exist in the environment
 )
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
