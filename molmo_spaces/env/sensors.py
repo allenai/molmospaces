@@ -1003,7 +1003,6 @@ class GraspPoseSensor(Sensor):
         observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
         super().__init__(uuid=uuid, observation_space=observation_space)
         self._logged_warning = False
-        # TODO: register policy sensors
 
     def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
         """Get grasp pose (using current TCP pose as proxy)."""
