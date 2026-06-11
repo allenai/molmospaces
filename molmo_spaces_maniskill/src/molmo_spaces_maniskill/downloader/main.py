@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 import tyro
-from molmospaces_resources import HFRemoteStorage, R2RemoteStorage, ResourceManager
+from molmospaces_resources import HFRemoteStorage, R2RemoteStorage, GCRemoteStorage, ResourceManager
 
 logger = logging.getLogger("molmospaces_resources")
 logger.setLevel(logging.DEBUG)
@@ -84,8 +84,8 @@ class DownloadArgs:
     # If not provided, uses HF_TOKEN from environment
     hf_token: str | None = None
 
-    # Use R2 remote storage (HuggingFace by default)
-    use_r2: bool = False
+    # Storage to use (HuggingFace by default)
+    storage: list[Literal["hf", "r2", "gc"]] = field(default_factory=lambda: "hf")
 
 
 def main() -> int:
@@ -112,14 +112,19 @@ def main() -> int:
             dataset_id
         ]
 
+    if args.storage == "hf":
+        remote_storage = HFRemoteStorage(
+                repo_id="allenai/molmospaces",
+                repo_prefix=TYPE_TO_PREFIX[args.type],
+                token=args.hf_token or os.getenv("HF_TOKEN"),
+            )
+    elif args.storage == "r2":
+        remote_storage = R2RemoteStorage(f"{TYPE_TO_PREFIX[args.type]}-thor-resources")
+    else:
+        remote_storage = GCRemoteStorage(f"molmospaces-{TYPE_TO_PREFIX[args.type]}")
+
     manager = ResourceManager(
-        remote_storage=R2RemoteStorage(f"{TYPE_TO_PREFIX[args.type]}-thor-resources")
-        if args.use_r2
-        else HFRemoteStorage(
-            repo_id="allenai/molmospaces",
-            repo_prefix=TYPE_TO_PREFIX[args.type],
-            token=args.hf_token or os.getenv("HF_TOKEN"),
-        ),
+        remote_storage=remote_storage,
         data_type_to_source_to_version=sources_to_version,
         symlink_dir=args.install_dir,
         cache_dir=args.cache_dir / args.type,
