@@ -13,11 +13,13 @@ import os
 from collections import defaultdict
 from pathlib import Path
 from copy import deepcopy
+from typing import Literal
 
 import compress_json
 from molmospaces_resources import (
     HFRemoteStorage,
     R2RemoteStorage,
+    GCRemoteStorage,
     ResourceManager,
     setup_resource_manager,
     str2bool,
@@ -82,7 +84,9 @@ PINNED_ASSETS_FILE = (
     else None
 )
 
-USE_HUGGING_FACE = False  # If True, HF_TOKEN needs to exist in the environment
+STORAGE_IN_USE: Literal["gc", "hf", "r2"] = (
+    "r2"  # If using hf, HF_TOKEN needs to exist in the environment
+)
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     robots={
@@ -216,11 +220,16 @@ def register_user_grasp_library(root_name: str, path: Path, object_library: str)
 
 
 def _select_storage():
-    return (
-        HFRemoteStorage("allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN"))
-        if USE_HUGGING_FACE
-        else R2RemoteStorage("mujoco-thor-resources")
-    )
+    if STORAGE_IN_USE == "hf":
+        return HFRemoteStorage(
+            "allenai/molmospaces", repo_prefix="mujoco", token=os.getenv("HF_TOKEN")
+        )
+    elif STORAGE_IN_USE == "r2":
+        return R2RemoteStorage("mujoco-thor-resources")
+    elif STORAGE_IN_USE == "gc":
+        return GCRemoteStorage("molmospaces-mujoco")
+
+    raise NotImplementedError(f"Storage type {STORAGE_IN_USE} not supported")
 
 
 def get_resource_manager(
