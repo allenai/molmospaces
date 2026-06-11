@@ -112,3 +112,14 @@ class SensorSuite:
             uuid: sensor.get_observation(env=env, task=task, **kwargs)  # type: ignore
             for uuid, sensor in self.sensors.items()
         }
+
+    def extend(self, sensors: Sequence[Sensor]) -> None:
+        """Extend the sensor suite with additional sensors."""
+        for sensor in sensors:
+            self.add(sensor)
+
+    def add(self, sensor: Sensor) -> None:
+        """Add a sensor to the sensor suite."""
+        assert sensor.uuid not in self.sensors, f"'{sensor.uuid}' is duplicated sensor uuid"
+        self.sensors[sensor.uuid] = sensor
+        self.observation_spaces[sensor.uuid] = sensor.observation_space

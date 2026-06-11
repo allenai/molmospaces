@@ -29,9 +29,8 @@ class OpeningTask(PickTask):
         self,
         env: BaseMujocoEnv,
         exp_config: MlSpacesExpConfig,
-        sensor_suite: SensorSuite | None = None,
     ) -> None:
-        super().__init__(env, exp_config, sensor_suite)
+        super().__init__(env, exp_config)
         self.exp_config = exp_config
 
         self.articulation_objects = self._get_articulation_objects()
@@ -64,13 +63,6 @@ class OpeningTask(PickTask):
                     articulation_objects.append([articulation_object])
 
         return articulation_objects
-
-    def _create_sensor_suite_from_config(self, config: MlSpacesExpConfig) -> SensorSuite:
-        """Create a sensor suite from configuration using the centralized get_core_sensors function."""
-        from molmo_spaces.env.sensors import get_core_sensors
-
-        sensors = get_core_sensors(config)
-        return SensorSuite(sensors)
 
     def judge_success(self) -> bool:
         success = self.get_reward()[0] >= self.config.task_config.task_success_threshold
@@ -162,13 +154,8 @@ class DoorOpeningTask(BaseMujocoTask):
         self,
         env: BaseMujocoEnv,
         exp_config: MlSpacesExpConfig,
-        sensor_suite: SensorSuite | None = None,
     ) -> None:
-        # Create sensor suite if not provided and sensors are enabled
-        if sensor_suite is None and exp_config.task_config.use_sensors:
-            sensor_suite = self._create_sensor_suite_from_config(exp_config)
-
-        super().__init__(env, exp_config, sensor_suite)
+        super().__init__(env, exp_config)
         self.exp_config = exp_config
 
         # Get door object in the environment

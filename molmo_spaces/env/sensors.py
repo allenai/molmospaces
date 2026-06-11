@@ -1152,37 +1152,6 @@ def get_core_sensors(exp_config):
     # Environment state sensors
     sensors.append(EnvStateSensor(uuid="env_states"))
 
-    # Task pose sensors
-    if hasattr(exp_config.task_config, "pickup_obj_name"):
-        sensors.append(
-            ObjectStartPoseSensor(
-                object_name=exp_config.task_config.pickup_obj_name, uuid="obj_start_pose"
-            )
-        )
-        sensors.append(
-            GraspStateSensor(
-                object_name=exp_config.task_config.pickup_obj_name,
-                uuid="grasp_state_pickup_obj",
-            )
-        )
-    if hasattr(exp_config.task_config, "place_target_name"):
-        sensors.append(
-            ObjectEndPoseSensor(
-                object_name=exp_config.task_config.place_target_name, uuid="obj_end_pose"
-            )
-        )
-    # TODO: this kind of hacky hardcoded conditionals should be refactored.
-    # Tasks should register their own task-specific sensors.
-    if (
-        hasattr(exp_config.task_config, "place_receptacle_name")
-        and exp_config.task_config.place_receptacle_name
-    ):
-        sensors.append(
-            GraspStateSensor(
-                object_name=exp_config.task_config.place_receptacle_name,
-                uuid="grasp_state_place_receptacle",
-            )
-        )
     if isinstance(exp_config.robot_config, RBY1Config):
         from molmo_spaces.env.rby1_sensors import RBY1GraspStateSensor
 

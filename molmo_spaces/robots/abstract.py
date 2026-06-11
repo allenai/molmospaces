@@ -9,14 +9,16 @@ import numpy as np
 from mujoco import MjData, MjSpec
 from scipy.stats import truncnorm
 from scipy.spatial.transform import Rotation as R
+from molmo_spaces.controllers.abstract import AbstractPositionController, Controller
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
+from molmo_spaces.robots.robot_views.abstract import RobotView
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.configs.robot_configs import ActionNoiseConfig, BaseRobotConfig
     from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
-from molmo_spaces.controllers.abstract import AbstractPositionController, Controller
-from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
-from molmo_spaces.robots.robot_views.abstract import RobotView
+    from molmo_spaces.env.abstract_sensors import Sensor
+
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +69,10 @@ class Robot:
         for _, controller in self.controllers.items():
             if not controller.stationary:
                 controller.set_to_stationary()
+
+    def create_robot_sensors(self) -> list[Sensor]:
+        """Get robot-specific sensors that should be registerd with a Task's sensor suite."""
+        return []
 
     def get_arm_move_group_ids(self) -> list[str]:
         """Get the move group IDs that should have TCP-bounded noise applied.
