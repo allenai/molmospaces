@@ -4,7 +4,7 @@ from typing import Iterator, Collection, Callable
 
 from pxr import Sdf, Usd, Ar
 
-from molmospaces_resources import setup_resource_manager, R2RemoteStorage
+from molmospaces_resources import setup_resource_manager, GCRemoteStorage
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, DATA_CACHE_DIR
 from molmospaces_resources import ResourceManager, SourceInfo
 
@@ -36,7 +36,7 @@ def get_resource_manager() -> ResourceManager:
     global _RESOURCE_MANAGER
     if _RESOURCE_MANAGER is None:
         _RESOURCE_MANAGER = setup_resource_manager(
-            R2RemoteStorage("isaac-thor-resources"),
+            GCRemoteStorage("molmospaces-isaac"),
             symlink_dir=ISAAC_ASSETS_DIR,
             versions=ISAAC_DATA_TYPE_TO_SOURCE_TO_VERSION,
             cache_dir=ISAAC_DATA_CACHE_DIR,
