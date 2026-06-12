@@ -92,6 +92,18 @@ class AStarPlannerPolicy(PlannerPolicy):
         self.nav_planner.blacklist.clear()
 
     @property
+    def retry_count(self) -> int:
+        return self.config.policy_config.plan_max_retries - self._retries_left
+
+    def get_phase(self) -> str:
+        return "unknown"
+
+    def get_all_phases(self) -> dict[str | int]:
+        return {
+            "unknown": 0,
+        }
+
+    @property
     def candidate_objs(self) -> list[MlSpacesObject]:
         if self._candidate_objs is None:
             batch_idx = self.task.env.current_batch_index

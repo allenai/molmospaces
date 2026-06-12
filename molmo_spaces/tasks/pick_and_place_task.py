@@ -9,7 +9,6 @@ from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.env.sensors import (
     GraspStateSensor,
-    ObjectEndPoseSensor,
     ObjectStartPoseSensor,
     get_core_sensors,
 )
@@ -47,7 +46,7 @@ class PickAndPlaceTask(BaseMujocoTask):
 
     def _create_sensor_suite_from_config(self, config: MlSpacesExpConfig) -> SensorSuite:
         sensors = get_core_sensors(config)
-        assert config.task_config.place_receptacle_name
+        assert config.task_config.place_receptacle_name, "No place receptacle name provided"
 
         sensors.extend(
             [
@@ -57,9 +56,6 @@ class PickAndPlaceTask(BaseMujocoTask):
                 GraspStateSensor(
                     object_name=config.task_config.pickup_obj_name,
                     uuid="grasp_state_pickup_obj",
-                ),
-                ObjectEndPoseSensor(
-                    object_name=config.task_config.place_target_name, uuid="obj_end_pose"
                 ),
                 GraspStateSensor(
                     object_name=config.task_config.place_receptacle_name,

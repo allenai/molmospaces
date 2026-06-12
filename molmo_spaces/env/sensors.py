@@ -595,29 +595,6 @@ class ObjectStartPoseSensor(Sensor):
         self._initial_pose = None
 
 
-class ObjectEndPoseSensor(Sensor):
-    """Sensor for target/end object pose in 7D format (x, y, z, qw, qx, qy, qz)."""
-
-    def __init__(self, object_name: str, uuid: str | None = None) -> None:
-        self.object_name = object_name
-        if uuid is None:
-            uuid = f"obj_end_{object_name}"
-
-        observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
-        super().__init__(uuid=uuid, observation_space=observation_space)
-
-    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
-        """Get target object pose."""
-        if task.config.task_type in ["pick", "open", "close"]:
-            goal_pose = np.array(task.config.task_config.pickup_obj_goal_pose, dtype=np.float32)
-            return goal_pose
-        else:
-            # TODO(max): fix this
-            goal_pose = np.zeros(7, dtype=np.float32)
-            return goal_pose
-            # raise ValueError(f"Invalid action type {task.config.task_type}")
-
-
 class DoorStateSensor(Sensor):
     """Sensor for door state including joint angle and opening percentage."""
 
@@ -983,39 +960,17 @@ class PolicyNumRetriesSensor(Sensor):
     def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> int:
         """Return the number of retries of the object manipulation policy."""
         policy = task._registered_policy
-        assert isinstance(policy, PlannerPolicy), "PolicyNumRetriesSensor requires a planner policy"
         if policy is None:
             if not self._logged_warning:
                 log.warning("No registered policy, cannot track retries.")
                 self._logged_warning = True
             return 0
+        assert isinstance(policy, PlannerPolicy), "PolicyNumRetriesSensor requires a planner policy"
         return policy.retry_count
 
     def reset(self) -> None:
         super().reset()
         self._logged_warning = False
-
-
-class GraspPoseSensor(Sensor):
-    """Sensor for the planned grasp pose in 7D format."""
-
-    def __init__(self, uuid: str = "grasp_pose") -> None:
-        observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
-        super().__init__(uuid=uuid, observation_space=observation_space)
-        self._logged_warning = False
-
-    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
-        """Get grasp pose (using current TCP pose as proxy)."""
-        if task._registered_policy is not None and hasattr(task._registered_policy, "target_poses"):
-            return np.array(
-                pose_mat_to_7d(task._registered_policy.target_poses["grasp"]),
-                dtype=np.float32,
-            )
-        else:
-            if not self._logged_warning:
-                log.warning("Policy is not registered or does not support grasp pose sensing.")
-                self._logged_warning = True
-            return np.zeros(7, dtype=np.float32)
 
 
 def get_core_sensors(exp_config):

@@ -2,6 +2,8 @@ from typing import Any
 
 import numpy as np
 
+from molmo_spaces.env.abstract_sensors import SensorSuite
+from molmo_spaces.env.sensors import get_core_sensors
 from molmo_spaces.tasks.task import BaseMujocoTask
 
 
@@ -38,6 +40,9 @@ class MultiTask(BaseMujocoTask):
         self._registered_policy = None
         self._done_action_received = False
         self._datagen_profiler = None
+
+    def _create_sensor_suite_from_config(self, exp_config):
+        return SensorSuite(get_core_sensors(exp_config))
 
     def get_task_description(self) -> str:
         descriptions = [task.get_task_description() for task in self.tasks]

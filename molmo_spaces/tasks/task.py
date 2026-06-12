@@ -178,7 +178,8 @@ class BaseMujocoTask(ABC):
             raise ValueError("Policy already registered")
         self._registered_policy = policy
         policy.task = self
-        self._sensor_suite.extend(policy.create_policy_sensors())
+        if self._sensor_suite is not None:
+            self._sensor_suite.extend(policy.create_policy_sensors())
 
     def num_steps_taken(self) -> int:
         """Get the number of steps taken in the current episode."""

@@ -3,12 +3,13 @@ from typing import Any
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import gymnasium.spaces as gyms
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-from molmo_spaces.env.abstract_sensors import SensorSuite
+from molmo_spaces.configs.task_configs import PickTaskConfig
+from molmo_spaces.env.abstract_sensors import Sensor, SensorSuite
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.sensors import (
-    ObjectEndPoseSensor,
     get_core_sensors,
     GraspStateSensor,
     ObjectStartPoseSensor,
@@ -18,6 +19,22 @@ from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms
 from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom
 
 log = logging.getLogger(__name__)
+
+
+class PickupObjGoalPoseSensor(Sensor):
+    """Sensor for target/end object pose in 7D format (x, y, z, qw, qx, qy, qz)."""
+
+    def __init__(self, uuid: str) -> None:
+        observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
+        super().__init__(uuid=uuid, observation_space=observation_space)
+
+    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
+        """Get target object pose."""
+        assert isinstance(task.config.task_config, PickTaskConfig), (
+            "PickupObjGoalPoseSensor requires a PickTaskConfig"
+        )
+        goal_pose = np.array(task.config.task_config.pickup_obj_goal_pose, dtype=np.float32)
+        return goal_pose
 
 
 class PickTask(BaseMujocoTask):
@@ -49,8 +66,8 @@ class PickTask(BaseMujocoTask):
                     object_name=config.task_config.pickup_obj_name,
                     uuid="grasp_state_pickup_obj",
                 ),
-                ObjectEndPoseSensor(
-                    object_name=config.task_config.place_target_name, uuid="obj_end_pose"
+                PickupObjGoalPoseSensor(
+                    uuid="obj_end_pose",
                 ),
             ]
         )
