@@ -1,10 +1,22 @@
 [project]
 name = "molmo-spaces"
-version = "0.0.1"
+version = "0.2.0"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 description = "Large scale assets and benchmarks for vision language policies"
 readme = "README.md"
 authors = [
     { name = "Allen Institute for Artificial Intelligence" }
+]
+keywords = ["robotics", "simulation", "manipulation", "datagen", "VLA", "VLM", "sim2real"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
 ]
 requires-python = ">=3.11"
 dependencies = [
@@ -101,6 +113,11 @@ docs = [
     "griffe-inherited-docstrings",
     "markdown-callouts>=0.4.0",
 ]
+
+[project.urls]
+Homepage = "https://molmospaces.allen.ai/"
+Documentation = "https://allenai.github.io/molmospaces/"
+Repository = "https://github.com/allenai/molmospaces.git"
 
 [build-system]
 requires = ["setuptools", "wheel"]
