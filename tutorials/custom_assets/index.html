@@ -389,6 +389,8 @@
       
         
       
+        
+      
     
     
     
@@ -452,6 +454,34 @@
     
   
     Key Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sensors
   
 
     
@@ -720,10 +750,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_10" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_11" checked>
         
           
-          <label class="md-nav__link" for="__nav_2_10" id="__nav_2_10_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_11" id="__nav_2_11_label" tabindex="">
             
   
   
@@ -741,8 +771,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_10_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_11_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2012,7 +2042,7 @@
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">grasp_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;asset_library/red_block/droid/grasps.npz&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">grasp_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">grasp_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">grasp_pose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">grasp_pose</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
@@ -2076,7 +2106,7 @@
 </code></pre></div>
 <p>Note the key <code>"red_block"</code> and the <code>"object_id"</code> are the same as the <code>"asset_id"</code>; this is not required. Only the <code>asset_id</code> must be <code>red_block</code>, since that corresponds to the UID. The key (and the value of <code>"object_id"</code>) should be the name of the object body in the MuJoCo scene, which could be anything.</p>
 <h3 id="configure-datagen">Configure datagen<a class="headerlink" href="#configure-datagen" title="Permanent link">&para;</a></h3>
-<p>Now that our assets, grasps, and scene are ready, we will set up our datagen pipeline. The following python code should be placed (with imports) in <code>datagen.py</code>. Full example code (including asset/grasp libraries) is provided <a href="https://github.com/allenai/molmospaces/blob/main/examples/custom_assets/">here</a>.</p>
+<p>Now that our assets, grasps, and scene are ready, we will set up our datagen pipeline. The following python code should be placed (with imports) in <code>datagen.py</code>. Full example code (including asset/grasp libraries) is provided <a href="https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/examples/custom_assets/">here</a>.</p>
 <h4 id="register-user-libraries">Register user libraries<a class="headerlink" href="#register-user-libraries" title="Permanent link">&para;</a></h4>
 <p>To use our asset and grasp libraries during datagen, they must be registered with MolmoSpaces. Note how we pass the asset library name to <code>register_user_grasp_library()</code> to associate our grasps with our assets.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">register_user_asset_library</span><span class="p">(</span><span class="s2">&quot;custom_assets&quot;</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;asset_library&quot;</span><span class="p">))</span>
@@ -2143,7 +2173,7 @@
 </code></pre></div>
 <p>This should result in data such as <a href="datagen.mp4">this</a>.</p>
 <h2 id="full-example-code-and-assets">Full example code and assets<a class="headerlink" href="#full-example-code-and-assets" title="Permanent link">&para;</a></h2>
-<p>Full example code (including asset/grasp libraries) is provided <a href="https://github.com/allenai/molmospaces/blob/main/examples/custom_assets/">here</a>.</p>
+<p>Full example code (including asset/grasp libraries) is provided <a href="https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/examples/custom_assets/">here</a>.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>As a fun challenge, try combining this tutorial with <a href="../add_robot/">this one</a> to run data generation with a custom object and scene, for a custom robot!</p>
 
@@ -2168,7 +2198,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 27, 2026 18:24:41 UTC"><span class="timeago" datetime="2026-05-27T18:24:41+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 27, 2026 18:24:41 UTC">2026-05-27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 12, 2026 18:04:25 UTC"><span class="timeago" datetime="2026-06-12T18:04:25+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 12, 2026 18:04:25 UTC">2026-06-12</span>
   </span>
 
     

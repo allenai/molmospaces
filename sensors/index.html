@@ -1,0 +1,2473 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Large scale assets and benchmarks for vision language policies">
+      
+      
+      
+        <link rel="canonical" href="https://allenai.github.io/molmospaces/sensors/">
+      
+      
+        <link rel="prev" href="../concepts/">
+      
+      
+        <link rel="next" href="../assets/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Sensors - MolmoSpaces</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/timeago.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#sensors" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="MolmoSpaces" class="md-header__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MolmoSpaces
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Sensors
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../concepts/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="MolmoSpaces" class="md-nav__button md-logo" aria-label="MolmoSpaces" data-md-component="logo">
+      
+  <img src="../images/MolmoSpacesLogo.png" alt="logo">
+
+    </a>
+    MolmoSpaces
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/allenai/molmospaces" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    allenai/molmospaces
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sensors
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sensors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-sensors-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How sensors work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How sensors work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-uuid-becomes-the-observation-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The uuid becomes the observation key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_dict-and-str_max_len" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_dict and str_max_len
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        reset()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sensorsuite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SensorSuite
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-sensors-are-registered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where sensors are registered
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Where sensors are registered">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-task-task-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Task — task-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-robot-robot-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Robot — robot-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-policy-policy-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Policy — policy-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composition-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opting-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opting out
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-core-sensor-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The core sensor suite
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#policy-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#robot-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-sensors-relate-to-saving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How sensors relate to saving
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How sensors relate to saving">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-per-step-accumulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Per-step accumulation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-prepare_episode_for_saving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. prepare_episode_for_saving
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-save_trajectories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. save_trajectories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-mental-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick mental model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-sensor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a new sensor
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-In Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../asset_libraries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Asset and Grasp Libraries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation_lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_11" id="__nav_2_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/add_robot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom robot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/custom_assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a custom asset library
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/molmo_spaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    molmo_spaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/configs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/controllers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    controllers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/data_generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    data_generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    env
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kinematics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/renderer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    renderer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/robots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    robots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-sensors-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How sensors work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How sensors work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-uuid-becomes-the-observation-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The uuid becomes the observation key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_dict-and-str_max_len" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_dict and str_max_len
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        reset()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sensorsuite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SensorSuite
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-sensors-are-registered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where sensors are registered
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Where sensors are registered">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-task-task-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Task — task-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-robot-robot-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Robot — robot-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-policy-policy-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Policy — policy-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composition-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opting-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opting out
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-core-sensor-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The core sensor suite
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#policy-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#robot-specific-sensors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Robot-specific sensors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-sensors-relate-to-saving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How sensors relate to saving
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How sensors relate to saving">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-per-step-accumulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Per-step accumulation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-prepare_episode_for_saving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. prepare_episode_for_saving
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-save_trajectories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. save_trajectories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-mental-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick mental model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-a-new-sensor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a new sensor
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/allenai/molmospaces/edit/main/docs/sensors.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="sensors">Sensors<a class="headerlink" href="#sensors" title="Permanent link">&para;</a></h1>
+<p>This page documents the <strong>sensor system</strong>: the abstraction MolmoSpaces uses to
+turn raw simulator state into the observation dicts that policies consume and
+that data generation writes to disk.</p>
+<p>If you're reading this because you're writing a new task or a new robot and
+need to decide which sensors to attach, the short version is:</p>
+<div class="admonition tip">
+<p class="admonition-title">New users: start from <code>get_core_sensors()</code></p>
+<p>For almost any new task you should compose your sensor suite by starting
+from <a class="autorefs autorefs-internal" title="            get_core_sensors" href="../api/env/#molmo_spaces.env.sensors.get_core_sensors"><code>get_core_sensors(exp_config)</code></a>
+and then extending it with the few task-specific sensors you actually
+need. <strong>Do not</strong> copy or extend
+<a class="autorefs autorefs-internal" title="            get_rby1_door_opening_sensors" href="../api/env/#molmo_spaces.env.rby1_sensors.get_rby1_door_opening_sensors"><code>get_rby1_door_opening_sensors</code></a>,
+<a class="autorefs autorefs-internal" title="            get_nav_task_sensors" href="../api/env/#molmo_spaces.env.sensors.get_nav_task_sensors"><code>get_nav_task_sensors</code></a>,
+or any other ad-hoc bundle — they exist for backward compatibility and
+bake in legacy assumptions (e.g. robot name checks) that you almost
+certainly do not want.</p>
+</div>
+<p>The rest of this page explains how the system fits together.</p>
+<h2 id="how-sensors-work">How sensors work<a class="headerlink" href="#how-sensors-work" title="Permanent link">&para;</a></h2>
+<p>A <strong>sensor</strong> is a small object that, given the env and the current task, returns
+one piece of an observation. Every sensor inherits from
+<a class="autorefs autorefs-internal" title="            Sensor" href="../api/env/#molmo_spaces.env.abstract_sensors.Sensor"><code>Sensor</code></a> (in
+<code>molmo_spaces/env/abstract_sensors.py</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Sensor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>                       <span class="c1"># unique identifier, used as the obs dict key</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">observation_space</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">Space</span>    <span class="c1"># gymnasium space describing the output</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">is_dict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>           <span class="c1"># if True, output is a dict that will be JSON-encoded</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">str_max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span>         <span class="c1"># padding length for the JSON byte buffer</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="nd">@abstractmethod</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_observation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">batch_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>    <span class="c1"># optional, override if the sensor has state</span>
+</code></pre></div>
+<h3 id="the-uuid-becomes-the-observation-key">The <code>uuid</code> becomes the observation key<a class="headerlink" href="#the-uuid-becomes-the-observation-key" title="Permanent link">&para;</a></h3>
+<p>A sensor's <code>uuid</code> is the string key it occupies in the observation dict that
+<code>task.step()</code> returns and in the HDF5 file that data generation produces.
+Two sensors in the same suite are not allowed to share a <code>uuid</code> — the
+<a class="autorefs autorefs-internal" title="            SensorSuite" href="../api/env/#molmo_spaces.env.abstract_sensors.SensorSuite"><code>SensorSuite</code></a> constructor and
+<code>add()</code> method both assert uniqueness.</p>
+<h3 id="is_dict-and-str_max_len"><code>is_dict</code> and <code>str_max_len</code><a class="headerlink" href="#is_dict-and-str_max_len" title="Permanent link">&para;</a></h3>
+<p>There are two flavors of sensor output:</p>
+<ul>
+<li><strong>Plain array sensors</strong> (<code>is_dict = False</code>) return a <code>np.ndarray</code> whose shape
+  and dtype match <code>observation_space</code>. Camera RGB, depth, TCP pose, etc. are
+  all in this category.</li>
+<li><strong>Dict sensors</strong> (<code>is_dict = True</code>) return a (possibly nested) Python <code>dict</code>
+  of JSON-serializable values. At save time this dict is <code>json.dumps</code>'d,
+  UTF-8 encoded, and packed into a fixed-length <code>np.uint8</code> buffer of length
+  <code>str_max_len</code> (right-padded with <code>\x00</code>). The corresponding
+  <code>observation_space</code> is always a <code>Box(0, 255, (str_max_len,), uint8)</code>.</li>
+</ul>
+<p>The encoding round-trip happens in
+<a class="autorefs autorefs-internal" title="            dict_to_byte_array" href="../api/utils/#molmo_spaces.utils.save_utils.dict_to_byte_array"><code>save_utils.dict_to_byte_array</code></a>
+/ <code>byte_array_to_string</code>; see <a href="#how-sensors-relate-to-saving">Saving</a> below.
+A warning is logged if your JSON exceeds <code>str_max_len</code> and gets truncated, so
+if you're storing variable-length data (e.g. per-object dicts) pick
+<code>str_max_len</code> generously.</p>
+<h3 id="reset"><code>reset()</code><a class="headerlink" href="#reset" title="Permanent link">&para;</a></h3>
+<p>Sensors that maintain state across calls — for example
+<a class="autorefs autorefs-internal" title="            LastCommandedRelativeJointPosSensor" href="../api/env/#molmo_spaces.env.sensors.LastCommandedRelativeJointPosSensor"><code>LastCommandedRelativeJointPosSensor</code></a>
+(needs the previous joint pos),
+<a class="autorefs autorefs-internal" title="            ObjectStartPoseSensor" href="../api/env/#molmo_spaces.env.sensors.ObjectStartPoseSensor"><code>ObjectStartPoseSensor</code></a>
+(caches the first observed pose), and
+<a class="autorefs autorefs-internal" title="            GraspStateSensor" href="../api/env/#molmo_spaces.env.sensors.GraspStateSensor"><code>GraspStateSensor</code></a> (caches
+gripper/object geom ids) — override <code>reset()</code>. The base
+<code>BaseMujocoTask.reset()</code> calls <code>reset()</code> on every sensor in the suite, so
+state never leaks between episodes.</p>
+<h3 id="sensorsuite"><code>SensorSuite</code><a class="headerlink" href="#sensorsuite" title="Permanent link">&para;</a></h3>
+<p>A <a class="autorefs autorefs-internal" title="            SensorSuite" href="../api/env/#molmo_spaces.env.abstract_sensors.SensorSuite"><code>SensorSuite</code></a> is just an
+<code>OrderedDict[str, Sensor]</code> with a couple of helpers:</p>
+<ul>
+<li><code>get_observations(env, task, batch_index=...)</code> calls every sensor's
+  <code>get_observation(...)</code> and returns the resulting dict.</li>
+<li><code>add(sensor)</code> / <code>extend(sensors)</code> append to the suite while enforcing the
+  <code>uuid</code> uniqueness invariant.</li>
+</ul>
+<p>The task's <code>get_observations()</code> invokes the suite once per env in the batch
+(<code>n_batch</code> is typically 1; see the warning in
+<a href="../concepts/#env">Key Concepts</a>).</p>
+<h2 id="where-sensors-are-registered">Where sensors are registered<a class="headerlink" href="#where-sensors-are-registered" title="Permanent link">&para;</a></h2>
+<p>Sensor registration is split across the three layers that own the data
+(this was the result of a recent refactor — see commit history for details).
+Each layer contributes the sensors it knows about; the task composes them
+into the final suite at construction and policy-registration time.</p>
+<h3 id="1-task-task-specific-sensors">1. Task — task-specific sensors<a class="headerlink" href="#1-task-task-specific-sensors" title="Permanent link">&para;</a></h3>
+<p>Each <code>BaseMujocoTask</code> subclass implements
+[<code>_create_sensor_suite_from_config(exp_config)</code>][molmo_spaces.tasks.task.BaseMujocoTask._create_sensor_suite_from_config]
+(which is <code>@abstractmethod</code>). This is where the <strong>core sensor bundle</strong> plus any
+<strong>task-specific sensors</strong> get instantiated. The recommended pattern is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.env.abstract_sensors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SensorSuite</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">molmo_spaces.env.sensors</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraspStateSensor</span><span class="p">,</span> <span class="n">ObjectStartPoseSensor</span><span class="p">,</span> <span class="n">get_core_sensors</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyTask</span><span class="p">(</span><span class="n">BaseMujocoTask</span><span class="p">):</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_create_sensor_suite_from_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="n">sensors</span> <span class="o">=</span> <span class="n">get_core_sensors</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="n">sensors</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>            <span class="n">ObjectStartPoseSensor</span><span class="p">(</span><span class="n">object_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">task_config</span><span class="o">.</span><span class="n">pickup_obj_name</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                                  <span class="n">uuid</span><span class="o">=</span><span class="s2">&quot;obj_start_pose&quot;</span><span class="p">),</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>            <span class="n">GraspStateSensor</span><span class="p">(</span><span class="n">object_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">task_config</span><span class="o">.</span><span class="n">pickup_obj_name</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                             <span class="n">uuid</span><span class="o">=</span><span class="s2">&quot;grasp_state_pickup_obj&quot;</span><span class="p">),</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="p">])</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="k">return</span> <span class="n">SensorSuite</span><span class="p">(</span><span class="n">sensors</span><span class="p">)</span>
+</code></pre></div>
+<p><a class="autorefs autorefs-internal" title="            PickTask" href="../api/tasks/#molmo_spaces.tasks.pick_task.PickTask"><code>PickTask</code></a> and
+<a class="autorefs autorefs-internal" title="            PickAndPlaceTask" href="../api/tasks/#molmo_spaces.tasks.pick_and_place_task.PickAndPlaceTask"><code>PickAndPlaceTask</code></a>
+are good reference implementations.</p>
+<h3 id="2-robot-robot-specific-sensors">2. Robot — robot-specific sensors<a class="headerlink" href="#2-robot-robot-specific-sensors" title="Permanent link">&para;</a></h3>
+<p>Each <code>Robot</code> subclass overrides
+<a class="autorefs autorefs-internal" title="            create_robot_sensors" href="../api/robots/#molmo_spaces.robots.abstract.Robot.create_robot_sensors"><code>create_robot_sensors()</code></a>,
+which returns a list of sensors that only make sense for that robot. Currently:</p>
+<table>
+<thead>
+<tr>
+<th>Robot</th>
+<th>Adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FrankaRobot</code>, <code>MobileFrankaRobot</code>, <code>I2rtYamRobot</code>, <code>FloatingRUMRobot</code></td>
+<td><code>TCPPoseSensor(uuid="tcp_pose")</code></td>
+</tr>
+<tr>
+<td><code>BimanualYamRobot</code></td>
+<td><code>TCPPoseSensor(uuid="tcp_pose_left")</code>, <code>TCPPoseSensor(uuid="tcp_pose_right")</code></td>
+</tr>
+<tr>
+<td><code>RBY1</code></td>
+<td><code>RBY1GraspStateSensor(uuid="rby1_left_grasp_state", ...)</code>, <code>RBY1GraspStateSensor(uuid="rby1_right_grasp_state", ...)</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>BaseMujocoTask.__init__</code> calls <code>current_robot.create_robot_sensors()</code> and
+<code>extend</code>s the suite with them, so tasks never have to think about
+robot-specific sensors directly.</p>
+<h3 id="3-policy-policy-specific-sensors">3. Policy — policy-specific sensors<a class="headerlink" href="#3-policy-policy-specific-sensors" title="Permanent link">&para;</a></h3>
+<p>Each <code>BasePolicy</code> subclass overrides
+<a class="autorefs autorefs-internal" title="            create_policy_sensors" href="../api/policy/#molmo_spaces.policy.base_policy.BasePolicy.create_policy_sensors"><code>create_policy_sensors()</code></a>.
+The defaults are:</p>
+<table>
+<thead>
+<tr>
+<th>Policy class</th>
+<th>Adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BasePolicy</code></td>
+<td>nothing</td>
+</tr>
+<tr>
+<td><code>PlannerPolicy</code></td>
+<td><code>PolicyPhaseSensor(uuid="policy_phase")</code>, <code>PolicyNumRetriesSensor(uuid="policy_num_retries")</code></td>
+</tr>
+<tr>
+<td><code>BaseObjectManipulationPlannerPolicy</code></td>
+<td><code>GraspPoseSensor(uuid="grasp_pose")</code></td>
+</tr>
+</tbody>
+</table>
+<p>These are attached when the policy is bound to the task via
+<a class="autorefs autorefs-internal" title="            register_policy" href="../api/tasks/#molmo_spaces.tasks.task.BaseMujocoTask.register_policy"><code>task.register_policy(policy)</code></a>.
+A task may only have one policy registered over its lifetime — re-registration
+raises <code>ValueError</code>.</p>
+<h3 id="composition-order">Composition order<a class="headerlink" href="#composition-order" title="Permanent link">&para;</a></h3>
+<p>The final suite for a typical episode is built up in this order:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>BaseMujocoTask.__init__:
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    suite = task._create_sensor_suite_from_config(exp_config)   # task sensors (incl. core)
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    suite.extend(robot.create_robot_sensors())                  # robot sensors
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>task.register_policy(policy):
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    suite.extend(policy.create_policy_sensors())                # policy sensors
+</code></pre></div>
+<p>Putting <code>register_policy</code> after construction is important because, e.g.,
+<code>PolicyPhaseSensor</code> and <code>GraspPoseSensor</code> reference the bound policy via
+<code>task._registered_policy</code> and would fail otherwise.</p>
+<h3 id="opting-out">Opting out<a class="headerlink" href="#opting-out" title="Permanent link">&para;</a></h3>
+<p>If <code>exp_config.task_config.use_sensors = False</code>, <code>BaseMujocoTask</code> skips
+creation of the suite entirely (<code>self._sensor_suite = None</code>) and
+<code>get_observations()</code> returns an empty dict per env. <code>register_policy</code> then
+becomes a no-op for sensor extension. This codepath exists for cases like
+unit tests or pure physics-only rollouts.</p>
+<h2 id="the-core-sensor-suite">The core sensor suite<a class="headerlink" href="#the-core-sensor-suite" title="Permanent link">&para;</a></h2>
+<p><a class="autorefs autorefs-internal" title="            get_core_sensors" href="../api/env/#molmo_spaces.env.sensors.get_core_sensors"><code>get_core_sensors(exp_config)</code></a> is
+the recommended starting point for any new task. It is <em>task-, policy-, and
+robot-agnostic</em> — anything that would be specific to one of those should be
+contributed by the corresponding <code>create_*_sensors</code> hook, not by extending or
+copying this function.</p>
+<p>It builds:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Sensors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cameras</strong> (per <code>camera_spec</code> in <code>exp_config.camera_config.cameras</code>)</td>
+<td><a class="autorefs autorefs-internal" title="            CameraParameterSensor" href="../api/env/#molmo_spaces.env.sensors_cameras.CameraParameterSensor"><code>CameraParameterSensor</code></a> (<code>sensor_param_{name}</code>), <a class="autorefs autorefs-internal" title="            CameraSensor" href="../api/env/#molmo_spaces.env.sensors_cameras.CameraSensor"><code>CameraSensor</code></a> (<code>{name}</code>), and conditionally <a class="autorefs autorefs-internal" title="            DepthSensor" href="../api/env/#molmo_spaces.env.sensors_cameras.DepthSensor"><code>DepthSensor</code></a> (<code>{name}_depth</code>) when <code>camera_spec.record_depth</code> is true</td>
+</tr>
+<tr>
+<td><strong>Robot proprioception</strong></td>
+<td><a class="autorefs autorefs-internal" title="            RobotJointPositionSensor" href="../api/env/#molmo_spaces.env.sensors.RobotJointPositionSensor"><code>RobotJointPositionSensor</code></a> (<code>qpos</code>), <a class="autorefs autorefs-internal" title="            RobotJointVelocitySensor" href="../api/env/#molmo_spaces.env.sensors.RobotJointVelocitySensor"><code>RobotJointVelocitySensor</code></a> (<code>qvel</code>), <a class="autorefs autorefs-internal" title="            RobotBasePoseSensor" href="../api/env/#molmo_spaces.env.sensors.RobotBasePoseSensor"><code>RobotBasePoseSensor</code></a> (<code>robot_base_pose</code>)</td>
+</tr>
+<tr>
+<td><strong>Environment state</strong></td>
+<td><a class="autorefs autorefs-internal" title="            EnvStateSensor" href="../api/env/#molmo_spaces.env.sensors.EnvStateSensor"><code>EnvStateSensor</code></a> (<code>env_states</code>), <a class="autorefs autorefs-internal" title="            TaskInfoSensor" href="../api/env/#molmo_spaces.env.sensors.TaskInfoSensor"><code>TaskInfoSensor</code></a> (<code>task_info</code>)</td>
+</tr>
+<tr>
+<td><strong>Actions</strong></td>
+<td><a class="autorefs autorefs-internal" title="            LastActionSensor" href="../api/env/#molmo_spaces.env.sensors.LastActionSensor"><code>LastActionSensor</code></a> (<code>actions/commanded_action</code>), <a class="autorefs autorefs-internal" title="            LastCommandedJointPosSensor" href="../api/env/#molmo_spaces.env.sensors.LastCommandedJointPosSensor"><code>LastCommandedJointPosSensor</code></a> (<code>actions/joint_pos</code>), <a class="autorefs autorefs-internal" title="            LastCommandedRelativeJointPosSensor" href="../api/env/#molmo_spaces.env.sensors.LastCommandedRelativeJointPosSensor"><code>LastCommandedRelativeJointPosSensor</code></a> (<code>actions/joint_pos_rel</code>), <a class="autorefs autorefs-internal" title="            LastCommandedEETwistSensor" href="../api/env/#molmo_spaces.env.sensors.LastCommandedEETwistSensor"><code>LastCommandedEETwistSensor</code></a> (<code>actions/ee_twist</code>), <a class="autorefs autorefs-internal" title="            LastCommandedEEPoseSensor" href="../api/env/#molmo_spaces.env.sensors.LastCommandedEEPoseSensor"><code>LastCommandedEEPoseSensor</code></a> (<code>actions/ee_pose</code>)</td>
+</tr>
+<tr>
+<td><strong>Object tracking</strong></td>
+<td><a class="autorefs autorefs-internal" title="            ObjectImagePointsSensor" href="../api/env/#molmo_spaces.env.sensors.ObjectImagePointsSensor"><code>ObjectImagePointsSensor</code></a> (<code>object_image_points</code>) — samples in-mask pixel coordinates per camera for the task objects returned by <code>task.get_task_objects()</code></td>
+</tr>
+</tbody>
+</table>
+<p>A few notes:</p>
+<ul>
+<li>The action sensors all return <code>{}</code> when <code>task.is_terminal()</code>. This is used
+  as the <strong>sentinel <code>done</code> action</strong> at the tail of every trajectory — see
+  <a href="../data_format/#data-postprocessing">Data Format</a> for what consumers do
+  with this.</li>
+<li><code>LastCommandedRelativeJointPosSensor</code> and <code>LastCommandedEETwistSensor</code> need
+  the previous joint pos / leaf pose, so they ship a dummy zero observation
+  on the first step.</li>
+<li>Move groups that aren't position-commanded (e.g. velocity-controlled
+  grippers with mismatched action/state dims) are silently dropped from the
+  relative-action sensor output.</li>
+<li><code>ObjectImagePointsSensor</code> falls back to the legacy
+  <code>task_config.pickup_obj_name</code> / <code>place_receptacle_name</code> lookup if a task
+  doesn't override <code>get_task_objects()</code>. For new tasks, prefer overriding
+  <code>get_task_objects()</code> (see
+  <a class="autorefs autorefs-internal" title="            get_task_objects" href="../api/tasks/#molmo_spaces.tasks.task.BaseMujocoTask.get_task_objects"><code>BaseMujocoTask.get_task_objects</code></a>).</li>
+</ul>
+<h2 id="task-specific-sensors">Task-specific sensors<a class="headerlink" href="#task-specific-sensors" title="Permanent link">&para;</a></h2>
+<p>These are added by individual tasks on top of the core suite. Notable examples:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Adds (on top of <code>get_core_sensors</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            PickTask" href="../api/tasks/#molmo_spaces.tasks.pick_task.PickTask"><code>PickTask</code></a></td>
+<td><code>ObjectStartPoseSensor(uuid="obj_start_pose")</code>, <code>GraspStateSensor(uuid="grasp_state_pickup_obj")</code>, <code>PickupObjGoalPoseSensor(uuid="obj_end_pose")</code></td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            PickAndPlaceTask" href="../api/tasks/#molmo_spaces.tasks.pick_and_place_task.PickAndPlaceTask"><code>PickAndPlaceTask</code></a></td>
+<td><code>ObjectStartPoseSensor</code>, <code>GraspStateSensor</code> for both the pickup object <strong>and</strong> the place receptacle</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            OpeningTask" href="../api/tasks/#molmo_spaces.tasks.opening_tasks.OpeningTask"><code>OpeningTask</code></a></td>
+<td>Inherits the <code>PickTask</code> suite (since opening an articulated object is structurally similar to picking)</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            DoorOpeningTask" href="../api/tasks/#molmo_spaces.tasks.opening_tasks.DoorOpeningTask"><code>DoorOpeningTask</code></a></td>
+<td>Uses <code>get_rby1_door_opening_sensors</code> — see warning below</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            NavToObjTask" href="../api/tasks/#molmo_spaces.tasks.nav_task.NavToObjTask"><code>NavToObjTask</code></a></td>
+<td>Uses <code>get_nav_task_sensors</code> — see warning below</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="            MultiTask" href="../api/tasks/#molmo_spaces.tasks.multi_task.MultiTask"><code>MultiTask</code></a></td>
+<td>Shares its child task's suite; its own <code>_create_sensor_suite_from_config</code> is a stub that returns <code>SensorSuite(get_core_sensors(...))</code></td>
+</tr>
+</tbody>
+</table>
+<p>Some commonly-reused task-side sensors:</p>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            ObjectPoseSensor" href="../api/env/#molmo_spaces.env.sensors.ObjectPoseSensor"><code>ObjectPoseSensor</code></a> — pose of one
+  or more named objects, expressed relative to the robot base. Used by
+  navigation and door opening, output is a dict (<code>is_dict = True</code>).</li>
+<li><a class="autorefs autorefs-internal" title="            ObjectStartPoseSensor" href="../api/env/#molmo_spaces.env.sensors.ObjectStartPoseSensor"><code>ObjectStartPoseSensor</code></a> —
+  caches the object's pose at the start of the episode. For pick / open /
+  close tasks it short-circuits to <code>task.config.task_config.pickup_obj_start_pose</code>.</li>
+<li><a class="autorefs autorefs-internal" title="            GraspStateSensor" href="../api/env/#molmo_spaces.env.sensors.GraspStateSensor"><code>GraspStateSensor</code></a> — per-gripper
+  <code>{"touching": bool, "held": bool}</code> heuristic based on MuJoCo contact pairs.</li>
+<li><a class="autorefs autorefs-internal" title="            DoorStateSensor" href="../api/env/#molmo_spaces.env.sensors.DoorStateSensor"><code>DoorStateSensor</code></a> — joint angle,
+  opening percentage, handle position/extents (door-task only).</li>
+<li><a class="autorefs autorefs-internal" title="            PickupObjGoalPoseSensor" href="../api/tasks/#molmo_spaces.tasks.pick_task.PickupObjGoalPoseSensor"><code>PickupObjGoalPoseSensor</code></a>
+  (lives next to <code>PickTask</code>) — the target end pose for the picked object.</li>
+</ul>
+<h2 id="policy-specific-sensors">Policy-specific sensors<a class="headerlink" href="#policy-specific-sensors" title="Permanent link">&para;</a></h2>
+<p>These are attached when a policy is registered with the task:</p>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            PolicyPhaseSensor" href="../api/env/#molmo_spaces.env.sensors.PolicyPhaseSensor"><code>PolicyPhaseSensor</code></a> (<code>policy_phase</code>)
+  — integer index of the current phase in
+  <code>policy.get_all_phases()</code>. Added by every <code>PlannerPolicy</code>.</li>
+<li><a class="autorefs autorefs-internal" title="            PolicyNumRetriesSensor" href="../api/env/#molmo_spaces.env.sensors.PolicyNumRetriesSensor"><code>PolicyNumRetriesSensor</code></a>
+  (<code>policy_num_retries</code>) — <code>policy.retry_count</code>. Added by every
+  <code>PlannerPolicy</code>.</li>
+<li><a class="autorefs autorefs-internal" title="            GraspPoseSensor" href="../api/policy/#molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy.GraspPoseSensor"><code>GraspPoseSensor</code></a>
+  (<code>grasp_pose</code>) — the planned grasp pose in 7D. Added by
+  <code>BaseObjectManipulationPlannerPolicy</code> and lives in the same module as the
+  policy.</li>
+</ul>
+<p>For learned / inference policies that don't carry phase or grasp metadata,
+<code>create_policy_sensors()</code> returns <code>[]</code> and nothing is appended.</p>
+<h2 id="robot-specific-sensors">Robot-specific sensors<a class="headerlink" href="#robot-specific-sensors" title="Permanent link">&para;</a></h2>
+<p>Robot-specific sensors are added in
+<a class="autorefs autorefs-internal" title="            create_robot_sensors" href="../api/robots/#molmo_spaces.robots.abstract.Robot.create_robot_sensors"><code>create_robot_sensors()</code></a>
+on each <code>Robot</code> subclass. Today these are mostly TCP poses for arms; see
+<a href="#2-robot-robot-specific-sensors">Where sensors are registered</a> above for the
+full table.</p>
+<p>If you're adding a new robot, register here any sensor that is meaningless on
+other robots (e.g. a specific gripper's contact state). Don't add it to the
+core sensor suite.</p>
+<h2 id="how-sensors-relate-to-saving">How sensors relate to saving<a class="headerlink" href="#how-sensors-relate-to-saving" title="Permanent link">&para;</a></h2>
+<p>The full path from "sensor returns a numpy array" to "value on disk in HDF5"
+runs through three stages.</p>
+<h3 id="1-per-step-accumulation">1. Per-step accumulation<a class="headerlink" href="#1-per-step-accumulation" title="Permanent link">&para;</a></h3>
+<p><code>BaseMujocoTask.step()</code> calls <code>task.get_observations()</code>, which in turn calls
+<code>SensorSuite.get_observations(env, task, batch_index)</code>. The resulting dict
+(keyed by sensor <code>uuid</code>) is appended to <code>task.observation_cache</code> along with
+rewards, terminals, etc. After the episode ends, <code>task.get_history()</code> packs
+all of these into a single dict.</p>
+<h3 id="2-prepare_episode_for_saving">2. <code>prepare_episode_for_saving</code><a class="headerlink" href="#2-prepare_episode_for_saving" title="Permanent link">&para;</a></h3>
+<p>The data-generation pipeline (<code>molmo_spaces/data_generation/pipeline.py</code>,
+function <code>save_house_trajectories</code>) takes the per-episode history dict and
+hands it to
+<a class="autorefs autorefs-internal" title="            prepare_episode_for_saving" href="../api/utils/#molmo_spaces.utils.save_utils.prepare_episode_for_saving"><code>prepare_episode_for_saving</code></a>.
+This step:</p>
+<ol>
+<li>Flattens the per-timestep list of dicts (one entry per env in the batch;
+   we only support <code>n_batch=1</code> for saving).</li>
+<li><strong>Saves all camera videos before batching</strong>, via
+   <a class="autorefs autorefs-internal" title="            save_videos_from_raw_observations" href="../api/utils/#molmo_spaces.utils.save_utils.save_videos_from_raw_observations"><code>save_videos_from_raw_observations</code></a>.
+   Each camera (RGB and depth) becomes its own MP4 file in the house output
+   directory. This is a memory optimization: RGB/depth frames are ~80% of an
+   episode's memory, and saving them out before the <code>torch.stack</code> step in
+   batching avoids the giant transient tensor copies.</li>
+<li><strong>Removes the camera sensor keys</strong> from the in-memory observation dicts
+   so they're not also batched as tensors. Camera sensors are identified by
+   <a class="autorefs autorefs-internal" title="            is_camera_sensor" href="../api/utils/#molmo_spaces.utils.save_utils.is_camera_sensor"><code>is_camera_sensor</code></a>,
+   which checks the suite for <code>CameraSensor</code> / <code>DepthSensor</code> instances (with
+   a name-based fallback).</li>
+<li>Calls <a class="autorefs autorefs-internal" title="            batch_observations" href="../api/utils/#molmo_spaces.utils.save_utils.batch_observations"><code>batch_observations</code></a>
+   to transpose <code>List[dict]</code> to <code>Dict[uuid, Tensor(T, ...)]</code>. As part of this,
+   <code>convert_to_arr</code> looks up <code>is_dict</code> and <code>str_max_len</code> on each sensor and
+   JSON-encodes dict sensors into fixed-length <code>uint8</code> buffers
+   (right-padded with <code>\x00</code>).</li>
+<li>Appends <code>rewards</code>, <code>terminals</code>, <code>truncateds</code>, <code>successes</code>, and
+   <code>obs_scene</code> (JSON string).</li>
+</ol>
+<p>The fact that all of this works correctly — for both plain-tensor and
+dict-encoded sensors — depends on the <code>SensorSuite</code> being available so that
+<code>is_dict</code> and <code>str_max_len</code> can be looked up by uuid. This is why
+<code>prepare_episode_for_saving</code> takes a <code>sensor_suite</code> argument.</p>
+<h3 id="3-save_trajectories">3. <code>save_trajectories</code><a class="headerlink" href="#3-save_trajectories" title="Permanent link">&para;</a></h3>
+<p><a class="autorefs autorefs-internal" title="            save_trajectories" href="../api/utils/#molmo_spaces.utils.save_utils.save_trajectories"><code>save_trajectories</code></a> writes
+the batched episode dict to an HDF5 file with the layout documented in
+<a href="../data_format/">Data Format</a>. The relevant routing is:</p>
+<table>
+<thead>
+<tr>
+<th>Episode key</th>
+<th>Goes to HDF5 path</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>qpos</code>, <code>qvel</code></td>
+<td><code>traj_{i}/obs/agent/{name}</code></td>
+<td>from <code>RobotJointPositionSensor</code> / <code>RobotJointVelocitySensor</code></td>
+</tr>
+<tr>
+<td><code>actions/*</code></td>
+<td><code>traj_{i}/actions/{name}</code></td>
+<td>strips the <code>actions/</code> prefix</td>
+</tr>
+<tr>
+<td><code>sensor_param_{cam}</code></td>
+<td><code>traj_{i}/obs/sensor_param/{cam}/{intrinsic_cv,extrinsic_cv,cam2world_gl}</code></td>
+<td>one group per camera</td>
+</tr>
+<tr>
+<td>Camera sensors (<code>{cam}</code>, <code>{cam}_depth</code>)</td>
+<td><code>traj_{i}/obs/sensor_data/{cam}</code></td>
+<td>dataset value is the <strong>byte-encoded MP4 filename</strong>, not the frames themselves; the file lives next to the HDF5</td>
+</tr>
+<tr>
+<td><code>env_states</code></td>
+<td><code>traj_{i}/env_states/{actors,articulations}</code></td>
+<td>JSON byte buffer is decoded and re-bucketed</td>
+</tr>
+<tr>
+<td>Anything in the <code>extra_sensor_mapping</code> allowlist</td>
+<td><code>traj_{i}/obs/extra/{target_name}</code></td>
+<td>This is an <strong>explicit allowlist</strong> in <code>_save_extra_data_from_batched</code> — see warning below</td>
+</tr>
+<tr>
+<td><code>rewards</code>, <code>terminated</code>, <code>truncated</code>, <code>success</code>, <code>fail</code>, <code>obs_scene</code></td>
+<td><code>traj_{i}/{name}</code></td>
+<td>rest is metadata</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">The <code>extra_sensor_mapping</code> allowlist</p>
+<p><code>_save_extra_data_from_batched</code> has a hard-coded dict that maps sensor
+uuids to HDF5 dataset names. If you register a brand-new sensor with a
+uuid that isn't in this dict and that isn't a camera / camera-param /
+action / qpos / qvel / env_states / metadata sensor, <strong>your sensor's data
+will not be written to disk</strong> — it'll happily flow through the in-memory
+observation pipeline but be silently dropped at save time. If you add a
+new task-side sensor that should be persisted, add its uuid to
+<code>extra_sensor_mapping</code> in <code>molmo_spaces/utils/save_utils.py</code>.</p>
+</div>
+<h3 id="quick-mental-model">Quick mental model<a class="headerlink" href="#quick-mental-model" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>sensor.get_observation()                         # numpy / dict / nested dict
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  └── task.get_observations()                    # dict[uuid -&gt; obs]
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        └── observation_cache (per-step list)
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>              └── prepare_episode_for_saving():
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>                    ├── save_videos_from_raw_observations()  # MP4 to disk
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>                    ├── strip camera keys
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>                    └── batch_observations()                  # → Dict[uuid, Tensor(T, ...)]
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>                          └── save_trajectories()             # HDF5 on disk
+</code></pre></div>
+<h2 id="adding-a-new-sensor">Adding a new sensor<a class="headerlink" href="#adding-a-new-sensor" title="Permanent link">&para;</a></h2>
+<p>The minimal recipe:</p>
+<ol>
+<li><strong>Subclass <code>Sensor</code></strong> and place where appropriate.</li>
+<li><strong>Pick a uuid</strong> that doesn't collide with anything in the core suite.</li>
+<li><strong>Set <code>is_dict</code> and <code>str_max_len</code></strong> if your output is a (nested) dict.
+   Otherwise set <code>observation_space</code> to a <code>gym.spaces.Box</code> that matches the
+   array you return.</li>
+<li><strong>Implement <code>get_observation(env, task, batch_index=0, ...)</code></strong>. Don't
+   raise on missing state silently — either raise loudly, or return a
+   well-defined sentinel that downstream consumers can detect.</li>
+<li><strong>Implement <code>reset()</code></strong> if you cache anything across calls.</li>
+<li><strong>Register it</strong> in the right place:<ul>
+<li>Task-specific → extend the list returned by your task's
+  <code>_create_sensor_suite_from_config</code>.</li>
+<li>Robot-specific → extend the list returned by your robot's
+  <code>create_robot_sensors</code>.</li>
+<li>Policy-specific → extend the list returned by your policy's
+  <code>create_policy_sensors</code>.</li>
+</ul>
+</li>
+<li><strong>Add the uuid to <code>extra_sensor_mapping</code></strong> in
+   <code>molmo_spaces/utils/save_utils.py</code> if you want it persisted to the
+   <code>obs/extra/...</code> group of the HDF5 file. (Camera / action / qpos sensors
+   are routed automatically.)</li>
+</ol>
+<p>When in doubt, look at how <a class="autorefs autorefs-internal" title="            PickTask" href="../api/tasks/#molmo_spaces.tasks.pick_task.PickTask"><code>PickTask</code></a>
+composes its suite — it's the smallest end-to-end example that uses the
+recommended <code>get_core_sensors()</code> + task-side extensions pattern.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 12, 2026 18:04:25 UTC"><span class="timeago" datetime="2026-06-12T18:04:25+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 12, 2026 18:04:25 UTC">2026-06-12</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="June 12, 2026 18:04:25 UTC"><span class="timeago" datetime="2026-06-12T18:04:25+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="June 12, 2026 18:04:25 UTC">2026-06-12</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Allen Institute for Artificial Intelligence
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../js/timeago.min.js"></script>
+      
+        <script src="../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>
