@@ -76,7 +76,7 @@ class XArm7BaseGroup(MocapRobotBaseGroup):
 
 ### Arm group
 
-Arms tend to be fairly similar, so we can copy much of the arm move group implementation from the [Franka FR3 implementation](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/robots/robot_views/franka_fr3_view.py#L30-L64). As explained in the key concepts, each move group has a root frame and a leaf frame. For the arm, the root frame is the arm root body (which is NOT the mocap base) and the leaf frame is the gripper frame.
+Arms tend to be fairly similar, so we can copy much of the arm move group implementation from the [Franka FR3 implementation](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/molmo_spaces/robots/robot_views/franka_fr3_view.py#L30-L56). As explained in the key concepts, each move group has a root frame and a leaf frame. For the arm, the root frame is the arm root body (which is NOT the mocap base) and the leaf frame is the gripper frame.
 
 Note the references to the xml tags as necessary, e.g. `joint1,...,joint7`, `link_base` being the arm root body, and `link_tcp` as the arm's leaf site. The `namespace` is used to ensure uniqueness of robot assets, and allows for multiple robots in the same scene. In MolmoSpaces we use `robot_0/` as the default namespace.
 
@@ -295,6 +295,11 @@ class XArm7Robot(Robot):
     def controllers(self) -> dict[str, Controller]:
         return self._controllers
 
+    def create_robot_sensors(self):
+        return super().create_robot_sensors() + [
+            TCPPoseSensor(uuid="tcp_pose"),
+        ]
+
     def get_arm_move_group_ids(self) -> list[str]:
         return ["arm"]
 
@@ -442,12 +447,12 @@ Results in data such as [this](./add_robot/datagen.mp4).
 
 ## Full example code
 
-Full example code (without modified robot models) is provided [here](https://github.com/allenai/molmospaces/blob/main/examples/add_robot/).
+Full example code (without modified robot models) is provided [here](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/examples/add_robot/).
 
 ## Additional resources
 
 This tutorial covers adding a new single static manipulator, but more complicated robots might require additional machinery. For further examples, see:
- - Manipulator on a mobile base: [Mobile Franka](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/robots/mobile_franka.py)
- - Floating gripper: [Floating RUM](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/robots/floating_rum.py).
+ - Manipulator on a mobile base: [Mobile Franka](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/molmo_spaces/robots/mobile_franka.py)
+ - Floating gripper: [Floating RUM](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/molmo_spaces/robots/floating_rum.py).
 
 To make a custom bimanual robot from two single-arm manipulators, for example, consider reusing the robot view implementations in a new robot implementation, and just inserting the robot twice during model insertion. Namespacing (e.g. `left/` and `right/`) can be used to prevent model name collisions.

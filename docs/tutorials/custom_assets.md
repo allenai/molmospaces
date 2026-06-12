@@ -90,7 +90,7 @@ from pathlib import Path
 import numpy as np
 
 grasp_path = Path("asset_library/red_block/droid/grasps.npz")
-grasp_path.mkdir(parents=True, exist_ok=True)
+grasp_path.parent.mkdir(parents=True, exist_ok=True)
 
 grasp_pose = np.eye(4)
 grasp_pose[:3, 1] = [0, -1, 0]
@@ -183,7 +183,7 @@ Note the key `"red_block"` and the `"object_id"` are the same as the `"asset_id"
 
 ### Configure datagen
 
-Now that our assets, grasps, and scene are ready, we will set up our datagen pipeline. The following python code should be placed (with imports) in `datagen.py`. Full example code (including asset/grasp libraries) is provided [here](https://github.com/allenai/molmospaces/blob/main/examples/custom_assets/).
+Now that our assets, grasps, and scene are ready, we will set up our datagen pipeline. The following python code should be placed (with imports) in `datagen.py`. Full example code (including asset/grasp libraries) is provided [here](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/examples/custom_assets/).
 
 
 #### Register user libraries
@@ -270,7 +270,7 @@ This should result in data such as [this](./custom_assets/datagen.mp4).
 
 ## Full example code and assets
 
-Full example code (including asset/grasp libraries) is provided [here](https://github.com/allenai/molmospaces/blob/main/examples/custom_assets/).
+Full example code (including asset/grasp libraries) is provided [here](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/examples/custom_assets/).
 
 ## Next steps
 

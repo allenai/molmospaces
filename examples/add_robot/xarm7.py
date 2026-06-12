@@ -8,6 +8,7 @@ from mujoco import MjData, MjSpec, mjtGeom
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
+from molmo_spaces.env.sensors import TCPPoseSensor
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 from molmo_spaces.robots.abstract import Robot
@@ -63,6 +64,11 @@ class XArm7Robot(Robot):
     @property
     def controllers(self) -> dict[str, Controller]:
         return self._controllers
+
+    def create_robot_sensors(self):
+        return super().create_robot_sensors() + [
+            TCPPoseSensor(uuid="tcp_pose"),
+        ]
 
     def get_arm_move_group_ids(self) -> list[str]:
         return ["arm"]
