@@ -39,6 +39,7 @@ nav:
   - Home: index.md
   - Guides:
       - Key Concepts: concepts.md
+      - Sensors: sensors.md
       - Built-In Assets: assets.md
       - Asset and Grasp Libraries: asset_libraries.md
       - Data Format: data_format.md
