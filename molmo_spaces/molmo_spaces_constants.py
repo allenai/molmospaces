@@ -95,7 +95,7 @@ if _raw_storage_type not in _valid_storage_types:
         f"Invalid MLSPACES_RESOURCE_STORAGE={_raw_storage_type!r}. Must be one of: {_valid_storage_types!r}"
     )
 
-STORAGE_IN_USE: Storage = _raw  # type: ignore[assignment]
+STORAGE_IN_USE: Storage = _raw_storage_type  # type: ignore[assignment]
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     robots={
