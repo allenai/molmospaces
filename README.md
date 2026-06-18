@@ -124,12 +124,13 @@ pip install -e ".[mujoco,curobo]"
 You may wish to specify some environment variables to configure behavior.
 Environment variables beginning with the `MLSPACES` prefix can be used to customize MolmoSpaces behavior.
 
-| Environment Variable | Effect | Default |
-|---|---|---|
-| `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `~/.cache/molmospaces/assets/<install-hash>` |
-| `MLSPACES_FORCE_INSTALL` | Override existing assets | `True` |
-| `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |  |
-| `MUJOCO_EGL_DEVICE_ID` | The rendering device; indices do not always match `CUDA_VISIBLE_DEVICES`. See [here](https://github.com/allenai/molmospaces/issues/66) for details. | `0`| 
+| Environment Variable          | Effect                                                                                                                                                                   | Default                                      |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| `MLSPACES_ASSETS_DIR`         | Where to place downloaded assets                                                                                                                                         | `~/.cache/molmospaces/assets/<install-hash>` |
+| `MLSPACES_FORCE_INSTALL`      | Override existing assets                                                                                                                                                 | `True`                                       |
+| `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |                                              |
+| `MUJOCO_EGL_DEVICE_ID`        | The rendering device; indices do not always match `CUDA_VISIBLE_DEVICES`. See [here](https://github.com/allenai/molmospaces/issues/66) for details.                      | `0`                                          | 
+| `MLSPACES_RESOURCE_STORAGE`   | Where to download assets from. Options: `{gc, hf, r2}` for Google Cloud, HuggingFace, or Cloudflare R2                                                                   | `gc`                          |
 
 
 ### Quick Test
