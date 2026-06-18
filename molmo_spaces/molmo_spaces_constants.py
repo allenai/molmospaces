@@ -84,9 +84,8 @@ PINNED_ASSETS_FILE = (
     else None
 )
 
-STORAGE_IN_USE: Literal["gc", "hf", "r2"] = (
-    "r2"  # If using hf, HF_TOKEN needs to exist in the environment
-)
+# If using hf, HF_TOKEN needs to exist in the environment
+STORAGE_IN_USE: Literal["gc", "hf", "r2"] = "gc"
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     robots={
