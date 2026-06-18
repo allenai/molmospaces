@@ -84,8 +84,18 @@ PINNED_ASSETS_FILE = (
     else None
 )
 
-# If using hf, HF_TOKEN needs to exist in the environment
-STORAGE_IN_USE: Literal["gc", "hf", "r2"] = "gc"
+# If using hf, HF_TOKEN may need to exist in the environment
+_valid_storage_types = {"gc", "hf", "r2"}
+
+DEFAULT_STORAGE: Literal["gc", "hf", "r2"] = "gc"
+
+_raw_storage_type = os.getenv("MLSPACES_RESOURCE_STORAGE", DEFAULT_STORAGE)
+if _raw_storage_type not in _valid_storage_types:
+    raise ValueError(
+        f"Invalid MLSPACES_RESOURCE_STORAGE={_raw_storage_type!r}. Must be one of: {_valid_storage_types!r}"
+    )
+
+STORAGE_IN_USE: Storage = _raw  # type: ignore[assignment]
 
 DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     robots={
