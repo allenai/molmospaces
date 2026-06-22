@@ -12,7 +12,10 @@ Maintainer: [Max Argus](maxargus.com)
 ## 2026 Papers <a name="2026"></a>
 -->
 
-### Training <a name="2026rm"></a>
+### Custom Data Generation <a name="2026ct"></a>
+*  07/2026: [MolmoMotion Forecasting Point Trajectories in 3D with Language Instruction](https://molmomotion.github.io/)
+
+### Training Data Use <a name="2026rm"></a>
 *  07/2026: [Playful Agentic Robot Learning (RATS)](https://playful-rats.github.io/)
 *  03/2026: [MolmoB0T: Large-Scale Simulation Enables Zero-Shot Manipulation](https://allenai.github.io/MolmoBot/)
 
