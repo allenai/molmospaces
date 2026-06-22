@@ -28,12 +28,12 @@
 
 ---
 ### Updates
-- **[2026/07/22]** 🔥 [**awesome-molmospaces-papers**](https://github.com/allenai/molmospaces/blob/main/docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
+- **[2026/07/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
 - **[2026/06/12]** 🔥 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, with significantly better usability, included tutorials, and more! Check out the changelog for more information.
 - **[2026/03/24]** 🔥 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for scripted planners, data generation, and benchmark creation.
 - **[2026/02/27]** 🔥 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
-- **[2026/02/11]** 🔥 [**Datasets**](https://github.com/allenai/molmospaces/blob/main/docs/assets.md#assets-and-resource-manager) for assets and scenes in MJCF and USDa format.
-- **[2026/02/11]** 🔥 [**Benchmark**](https://github.com/allenai/molmospaces/blob/main/molmo_spaces/evaluation/README.md) for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs.
+- **[2026/02/11]** 🔥 [**Datasets**](docs/assets.md#assets-and-resource-manager) for assets and scenes in MJCF and USDa format.
+- **[2026/02/11]** 🔥 [**Benchmark**](molmo_spaces/evaluation/README.md) for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs.
 - **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
 
 
@@ -177,7 +177,7 @@ Please refer to [here](./docs/assets.md) for instructions to set up data directo
 
 The documentation for MolmoSpaces can be found [here](https://allenai.github.io/molmospaces/). 
 
-For a list of projects usingt MolmoSpaces look [here](https://github.com/allenai/molmospaces/blob/main/docs/awesome-molmospaces-papers.md).
+For a list of projects using MolmoSpaces look [here](docs/awesome-molmospaces-papers.md).
 
 Additional documentation for using assets and benchmarks in other simulators are listed below:
 
