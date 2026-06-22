@@ -176,13 +176,14 @@ Please refer to [here](./docs/assets.md) for instructions to set up data directo
 
 The documentation for MolmoSpaces can be found [here](https://allenai.github.io/molmospaces/). 
 
-Additional documentation for dependencies are listed below:
+Additional documentation for using assets and benchmarks in other simulators are listed below:
 
 | Simulator | Documentation                                                                 |
 |---|-------------------------------------------------------------------------------|
 | MuJoCo | [MuJoCo Assets Quick Start Instructions](docs/assets.md#mujoco-assets)        |
-| Isaac-Sim | [Isaac-Sim Assets Quick Start Instructions](molmo_spaces_isaac/README.md)     |
 | ManiSkill | [ManiSkill Assets Quick Start Instructions](molmo_spaces_maniskill/README.md) |
+| Isaac-Sim | [Isaac-Sim Assets Quick Start Instructions](molmo_spaces_isaac/README.md)     |
+| Isaac Lab-Arena | [Isaac Lab-Arena Support](https://github.com/AravindhShan-nv/molmospaces/tree/codex/isaac-arena-policy-parity-progress/molmo_spaces_isaac#isaac-lab-arena-molmospaces-pick-demo) (by NVIDIA, beta version)|
 
 ## Experiment Configs
 
