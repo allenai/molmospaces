@@ -2424,7 +2424,7 @@
   </span>
 
 <a href="#molmo_spaces.MOLMO_SPACES_BASE_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">MOLMO_SPACES_BASE_DIR</span> <span class="o">=</span> <span class="n"><span title="parent">parent</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">MOLMO_SPACES_BASE_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="__file__">__file__</span></span><span class="p">)</span><span class="o">.</span><span class="n"><span title="parent">parent</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2864,7 +2864,7 @@
   </span>
 
 <a href="#molmo_spaces.molmo_spaces_constants.ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR</span> <span class="o">=</span> <span class="n"><span title="parent.parent">parent</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="__file__">__file__</span></span><span class="p">)</span><span class="o">.</span><span class="n"><span title="resolve">resolve</span></span><span class="p">()</span><span class="o">.</span><span class="n"><span title="parent">parent</span></span><span class="o">.</span><span class="n"><span title="parent.parent">parent</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2886,7 +2886,7 @@
   </span>
 
 <a href="#molmo_spaces.molmo_spaces_constants.DATA_CACHE_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DATA_CACHE_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_CACHE_DIR&#39;</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.molmo_spaces_constants._DATA_CACHE_DEFAULT">_DATA_CACHE_DEFAULT</span></span><span class="p">))</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DATA_CACHE_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.environ">environ</span></span><span class="o">.</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_CACHE_DIR&#39;</span><span class="p">,</span> <span class="n"><span title="molmo_spaces.molmo_spaces_constants._DATA_CACHE_DEFAULT">_DATA_CACHE_DEFAULT</span></span><span class="p">))</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2908,7 +2908,7 @@
   </span>
 
 <a href="#molmo_spaces.molmo_spaces_constants.ASSETS_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ASSETS_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_ASSETS_DIR&#39;</span><span class="p">,</span> <span class="n"><span title="pathlib.Path.home">home</span></span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;.cache&#39;</span> <span class="o">/</span> <span class="s1">&#39;molmospaces&#39;</span> <span class="o">/</span> <span class="s1">&#39;assets&#39;</span> <span class="o">/</span> <span class="n"><span title="molmo_spaces.molmo_spaces_constants._install_hash">_install_hash</span></span><span class="p">))</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ASSETS_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.environ">environ</span></span><span class="o">.</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_ASSETS_DIR&#39;</span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="o">.</span><span class="n"><span title="pathlib.Path.home">home</span></span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;.cache&#39;</span> <span class="o">/</span> <span class="s1">&#39;molmospaces&#39;</span> <span class="o">/</span> <span class="s1">&#39;assets&#39;</span> <span class="o">/</span> <span class="n"><span title="molmo_spaces.molmo_spaces_constants._install_hash">_install_hash</span></span><span class="p">))</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2957,7 +2957,7 @@
   </span>
 
 <a href="#molmo_spaces.molmo_spaces_constants.OBJAVERSE_ASSETS_DIR" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">OBJAVERSE_ASSETS_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_OBJAVERSE_ASSETS_DIR&#39;</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            ASSETS_DIR
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">OBJAVERSE_ASSETS_DIR</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.environ">environ</span></span><span class="o">.</span><span class="n"><span title="os.environ.get">get</span></span><span class="p">(</span><span class="s1">&#39;MLSPACES_OBJAVERSE_ASSETS_DIR&#39;</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            ASSETS_DIR
 
 
   
@@ -2984,7 +2984,7 @@
   </span>
 
 <a href="#molmo_spaces.molmo_spaces_constants.PINNED_ASSETS_FILE" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">PINNED_ASSETS_FILE</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os.environ">environ</span></span><span class="p">[</span><span class="s1">&#39;MLSPACES_PINNED_ASSETS_FILE&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="s1">&#39;MLSPACES_PINNED_ASSETS_FILE&#39;</span> <span class="ow">in</span> <span class="n"><span title="os.environ">environ</span></span> <span class="k">else</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">PINNED_ASSETS_FILE</span> <span class="o">=</span> <span class="n"><span title="pathlib.Path">Path</span></span><span class="p">(</span><span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.environ">environ</span></span><span class="p">[</span><span class="s1">&#39;MLSPACES_PINNED_ASSETS_FILE&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="s1">&#39;MLSPACES_PINNED_ASSETS_FILE&#39;</span> <span class="ow">in</span> <span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.environ">environ</span></span> <span class="k">else</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3116,7 +3116,7 @@
   </span>
 
 <a href="#molmo_spaces.molmo_spaces_constants.pinned_assets" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pinned_assets</span> <span class="o">=</span> <span class="n"><span title="json.load">load</span></span><span class="p">(</span><span class="n"><span title="f">f</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pinned_assets</span> <span class="o">=</span> <span class="n"><span title="json">json</span></span><span class="o">.</span><span class="n"><span title="json.load">load</span></span><span class="p">(</span><span class="n"><span title="f">f</span></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
