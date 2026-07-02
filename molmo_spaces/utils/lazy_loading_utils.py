@@ -241,6 +241,8 @@ def install_uid(uid, grasp_source="droid_objaverse"):
 def install_scene_with_objects_and_grasps_from_path(
     xml_path, grasp_sources=("droid_objaverse",), exclude_thor=True
 ):
+    if isinstance(xml_path, dict):
+        xml_path = xml_path["base"]
     type_to_source_to_archives = {
         "scenes": install_scene_from_path(xml_path),
     }
