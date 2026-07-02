@@ -20,4 +20,5 @@ Maintainer: [Max Argus](maxargus.com)
 *  03/2026: [MolmoB0T: Large-Scale Simulation Enables Zero-Shot Manipulation](https://allenai.github.io/MolmoBot/)
 
 ### Benchmark Evaluation <a name="2026ev"></a>
+*  03/2026: [TeleDex](https://arxiv.org/abs/2603.17065)
 *  05/2026: [MolmoAct2](https://arxiv.org/abs/2605.02881)
