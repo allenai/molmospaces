@@ -3,8 +3,7 @@
 ## Description
 This repository is a list of papers using MolmoSpaces
 
-Maintainer: [Max Argus](maxargus.com)
-
+Maintainer: [Max Argus](https://maxargus.com)
 
 ----
 
