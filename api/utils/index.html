@@ -36093,9 +36093,7 @@ New registrations will not be visible until the caches are cleared.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/utils/lazy_loading_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-268">268</a></span>
-<span class="normal"><a href="#__codelineno-0-269">269</a></span>
-<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-270">270</a></span>
 <span class="normal"><a href="#__codelineno-0-271">271</a></span>
 <span class="normal"><a href="#__codelineno-0-272">272</a></span>
 <span class="normal"><a href="#__codelineno-0-273">273</a></span>
@@ -36104,18 +36102,20 @@ New registrations will not be visible until the caches are cleared.</p>
 <span class="normal"><a href="#__codelineno-0-276">276</a></span>
 <span class="normal"><a href="#__codelineno-0-277">277</a></span>
 <span class="normal"><a href="#__codelineno-0-278">278</a></span>
-<span class="normal"><a href="#__codelineno-0-279">279</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="k">def</span><span class="w"> </span><span class="nf">debug_lazy_search</span><span class="p">():</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="n">uid</span> <span class="o">=</span> <span class="s2">&quot;0000c32fde7f45efb8d14e8ba737d50c&quot;</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>    <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span> <span class="o">=</span> <span class="n">locate_uid_package</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span><span class="p">)</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="n">install_uid</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a>    <span class="n">uid</span> <span class="o">=</span> <span class="s2">&quot;Bowl_1&quot;</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span> <span class="o">=</span> <span class="n">locate_uid_package</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span><span class="p">)</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="n">install_uid</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#__codelineno-0-280">280</a></span>
+<span class="normal"><a href="#__codelineno-0-281">281</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="k">def</span><span class="w"> </span><span class="nf">debug_lazy_search</span><span class="p">():</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>    <span class="n">uid</span> <span class="o">=</span> <span class="s2">&quot;0000c32fde7f45efb8d14e8ba737d50c&quot;</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span> <span class="o">=</span> <span class="n">locate_uid_package</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span><span class="p">)</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>    <span class="n">install_uid</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="n">uid</span> <span class="o">=</span> <span class="s2">&quot;Bowl_1&quot;</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span> <span class="o">=</span> <span class="n">locate_uid_package</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">xml_path</span><span class="p">)</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="n">install_uid</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -36536,29 +36536,33 @@ New registrations will not be visible until the caches are cleared.</p>
 <span class="normal"><a href="#__codelineno-0-260">260</a></span>
 <span class="normal"><a href="#__codelineno-0-261">261</a></span>
 <span class="normal"><a href="#__codelineno-0-262">262</a></span>
-<span class="normal"><a href="#__codelineno-0-263">263</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="k">def</span><span class="w"> </span><span class="nf">install_scene_with_objects_and_grasps_from_path</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="k">def</span><span class="w"> </span><span class="nf">install_scene_with_objects_and_grasps_from_path</span><span class="p">(</span>
 <a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="n">xml_path</span><span class="p">,</span> <span class="n">grasp_sources</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;droid_objaverse&quot;</span><span class="p">,),</span> <span class="n">exclude_thor</span><span class="o">=</span><span class="kc">True</span>
 <a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="p">):</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="n">type_to_source_to_archives</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">install_scene_from_path</span><span class="p">(</span><span class="n">xml_path</span><span class="p">),</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="p">}</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">get_resource_manager</span><span class="p">()</span><span class="o">.</span><span class="n">cache_lock</span><span class="p">:</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>        <span class="c1"># We just need to link the scene, no need to check for objects or grasps</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="c1"># (everything is pre-cached, and we use a global symlink for those data types)</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>        <span class="k">return</span> <span class="n">type_to_source_to_archives</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="n">type_to_source_to_archives</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">install_objects_for_scene</span><span class="p">(</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>        <span class="n">xml_path</span><span class="p">,</span> <span class="n">exclude_thor</span><span class="o">=</span><span class="n">exclude_thor</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="p">)</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="n">type_to_source_to_archives</span><span class="p">[</span><span class="s2">&quot;grasps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>    <span class="k">for</span> <span class="n">grasp_source</span> <span class="ow">in</span> <span class="n">grasp_sources</span><span class="p">:</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>        <span class="n">type_to_source_to_archives</span><span class="p">[</span><span class="s2">&quot;grasps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>            <span class="n">install_grasps_for_scene</span><span class="p">(</span><span class="n">xml_path</span><span class="p">,</span> <span class="n">grasp_source</span><span class="o">=</span><span class="n">grasp_source</span><span class="p">,</span> <span class="n">exclude_thor</span><span class="o">=</span><span class="n">exclude_thor</span><span class="p">)</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>        <span class="p">)</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="k">return</span> <span class="n">type_to_source_to_archives</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xml_path</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="n">xml_path</span> <span class="o">=</span> <span class="n">xml_path</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="n">type_to_source_to_archives</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">install_scene_from_path</span><span class="p">(</span><span class="n">xml_path</span><span class="p">),</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>    <span class="p">}</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">get_resource_manager</span><span class="p">()</span><span class="o">.</span><span class="n">cache_lock</span><span class="p">:</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>        <span class="c1"># We just need to link the scene, no need to check for objects or grasps</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>        <span class="c1"># (everything is pre-cached, and we use a global symlink for those data types)</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>        <span class="k">return</span> <span class="n">type_to_source_to_archives</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="n">type_to_source_to_archives</span><span class="p">[</span><span class="s2">&quot;objects&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">install_objects_for_scene</span><span class="p">(</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>        <span class="n">xml_path</span><span class="p">,</span> <span class="n">exclude_thor</span><span class="o">=</span><span class="n">exclude_thor</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="p">)</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">type_to_source_to_archives</span><span class="p">[</span><span class="s2">&quot;grasps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">for</span> <span class="n">grasp_source</span> <span class="ow">in</span> <span class="n">grasp_sources</span><span class="p">:</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>        <span class="n">type_to_source_to_archives</span><span class="p">[</span><span class="s2">&quot;grasps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>            <span class="n">install_grasps_for_scene</span><span class="p">(</span><span class="n">xml_path</span><span class="p">,</span> <span class="n">grasp_source</span><span class="o">=</span><span class="n">grasp_source</span><span class="p">,</span> <span class="n">exclude_thor</span><span class="o">=</span><span class="n">exclude_thor</span><span class="p">)</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>        <span class="p">)</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>    <span class="k">return</span> <span class="n">type_to_source_to_archives</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
