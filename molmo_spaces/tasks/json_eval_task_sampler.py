@@ -698,7 +698,11 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         # }
         # for group_name in self.episode_spec.robot.init_qpos:
         #     robot_view.get_move_group(group_name).joint_pos = test_qpos[group_name]
-        for group_name, qpos in self.config.robot_config.init_qpos.items():
+        # for group_name, qpos in self.config.robot_config.init_qpos.items():
+        #     robot_view.get_move_group(group_name).joint_pos = np.array(qpos)
+        for group_name, qpos in self.episode_spec.robot.init_qpos.items():
+            if not qpos:
+                continue
             robot_view.get_move_group(group_name).joint_pos = np.array(qpos)
 
         mujoco.mj_forward(model, data)

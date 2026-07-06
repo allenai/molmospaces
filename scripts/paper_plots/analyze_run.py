@@ -5,7 +5,16 @@ Combines trajectories, computes statistics, and generates visualization.
 """
 
 import os
+import sys
 import argparse
+
+# Switch matplotlib to a non-interactive backend BEFORE importing thor_analysis
+# (which imports pyplot at module load), so --save-only works on headless hosts
+# without a display and doesn't pop up interactive windows.
+if "--save-only" in sys.argv:
+    import matplotlib
+    matplotlib.use("Agg")
+
 import thor_analysis
 
 
@@ -58,6 +67,24 @@ def main():
             "<bin>/{success,fail}/ — 5 per outcome per bin (symlinked)."
         ),
     )
+    parser.add_argument(
+        "--debug-trajectories",
+        action="store_true",
+        help=(
+            "Save up to 10 success and 10 fail trajectory videos under "
+            "<run>/debug_videos/outcome/{success,fail}/ (symlinked)."
+        ),
+    )
+    parser.add_argument(
+        "--save-only",
+        action="store_true",
+        help="Save plots to disk only; skip interactive plt.show() windows.",
+    )
+    parser.add_argument(
+        "--force-combine",
+        action="store_true",
+        help="Rebuild combined_trajectories.h5 even if it already exists.",
+    )
 
     args = parser.parse_args()
 
@@ -74,7 +101,8 @@ def main():
     combined_traj_path = thor_analysis.combine_all_trajectories(
         folder_path=RUN_PATH,
         output_file=output_file,
-        first_n=args.first_n
+        first_n=args.first_n,
+        force=args.force_combine,
     )
 
     if combined_traj_path is None:
@@ -141,7 +169,8 @@ def main():
     thor_analysis.create_bar_graph(
         object_stats,
         subtitle=SUBTITLE,
-        output_file=bar_graph_path
+        output_file=bar_graph_path,
+        show=not args.save_only,
     )
 
     # Bucket success rate by number of graspable objects near the pickup
@@ -168,6 +197,7 @@ def main():
         subtitle=SUBTITLE,
         output_file=density_bar_graph_path,
         radius_m=args.nearby_radius_m,
+        show=not args.save_only,
     )
 
     print("\nBuilding success-by-pick-object histogram per nearby-graspable bin...")
@@ -185,6 +215,14 @@ def main():
         output_file=obj_hist_path,
         radius_m=args.nearby_radius_m,
     )
+
+    if args.debug_trajectories:
+        outcome_video_dir = os.path.join(RUN_PATH, "debug_videos", "outcome")
+        thor_analysis.save_debug_videos_by_outcome(
+            combined_traj_path,
+            output_dir=outcome_video_dir,
+            n_per_outcome=10,
+        )
 
     if args.debug_video:
         debug_video_dir = os.path.join(RUN_PATH, "debug_videos", "num_nearby_objects")

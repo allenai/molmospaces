@@ -6,6 +6,8 @@ import importlib
 import pickle
 import random
 import base64
+import shutil
+import tempfile
 from pathlib import Path
 from collections import defaultdict
 
@@ -92,12 +94,25 @@ def copy_group_recursively(src_group, dst_group):
             copy_group_recursively(item, new_group)
 
 
-def combine_all_trajectories(folder_path, output_file="combined_trajectories.h5", first_n=None):
+def combine_all_trajectories(
+    folder_path,
+    output_file="combined_trajectories.h5",
+    first_n=None,
+    force=False,
+):
     folder = Path(folder_path)
 
     if not folder.exists():
         print(f"Error: Folder '{folder_path}' does not exist")
         return
+
+    output_path = Path(output_file)
+    if output_path.exists() and output_path.stat().st_size > 0 and not force:
+        print(
+            f"Reusing existing combined file: {output_file} "
+            f"({output_path.stat().st_size/1e6:.1f} MB). Pass force=True to rebuild."
+        )
+        return os.path.abspath(output_file)
 
     h5_files = [
         f for pattern in [
@@ -112,11 +127,17 @@ def combine_all_trajectories(folder_path, output_file="combined_trajectories.h5"
         print(f"No trajectories.h5 files found in '{folder_path}'")
         return
 
-    output_path = Path(output_file)
     if output_path.exists():
         output_path.unlink()
 
-    combined_file = h5py.File(output_file, "w")
+    # Stage the combined file on local disk. h5py issues thousands of small
+    # metadata/data ops per trajectory; doing them against a network FS (weka)
+    # serializes each one on a round-trip and turns a ~minute job into hours.
+    # We write locally and move the finished file to the final location.
+    staging_dir = tempfile.mkdtemp(prefix="combine_traj_")
+    staging_path = os.path.join(staging_dir, "combined.h5")
+
+    combined_file = h5py.File(staging_path, "w")
     total_trajectories = 0
     episode_num = 0
 
@@ -138,11 +159,13 @@ def combine_all_trajectories(folder_path, output_file="combined_trajectories.h5"
                 episode_num += 1
                 new_traj_key = f"episode_{current_ep:04d}_{traj_key}"
                 try:
-                    src_group = src_file[traj_key]
                     if new_traj_key in combined_file:
                         del combined_file[new_traj_key]
-                    dst_group = combined_file.create_group(new_traj_key)
-                    copy_group_recursively(src_group, dst_group)
+                    # Native HDF5 group copy: avoids pulling every dataset
+                    # through Python and is ~10-100x faster than the manual
+                    # recursive copy on a network FS.
+                    src_file.copy(traj_key, combined_file, name=new_traj_key)
+                    dst_group = combined_file[new_traj_key]
                     dst_group.attrs["source_file"] = str(h5_file_path)
                     dst_group.attrs["episode_num"] = current_ep
 
@@ -184,6 +207,14 @@ def combine_all_trajectories(folder_path, output_file="combined_trajectories.h5"
     combined_file.attrs["total_episodes"] = episode_num
     combined_file.attrs["source_folder"] = str(folder_path)
     combined_file.close()
+
+    # Move the staged file to its final destination as a single bulk write.
+    print(f"Moving staged file to {output_file} ...")
+    shutil.move(staging_path, output_file)
+    try:
+        os.rmdir(staging_dir)
+    except OSError:
+        pass
 
     print(f"Saved {total_trajectories} trajectories to {output_file}")
 
@@ -553,6 +584,17 @@ def calculate_success_given_lift_height(
     else:
         ci_lo = ci_hi = 0.0
 
+    # Lift rate: treat any lift (lift_height >= threshold) as the success event.
+    lift_rate = (
+        (lifted_episodes / total_episodes * 100) if total_episodes > 0 else 0.0
+    )
+    if total_episodes > 0:
+        la, lb = 1 + lifted_episodes, 1 + (total_episodes - lifted_episodes)
+        lift_ci_lo = beta_dist.ppf(0.025, la, lb) * 100
+        lift_ci_hi = beta_dist.ppf(0.975, la, lb) * 100
+    else:
+        lift_ci_lo = lift_ci_hi = 0.0
+
     print(f"\n{'='*80}")
     print("SUCCESS RATE GIVEN LIFT_HEIGHT (from task_info)")
     print(f"{'='*80}")
@@ -566,6 +608,10 @@ def calculate_success_given_lift_height(
         f"(95% CI: {ci_lo:.2f}% - {ci_hi:.2f}%)"
     )
     print(f"Absolute rate:              {abs_rate:.2f}%")
+    print(
+        f"Lift rate (lift=success):   {lift_rate:.2f}% "
+        f"(95% CI: {lift_ci_lo:.2f}% - {lift_ci_hi:.2f}%)"
+    )
     if success_without_lift:
         print(
             f"WARNING: {len(success_without_lift)} episodes had success=True but "
@@ -587,6 +633,9 @@ def calculate_success_given_lift_height(
         "absolute_rate": abs_rate,
         "ci_lo": ci_lo,
         "ci_hi": ci_hi,
+        "lift_rate": lift_rate,
+        "lift_ci_lo": lift_ci_lo,
+        "lift_ci_hi": lift_ci_hi,
         "success_without_lift": success_without_lift,
         "no_task_info": no_task_info,
     }
@@ -669,7 +718,7 @@ def print_statistics(object_stats):
     print()
 
 
-def create_bar_graph(object_stats, output_file='success_rate_by_object.png', subtitle=None, sort_by_success_rate=False):
+def create_bar_graph(object_stats, output_file='success_rate_by_object.png', subtitle=None, sort_by_success_rate=False, show=True):
     if not _HAS_MATPLOTLIB or not _HAS_SEABORN:
         raise RuntimeError("matplotlib and seaborn are required for plotting but not available")
 
@@ -738,7 +787,26 @@ def create_bar_graph(object_stats, output_file='success_rate_by_object.png', sub
         plt.savefig(output_file, dpi=150, bbox_inches='tight')
         print(f"Saved plot to: {output_file}")
 
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+class _PickleMissingClass:
+    """Stand-in for classes referenced by a legacy frozen_config pickle that
+    no longer exist in this repo (e.g. fork-only robot configs). Accepts any
+    constructor args and absorbs __setstate__ into __dict__, so unpickling
+    continues and sibling fields (task_config) decode normally."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __setstate__(self, state):
+        if isinstance(state, dict):
+            self.__dict__.update(state)
+        elif isinstance(state, tuple) and len(state) == 2 and isinstance(state[0], dict):
+            self.__dict__.update(state[0])
 
 
 class _ConfigUnpickler(pickle.Unpickler):
@@ -762,7 +830,11 @@ class _ConfigUnpickler(pickle.Unpickler):
                 cls = getattr(cls, part)
             return cls
         except (ImportError, AttributeError, TypeError):
+            pass
+        try:
             return super().find_class(module, name)
+        except (ImportError, AttributeError, TypeError):
+            return _PickleMissingClass
 
 
 def extract_frozen_config_from_bytes(obs_scene_bytes):
@@ -1240,6 +1312,87 @@ def save_debug_videos_by_density(
     return output_dir
 
 
+def save_debug_videos_by_outcome(
+    h5_file_path,
+    output_dir,
+    n_per_outcome=10,
+    seed=42,
+):
+    """Symlink up to n_per_outcome sample videos per outcome (success/fail)
+    under output_dir/<success|fail>/. Outcome is determined by any() of the
+    saved success array.
+    """
+    import re
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    _traj_idx_re = re.compile(r"traj_(\d+)$")
+
+    def _videos_for_traj(traj_key, video_paths):
+        m = _traj_idx_re.search(traj_key)
+        if m is None:
+            return video_paths
+        prefix = f"episode_{int(m.group(1)):08d}_"
+        filtered = [vp for vp in video_paths if os.path.basename(vp).startswith(prefix)]
+        return filtered if filtered else video_paths
+
+    groups = defaultdict(list)  # success_flag -> list of (traj_key, video_paths)
+
+    with h5py.File(h5_file_path, "r") as f:
+        traj_keys = [key for key in f.keys() if key.startswith("episode_")]
+        for traj_key in traj_keys:
+            traj = f[traj_key]
+            if "success" not in traj or "videos" not in traj:
+                continue
+
+            final_success = bool(np.any(traj["success"][:]))
+
+            video_paths = [
+                vp.decode("utf-8") if isinstance(vp, bytes) else vp
+                for vp in traj["videos"][:]
+            ]
+            video_paths = _videos_for_traj(traj_key, video_paths)
+            if not video_paths:
+                continue
+
+            groups[final_success].append((traj_key, video_paths))
+
+    rng = random.Random(seed)
+    print(f"\nWriting outcome debug videos under: {output_dir}")
+    print(f"  (up to {n_per_outcome} per outcome; symlinking when possible)")
+
+    for success_flag in (True, False):
+        outcome = "success" if success_flag else "fail"
+        entries = groups.get(success_flag, [])
+        out_subdir = output_dir / outcome
+        out_subdir.mkdir(parents=True, exist_ok=True)
+
+        sample_size = min(n_per_outcome, len(entries))
+        sampled = rng.sample(entries, sample_size) if sample_size else []
+
+        n_files = 0
+        for traj_key, video_paths in sampled:
+            for vp in video_paths:
+                if not os.path.exists(vp):
+                    continue
+                src = Path(vp).resolve()
+                target = out_subdir / f"{traj_key}_{src.name}"
+                target.unlink(missing_ok=True)
+                try:
+                    target.symlink_to(src)
+                except OSError:
+                    shutil.copy2(src, target)
+                n_files += 1
+
+        print(
+            f"  outcome={outcome:<7} sampled {sample_size}/{len(entries)} "
+            f"episode(s) -> {n_files} file(s)"
+        )
+
+    return output_dir
+
+
 def save_debug_videos_by_grasp_correctness(
     h5_file_path,
     output_dir,
@@ -1351,6 +1504,7 @@ def create_density_bar_graph(
     output_file='success_rate_by_nearby_density.png',
     subtitle=None,
     radius_m=None,
+    show=True,
 ):
     if not _HAS_MATPLOTLIB or not _HAS_SEABORN:
         raise RuntimeError("matplotlib and seaborn are required for plotting but not available")
@@ -1406,7 +1560,10 @@ def create_density_bar_graph(
         plt.savefig(output_file, dpi=150, bbox_inches='tight')
         print(f"Saved plot to: {output_file}")
 
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def create_comparison_bar_graph(object_stats_list, labels, output_file='success_rate_comparison.png', subtitle=None):

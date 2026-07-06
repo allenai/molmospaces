@@ -32,14 +32,14 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.grasping_type = exp_config.policy_config.grasping_type
         self.chunk_size = exp_config.policy_config.chunk_size
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
-        # PromptSampler routes the semantic_grasp_pick prompt through the
-        # per-object templates in semantic_pick_prompts.py (driven by
-        # policy_config.prompt_level). Construction-time exp_config.task_type
-        # is whatever the eval config defaults to (e.g. "pick" for
-        # JsonBenchmarkEvalConfig); the actual task_type is set per-episode
-        # from the benchmark and re-synced inside PromptSampler.get_prompt.
-        # We gate *usage* on the live per-episode task_type below, so this
-        # only takes effect for semantic_grasp_pick episodes.
+        self.use_prompt_sampler = exp_config.policy_config.use_prompt_sampler
+        # PromptSampler is the prompt source whenever use_prompt_sampler is
+        # True (default): it pulls per-object templates from utils.py for
+        # generic tasks and from semantic_pick_prompts.py for
+        # semantic_grasp_pick (driven by policy_config.prompt_level). The
+        # construction-time exp_config.task_type is whatever the eval config
+        # defaults to (e.g. "pick" for JsonBenchmarkEvalConfig); the actual
+        # task_type is re-synced per-episode inside PromptSampler.get_prompt.
         self.prompt_sampler = PromptSampler(
             task_type=exp_config.task_type,
             prompt_templates=exp_config.policy_config.prompt_templates,
@@ -133,11 +133,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
                 )
             obs = obs[0]
         model_input = {**obs}
-        # Use the per-object PromptSampler templates only for semantic_grasp_pick
-        # (the prompt_level ablation target); fall back to the task's natural
-        # description for every other task type to preserve prior pi behavior.
-        episode_task_type = getattr(self.task.env.config, "task_type", None)
-        if episode_task_type == "semantic_grasp_pick":
+        if self.use_prompt_sampler:
             prompt = self.prompt_sampler.get_prompt(self.task)
         else:
             prompt = self.task.get_task_description()
@@ -218,8 +214,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        episode_task_type = getattr(self.task.env.config, "task_type", None)
-        if episode_task_type == "semantic_grasp_pick":
+        if self.use_prompt_sampler:
             info["prompt"] = self.prompt_sampler.get_prompt(self.task)
         else:
             info["prompt"] = self.task.get_task_description()

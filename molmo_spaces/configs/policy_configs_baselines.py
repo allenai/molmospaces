@@ -58,6 +58,11 @@ class PiPolicyConfig(BasePolicyConfig):
     remote_config: dict | None = dict(host="localhost", port=8080)
     prompt_object_word_num: str = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
+    # When True, every episode's prompt is produced by PromptSampler
+    # (templates in learned_policy/utils.py + semantic_pick_prompts.py).
+    # When False, fall back to task.get_task_description() — i.e. the
+    # benchmark's referral expressions for pick/pick_and_place tasks.
+    use_prompt_sampler: bool = True
     # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
     # 1 = basic pick prompt, 2 = existing semantic prompts (default),
     # 3 = "pick up the {object} by the {part}.".
@@ -238,6 +243,11 @@ class Molmoact2PolicyConfig(BasePolicyConfig):
     chunk_size: int = 8
     prompt_object_word_num: int = 1
     prompt_templates: list[str] | None = None
+    # When True, every episode's prompt is produced by PromptSampler
+    # (templates in learned_policy/utils.py + semantic_pick_prompts.py).
+    # When False, fall back to task.get_task_description() — i.e. the
+    # benchmark's referral expressions for pick/pick_and_place tasks.
+    use_prompt_sampler: bool = True
     # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
     # 1 = basic pick prompt, 2 = existing semantic prompts (default),
     # 3 = "pick up the {object} by the {part}.".

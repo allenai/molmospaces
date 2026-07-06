@@ -144,6 +144,23 @@ class JsonEvalRunner(ParallelRolloutRunner):
             self._episodes_by_house[ep.house_index].append(ep)
         self._episodes_by_house = dict(self._episodes_by_house)
 
+        if house_inds is not None:
+            requested = set(house_inds)
+            missing = requested - self._episodes_by_house.keys()
+            if missing:
+                log.warning(
+                    "Requested house_inds %s not present in benchmark; ignoring them.",
+                    sorted(missing),
+                )
+            self._episodes_by_house = {
+                h: eps for h, eps in self._episodes_by_house.items() if h in requested
+            }
+            if not self._episodes_by_house:
+                raise ValueError(
+                    f"After filtering by house_inds={sorted(requested)}, no episodes remain "
+                    f"in benchmark at {self.benchmark_dir}."
+                )
+
         # If episode_idx is specified, only process the house containing that episode
         episode_idx = eval_params.episode_idx
         if episode_idx is not None:

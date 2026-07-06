@@ -295,7 +295,16 @@ def get_args():
         type=int,
         nargs="+",
         default=None,
-        help="Only evaluate episodes from these house indices.",
+        help="Only evaluate episodes from these house indices. Mutually exclusive with --house_inds_range.",
+    )
+    parser.add_argument(
+        "--house_inds_range",
+        type=int,
+        nargs=2,
+        metavar=("LO", "HI"),
+        default=None,
+        help="Only evaluate episodes whose house_index falls in the half-open range [LO, HI). "
+        "Useful for sharding a benchmark across multiple jobs. Mutually exclusive with --house_inds.",
     )
     parser.add_argument(
         "--policy_host",
@@ -511,6 +520,7 @@ def run_evaluation(
     viewer: bool = False,
     oracle_termination: bool = False,
     house_inds: list[int] | None = None,
+    house_inds_range: tuple[int, int] | None = None,
     policy_host: str | None = None,
     policy_port: int | None = None,
     prompt_level: int | None = None,
@@ -616,6 +626,18 @@ def run_evaluation(
         else:
             log.info(f"Using provided custom object name: {custom_object_name}")
 
+    if house_inds is not None and house_inds_range is not None:
+        raise ValueError("house_inds and house_inds_range are mutually exclusive")
+    if house_inds_range is not None:
+        lo, hi = house_inds_range
+        if lo >= hi:
+            raise ValueError(
+                f"house_inds_range LO ({lo}) must be strictly less than HI ({hi})"
+            )
+        house_inds = sorted({ep.house_index for ep in episodes if lo <= ep.house_index < hi})
+        log.info(
+            f"Resolved --house_inds_range [{lo}, {hi}) to {len(house_inds)} house indices."
+        )
     if house_inds is not None:
         house_inds_set = set(house_inds)
         episodes = [ep for ep in episodes if ep.house_index in house_inds_set]
@@ -865,6 +887,7 @@ def main() -> None:
         viewer=args.viewer,
         oracle_termination=args.oracle_termination,
         house_inds=args.house_inds,
+        house_inds_range=tuple(args.house_inds_range) if args.house_inds_range else None,
         policy_host=args.policy_host,
         policy_port=args.policy_port,
         prompt_level=args.prompt_level,
