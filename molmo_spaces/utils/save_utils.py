@@ -732,39 +732,6 @@ def _save_extra_data_from_batched(obs_group, episode_data) -> None:
     """Save extra task data (pose sensors) from batched observations."""
     extra_group = obs_group.create_group("extra")
 
-    # TODO(max): why do we have this???
-    extra_sensor_mapping = {
-        # Standard object pose sensors
-        "obj_start_pose": "obj_start",
-        "obj_end_pose": "obj_end",
-        "grasp_state_pickup_obj": "grasp_state_pickup_obj",
-        "grasp_state_place_receptacle": "grasp_state_place_receptacle",
-        # Task info sensor
-        "task_info": "task_info",
-        # RBY1 door opening pose sensors
-        "door_start_pose": "obj_start",
-        "door_end_pose": "obj_end",
-        # RBY1 door state sensors
-        "door_state": "door_state",
-        "door_state_dict": "door_state_dict",
-        # Single arm TCP sensors
-        "tcp_pose": "tcp_pose",
-        "grasp_pose": "grasp_pose",
-        # RBY1 dual-arm TCP sensors
-        "left_tcp_pose": "left_tcp_pose",
-        "right_tcp_pose": "right_tcp_pose",
-        # RBY1 grasp state sensors
-        "rby1_left_grasp_state": "rby1_left_grasp_state",
-        "rby1_right_grasp_state": "rby1_right_grasp_state",
-        # Base pose sensor
-        "robot_base_pose": "robot_base_pose",
-        # Policy sensors
-        "policy_phase": "policy_phase",
-        "policy_num_retries": "policy_num_retries",
-        # Object tracking sensors
-        "object_image_points": "object_image_points",
-    }
-
     def _save_nested_data(data, group, name_prefix=""):
         """Recursively save nested dictionary data until hitting tensors."""
         if isinstance(data, dict):
@@ -790,11 +757,22 @@ def _save_extra_data_from_batched(obs_group, episode_data) -> None:
                 except Exception as e:
                     log.warning(f"Could not save data for {name_prefix}: {type(data)}, error: {e}")
 
-    for sensor_name, target_name in extra_sensor_mapping.items():
-        if sensor_name in episode_data:
-            # Use recursive loop for all sensors - handles both simple tensors and nested dicts
-            sensor_data = episode_data[sensor_name]
-            _save_nested_data(sensor_data, extra_group, target_name)
+    # rename certain sensors to match old/expected names
+    sensor_rename = {
+        "obj_start_pose": "obj_start",
+        "obj_end_pose": "obj_end",
+        "door_start_pose": "obj_start",
+        "door_end_pose": "obj_end",
+    }
+
+    for sensor_name in episode_data:
+        if sensor_name in sensor_rename:
+            target_name = sensor_rename[sensor_name]
+        else:
+            target_name = sensor_name
+        # Use recursive loop for all sensors - handles both simple tensors and nested dicts
+        sensor_data = episode_data[sensor_name]
+        _save_nested_data(sensor_data, extra_group, target_name)
 
 
 def _save_sensor_params_from_batched(obs_group, episode_data) -> None:
