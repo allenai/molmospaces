@@ -29,6 +29,7 @@
 ---
 ### Updates
 - **[2026/06/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
+- **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) is a repository containing standalone third party policy implementations. If you use MolmoSpaces to make a policy (planner-based, learning-based, etc.) please contribute!
 - **[2026/06/12]** 🔥 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, with significantly better usability, included tutorials, and more! Check out the changelog for more information.
 - **[2026/03/24]** 🔥 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for scripted planners, data generation, and benchmark creation.
 - **[2026/02/27]** 🔥 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
@@ -175,7 +176,9 @@ Please refer to [here](./docs/assets.md) for instructions to set up data directo
 
 ## Documentation
 
-The documentation for MolmoSpaces can be found [here](https://allenai.github.io/molmospaces/). 
+The documentation for MolmoSpaces can be found [here](https://allenai.github.io/molmospaces/).
+
+To see and easily run additional policies in MolmoSpaces, check out the [policy zoo](https://github.com/allenai/molmospaces_policy_zoo/)!
 
 For a list of projects using MolmoSpaces look [here](docs/awesome-molmospaces-papers.md).
 
