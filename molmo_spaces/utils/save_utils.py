@@ -757,7 +757,7 @@ def _save_extra_data_from_batched(obs_group, episode_data) -> None:
                 except Exception as e:
                     log.warning(f"Could not save data for {name_prefix}: {type(data)}, error: {e}")
 
-    # rename certain sensors to match old/expected names
+    # TODO(max): maybe remove this, rename certain sensors to match old/expected names
     sensor_rename = {
         "obj_start_pose": "obj_start",
         "obj_end_pose": "obj_end",
