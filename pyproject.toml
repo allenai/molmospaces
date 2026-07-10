@@ -40,7 +40,7 @@ dependencies = [
     "msgpack-numpy",
     "mujoco-warp~=3.5.0",
     "mujoco-mjx~=3.5.0",
-    "warp-lang<1.15.0",
+    "warp-lang<1.15.0", # warp-lang had breaking changes in 1.15.0 that caused ik tests to fail
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
     "numpy>=1.19.0,<3",
