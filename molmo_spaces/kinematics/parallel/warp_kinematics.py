@@ -386,7 +386,7 @@ class SimpleWarpKinematics(ParallelKinematics):
 
         qpos_arr = self._dicts_to_qpos_arr(qpos_dicts)
         with wp.ScopedDevice(self._device):
-            wp.copy(data.qpos, wp.from_numpy(qpos_arr))
+            wp.copy(data.qpos, wp.from_numpy(qpos_arr, dtype=wp.float32))
             mjw.fwd_position(self._mjw_model, data)
 
         dol = {}
@@ -605,11 +605,11 @@ class SimpleWarpKinematics(ParallelKinematics):
             ik_args.dt.fill_(dt)
             wp.copy(
                 ik_args.jacobian_mask,
-                wp.from_numpy(self._create_jacobian_mask(batch_size, unlocked_move_group_ids)),
+                wp.from_numpy(self._create_jacobian_mask(batch_size, unlocked_move_group_ids), dtype=wp.int32),
             )
 
             q0_arr = self._dicts_to_qpos_arr(q0_dicts)
-            wp.copy(data.qpos, wp.from_numpy(q0_arr))
+            wp.copy(data.qpos, wp.from_numpy(q0_arr, dtype=wp.float32))
 
             for i in range(max_iter):
                 if self._device.startswith("cuda"):
