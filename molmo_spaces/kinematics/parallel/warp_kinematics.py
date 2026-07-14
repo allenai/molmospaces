@@ -166,7 +166,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     L = mat66f()
     for i in range(6):
         for j in range(i + 1):
-            s = 0.0
+            s = wp.float32(0.0)
             for k in range(j):
                 s += L[i, k] * L[j, k]
             if i == j:
@@ -177,7 +177,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     # Forward substitution: L @ y = b
     y = vec6f()
     for i in range(6):
-        s = 0.0
+        s = wp.float32(0.0)
         for k in range(i):
             s += L[i, k] * y[k]
         y[i] = (b[i] - s) / L[i, i]
@@ -185,7 +185,7 @@ def cholesky_solve6(H: mat66f, b: vec6f) -> vec6f:
     # Backward substitution: L^T @ x = y
     x = vec6f()
     for i in range(5, -1, -1):
-        s = 0.0
+        s = wp.float32(0.0)
         for k in range(i + 1, 6):
             s += L[k, i] * x[k]
         x[i] = (y[i] - s) / L[i, i]
@@ -223,7 +223,7 @@ def lm_step(
     H = mat66f()
     for a in range(6):
         for b in range(6):
-            val = 0.0
+            val = wp.float32(0.0)
             for k in range(nv):
                 if a < 3:
                     Ja = jacp[i, a, k]
@@ -243,7 +243,7 @@ def lm_step(
 
     # q_dot = J^T @ x, dq = q_dot * dt
     for k in range(nv):
-        val = 0.0
+        val = wp.float32(0.0)
         for a in range(3):
             val += jacp[i, a, k] * x[a]
             val += jacr[i, a, k] * x[a + 3]
