@@ -225,8 +225,14 @@ def lm_step(
         for b in range(6):
             val = 0.0
             for k in range(nv):
-                Ja = jacp[i, a, k] if a < 3 else jacr[i, a - 3, k]
-                Jb = jacp[i, b, k] if b < 3 else jacr[i, b - 3, k]
+                if a < 3:
+                    Ja = jacp[i, a, k]
+                else:
+                    Ja = jacr[i, a - 3, k]
+                if b < 3:
+                    Jb = jacp[i, b, k]
+                else:
+                    Jb = jacr[i, b - 3, k]
                 val += Ja * Jb
             if a == b:
                 val += damping[0]
