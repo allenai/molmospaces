@@ -1,18 +1,18 @@
 import logging
 from typing import Any
 
+import gymnasium.spaces as gyms
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-import gymnasium.spaces as gyms
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.task_configs import PickTaskConfig
 from molmo_spaces.env.abstract_sensors import Sensor, SensorSuite
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.sensors import (
-    get_core_sensors,
     GraspStateSensor,
     ObjectStartPoseSensor,
+    get_core_sensors,
 )
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms
@@ -60,14 +60,14 @@ class PickTask(BaseMujocoTask):
         sensors.extend(
             [
                 ObjectStartPoseSensor(
-                    object_name=config.task_config.pickup_obj_name, uuid="obj_start_pose"
+                    object_name=config.task_config.pickup_obj_name, uuid="obj_start"
                 ),
                 GraspStateSensor(
                     object_name=config.task_config.pickup_obj_name,
                     uuid="grasp_state_pickup_obj",
                 ),
                 PickupObjGoalPoseSensor(
-                    uuid="obj_end_pose",
+                    uuid="obj_end",
                 ),
             ]
         )

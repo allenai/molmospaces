@@ -117,7 +117,7 @@ class MyTask(BaseMujocoTask):
         sensors = get_core_sensors(config)
         sensors.extend([
             ObjectStartPoseSensor(object_name=config.task_config.pickup_obj_name,
-                                  uuid="obj_start_pose"),
+                                  uuid="obj_start"),
             GraspStateSensor(object_name=config.task_config.pickup_obj_name,
                              uuid="grasp_state_pickup_obj"),
         ])
@@ -228,7 +228,7 @@ These are added by individual tasks on top of the core suite. Notable examples:
 
 | Task | Adds (on top of `get_core_sensors`) |
 |---|---|
-| [`PickTask`][molmo_spaces.tasks.pick_task.PickTask] | `ObjectStartPoseSensor(uuid="obj_start_pose")`, `GraspStateSensor(uuid="grasp_state_pickup_obj")`, `PickupObjGoalPoseSensor(uuid="obj_end_pose")` |
+| [`PickTask`][molmo_spaces.tasks.pick_task.PickTask] | `ObjectStartPoseSensor(uuid="obj_start")`, `GraspStateSensor(uuid="grasp_state_pickup_obj")`, `PickupObjGoalPoseSensor(uuid="obj_end")` |
 | [`PickAndPlaceTask`][molmo_spaces.tasks.pick_and_place_task.PickAndPlaceTask] | `ObjectStartPoseSensor`, `GraspStateSensor` for both the pickup object **and** the place receptacle |
 | [`OpeningTask`][molmo_spaces.tasks.opening_tasks.OpeningTask] | Inherits the `PickTask` suite (since opening an articulated object is structurally similar to picking) |
 | [`DoorOpeningTask`][molmo_spaces.tasks.opening_tasks.DoorOpeningTask] | Uses `get_rby1_door_opening_sensors` — see warning below |

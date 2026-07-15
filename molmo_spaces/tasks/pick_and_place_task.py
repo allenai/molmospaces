@@ -51,7 +51,7 @@ class PickAndPlaceTask(BaseMujocoTask):
         sensors.extend(
             [
                 ObjectStartPoseSensor(
-                    object_name=config.task_config.pickup_obj_name, uuid="obj_start_pose"
+                    object_name=config.task_config.pickup_obj_name, uuid="obj_start"
                 ),
                 GraspStateSensor(
                     object_name=config.task_config.pickup_obj_name,

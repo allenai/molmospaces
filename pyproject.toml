@@ -40,7 +40,7 @@ dependencies = [
     "msgpack-numpy",
     "mujoco-warp~=3.5.0",
     "mujoco-mjx~=3.5.0",
-    "warp-lang", # was pinned to <1.15.0 to ger rid of ik warp "Incompatible array data types" errors
+    "warp-lang",
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
     "numpy>=1.19.0,<3",

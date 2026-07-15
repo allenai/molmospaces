@@ -757,22 +757,10 @@ def _save_extra_data_from_batched(obs_group, episode_data) -> None:
                 except Exception as e:
                     log.warning(f"Could not save data for {name_prefix}: {type(data)}, error: {e}")
 
-    # rename certain sensors to match old/expected names
-    sensor_rename = {
-        "obj_start_pose": "obj_start",
-        "obj_end_pose": "obj_end",
-        "door_start_pose": "obj_start",
-        "door_end_pose": "obj_end",
-    }
-
     for sensor_name in episode_data:
-        if sensor_name in sensor_rename:
-            target_name = sensor_rename[sensor_name]
-        else:
-            target_name = sensor_name
         # Use recursive loop for all sensors - handles both simple tensors and nested dicts
         sensor_data = episode_data[sensor_name]
-        _save_nested_data(sensor_data, extra_group, target_name)
+        _save_nested_data(sensor_data, extra_group, sensor_name)
 
 
 def _save_sensor_params_from_batched(obs_group, episode_data) -> None:
