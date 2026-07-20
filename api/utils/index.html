@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -51514,7 +51514,41 @@ This avoids the corruption that happens during batch_observations tensor convers
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/utils/save_utils.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-988"> 988</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-954"> 954</a></span>
+<span class="normal"><a href="#__codelineno-0-955"> 955</a></span>
+<span class="normal"><a href="#__codelineno-0-956"> 956</a></span>
+<span class="normal"><a href="#__codelineno-0-957"> 957</a></span>
+<span class="normal"><a href="#__codelineno-0-958"> 958</a></span>
+<span class="normal"><a href="#__codelineno-0-959"> 959</a></span>
+<span class="normal"><a href="#__codelineno-0-960"> 960</a></span>
+<span class="normal"><a href="#__codelineno-0-961"> 961</a></span>
+<span class="normal"><a href="#__codelineno-0-962"> 962</a></span>
+<span class="normal"><a href="#__codelineno-0-963"> 963</a></span>
+<span class="normal"><a href="#__codelineno-0-964"> 964</a></span>
+<span class="normal"><a href="#__codelineno-0-965"> 965</a></span>
+<span class="normal"><a href="#__codelineno-0-966"> 966</a></span>
+<span class="normal"><a href="#__codelineno-0-967"> 967</a></span>
+<span class="normal"><a href="#__codelineno-0-968"> 968</a></span>
+<span class="normal"><a href="#__codelineno-0-969"> 969</a></span>
+<span class="normal"><a href="#__codelineno-0-970"> 970</a></span>
+<span class="normal"><a href="#__codelineno-0-971"> 971</a></span>
+<span class="normal"><a href="#__codelineno-0-972"> 972</a></span>
+<span class="normal"><a href="#__codelineno-0-973"> 973</a></span>
+<span class="normal"><a href="#__codelineno-0-974"> 974</a></span>
+<span class="normal"><a href="#__codelineno-0-975"> 975</a></span>
+<span class="normal"><a href="#__codelineno-0-976"> 976</a></span>
+<span class="normal"><a href="#__codelineno-0-977"> 977</a></span>
+<span class="normal"><a href="#__codelineno-0-978"> 978</a></span>
+<span class="normal"><a href="#__codelineno-0-979"> 979</a></span>
+<span class="normal"><a href="#__codelineno-0-980"> 980</a></span>
+<span class="normal"><a href="#__codelineno-0-981"> 981</a></span>
+<span class="normal"><a href="#__codelineno-0-982"> 982</a></span>
+<span class="normal"><a href="#__codelineno-0-983"> 983</a></span>
+<span class="normal"><a href="#__codelineno-0-984"> 984</a></span>
+<span class="normal"><a href="#__codelineno-0-985"> 985</a></span>
+<span class="normal"><a href="#__codelineno-0-986"> 986</a></span>
+<span class="normal"><a href="#__codelineno-0-987"> 987</a></span>
+<span class="normal"><a href="#__codelineno-0-988"> 988</a></span>
 <span class="normal"><a href="#__codelineno-0-989"> 989</a></span>
 <span class="normal"><a href="#__codelineno-0-990"> 990</a></span>
 <span class="normal"><a href="#__codelineno-0-991"> 991</a></span>
@@ -51563,124 +51597,90 @@ This avoids the corruption that happens during batch_observations tensor convers
 <span class="normal"><a href="#__codelineno-0-1034">1034</a></span>
 <span class="normal"><a href="#__codelineno-0-1035">1035</a></span>
 <span class="normal"><a href="#__codelineno-0-1036">1036</a></span>
-<span class="normal"><a href="#__codelineno-0-1037">1037</a></span>
-<span class="normal"><a href="#__codelineno-0-1038">1038</a></span>
-<span class="normal"><a href="#__codelineno-0-1039">1039</a></span>
-<span class="normal"><a href="#__codelineno-0-1040">1040</a></span>
-<span class="normal"><a href="#__codelineno-0-1041">1041</a></span>
-<span class="normal"><a href="#__codelineno-0-1042">1042</a></span>
-<span class="normal"><a href="#__codelineno-0-1043">1043</a></span>
-<span class="normal"><a href="#__codelineno-0-1044">1044</a></span>
-<span class="normal"><a href="#__codelineno-0-1045">1045</a></span>
-<span class="normal"><a href="#__codelineno-0-1046">1046</a></span>
-<span class="normal"><a href="#__codelineno-0-1047">1047</a></span>
-<span class="normal"><a href="#__codelineno-0-1048">1048</a></span>
-<span class="normal"><a href="#__codelineno-0-1049">1049</a></span>
-<span class="normal"><a href="#__codelineno-0-1050">1050</a></span>
-<span class="normal"><a href="#__codelineno-0-1051">1051</a></span>
-<span class="normal"><a href="#__codelineno-0-1052">1052</a></span>
-<span class="normal"><a href="#__codelineno-0-1053">1053</a></span>
-<span class="normal"><a href="#__codelineno-0-1054">1054</a></span>
-<span class="normal"><a href="#__codelineno-0-1055">1055</a></span>
-<span class="normal"><a href="#__codelineno-0-1056">1056</a></span>
-<span class="normal"><a href="#__codelineno-0-1057">1057</a></span>
-<span class="normal"><a href="#__codelineno-0-1058">1058</a></span>
-<span class="normal"><a href="#__codelineno-0-1059">1059</a></span>
-<span class="normal"><a href="#__codelineno-0-1060">1060</a></span>
-<span class="normal"><a href="#__codelineno-0-1061">1061</a></span>
-<span class="normal"><a href="#__codelineno-0-1062">1062</a></span>
-<span class="normal"><a href="#__codelineno-0-1063">1063</a></span>
-<span class="normal"><a href="#__codelineno-0-1064">1064</a></span>
-<span class="normal"><a href="#__codelineno-0-1065">1065</a></span>
-<span class="normal"><a href="#__codelineno-0-1066">1066</a></span>
-<span class="normal"><a href="#__codelineno-0-1067">1067</a></span>
-<span class="normal"><a href="#__codelineno-0-1068">1068</a></span>
-<span class="normal"><a href="#__codelineno-0-1069">1069</a></span>
-<span class="normal"><a href="#__codelineno-0-1070">1070</a></span>
-<span class="normal"><a href="#__codelineno-0-1071">1071</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-988" name="__codelineno-0-988"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_videos_from_raw_observations</span><span class="p">(</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>    <span class="n">observations_list</span><span class="p">,</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>    <span class="n">save_dir</span><span class="p">,</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>    <span class="n">fps</span><span class="p">,</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>    <span class="n">episode_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-993" name="__codelineno-0-993"></a>    <span class="n">save_file_suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-994" name="__codelineno-0-994"></a>    <span class="n">sensor_suite</span><span class="p">:</span> <span class="n">SensorSuite</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-995" name="__codelineno-0-995"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="sd">    Save videos immediately from raw observations before batch processing.</span>
-<a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">    This avoids the corruption that happens during batch_observations tensor conversion.</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">        observations_list: List of raw observation dicts from episode steps</span>
-<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">        save_dir: Directory to save videos</span>
-<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">        fps: Frames per second of episode data</span>
-<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a><span class="sd">        episode_idx: Episode index for naming</span>
-<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a><span class="sd">        save_file_suffix: Optional suffix for filenames</span>
-<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a><span class="sd">        sensor_suite: Optional SensorSuite for proper sensor type detection</span>
-<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">observations_list</span><span class="p">:</span>
-<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No observations to save videos from&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>        <span class="k">return</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>
-<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>    <span class="c1"># Find all camera sensors in the first observation</span>
-<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="n">camera_sensors</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>    <span class="k">for</span> <span class="n">sensor_name</span> <span class="ow">in</span> <span class="n">observations_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_camera_sensor</span><span class="p">(</span><span class="n">sensor_name</span><span class="p">,</span> <span class="n">sensor_suite</span><span class="p">):</span>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>            <span class="k">continue</span>
-<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>
-<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>        <span class="c1"># Categorize by type</span>
-<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>        <span class="c1"># Check depth FIRST (before RGB) to correctly identify depth cameras</span>
-<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>        <span class="c1"># e.g., &quot;wrist_camera_depth&quot; should be &quot;depth&quot; not &quot;rgb&quot;</span>
-<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>        <span class="k">if</span> <span class="n">sensor_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_depth&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>            <span class="n">camera_sensors</span><span class="p">[</span><span class="n">sensor_name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;depth&quot;</span>
-<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>        <span class="c1"># Skip segmentation sensors (not saved as videos)</span>
-<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>        <span class="k">elif</span> <span class="n">sensor_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_seg&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>            <span class="k">continue</span>
-<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>            <span class="c1"># All other camera sensors are RGB</span>
-<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>            <span class="n">camera_sensors</span><span class="p">[</span><span class="n">sensor_name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;rgb&quot;</span>
-<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>
-<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>    <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>        <span class="sa">f</span><span class="s2">&quot;INFO: Saving videos for episode </span><span class="si">{</span><span class="n">episode_idx</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">camera_sensors</span><span class="p">)</span><span class="si">}</span><span class="s2"> cameras &quot;</span>
-<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">camera_sensors</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;rgb&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> RGB, &quot;</span>
-<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">camera_sensors</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;depth&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> depth) &quot;</span>
-<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>        <span class="sa">f</span><span class="s2">&quot;and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">observations_list</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames&quot;</span>
-<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>    <span class="p">)</span>
-<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>    <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Camera sensors detected: </span><span class="si">{</span><span class="n">camera_sensors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>
-<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>    <span class="c1"># Extract and save video for each camera</span>
-<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>    <span class="k">for</span> <span class="n">sensor_name</span><span class="p">,</span> <span class="n">sensor_type</span> <span class="ow">in</span> <span class="n">camera_sensors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>        <span class="c1"># Extract frames from all observations for this camera</span>
-<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a>        <span class="n">frames</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>        <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations_list</span><span class="p">:</span>
-<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>            <span class="k">if</span> <span class="n">sensor_name</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">:</span>
-<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>                <span class="n">frame_data</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="n">sensor_name</span><span class="p">]</span>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">frame_data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>                    <span class="c1"># Remove batch dimension if present</span>
-<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>                    <span class="k">if</span> <span class="n">frame_data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="n">frame_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>                        <span class="n">frame_data</span> <span class="o">=</span> <span class="n">frame_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a>                    <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_data</span><span class="p">)</span>
-<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>        <span class="k">if</span> <span class="n">frames</span><span class="p">:</span>
-<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a>            <span class="c1"># Generate video path</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>            <span class="n">video_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>                <span class="n">save_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;episode_</span><span class="si">{</span><span class="n">episode_idx</span><span class="si">:</span><span class="s2">08d</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">sensor_name</span><span class="si">}{</span><span class="n">save_file_suffix</span><span class="si">}</span><span class="s2">.mp4&quot;</span>
-<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>            <span class="c1"># Use unified video saving function (handles all validation and conversion)</span>
-<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>            <span class="n">_save_sensor_video</span><span class="p">(</span>
-<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>                <span class="n">sensor_name</span><span class="o">=</span><span class="n">sensor_name</span><span class="p">,</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>                <span class="n">sensor_type</span><span class="o">=</span><span class="n">sensor_type</span><span class="p">,</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>                <span class="n">frames</span><span class="o">=</span><span class="n">frames</span><span class="p">,</span>
-<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>                <span class="n">video_path</span><span class="o">=</span><span class="n">video_path</span><span class="p">,</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>                <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span>
-<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>                <span class="n">logger</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
-<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
-<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SUCCESS: Saved </span><span class="si">{</span><span class="n">sensor_type</span><span class="si">}</span><span class="s2"> video: </span><span class="si">{</span><span class="n">video_path</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: No frames found for camera </span><span class="si">{</span><span class="n">sensor_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-1037">1037</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_videos_from_raw_observations</span><span class="p">(</span>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a>    <span class="n">observations_list</span><span class="p">,</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a>    <span class="n">save_dir</span><span class="p">,</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a>    <span class="n">fps</span><span class="p">,</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a>    <span class="n">episode_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a>    <span class="n">save_file_suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a>    <span class="n">sensor_suite</span><span class="p">:</span> <span class="n">SensorSuite</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">    Save videos immediately from raw observations before batch processing.</span>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">    This avoids the corruption that happens during batch_observations tensor conversion.</span>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="sd">        observations_list: List of raw observation dicts from episode steps</span>
+<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">        save_dir: Directory to save videos</span>
+<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">        fps: Frames per second of episode data</span>
+<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">        episode_idx: Episode index for naming</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">        save_file_suffix: Optional suffix for filenames</span>
+<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">        sensor_suite: Optional SensorSuite for proper sensor type detection</span>
+<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-974" name="__codelineno-0-974"></a>    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-975" name="__codelineno-0-975"></a>
+<a id="__codelineno-0-976" name="__codelineno-0-976"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">observations_list</span><span class="p">:</span>
+<a id="__codelineno-0-977" name="__codelineno-0-977"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No observations to save videos from&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-978" name="__codelineno-0-978"></a>        <span class="k">return</span>
+<a id="__codelineno-0-979" name="__codelineno-0-979"></a>
+<a id="__codelineno-0-980" name="__codelineno-0-980"></a>    <span class="c1"># Find all camera sensors in the first observation</span>
+<a id="__codelineno-0-981" name="__codelineno-0-981"></a>    <span class="n">camera_sensors</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-982" name="__codelineno-0-982"></a>    <span class="k">for</span> <span class="n">sensor_name</span> <span class="ow">in</span> <span class="n">observations_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_camera_sensor</span><span class="p">(</span><span class="n">sensor_name</span><span class="p">,</span> <span class="n">sensor_suite</span><span class="p">):</span>
+<a id="__codelineno-0-984" name="__codelineno-0-984"></a>            <span class="k">continue</span>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a>        <span class="c1"># Categorize by type</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>        <span class="c1"># Check depth FIRST (before RGB) to correctly identify depth cameras</span>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a>        <span class="c1"># e.g., &quot;wrist_camera_depth&quot; should be &quot;depth&quot; not &quot;rgb&quot;</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="k">if</span> <span class="n">sensor_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_depth&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a>            <span class="n">camera_sensors</span><span class="p">[</span><span class="n">sensor_name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;depth&quot;</span>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="c1"># Skip segmentation sensors (not saved as videos)</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="k">elif</span> <span class="n">sensor_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_seg&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>            <span class="k">continue</span>
+<a id="__codelineno-0-994" name="__codelineno-0-994"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-995" name="__codelineno-0-995"></a>            <span class="c1"># All other camera sensors are RGB</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a>            <span class="n">camera_sensors</span><span class="p">[</span><span class="n">sensor_name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;rgb&quot;</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a>    <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a>        <span class="sa">f</span><span class="s2">&quot;INFO: Saving videos for episode </span><span class="si">{</span><span class="n">episode_idx</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">camera_sensors</span><span class="p">)</span><span class="si">}</span><span class="s2"> cameras &quot;</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">camera_sensors</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;rgb&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> RGB, &quot;</span>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">camera_sensors</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;depth&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> depth) &quot;</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>        <span class="sa">f</span><span class="s2">&quot;and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">observations_list</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames&quot;</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>    <span class="p">)</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>    <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Camera sensors detected: </span><span class="si">{</span><span class="n">camera_sensors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>    <span class="c1"># Extract and save video for each camera</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>    <span class="k">for</span> <span class="n">sensor_name</span><span class="p">,</span> <span class="n">sensor_type</span> <span class="ow">in</span> <span class="n">camera_sensors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>        <span class="c1"># Extract frames from all observations for this camera</span>
+<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>        <span class="n">frames</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>        <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations_list</span><span class="p">:</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>            <span class="k">if</span> <span class="n">sensor_name</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">:</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>                <span class="n">frame_data</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="n">sensor_name</span><span class="p">]</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">frame_data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>                    <span class="c1"># Remove batch dimension if present</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>                    <span class="k">if</span> <span class="n">frame_data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">and</span> <span class="n">frame_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>                        <span class="n">frame_data</span> <span class="o">=</span> <span class="n">frame_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>                    <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_data</span><span class="p">)</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>        <span class="k">if</span> <span class="n">frames</span><span class="p">:</span>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>            <span class="c1"># Generate video path</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>            <span class="n">video_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>                <span class="n">save_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;episode_</span><span class="si">{</span><span class="n">episode_idx</span><span class="si">:</span><span class="s2">08d</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">sensor_name</span><span class="si">}{</span><span class="n">save_file_suffix</span><span class="si">}</span><span class="s2">.mp4&quot;</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>            <span class="c1"># Use unified video saving function (handles all validation and conversion)</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>            <span class="n">_save_sensor_video</span><span class="p">(</span>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>                <span class="n">sensor_name</span><span class="o">=</span><span class="n">sensor_name</span><span class="p">,</span>
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>                <span class="n">sensor_type</span><span class="o">=</span><span class="n">sensor_type</span><span class="p">,</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>                <span class="n">frames</span><span class="o">=</span><span class="n">frames</span><span class="p">,</span>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>                <span class="n">video_path</span><span class="o">=</span><span class="n">video_path</span><span class="p">,</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>                <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>                <span class="n">logger</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SUCCESS: Saved </span><span class="si">{</span><span class="n">sensor_type</span><span class="si">}</span><span class="s2"> video: </span><span class="si">{</span><span class="n">video_path</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: No frames found for camera </span><span class="si">{</span><span class="n">sensor_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -64522,7 +64522,7 @@ Padding (letterbox) is added to ensure the final image matches the target dimens
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       
