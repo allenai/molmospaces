@@ -250,6 +250,25 @@ def scene_includes(scene_path):
     return ret
 
 
+def object_license_key(identifier: str) -> str:
+    """Return the short license key for an object (e.g. by, by-nc, cc0)."""
+    anno = ObjectMeta.annotation(identifier)
+    if anno is None:
+        raise ValueError(f"Unknown object identifier: {identifier}")
+    if anno.get("isObjaverse"):
+        return anno["license_info"]["license"]
+    return "by"
+
+
+def license_keys_from_scene_assets(assets: dict[str, list[dict[str, Any]]]) -> set[str]:
+    """Collect the set of object license keys referenced in a scene's assets block."""
+    licenses: set[str] = set()
+    for entries in assets.values():
+        for entry in entries:
+            licenses.add(object_license_key(entry["identifier"]))
+    return licenses
+
+
 def resolve_scene_license(data_source, identifier):
     original_identifier = identifier
 
