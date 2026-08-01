@@ -209,7 +209,7 @@ def test_rum_open_task_sampler(rum_open_config, rum_open_task_sampler, rum_open_
     assert hasattr(rum_open_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
-    assert rum_open_task.config.camera_config.img_resolution == (624, 352)
+    assert rum_open_task.config.camera_config.img_resolution == (640, 360)
     assert rum_open_task.config.ctrl_dt_ms == 2.0  # Uses default control timestep from base config
 
 
@@ -229,7 +229,7 @@ def test_rum_open_task_observations(rum_open_task):
         expected_cameras=expected_cameras,
         debug_images_dir=DEBUG_IMAGES_DIR / "rum_open",
         debug_prefix="rum_open_obs",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -288,7 +288,7 @@ def test_rum_open_policy_observations_after_steps(rum_open_task, rum_open_policy
         initial_obs_dict=initial_obs_dict,
         debug_images_dir=DEBUG_IMAGES_DIR / "rum_open",
         debug_prefix="rum_open_after_steps",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -365,7 +365,7 @@ def test_rum_close_task_sampler(rum_close_config, rum_close_task_sampler, rum_cl
     assert hasattr(rum_close_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
-    assert rum_close_task.config.camera_config.img_resolution == (624, 352)
+    assert rum_close_task.config.camera_config.img_resolution == (640, 360)
     assert rum_close_task.config.ctrl_dt_ms == 2.0  # Uses default control timestep from base config
 
 
@@ -385,7 +385,7 @@ def test_rum_close_task_observations(rum_close_task):
         expected_cameras=expected_cameras,
         debug_images_dir=DEBUG_IMAGES_DIR / "rum_close",
         debug_prefix="rum_close_obs",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -444,7 +444,7 @@ def test_rum_close_policy_observations_after_steps(rum_close_task, rum_close_pol
         initial_obs_dict=initial_obs_dict,
         debug_images_dir=DEBUG_IMAGES_DIR / "rum_close",
         debug_prefix="rum_close_after_steps",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 

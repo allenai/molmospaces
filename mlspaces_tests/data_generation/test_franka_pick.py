@@ -223,7 +223,7 @@ def test_droid_task_sampler(droid_config, droid_task_sampler, droid_task):
     assert hasattr(droid_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
-    assert droid_task.config.camera_config.img_resolution == (624, 352)
+    assert droid_task.config.camera_config.img_resolution == (640, 360)
     assert droid_task.config.ctrl_dt_ms == 2.0
 
 
@@ -243,7 +243,7 @@ def test_droid_task_observations(droid_task):
         expected_cameras=expected_cameras,
         debug_images_dir=DEBUG_IMAGES_DIR / "franka_pick_droid",
         debug_prefix="droid_obs",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -299,7 +299,7 @@ def test_droid_policy_observations_after_steps(droid_task, droid_policy_results)
         debug_images_dir=DEBUG_IMAGES_DIR / "franka_pick_droid",
         debug_prefix="droid_after_steps",
         ignore_cameras=["wrist_camera"],  # Wrist camera too sensitive
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -368,7 +368,7 @@ def test_randomized_task_sampler(randomized_config, randomized_task_sampler, ran
     assert hasattr(randomized_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
-    assert randomized_task.config.camera_config.img_resolution == (624, 352)
+    assert randomized_task.config.camera_config.img_resolution == (640, 360)
     assert randomized_task.config.ctrl_dt_ms == 2.0
 
 
@@ -388,7 +388,7 @@ def test_randomized_task_observations(randomized_task):
         expected_cameras=expected_cameras,
         debug_images_dir=DEBUG_IMAGES_DIR / "franka_pick_randomized",
         debug_prefix="randomized_obs",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -417,7 +417,7 @@ def test_randomized_policy_observations_after_steps(randomized_task, randomized_
         debug_images_dir=DEBUG_IMAGES_DIR / "franka_pick_randomized",
         debug_prefix="randomized_after_steps",
         ignore_cameras=["wrist_camera"],  # Wrist camera too sensitive
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 

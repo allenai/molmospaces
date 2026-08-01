@@ -149,7 +149,7 @@ def test_rum_task_sampler(rum_config, rum_task_sampler, rum_task):
     assert hasattr(rum_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
-    assert rum_task.config.camera_config.img_resolution == (624, 352)
+    assert rum_task.config.camera_config.img_resolution == (640, 360)
     assert rum_task.config.ctrl_dt_ms == 2.0  # Uses default control timestep from base config
 
 
@@ -170,7 +170,7 @@ def test_rum_task_observations(rum_task):
         expected_cameras=expected_cameras,
         debug_images_dir=DEBUG_IMAGES_DIR / "rum_pick",
         debug_prefix="rum_obs",
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 
@@ -230,7 +230,7 @@ def test_rum_policy_observations_after_steps(rum_task, rum_policy_results):
         debug_images_dir=DEBUG_IMAGES_DIR / "rum_pick",
         debug_prefix="rum_after_steps",
         ignore_cameras=["wrist_camera"],  # Wrist camera too sensitive
-        expected_shape=(624, 352, 3),
+        expected_shape=(640, 360, 3),
     )
 
 

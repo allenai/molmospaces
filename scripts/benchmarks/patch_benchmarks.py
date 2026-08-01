@@ -44,13 +44,13 @@ log = logging.getLogger(__name__)
 CAMERA_SYSTEM_IMG_RESOLUTIONS: dict[str, tuple[int, int]] = {
     "RBY1MjcfCameraSystem": (640, 480),
     "RBY1GoProD455CameraSystem": (1024, 576),
-    "FrankaRandomizedD405D455CameraSystem": (624, 352),
-    "FrankaDroidCameraSystem": (624, 352),
-    "FrankaEasyRandomizedDroidCameraSystem": (624, 352),
-    "FrankaRandomizedDroidCameraSystem": (624, 352),
+    "FrankaRandomizedD405D455CameraSystem": (640, 360),
+    "FrankaDroidCameraSystem": (640, 360),
+    "FrankaEasyRandomizedDroidCameraSystem": (640, 360),
+    "FrankaRandomizedDroidCameraSystem": (640, 360),
     "FrankaGoProD405D455CameraSystem": (640, 480),
     "FrankaGoProD405RandomizedCameraSystem": (640, 480),
-    "FrankaOmniPurposeCameraSystem": (624, 352),
+    "FrankaOmniPurposeCameraSystem": (640, 360),
 
 }
 
@@ -215,7 +215,7 @@ def patch_benchmark(benchmark_dir: Path, args, dry_run: bool = False) -> bool:
             episode.pop("task_horizon_sec", None)
 
         #needs_task_type = "task_type" not in episode.get("task", {})
-        needs_task_type=True 
+        needs_task_type=True
         if needs_task_type:
             task_cls = episode["task"]["task_cls"]
             if args.task_type is not None:
@@ -232,7 +232,7 @@ def patch_benchmark(benchmark_dir: Path, args, dry_run: bool = False) -> bool:
 
             episode.setdefault("task", {})["task_type"] = task_type
             episode.pop("task_type", None)
-            
+
 
         if needs_task_field_update and "task" in episode:
             for field, expected in TASK_FIELD_SCHEMA_VALUES.items():
@@ -282,7 +282,7 @@ def main():
         default=None,
         help="Overwrite imputed task type",
     )
-    
+
 
     args = parser.parse_args()
     benchmarks_dir = Path(args.benchmarks_dir)
@@ -311,7 +311,7 @@ def main():
                 patched += 1
         except Exception as e:
             log.error(f"Failed to patch {benchmark_dir}: {e}")
-            raise e   
+            raise e
             failed += 1
 
     log.info(f"Done. Patched: {patched}, Failed: {failed}")

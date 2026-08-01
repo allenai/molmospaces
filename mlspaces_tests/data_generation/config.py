@@ -215,7 +215,7 @@ class RUMPickTestConfig(RUMPickDataGenConfig):
         self.task_sampler_config.pickup_types = ["TissueBox"]
         # Texture randomization
         self.task_sampler_config.enable_texture_randomization = False
-        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
+        self.camera_config.img_resolution = (640, 360)  # reset to test-data defaults
 
         # Robot joint position noise (RUM uses gripper, not arm)
         self.robot_config.init_qpos_noise_range = {}
