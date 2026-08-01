@@ -15,9 +15,10 @@ concurrency:
 
 jobs:
   unit-tests:
+    timeout-minutes: 90
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest-4-cores, macos-latest]
         python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
@@ -26,6 +27,10 @@ jobs:
       - name: Log disk space
         run: |
           df -h /
+
+      - name: Log memory
+        run: |
+          free -h || vm_stat || true
 
       - name: Free disk space (Ubuntu)
         if: runner.os == 'Linux'
@@ -78,7 +83,25 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           source .venv/bin/activate
+          # Background memory sampler so we can tell OOM apart from a timeout or
+          # a cancelled run (e.g. superseded by a newer push in this workflow's
+          # concurrency group) after the fact, even if the test process is killed.
+          ( while true; do date; free -h; sleep 15; done ) > memory_usage.log &
+          MONITOR_PID=$!
           python -m pytest mlspaces_tests/data_generation/ -v --tb=short -x
+          TEST_EXIT=$?
+          kill "$MONITOR_PID" 2>/dev/null || true
+          exit $TEST_EXIT
+
+      - name: Diagnose data generation test failure (memory/OOM/cancellation)
+        if: always() && runner.os == 'Linux'
+        run: |
+          echo "=== tail of memory_usage.log ==="
+          tail -n 100 memory_usage.log 2>/dev/null || echo "(no memory_usage.log; step may not have started)"
+          echo
+          echo "=== dmesg: OOM-killer activity ==="
+          sudo dmesg -T 2>/dev/null | grep -iE 'killed process|out of memory|oom' \
+            || echo "No OOM-killer messages found in dmesg (exit 143 is likely a cancellation, not OOM)"
 
   ruff-checks:
     runs-on: ubuntu-latest
