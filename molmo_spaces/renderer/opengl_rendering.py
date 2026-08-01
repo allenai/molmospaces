@@ -1,3 +1,4 @@
+import sys
 from queue import Queue
 from typing import Any, Literal
 
@@ -114,7 +115,7 @@ class MjOpenGLRenderer(MjAbstractRenderer):
             from mujoco import gl_context
 
             self._gl_context = gl_context.GLContext(width, height)  # type: ignore
-            self._context_is_cgl = True
+            self._context_is_cgl = sys.platform == "darwin"
         else:
             from molmo_spaces.renderer.opengl_context import EGLGLContext
 
