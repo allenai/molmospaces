@@ -331,8 +331,15 @@ class BaseMujocoTask(ABC):
             # Return current state without stepping
             return self.get_and_cache_all_step_information()
 
+        self._apply_action(actions)
+        return self._observe_and_cache()
+
+    def _apply_action(self, action: dict[str, Any] | list[dict[str, Any]]) -> None:
+        """Apply one action and advance the simulation, without polling sensors."""
+        actions = [action] if isinstance(action, dict) else action
+
         # Check if any action contains a "done" signal
-        for _i, act in enumerate(actions):
+        for act in actions:
             if isinstance(act, dict) and act.get("done", False):
                 act.pop("done")
                 self._done_action_received = True
@@ -340,8 +347,8 @@ class BaseMujocoTask(ABC):
         # Update episode step count
         self.episode_step_count += 1
 
-        for robot, action in zip(self._env.robots, actions, strict=True):
-            robot.update_control(action)
+        for robot, act in zip(self._env.robots, actions, strict=True):
+            robot.update_control(act)
 
         # Physics step (MuJoCo simulation)
         if self._datagen_profiler is not None:
@@ -356,7 +363,12 @@ class BaseMujocoTask(ABC):
         # Store the action for env 0 for ActionSensors
         self.last_action = actions[0] if actions else None
 
-        # Sensor polling (cameras, proprioception, etc.)
+    def _observe_and_cache(
+        self,
+    ) -> tuple[
+        list[dict[str, Any]], NDArray[float], NDArray[bool], NDArray[bool], list[dict[str, Any]]
+    ]:
+        """Poll the sensor suite and record the resulting step."""
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("sensor_polling")
         observation, reward, terminated, truncated, info = self.get_and_cache_all_step_information()
@@ -371,6 +383,37 @@ class BaseMujocoTask(ABC):
         self.action_cache.append(self.last_action)
 
         return observation, reward, terminated, truncated, info
+
+    def step_chunk(
+        self,
+        action_chunk: list[dict[str, Any] | list[dict[str, Any]]],
+        stop_on_success: bool = False,
+    ) -> tuple[
+        list[dict[str, Any]], NDArray[float], NDArray[bool], NDArray[bool], list[dict[str, Any]]
+    ]:
+        """Step a chunk of actions, polling sensors only after the last one.
+
+        An approximation of real-time action chunking: the chunk runs open-loop.
+        Could take ``obs_on_action: int = None`` to also return an intermediate
+        observation.
+
+        Args:
+            action_chunk: Actions to apply in order. Each one is a single action
+                dict for single-env mode, or a list of action dicts for batched mode.
+            stop_on_success: End the chunk once the success criterion is met.
+
+        Returns:
+            Tuple of (observations, rewards, terminated, truncated, infos)
+        """
+        if not action_chunk:
+            raise ValueError("step_chunk requires at least one action")
+
+        for action in action_chunk[:-1]:
+            self._apply_action(action)
+            if np.all(self.is_done()) or (stop_on_success and self.judge_success()):
+                return self._observe_and_cache()
+
+        return self.step(action_chunk[-1])
 
     def is_done(self) -> NDArray[bool]:
         return np.logical_or(self.is_terminal(), self.is_timed_out())
