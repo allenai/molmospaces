@@ -59,7 +59,7 @@ jobs:
       - name: Run component tests
         run: |
           source .venv/bin/activate
-          python -m pytest mlspaces_tests/component_tests/ -v --tb=short
+          python -m pytest mlspaces_tests/component_tests/ -v --tb=short -x
 
       - name: Run data generation tests
         # data_generation tests exercise MjOpenGLRenderer, which requires a headless
@@ -68,7 +68,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           source .venv/bin/activate
-          python -m pytest mlspaces_tests/data_generation/ -v --tb=short
+          python -m pytest mlspaces_tests/data_generation/ -v --tb=short -x
 
   ruff-checks:
     runs-on: ubuntu-latest
