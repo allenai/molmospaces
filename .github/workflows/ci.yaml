@@ -37,6 +37,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install OSMesa dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglew-dev libosmesa6-dev
+
+      - name: Set MuJoCo rendering backend
+        if: runner.os == 'Linux'
+        run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
+
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
         with:
