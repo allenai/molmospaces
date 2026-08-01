@@ -209,6 +209,7 @@ def random_pose(x_noise: float, y_noise: float, yaw_noise: float):
     ).as_matrix()
     return pose
 
+
 class BlockPickupTaskSampler(PickTaskSampler):
     """
     Since we're using a custom scene, we need to implement custom sampling logic

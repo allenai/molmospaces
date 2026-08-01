@@ -8,7 +8,7 @@ Run learned policies on fixed, reproducible benchmarks.
 This README focuses on benchmark installation and running.
 
 ### Related documentation
-- Leaderboard documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g). 
+- Leaderboard documentation can be found [here](https://docs.google.com/document/d/1aRJ_NGWBzdLk3jJ71GvYx-dj1nbATQbDGfSG3V4Iy0g).
 - Submitting results, see the GitHub issue in the repository [here](https://github.com/allenai/molmospaces/issues/8).
 - Theoretical notes on policy comparison can be found [here](https://docs.google.com/document/d/1FcMxJgAQ_2Ojd2uu8HE2MBfD6RE53zcXa55_r8EfPts)
 
@@ -16,7 +16,7 @@ This README focuses on benchmark installation and running.
 
 The MolmoSpaces **leaderboard** shows the results of various polices on benchmarks.
 
-**Benchmark Sets** are collections of individual benchmarks that have been released together, e.g., 
+**Benchmark Sets** are collections of individual benchmarks that have been released together, e.g.,
 the ones from the MolmoSpaces paper, prefixed by "MS-" or the ones from the MolmoBot paper prefixed by "MB-".
 
 A **benchmark** is a `benchmark.json` file containing a list of self-contained episode specs. Each spec includes everything needed to recreate a task: scene, robot pose, object poses, cameras, language instructions.
@@ -97,7 +97,7 @@ Also, see `molmo_spaces/evaluation/configs/evaluation_configs.py` for more examp
 
 #### 3. Run the evaluation
 Finally we run the evaluation output script that aggegates the results as csv files.
-```bash 
+```bash
 python scripts/benchmarks/eval_to_csv.py <eval_output_dir> pi05ft --success-condition oracle  --output-csv data/pick_easy/pi05.csv
 ```
 
@@ -125,6 +125,7 @@ Extend `InferencePolicy`. Must implement `prepare_model`, `reset`, and `get_acti
 ```python
 # my_repo/policy.py
 from molmo_spaces.policy.base_policy import InferencePolicy
+
 
 class MyPolicy(InferencePolicy):
     def __init__(self, config, task):
@@ -162,6 +163,7 @@ Extend `BasePolicyConfig`. Define your model's interface.
 from molmo_spaces.configs.policy_configs import BasePolicyConfig
 from molmo_spaces.policy.base_policy import PolicyFactory
 
+
 class MyPolicyConfig(BasePolicyConfig):
     policy_type: str = "learned"
     action_type: str = "joint_pos_rel"
@@ -171,6 +173,7 @@ class MyPolicyConfig(BasePolicyConfig):
     def model_post_init(self, __context):
         if self.policy_cls is None:
             from my_repo.policy import MyPolicy
+
             self.policy_cls = MyPolicy
             self.policy_factory = MyPolicy
 
@@ -189,11 +192,10 @@ Extend `JsonBenchmarkEvalConfig`. This is the minimal config for benchmark eval 
 from molmo_spaces.configs.robot_configs import FrankaRobotConfig
 from molmo_spaces.evaluation.configs.evaluation_configs import JsonBenchmarkEvalConfig
 
+
 class MyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
-    policy_config: MyPolicyConfig = MyPolicyConfig(
-        checkpoint_path="/path/to/default/checkpoint"
-    )
+    policy_config: MyPolicyConfig = MyPolicyConfig(checkpoint_path="/path/to/default/checkpoint")
     policy_dt_ms: float = 200.0  # Match your model's expected control rate
 
     def model_post_init(self, __context):

@@ -401,6 +401,7 @@ def my_robot_eval_override(episode_spec, exp_config):
     exp_config.camera_config.cameras[0].record_depth = True
     episode_spec.task["robot_base_pose"][2] -= 0.05
 
+
 ROBOT_OVERRIDE_REGISTRY = {
     MyRobotConfig: my_robot_eval_override,
 }
