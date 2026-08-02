@@ -299,6 +299,34 @@ class RBY1GoProD455CameraSystem(CameraSystemConfig):
     ]
 
 
+class G1CameraSystem(CameraSystemConfig):
+    """Camera system for the G1 humanoid: head + right wrist camera.
+
+    `head_camera` references the plain (non-warped) `head_pov` MJCF camera for
+    now -- true fisheye compositing (see `utils/fisheye_warping_g1.py`, ported
+    but not yet wired into the live render path) is a follow-up, not part of
+    this camera system yet.
+    """
+
+    img_resolution: tuple[int, int] = (640, 480)
+    cameras: list[AllCameraTypes] = [
+        MjcfCameraConfig(
+            name="head_camera",
+            mjcf_name="head_pov",
+            robot_namespace="robot_0/",
+            fov=68.0,
+            is_warped=False,
+        ),
+        MjcfCameraConfig(
+            name="wrist_camera",
+            mjcf_name="right_wrist_camera",
+            robot_namespace="robot_0/",
+            fov=70.0,
+            record_depth=True,
+        ),
+    ]
+
+
 class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     """Camera system for Franka pick-and-place tasks with wrist cam and 2 randomized exo cams.
 
@@ -944,6 +972,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
 AllCameraSystems: TypeAlias = (
     RBY1MjcfCameraSystem
     | RBY1GoProD455CameraSystem
+    | G1CameraSystem
     | FrankaRandomizedD405D455CameraSystem
     | FrankaEasyRandomizedDroidCameraSystem
     | FrankaDroidCameraSystem

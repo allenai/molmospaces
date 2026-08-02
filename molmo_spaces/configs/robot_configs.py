@@ -21,6 +21,7 @@ from molmo_spaces.robots.bimanual_yam import BimanualYamRobot
 from molmo_spaces.robots.floating_robotiq import FloatingRobotiqRobot
 from molmo_spaces.robots.floating_rum import FloatingRUMRobot
 from molmo_spaces.robots.franka import FrankaRobot
+from molmo_spaces.robots.g1 import G1Robot
 from molmo_spaces.robots.i2rt_yam import I2rtYamRobot
 from molmo_spaces.robots.mobile_franka import MobileFrankaRobot
 from molmo_spaces.robots.rby1 import RBY1
@@ -33,6 +34,7 @@ from molmo_spaces.robots.robot_views.franka_droid_view import (
     FloatingRobotiq2f85RobotView,
     FrankaDroidRobotView,
 )
+from molmo_spaces.robots.robot_views.g1_view import G1RobotView
 from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.mobile_franka_droid_view import MobileFrankaDroidRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
@@ -322,6 +324,42 @@ class RBY1MOpenCloseConfig(RBY1MConfig):
         "head": None,
         "torso": "height",
     }
+
+
+class G1Config(BaseRobotConfig):
+    """Configuration for the Unitree G1 humanoid robot (standing only for now).
+
+    No walking controller yet (see the project roadmap) -- every actuated
+    move group is driven by a plain JointPosController, relying on the MJCF's
+    own tuned PD actuator gains. The base has no actuators (free-floating
+    pelvis integrated directly by MuJoCo's physics).
+    """
+
+    robot_cls: type[G1Robot] | None = G1Robot
+    robot_factory: Callable[[MjData, Any], Robot] | None = G1Robot
+    robot_view_factory: RobotViewFactory | None = G1RobotView
+    robot_namespace: str = "robot_0/"
+    name: str = "g1"
+    robot_xml_path: Path = Path("g1_dex.xml")
+    # Default standing pose, taken from the source G1 stack's validated
+    # gravity-settled/nominal joint values.
+    init_qpos: dict[str, np.ndarray] = {
+        "legs": np.array(
+            [-0.312, 0.0, 0.0, 0.669, -0.363, 0.0, -0.312, 0.0, 0.0, 0.669, -0.363, 0.0]
+        ),
+        "waist": np.array([0.0, 0.0, 0.0]),
+        "left_arm": np.array([0.212, -0.017, 0.062, 1.216, 0.005, 0.258, 0.006]),
+        "right_arm": np.array([0.2, -0.2, 0.0, -0.2, 0.0, 0.0, 0.0]),
+        "right_gripper": np.array([-0.0222]),
+    }
+    init_qpos_noise_range: dict[str, np.ndarray] | None = None
+    command_mode: dict[str, str | None] = {
+        "legs": "joint_position",
+        "waist": "joint_position",
+        "arm": "joint_position",
+        "gripper": "joint_position",
+    }
+    gravcomp: bool = False
 
 
 class FloatingRUMRobotConfig(BaseRobotConfig):
