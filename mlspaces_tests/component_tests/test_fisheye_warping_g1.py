@@ -13,7 +13,7 @@ import mujoco
 import numpy as np
 import pytest
 
-from molmo_spaces.utils.fisheye_warping_g1 import FisheyeRenderer
+from molmo_spaces.utils.fisheye_warping_tiled import FisheyeRenderer
 
 TILE_CAM_NAMES = ("tile_center", "tile_up", "tile_down", "tile_left", "tile_right")
 
