@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest-m, macos-latest]
         python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
