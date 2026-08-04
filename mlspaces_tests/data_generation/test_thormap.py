@@ -14,7 +14,7 @@ DEBUG_IMAGES_DIR = Path(__file__).resolve().parent / "test_debug_images"
 OCC_MAP_IOU_THRESHOLD = 0.98
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def setup_env():
     """Set up environment variables for all tests."""
     # TODO: use asset manager to download and save to test_data folder
@@ -22,12 +22,12 @@ def setup_env():
     yield
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def config():
     return THORMapTestConfig()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def install_scenes(config: THORMapTestConfig):
     for thormap_config in config.thormap_configs:
         scene = get_scenes(thormap_config.house_type)["train"][thormap_config.house_index]
