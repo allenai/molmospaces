@@ -33,7 +33,7 @@ def resolve_license(data_type, data_source, identifier):
     if data_type == "grasps":
         return resolve_grasps_license(data_source, identifier)
     if data_type == "robots":
-        return resolve_robot_license(data_source, identifier)
+        return resolve_robot_license(data_source, data_source)
 
     raise ValueError(f"Non-valid {data_type=}")
 
@@ -450,6 +450,16 @@ def resolve_robot_license(data_source, identifier):
             "source": "https://github.com/i2rt-robotics/i2rt/blob/d36027fc50e12d9261f091f9d91c4715bb5e398f/i2rt/robots/get_robot.py#L129",
             "license": "MIT",
             "uri": "https://github.com/i2rt-robotics/i2rt/blob/main/LICENSE",
+            "downloaded": "2026",
+        }
+    elif "g1" in identifier:
+        cur_license = {
+            **common_license,
+            "creator_username": 'HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")',
+            "attribution": 'Copyright (c) 2016-2023 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")',
+            "source": "mujoco_menagerie/unitree_g1",
+            "license": "BSD-3-Clause License",
+            "uri": "https://github.com/google-deepmind/mujoco_menagerie/blob/main/unitree_g1/LICENSE",
             "downloaded": "2026",
         }
     else:

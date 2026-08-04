@@ -70,6 +70,7 @@ _EXPECTED_DATA_VERSIONS = {
         "rby1m": "20251224",
         "franka_droid": "20260127",
         "floating_rum": "20251110",
+        "g1": "20260802",
     },
     "scenes": {
         "ithor": ["20251217", "20251217_with_occupancy"],
