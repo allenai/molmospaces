@@ -202,14 +202,16 @@ jobs:
           echo "Using CUDA_HOME=${CUDA_HOME:-<unset>}"
           source .venv/bin/activate
           # Default PyPI torch wheels are built against a different bundled CUDA
-          # runtime. Neither --extra-index-url (uv's default "first-index wins"
-          # never even checks it) nor a bare --index-url (that index page lists
-          # nvidia-* runtime libs spanning 12.0-12.9, not just 12.8, so an
-          # unqualified "torch~=2.7.0" range still let the resolver pick a
-          # non-+cu128 build) was enough -- confirmed both still installed a
-          # cu12.6-paired build reporting torch.version.cuda==13.0. Pin the full
-          # local-version-qualified wheel explicitly so there's no ambiguity.
-          uv pip install --no-cache "torch==2.7.1+cu128" --index-url https://download.pytorch.org/whl/cu128
+          # runtime. pyproject.toml's [tool.uv] extra-index-url includes
+          # pypi.org, and uv's default "first-index-wins" dependency-confusion
+          # protection means once "torch" is found on ANY index it stops
+          # looking -- our --index-url alone doesn't override that, so the
+          # exact +cu128 pin was reported "not found" against pypi.org even
+          # though it's confirmed present on download.pytorch.org. All indices
+          # here are trusted, so bypass that safety check for this one install.
+          uv pip install --no-cache "torch==2.7.1+cu128" \
+            --index-url https://download.pytorch.org/whl/cu128 \
+            --index-strategy unsafe-best-match
           # No --extra-index-url here: torch already satisfies its constraint from
           # the step above, and PyTorch's index only serves torch-family packages --
           # pointing the full-project install at it too caused an unrelated
