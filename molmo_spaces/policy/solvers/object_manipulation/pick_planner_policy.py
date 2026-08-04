@@ -137,7 +137,14 @@ class PickPlannerPolicy(BaseObjectManipulationPlannerPolicy):
         pickup_obj: MlSpacesObject = om.get_object_by_name(task_config.pickup_obj_name)
 
         candidate_grasps = get_pickup_grasps(
-            self.task.env, pickup_obj, grasp_libraries=self.policy_config.grasp_libraries
+            self.task.env,
+            pickup_obj,
+            grasp_libraries=self.policy_config.grasp_libraries,
+            # semantic_grasp_pick is the prompt_level ablation target: restrict to the
+            # grasps classified semantically good for this object. Upstream removed the
+            # task-type dispatch that used to do this inside get_all_grasp_poses, so the
+            # gate lives at the call site now.
+            semantically_good_only=self.config.task_type == "semantic_grasp_pick",
         )
         grasp_pose_world = select_grasp_pose(
             self.task.env,

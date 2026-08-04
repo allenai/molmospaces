@@ -274,6 +274,7 @@ class PackingPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
         )
 
         self.policy_cls = PackingPlannerPolicy
+        self.policy_factory = PackingPlannerPolicy
 
 
 class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
@@ -396,6 +397,7 @@ class BlockStackingPolicyConfig(ObjectManipulationPlannerPolicyConfig):
             )
 
             self.policy_cls = BlockStackingPlannerPolicy
+            self.policy_factory = BlockStackingPlannerPolicy
 
 
 class NavToObjPlannerPolicyConfig(BasePolicyConfig):

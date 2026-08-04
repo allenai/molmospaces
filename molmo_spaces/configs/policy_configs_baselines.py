@@ -109,6 +109,7 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
             from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
 
             self.policy_cls = DreamZero_Policy
+            self.policy_factory = make_lenient(DreamZero_Policy)
 
 
 class RumPolicyConfig(BasePolicyConfig):
@@ -254,6 +255,7 @@ class Molmoact2PolicyConfig(BasePolicyConfig):
     prompt_level: int = 2
 
     policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
     def model_post_init(self, __context) -> None:

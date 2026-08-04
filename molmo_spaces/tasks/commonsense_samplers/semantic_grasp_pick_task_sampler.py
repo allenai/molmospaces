@@ -7,7 +7,6 @@ from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task import SemanticGraspPickTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask
-from molmo_spaces.utils.grasp_sample import has_valid_grasp_file
 
 log = logging.getLogger(__name__)
 
@@ -49,9 +48,13 @@ class SemanticGraspPickTaskSampler(PickTaskSampler):
         )
         return filtered
 
-    def has_valid_grasp_file(self, pickup_obj, asset_uid):
-        """Override to also require a grasp classification file."""
-        if not has_valid_grasp_file(asset_uid):
+    def _has_grasps(self, pickup_obj, asset_uid):
+        """Override to also require a grasp classification file.
+
+        Upstream renamed this hook from ``has_valid_grasp_file`` to ``_has_grasps``
+        (PickTaskSampler); delegate to super() so its grasp-library-aware checks run.
+        """
+        if not super()._has_grasps(pickup_obj, asset_uid):
             return False
         return has_grasp_classification_file(asset_uid)
 

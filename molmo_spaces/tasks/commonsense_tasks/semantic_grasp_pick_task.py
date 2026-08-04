@@ -9,7 +9,7 @@ import numpy as np
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, DATA_CACHE_DIR
 from molmo_spaces.tasks.pick_task import PickTask
-from molmo_spaces.utils.grasp_sample import load_grasps_for_object
+from molmo_spaces.utils.grasps import load_pickup_grasps
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 
 log = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class SemanticGraspPickTask(PickTask):
         """Load grasp classification data for the given asset.
 
         Loads:
-        - All grasp transforms from the NPZ file (via load_grasps_for_object)
+        - All grasp transforms from the NPZ file (via load_pickup_grasps)
         - The classification JSON that labels each grasp as good/bad
 
         The classification JSON keys are string indices "0", "1", "2"...
@@ -79,7 +79,9 @@ class SemanticGraspPickTask(PickTask):
         self._asset_id = asset_id
 
         # Load all grasps (use large num_grasps to get them all)
-        _gripper, grasps = load_grasps_for_object(asset_id, num_grasps=int(1e6))
+        # num_grasps large enough to return every transform in file order -- the
+        # classification JSON is keyed by positional index, so order must match.
+        grasps = load_pickup_grasps(asset_id, num_grasps=int(1e6))
         self.grasp_transforms = np.array(grasps)
 
         # Compute TCP points in object frame for distance calculations

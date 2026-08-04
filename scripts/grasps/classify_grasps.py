@@ -41,7 +41,7 @@ from molmo_spaces.grasp_generation.pipeline.extract_leaf_meshes import (
     parse_mujoco_xml,
 )
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, DATA_CACHE_DIR
-from molmo_spaces.utils.grasp_sample import load_grasps_for_object
+from molmo_spaces.utils.grasps import load_pickup_grasps
 
 # Default set of categories worth annotating for semantic grasping.
 # These are the small handheld objects with clear semantic grasp affordances
@@ -475,9 +475,7 @@ def classify_one_asset(
 
     print(f"Loading grasps for {asset_id} ...")
     try:
-        _gripper, grasp_transforms = load_grasps_for_object(
-            asset_id, num_grasps=num_grasps
-        )
+        grasp_transforms = load_pickup_grasps(asset_id, num_grasps=num_grasps)
         print(f"Loaded {len(grasp_transforms)} grasps")
     except ValueError as e:
         print(f"  Skipping {asset_id}: error loading grasps: {e}")
