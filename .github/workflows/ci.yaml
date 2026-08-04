@@ -208,7 +208,11 @@ jobs:
           # CUDA 12.8, matching the toolkit installed above, before installing
           # everything else normally.
           uv pip install --no-cache "torch~=2.7.0" --extra-index-url https://download.pytorch.org/whl/cu128
-          uv pip install --no-cache -e .[dev,mujoco,curobo] --extra-index-url https://download.pytorch.org/whl/cu128
+          # No --extra-index-url here: torch already satisfies its constraint from
+          # the step above, and PyTorch's index only serves torch-family packages --
+          # pointing the full-project install at it too caused an unrelated
+          # setuptools/packaging build-isolation failure.
+          uv pip install --no-cache -e .[dev,mujoco,curobo]
 
       - name: Run data generation curobo tests
         run: |
