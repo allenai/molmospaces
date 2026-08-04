@@ -79,6 +79,7 @@ dev = [
     "mypy>=1.18.1",
     "pre-commit>=4.3.0",
     "pybind11-stubgen>=2.5.5",
+    "pytest-split>=0.10.0",
     "ruff>=0.13.1",
     "ty>=0.0.15",
 ]
