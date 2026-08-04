@@ -166,34 +166,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install CUDA toolkit
+      - name: Install CUDA 12.8 toolkit
         # nvidia-smi's "CUDA Version" column reports the max version the driver
         # supports -- it does NOT mean the toolkit (nvcc, headers) is installed.
-        # Confirmed empirically: driver/GPU present, but no nvcc and no
-        # /usr/local/cuda on this runner. nvidia-curobo's setup.py needs nvcc to
-        # build its CUDAExtension, so install the toolkit if it's missing.
+        # Ubuntu's generic `nvidia-cuda-toolkit` apt package installs whatever
+        # (older) version is in that release's repos (confirmed: gave 12.0, which
+        # then mismatched the resolved PyTorch build's CUDA 13.0). Pin to exactly
+        # 12.8 via NVIDIA's own apt repo instead -- pyproject.toml's torch comment
+        # already flags 12.8 as this project's intended version.
         run: |
-          if ! command -v nvcc >/dev/null 2>&1; then
+          if [ ! -d /usr/local/cuda-12.8 ]; then
+            . /etc/os-release
+            DISTRO="ubuntu$(echo "$VERSION_ID" | tr -d '.')"
+            wget -q "https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/x86_64/cuda-keyring_1.1-1_all.deb" \
+              -O /tmp/cuda-keyring.deb
+            sudo dpkg -i /tmp/cuda-keyring.deb
             sudo apt-get update
-            sudo apt-get install -y nvidia-cuda-toolkit
+            sudo apt-get install -y cuda-toolkit-12-8
           fi
-          nvcc --version || echo "::warning::nvcc still not found after install attempt"
-
-      - name: Detect CUDA toolkit path
-        # nvidia-curobo's setup.py builds a CUDAExtension, which requires CUDA_HOME
-        # pointing at the toolkit. Detect it rather than hardcode a path, since we
-        # don't know this runner's CUDA install layout.
-        run: |
-          if [ -n "$CUDA_HOME" ]; then
-            echo "CUDA_HOME already set: $CUDA_HOME"
-          elif command -v nvcc >/dev/null 2>&1; then
-            CUDA_BIN_DIR=$(dirname "$(command -v nvcc)")
-            echo "CUDA_HOME=$(dirname "$CUDA_BIN_DIR")" >> "$GITHUB_ENV"
-          elif [ -d /usr/local/cuda ]; then
-            echo "CUDA_HOME=/usr/local/cuda" >> "$GITHUB_ENV"
-          else
-            echo "::warning::Could not detect a CUDA toolkit path; nvidia-curobo build will likely fail"
-          fi
+          echo "CUDA_HOME=/usr/local/cuda-12.8" >> "$GITHUB_ENV"
+          /usr/local/cuda-12.8/bin/nvcc --version
 
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
@@ -209,7 +201,14 @@ jobs:
         run: |
           echo "Using CUDA_HOME=${CUDA_HOME:-<unset>}"
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco,curobo]
+          # Default PyPI torch wheels are built against a different bundled CUDA
+          # runtime (confirmed: cu12.6-tagged nvidia-* deps, and separately a
+          # resolve that mismatched our 12.8 toolkit as "13.0"). Pull torch from
+          # PyTorch's dedicated cu128 wheel index so it's actually built against
+          # CUDA 12.8, matching the toolkit installed above, before installing
+          # everything else normally.
+          uv pip install --no-cache "torch~=2.7.0" --extra-index-url https://download.pytorch.org/whl/cu128
+          uv pip install --no-cache -e .[dev,mujoco,curobo] --extra-index-url https://download.pytorch.org/whl/cu128
 
       - name: Run data generation curobo tests
         run: |
