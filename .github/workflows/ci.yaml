@@ -148,6 +148,44 @@ jobs:
           sudo dmesg -T 2>/dev/null | grep -iE 'killed process|out of memory|oom' \
             || echo "No OOM-killer messages found in dmesg (exit 143 is likely a cancellation, not OOM)"
 
+  data-generation-curobo-tests:
+    # nvidia-curobo's collision/motion-planning kernels require an actual NVIDIA
+    # GPU, not just more CPU -- needs a GPU-backed runner rather than a standard
+    # hosted one. No OSMesa/MUJOCO_GL=osmesa workaround here: with a real GPU
+    # present, device_id gets set and MjOpenGLRenderer uses its EGL path instead.
+    timeout-minutes: 90
+    runs-on: GPU-Enabled-Runner
+
+    steps:
+      - name: Log disk space & memory
+        run: |
+          df -h /
+          free -h || true
+          nvidia-smi || true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install UV package manager
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Create and setup virtual environment
+        run: |
+          uv venv --python 3.11
+          source .venv/bin/activate
+
+      - name: Install package
+        run: |
+          source .venv/bin/activate
+          uv pip install --no-cache -e .[dev,mujoco,curobo]
+
+      - name: Run data generation curobo tests
+        run: |
+          source .venv/bin/activate
+          python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
+
   ruff-checks:
     runs-on: ubuntu-latest
     steps:
