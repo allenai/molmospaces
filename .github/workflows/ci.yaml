@@ -166,6 +166,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Detect CUDA toolkit path
+        # nvidia-curobo's setup.py builds a CUDAExtension, which requires CUDA_HOME
+        # pointing at the toolkit (not just a visible GPU). Detect it rather than
+        # hardcode a path, since we don't know this runner's CUDA install layout.
+        run: |
+          if [ -n "$CUDA_HOME" ]; then
+            echo "CUDA_HOME already set: $CUDA_HOME"
+          elif command -v nvcc >/dev/null 2>&1; then
+            CUDA_BIN_DIR=$(dirname "$(command -v nvcc)")
+            echo "CUDA_HOME=$(dirname "$CUDA_BIN_DIR")" >> "$GITHUB_ENV"
+          elif [ -d /usr/local/cuda ]; then
+            echo "CUDA_HOME=/usr/local/cuda" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Could not detect a CUDA toolkit path; nvidia-curobo build will likely fail"
+          fi
+
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
         with:
@@ -178,6 +194,7 @@ jobs:
 
       - name: Install package
         run: |
+          echo "Using CUDA_HOME=${CUDA_HOME:-<unset>}"
           source .venv/bin/activate
           uv pip install --no-cache -e .[dev,mujoco,curobo]
 
