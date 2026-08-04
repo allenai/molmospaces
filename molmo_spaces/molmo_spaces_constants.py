@@ -733,7 +733,9 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
         ]
 
     if asset_or_tar_id is None and data_type != "robots":
-        raise ValueError(f"Missing asset_or_tar_id for {data_type=} {data_source=}. Maybe try with '--list_all'")
+        raise ValueError(
+            f"Missing asset_or_tar_id for {data_type=} {data_source=}. Maybe try with '--list_all'"
+        )
 
     if asset_or_tar_id == "--list_all":
         print(f"Possible identifiers: {sorted(get_identifiers())}")
