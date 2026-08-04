@@ -15,21 +15,17 @@ concurrency:
 
 jobs:
   unit-tests:
-    timeout-minutes: 90
     strategy:
       matrix:
-        os: [ubuntu-latest-m, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.11"]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Log disk space
+      - name: Log disk space & memory
         run: |
           df -h /
-
-      - name: Log memory
-        run: |
           free -h || vm_stat || true
 
       - name: Free disk space (Ubuntu)
@@ -82,9 +78,8 @@ jobs:
     # data_generation tests exercise MjOpenGLRenderer, which requires a headless GL
     # backend -- macOS CI runners can't create an offscreen CGL context (no
     # EGL/OSMesa backend available for macOS in mujoco), so Linux-only.
-    timeout-minutes: 90
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         group: [1, 2, 3, 4]
         python-version: ["3.11"]
@@ -92,12 +87,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Log disk space
+      - name: Log disk space & memory
         run: |
           df -h /
-
-      - name: Log memory
-        run: |
           free -h
 
       - name: Free disk space (Ubuntu)
