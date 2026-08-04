@@ -166,10 +166,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install CUDA toolkit
+        # nvidia-smi's "CUDA Version" column reports the max version the driver
+        # supports -- it does NOT mean the toolkit (nvcc, headers) is installed.
+        # Confirmed empirically: driver/GPU present, but no nvcc and no
+        # /usr/local/cuda on this runner. nvidia-curobo's setup.py needs nvcc to
+        # build its CUDAExtension, so install the toolkit if it's missing.
+        run: |
+          if ! command -v nvcc >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y nvidia-cuda-toolkit
+          fi
+          nvcc --version || echo "::warning::nvcc still not found after install attempt"
+
       - name: Detect CUDA toolkit path
         # nvidia-curobo's setup.py builds a CUDAExtension, which requires CUDA_HOME
-        # pointing at the toolkit (not just a visible GPU). Detect it rather than
-        # hardcode a path, since we don't know this runner's CUDA install layout.
+        # pointing at the toolkit. Detect it rather than hardcode a path, since we
+        # don't know this runner's CUDA install layout.
         run: |
           if [ -n "$CUDA_HOME" ]; then
             echo "CUDA_HOME already set: $CUDA_HOME"
