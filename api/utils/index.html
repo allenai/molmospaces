@@ -37755,7 +37755,7 @@ If the object is not found, returns (None, None, None).</p>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>    <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;grasps&quot;</span><span class="p">:</span>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="k">return</span> <span class="n">resolve_grasps_license</span><span class="p">(</span><span class="n">data_source</span><span class="p">,</span> <span class="n">identifier</span><span class="p">)</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="k">if</span> <span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;robots&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="k">return</span> <span class="n">resolve_robot_license</span><span class="p">(</span><span class="n">data_source</span><span class="p">,</span> <span class="n">identifier</span><span class="p">)</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="k">return</span> <span class="n">resolve_robot_license</span><span class="p">(</span><span class="n">data_source</span><span class="p">,</span> <span class="n">data_source</span><span class="p">)</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Non-valid </span><span class="si">{</span><span class="n">data_type</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -38093,7 +38093,17 @@ If the object is not found, returns (None, None, None).</p>
 <span class="normal"><a href="#__codelineno-0-455">455</a></span>
 <span class="normal"><a href="#__codelineno-0-456">456</a></span>
 <span class="normal"><a href="#__codelineno-0-457">457</a></span>
-<span class="normal"><a href="#__codelineno-0-458">458</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_robot_license</span><span class="p">(</span><span class="n">data_source</span><span class="p">,</span> <span class="n">identifier</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_robot_license</span><span class="p">(</span><span class="n">data_source</span><span class="p">,</span> <span class="n">identifier</span><span class="p">):</span>
 <a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="n">common_license</span> <span class="o">=</span> <span class="p">{</span>
 <a id="__codelineno-0-398" name="__codelineno-0-398"></a>        <span class="s2">&quot;data_type&quot;</span><span class="p">:</span> <span class="s2">&quot;robots&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-399" name="__codelineno-0-399"></a>        <span class="s2">&quot;data_source&quot;</span><span class="p">:</span> <span class="n">data_source</span><span class="p">,</span>
@@ -38152,10 +38162,20 @@ If the object is not found, returns (None, None, None).</p>
 <a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/i2rt-robotics/i2rt/blob/main/LICENSE&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-453" name="__codelineno-0-453"></a>            <span class="s2">&quot;downloaded&quot;</span><span class="p">:</span> <span class="s2">&quot;2026&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="p">}</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got unknown robot </span><span class="si">{</span><span class="n">identifier</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="k">return</span> <span class="n">cur_license</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="k">elif</span> <span class="s2">&quot;g1&quot;</span> <span class="ow">in</span> <span class="n">identifier</span><span class="p">:</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="n">cur_license</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>            <span class="o">**</span><span class="n">common_license</span><span class="p">,</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>            <span class="s2">&quot;creator_username&quot;</span><span class="p">:</span> <span class="s1">&#39;HangZhou YuShu TECHNOLOGY CO.,LTD. (&quot;Unitree Robotics&quot;)&#39;</span><span class="p">,</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>            <span class="s2">&quot;attribution&quot;</span><span class="p">:</span> <span class="s1">&#39;Copyright (c) 2016-2023 HangZhou YuShu TECHNOLOGY CO.,LTD. (&quot;Unitree Robotics&quot;)&#39;</span><span class="p">,</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;mujoco_menagerie/unitree_g1&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>            <span class="s2">&quot;license&quot;</span><span class="p">:</span> <span class="s2">&quot;BSD-3-Clause License&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/google-deepmind/mujoco_menagerie/blob/main/unitree_g1/LICENSE&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>            <span class="s2">&quot;downloaded&quot;</span><span class="p">:</span> <span class="s2">&quot;2026&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="p">}</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Got unknown robot </span><span class="si">{</span><span class="n">identifier</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="k">return</span> <span class="n">cur_license</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
