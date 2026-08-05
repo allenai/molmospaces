@@ -216,7 +216,15 @@ jobs:
           # the step above, and PyTorch's index only serves torch-family packages --
           # pointing the full-project install at it too caused an unrelated
           # setuptools/packaging build-isolation failure.
-          uv pip install --no-cache -e .[dev,mujoco,curobo]
+          # nvidia-curobo's setup.py compiles CUDA extensions against whatever torch
+          # is importable at build time. By default uv builds each package in a
+          # fresh, isolated env, so curobo would resolve its OWN torch from default
+          # PyPI (a non-cu128 build) instead of seeing the cu128 torch installed
+          # above -- that mismatch is what produced the "12.8 vs 13.0" CUDA error.
+          # Skipping build isolation just for curobo makes it build against the
+          # already-installed, correct torch.
+          uv pip install --no-cache -e .[dev,mujoco,curobo] \
+            --no-build-isolation-package nvidia-curobo
 
       - name: Run data generation curobo tests
         run: |
