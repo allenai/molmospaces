@@ -47,15 +47,18 @@ from molmo_spaces.configs.task_configs import (
     BaseMujocoTaskConfig,
     PickAndPlaceColorTaskConfig,
     PickAndPlaceTaskConfig,
+    NavToObjTaskConfig,
 )
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
     PickAndPlaceColorTaskSamplerConfig,
     PickAndPlaceTaskSamplerConfig,
+    NavToObjTaskSamplerConfig,
 )
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDataGenConfig,
 )
+from molmo_spaces.data_generation.config.nav_to_obj_configs import NavToObjDataGenConfig
 from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy, DummyPolicy
 from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
 from molmo_spaces.tasks.pick_and_place_color_task_sampler import (
@@ -65,6 +68,8 @@ from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 from molmo_spaces.tasks.pick_and_place_task_sampler import (
     PickAndPlaceTaskSampler,
 )
+from molmo_spaces.tasks.nav_task import NavToObjTask
+from molmo_spaces.tasks.nav_task_sampler import NavToObjTaskSampler
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 from molmo_spaces.utils.function_utils import make_lenient
 
@@ -302,3 +307,43 @@ class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
     def model_post_init(self, __context):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
+
+
+class DummyNavToObjEvalConfig(NavToObjDataGenConfig):
+    """Evaluation config for Dummy pick and place."""
+
+    wandb_project: str = "dummy-eval"
+    use_wandb: bool = False
+    use_passive_viewer: bool = False
+    wandb_name: str = f"dummy_nav_to_obj_eval_{TIMESTAMP}"
+    filter_for_successful_trajectories: bool = False
+    task_type: str = "nav_to_obj"
+    task_horizon: int = 600
+    output_dir: Path = Path("eval_output") / f"dummy_{TIMESTAMP}"
+
+    task_sampler_config: NavToObjTaskSamplerConfig = NavToObjTaskSamplerConfig(
+        task_sampler_class=NavToObjTaskSampler,
+        house_inds=[5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145],
+        samples_per_house=3,
+    )
+    task_config: NavToObjTaskConfig = NavToObjTaskConfig(task_cls=NavToObjTask)
+
+    policy_config: DummyPolicyConfig = DummyPolicyConfig()
+
+    def _init_policy_config(self) -> DummyPolicyConfig:
+        self.policy_config.policy_cls = DummyPolicy
+        self.policy_config.policy_factory = make_lenient(DummyPolicy)
+        return self.policy_config
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+class BrownianNavToObjEvalConfig(DummyNavToObjEvalConfig):
+    policy_config: BrownianMotionPolicyConfig = BrownianMotionPolicyConfig()
+
+    def _init_policy_config(self) -> BrownianMotionPolicyConfig:
+        self.policy_config.policy_cls = BrownianMotionPolicy
+        self.policy_config.policy_factory = make_lenient(BrownianMotionPolicy)
+        return self.policy_config

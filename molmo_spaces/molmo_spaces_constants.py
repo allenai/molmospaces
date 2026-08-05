@@ -99,7 +99,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "ithor": "20251217_with_occupancy",
         "refs": "20250923",
         "procthor-10k-train": "20251122_with_occupancy",
-        "procthor-10k-val": "20251217_with_occupancy",
+        "procthor-10k-val": "20251217_with_occupancy",  # "20251121" for nav_to_obj benchmark
         "procthor-10k-test": "20251121_with_occupancy",
         "holodeck-objaverse-train": "20251217_with_occupancy",
         "holodeck-objaverse-val": "20251217_with_occupancy",
