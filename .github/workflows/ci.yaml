@@ -212,6 +212,13 @@ jobs:
           uv pip install --no-cache "torch==2.7.1+cu128" \
             --index-url https://download.pytorch.org/whl/cu128 \
             --index-strategy unsafe-best-match
+          # curobo's [build-system] requires setuptools_scm to compute its version
+          # from git metadata. With build isolation skipped below, uv no longer
+          # auto-installs that build-time requirement into a throwaway env, so
+          # without it present here setup.py silently falls back to version
+          # "0.0.0" for its metadata while the wheel filename still gets the real
+          # git-derived version -- causing a "metadata != wheel filename" error.
+          uv pip install --no-cache setuptools setuptools_scm wheel
           # No --extra-index-url here: torch already satisfies its constraint from
           # the step above, and PyTorch's index only serves torch-family packages --
           # pointing the full-project install at it too caused an unrelated
