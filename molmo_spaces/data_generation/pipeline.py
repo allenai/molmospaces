@@ -738,6 +738,8 @@ class ParallelRolloutRunner:
 
         try:
             task.env.current_model.opt.enableflags |= int(mujoco.mjtEnableBit.mjENBL_SLEEP)
+            # mujoco 3.11 raised the default sleep_tolerance from 1e-4 to 1e-3
+            task.env.current_model.opt.sleep_tolerance = 1e-3
         except AttributeError:
             print("Not setting mujoco sleep. Needs version >=mujoco-3.8")
 
