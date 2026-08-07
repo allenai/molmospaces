@@ -6,8 +6,7 @@ that can interact with the environment to collect data.
 
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, Callable, TypeAlias
 
 from mujoco import MjSpec
 
@@ -63,6 +62,20 @@ class BasePolicy(ABC):
             The action to take in response to the information.
         """
         pass
+
+    def get_action_chunk(self, observation: Any) -> list[dict[str, Any]] | None:
+        """Return the actions to run before the next observation is needed, or None.
+
+        A single action is a ``dict[str, Any]`` in single-env mode and a
+        ``list[dict[str, Any]]`` (one entry per env) in batched mode. A batched
+        action and a chunk of actions are therefore both lists and cannot be told
+        apart by type, so any variable holding a chunk must say so in its name
+        rather than leaving the distinction to be inferred.
+
+        Returns None if this policy has no chunk to offer, which keeps the caller
+        on its per-step path.
+        """
+        return None
 
     @staticmethod
     def add_auxiliary_objects(config: "MlSpacesExpConfig", spec: MjSpec) -> None:

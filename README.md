@@ -42,7 +42,7 @@
 
 Installing `molmospaces` is easy!
 
-First, clone the project. 
+First, clone the project.
 
 ```bash
 git clone git@github.com:allenai/molmospaces.git
@@ -132,7 +132,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 | `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `~/.cache/molmospaces/assets/<install-hash>` |
 | `MLSPACES_FORCE_INSTALL` | Override existing assets | `True` |
 | `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |  |
-| `MUJOCO_EGL_DEVICE_ID` | The rendering device; indices do not always match `CUDA_VISIBLE_DEVICES`. See [here](https://github.com/allenai/molmospaces/issues/66) for details. | `0`| 
+| `MUJOCO_EGL_DEVICE_ID` | The rendering device; indices do not always match `CUDA_VISIBLE_DEVICES`. See [here](https://github.com/allenai/molmospaces/issues/66) for details. | `0`|
 
 
 ### Quick Test
@@ -154,7 +154,7 @@ molmo_spaces/data_generation/main.py  # data generation
 scripts/datagen/run_pipeline.py       # debugging
 ```
 
-This readme contains more information on [experiment configs](#experiment-configs) as well as the other entry points; for those, please see the [evaluation](#benchmarks-and-evaluations) and [data generation](#data-generation) sections of this readme. 
+This readme contains more information on [experiment configs](#experiment-configs) as well as the other entry points; for those, please see the [evaluation](#benchmarks-and-evaluations) and [data generation](#data-generation) sections of this readme.
 
 ## MolmoSpaces Assets
 
@@ -200,6 +200,7 @@ To see a list of all currently defined experiment configs, run this:
 ```python
 from molmo_spaces.data_generation.main import auto_import_configs
 from molmo_spaces.data_generation.config_registry import list_available_configs
+
 auto_import_configs()
 print(list_available_configs())
 ```
@@ -336,6 +337,7 @@ The XML files have been modified from the original versions provided by the foll
 - [Rainbow Robotics / rby1-sdk](https://github.com/RainbowRobotics/rby1-sdk) - Copyright 2024-2025 Rainbow Robotics
 - [RUM Gripper](https://github.com/jeffacce/cap-policy) - Copyright (c) 2026 NYU Generalizable Robotics and AI Lab (GRAIL)
 - [I2RT Robotics / i2rt Python API](https://github.com/i2rt-robotics/i2rt) - Copyright (c) I2RT Robotics
+- [mujoco_menagerie / unitree_g1](https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_g1) - Copyright (c) 2016-2023 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")
 
 ## Citing
 

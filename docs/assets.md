@@ -42,7 +42,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
 )
 ```
 
-Some resources, like objects, will be symlinked globally (top directory), while others, like scenes, will be symlinked in a per-file basis, like: 
+Some resources, like objects, will be symlinked globally (top directory), while others, like scenes, will be symlinked in a per-file basis, like:
 ```
 /path/to/symlink/resources/
   ├── scenes/
@@ -104,11 +104,11 @@ from molmo_spaces.utils.object_metadata import ObjectMeta
 r = ObjectRetriever()
 uids, sims = r.query("a 3D model of a cellphone")
 for it, (uid, sim) in enumerate(zip(uids, sims)):
-  anno = ObjectMeta.annotation(uid)
-  print(
-      f"{it} sim={sim} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
-      f" {anno['description_short']['five_words']}"
-  )
+    anno = ObjectMeta.annotation(uid)
+    print(
+        f"{it} sim={sim} uid={uid} obja={anno['isObjaverse']} split={anno['split']} cat=`{anno['category']}`:"
+        f" {anno['description_short']['five_words']}"
+    )
 ```
 
 ## Asset pinning (optional)
@@ -156,7 +156,7 @@ MLSPACES_ASSETS_DIR
  ├── objects
  │    ├── thor
  │    ├── ...
- │    
+ │
  ...
 ```
 

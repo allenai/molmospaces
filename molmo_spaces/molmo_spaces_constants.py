@@ -94,6 +94,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "floating_robotiq": "20260208_retry4",
         "franka_fr3": "20260303",
         "i2rt_yam": "20260223",
+        "g1": "20260802",
     },
     scenes={
         "ithor": "20251217_with_occupancy",
@@ -720,7 +721,7 @@ def get_robot_path(robot_name) -> Path:
     return ROBOTS_DIR / robot_name
 
 
-def print_license_info(data_type, data_source, asset_or_tar_id):
+def print_license_info(data_type, data_source, asset_or_tar_id=None):
     from molmo_spaces.utils.license_utils import resolve_license
 
     def get_identifiers():
@@ -730,6 +731,11 @@ def print_license_info(data_type, data_source, asset_or_tar_id):
                 data_type, data_source
             )
         ]
+
+    if asset_or_tar_id is None and data_type != "robots":
+        raise ValueError(
+            f"Missing asset_or_tar_id for {data_type=} {data_source=}. Maybe try with '--list_all'"
+        )
 
     if asset_or_tar_id == "--list_all":
         print(f"Possible identifiers: {sorted(get_identifiers())}")

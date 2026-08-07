@@ -32,13 +32,13 @@ TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "test_output"
 DEBUG_IMAGES_DIR = Path(__file__).resolve().parent / "test_debug_images"
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def setup_env():
     """Set up environment variables for all tests."""
     yield
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def config():
     """Create test-specific config instance (shared across all tests)."""
     from molmo_spaces.data_generation.config.door_opening_configs import DoorOpeningDataGenConfig
@@ -67,23 +67,24 @@ def config():
     return config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def task_sampler(config):
     """Create and initialize task sampler once for all tests (expensive initialization)."""
     task_sampler_class = config.task_sampler_config.task_sampler_class
     task_sampler = task_sampler_class(config)
     task_sampler.reset()
-    return task_sampler
+    yield task_sampler
+    task_sampler.env.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def task(task_sampler):
     """Sample task once for all tests (expensive operation)."""
     task = task_sampler.sample_task()
     return task
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def policy_results(config, task):
     """Run policy once for all tests (expensive operation)."""
     # Reset task to initial state

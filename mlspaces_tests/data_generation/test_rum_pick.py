@@ -31,13 +31,13 @@ TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "test_output"
 DEBUG_IMAGES_DIR = Path(__file__).resolve().parent / "test_debug_images"
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def setup_env():
     """Set up environment variables for all tests."""
     yield
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def rum_config():
     """Create test-specific config instance for RUM (shared across all tests)."""
     config = RUMPickTestConfig()
@@ -48,24 +48,25 @@ def rum_config():
     return config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def rum_task_sampler(rum_config):
     """Create and initialize task sampler once for all RUM tests (expensive initialization)."""
     task_sampler_config = rum_config.task_sampler_config
     task_sampler_class = task_sampler_config.task_sampler_class
     task_sampler = task_sampler_class(rum_config)
     task_sampler.reset()
-    return task_sampler
+    yield task_sampler
+    task_sampler.env.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def rum_task(rum_task_sampler):
     """Sample task once for all RUM tests (expensive operation)."""
     task = rum_task_sampler.sample_task()
     return task
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def rum_policy_results(rum_config, rum_task):
     """Run policy once for all RUM tests (expensive operation)."""
     # Reset task to initial state

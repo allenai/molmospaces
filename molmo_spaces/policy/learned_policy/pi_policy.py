@@ -1,7 +1,8 @@
 import logging
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 import cv2
 import numpy as np
@@ -183,6 +184,19 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
             "gripper": gripper_pos,
         }
         return action
+
+    def get_action_chunk(self, observation: Any) -> list[dict[str, np.ndarray]]:
+        """Return the whole predicted chunk, so only its first action needs an observation.
+
+        The model predicts ``chunk_size`` actions per inference. ``get_action``
+        triggers that inference and consumes the first action; the rest are drained
+        from the buffer here. The returned list is a chunk of single-env actions,
+        not one batched action -- see ``BasePolicy.get_action_chunk``.
+        """
+        first_action = self.get_action(observation)
+        buffered_outputs = self.actions_buffer[self.current_buffer_index : self.chunk_size]
+        self.current_buffer_index = self.chunk_size
+        return [first_action] + [self.model_output_to_action(out) for out in buffered_outputs]
 
     def get_info(self) -> dict:
         info = super().get_info()
