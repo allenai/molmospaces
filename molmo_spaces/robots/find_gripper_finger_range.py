@@ -7,7 +7,7 @@ import argparse
 import importlib
 
 import mujoco
-from mujoco import MjModel, MjData, MjSpec
+from mujoco import MjData, MjModel, MjSpec
 
 from molmo_spaces.configs.robot_configs import BaseRobotConfig
 
@@ -66,7 +66,7 @@ def main():
 
     dists_lo = [gripper.inter_finger_dist for gripper in gripper_groups]
 
-    print(f"Gripper finger ranges:")
+    print("Gripper finger ranges:")
     for gripper_name, dist_lo, dist_hi in zip(gripper_names, dists_lo, dists_hi):
         print(f"\tGripper '{gripper_name}': {dist_lo:.3f} - {dist_hi:.3f}")
 

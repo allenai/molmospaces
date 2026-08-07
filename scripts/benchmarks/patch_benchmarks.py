@@ -215,7 +215,7 @@ def patch_benchmark(benchmark_dir: Path, args, dry_run: bool = False) -> bool:
             episode.pop("task_horizon_sec", None)
 
         #needs_task_type = "task_type" not in episode.get("task", {})
-        needs_task_type=True 
+        needs_task_type=True
         if needs_task_type:
             task_cls = episode["task"]["task_cls"]
             if args.task_type is not None:
@@ -232,7 +232,7 @@ def patch_benchmark(benchmark_dir: Path, args, dry_run: bool = False) -> bool:
 
             episode.setdefault("task", {})["task_type"] = task_type
             episode.pop("task_type", None)
-            
+
 
         if needs_task_field_update and "task" in episode:
             for field, expected in TASK_FIELD_SCHEMA_VALUES.items():
@@ -282,7 +282,7 @@ def main():
         default=None,
         help="Overwrite imputed task type",
     )
-    
+
 
     args = parser.parse_args()
     benchmarks_dir = Path(args.benchmarks_dir)
@@ -311,7 +311,7 @@ def main():
                 patched += 1
         except Exception as e:
             log.error(f"Failed to patch {benchmark_dir}: {e}")
-            raise e   
+            raise e
             failed += 1
 
     log.info(f"Done. Patched: {patched}, Failed: {failed}")

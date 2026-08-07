@@ -6,9 +6,9 @@ that can interact with the environment to collect data.
 
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, TypeAlias
+from collections.abc import Callable
+from typing import TYPE_CHECKING, TypeAlias
 
-import numpy as np
 from mujoco import MjSpec
 
 from molmo_spaces.tasks.task import BaseMujocoTask
@@ -131,7 +131,7 @@ class PlannerPolicy(BasePolicy):
         raise NotImplementedError
 
     def create_policy_sensors(self) -> list["Sensor"]:
-        from molmo_spaces.env.sensors import PolicyPhaseSensor, PolicyNumRetriesSensor
+        from molmo_spaces.env.sensors import PolicyNumRetriesSensor, PolicyPhaseSensor
 
         return super().create_policy_sensors() + [
             PolicyPhaseSensor(uuid="policy_phase"),

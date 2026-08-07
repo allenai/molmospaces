@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING, Any
 import mujoco
 import numpy as np
 from mujoco import MjData, MjSpec
-from scipy.stats import truncnorm
 from scipy.spatial.transform import Rotation as R
+from scipy.stats import truncnorm
+
 from molmo_spaces.controllers.abstract import AbstractPositionController, Controller
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.robot_views.abstract import RobotView
@@ -16,8 +17,8 @@ from molmo_spaces.robots.robot_views.abstract import RobotView
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.configs.robot_configs import ActionNoiseConfig, BaseRobotConfig
-    from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
     from molmo_spaces.env.abstract_sensors import Sensor
+    from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
 
 
 log = logging.getLogger(__name__)

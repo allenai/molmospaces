@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 import mujoco
 import numpy as np
-from mujoco import MjData, MjModel, MjSpec
+from mujoco import MjData, MjSpec
 
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.env.rby1_sensors import RBY1GraspStateSensor

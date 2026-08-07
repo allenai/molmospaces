@@ -18,7 +18,7 @@ benchmark_dirs = [
     "/weka/prior/datasets/robomolmo/bench_v4/procthor-objaverse/FrankaPickandPlaceHardBench/FrankaPickandPlaceHardBench_20260206_json_benchmark",
     #"/weka/prior/datasets/robomolmo/bench_jordis/procthor-objaverse/FrankaPickandPlaceNextToHardBench/FrankaPickandPlaceNextToHardBench_20260322_1000eps_json_benchmark",
 ]
- 
+
 num_episodes = 1000
 workers = 4
 skip_episodes_per_worker = num_episodes // workers
@@ -28,10 +28,9 @@ for i, benchmark_dir in enumerate(benchmark_dirs):
         skip_episodes = j * skip_episodes_per_worker
         max_episodes = skip_episodes_per_worker
         cmd = f"python molmo_spaces/evaluation/eval_main.py --benchmark_dir {benchmark_dir}  --wandb_project pi05_eval  --checkpoint_path /weka/prior/maxa/code/openpi/checkpoints/pi05_droid_jointpos molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig --use-filament --num_workers 5 --skip_episodes={skip_episodes} --max_episodes={max_episodes}"
-        
+
         whole_cmd = prefix + cmd
         print()
         print(f"{i} - {j}:", "-" * 80)
         print()
         print(whole_cmd)
-        

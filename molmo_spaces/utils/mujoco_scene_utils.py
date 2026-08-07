@@ -1,5 +1,4 @@
 import logging
-from typing import NoReturn
 
 import mujoco
 import numpy as np

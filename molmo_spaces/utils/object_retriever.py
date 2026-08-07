@@ -1,9 +1,9 @@
 import numpy as np
-
-from molmo_spaces.utils.object_metadata import ObjectMeta
-from molmo_spaces.env.object_manager import compute_text_clip, clip_sim
-from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmospaces_resources import PickleLMDBMap
+
+from molmo_spaces.env.object_manager import clip_sim, compute_text_clip
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.utils.object_metadata import ObjectMeta
 
 
 class ObjectRetriever:

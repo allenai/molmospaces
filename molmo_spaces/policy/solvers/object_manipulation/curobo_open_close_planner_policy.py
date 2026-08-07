@@ -339,7 +339,6 @@ class CuroboOpenClosePlannerPolicy(CuroboPlannerPolicy, OpenClosePlannerPolicy):
         from scipy.spatial.transform import Rotation as R
 
         from molmo_spaces.utils.grasp_sample import get_noncolliding_grasp_mask
-        from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 
         task_config = self.config.task_config
         om = self.task.env.object_managers[self.task.env.current_batch_index]

@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cv2
 import numpy as np

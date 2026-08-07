@@ -1,12 +1,12 @@
 from pathlib import Path
 
+from xarm7_config import XArm7RobotConfig
+
 from molmo_spaces.configs import PickTaskSamplerConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import AllCameraTypes, CameraSystemConfig, MjcfCameraConfig
 from molmo_spaces.data_generation.config_registry import register_config
-
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
-from xarm7_config import XArm7RobotConfig
 
 
 class XArm7CameraSystem(CameraSystemConfig):

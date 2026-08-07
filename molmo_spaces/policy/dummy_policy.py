@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from molmo_spaces.policy.base_policy import NONE_PHASE, BasePolicy
+from molmo_spaces.policy.base_policy import BasePolicy
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig

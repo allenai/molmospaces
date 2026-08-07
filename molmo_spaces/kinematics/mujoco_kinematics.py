@@ -4,8 +4,8 @@ This solver is not parallelizable and runs on the CPU. While fairly fast,
 this is not suitable for large batches.
 """
 
-from typing import Literal, TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING, Literal
 
 import mujoco
 import numpy as np

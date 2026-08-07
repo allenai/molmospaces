@@ -45,21 +45,23 @@ from molmo_spaces.configs.robot_configs import (
 )
 from molmo_spaces.configs.task_configs import (
     BaseMujocoTaskConfig,
+    NavToObjTaskConfig,
     PickAndPlaceColorTaskConfig,
     PickAndPlaceTaskConfig,
-    NavToObjTaskConfig,
 )
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
+    NavToObjTaskSamplerConfig,
     PickAndPlaceColorTaskSamplerConfig,
     PickAndPlaceTaskSamplerConfig,
-    NavToObjTaskSamplerConfig,
 )
+from molmo_spaces.data_generation.config.nav_to_obj_configs import NavToObjDataGenConfig
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDataGenConfig,
 )
-from molmo_spaces.data_generation.config.nav_to_obj_configs import NavToObjDataGenConfig
 from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy, DummyPolicy
+from molmo_spaces.tasks.nav_task import NavToObjTask
+from molmo_spaces.tasks.nav_task_sampler import NavToObjTaskSampler
 from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
 from molmo_spaces.tasks.pick_and_place_color_task_sampler import (
     PickAndPlaceColorTaskSampler,
@@ -68,8 +70,6 @@ from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 from molmo_spaces.tasks.pick_and_place_task_sampler import (
     PickAndPlaceTaskSampler,
 )
-from molmo_spaces.tasks.nav_task import NavToObjTask
-from molmo_spaces.tasks.nav_task_sampler import NavToObjTaskSampler
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 from molmo_spaces.utils.function_utils import make_lenient
 

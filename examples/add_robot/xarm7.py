@@ -2,7 +2,6 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 import mujoco
-import numpy as np
 from mujoco import MjData, MjSpec, mjtGeom
 
 from molmo_spaces.controllers.abstract import Controller
@@ -14,8 +13,9 @@ from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematic
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from xarm7_config import XArm7RobotConfig
+
+    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 
 
 log = logging.getLogger(__name__)
@@ -128,10 +128,9 @@ class XArm7Robot(Robot):
 if __name__ == "__main__":
     import mujoco
     from mujoco.viewer import launch
+    from xarm7_config import XArm7RobotConfig
 
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-
-    from xarm7_config import XArm7RobotConfig
 
     robot_config = XArm7RobotConfig()
     spec = MjSpec()

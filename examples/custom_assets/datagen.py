@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import numpy as np
 import mujoco
+import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs import PickTaskSamplerConfig
@@ -12,17 +12,15 @@ from molmo_spaces.configs.camera_configs import (
 from molmo_spaces.configs.robot_configs import (
     FrankaRobotConfig,
 )
+from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import (
     register_user_asset_library,
     register_user_grasp_library,
 )
-
-from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 from molmo_spaces.utils.pose import pose_mat_to_7d
-
 
 register_user_asset_library("custom_assets", Path("asset_library"))
 

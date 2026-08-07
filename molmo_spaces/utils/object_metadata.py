@@ -1,11 +1,11 @@
 import gzip
 import json
-from pathlib import Path
 import pickle
-from typing import TYPE_CHECKING
 from collections.abc import Mapping
 from functools import cache, lru_cache
 from itertools import chain
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from filelock import FileLock

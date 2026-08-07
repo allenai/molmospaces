@@ -48,13 +48,13 @@ class FloatingRUMKinematics(MlSpacesKinematics):
 
 if __name__ == "__main__":
     import time
+
     import mujoco
     import numpy as np
-    from mujoco.viewer import Handle
-    from mujoco.viewer import launch_passive
+    from mujoco.viewer import Handle, launch_passive
 
-    from molmo_spaces.robots.robot_views.rum_gripper_view import FloatingRUMRobotView
     from molmo_spaces.configs.robot_configs import FloatingRUMRobotConfig
+    from molmo_spaces.robots.robot_views.rum_gripper_view import FloatingRUMRobotView
     from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 
     def _show_poses(viewer: Handle, poses: np.ndarray, color=(1, 0, 0, 1)) -> None:

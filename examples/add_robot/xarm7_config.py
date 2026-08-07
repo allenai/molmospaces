@@ -1,14 +1,14 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Any
+from typing import Any
 
 from mujoco import MjData
+from xarm7 import XArm7Robot
+from xarm7_view import XArm7RobotView
 
 from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.robots.robot_views.abstract import RobotViewFactory
-
-from xarm7 import XArm7Robot
-from xarm7_view import XArm7RobotView
 
 
 class XArm7RobotConfig(BaseRobotConfig):

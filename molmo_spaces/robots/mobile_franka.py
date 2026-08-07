@@ -237,8 +237,8 @@ class MobileFrankaRobot(Robot):
 
 
 if __name__ == "__main__":
-    from scipy.spatial.transform import Rotation as R
     import mujoco.viewer
+    from scipy.spatial.transform import Rotation as R
 
     from molmo_spaces.configs.robot_configs import MobileFrankaRobotConfig
     from molmo_spaces.molmo_spaces_constants import get_procthor_10k_houses

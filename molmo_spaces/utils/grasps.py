@@ -5,13 +5,13 @@ Note: this module caches aggressively, so grasp/asset libraries must be register
 New registrations will not be visible until the caches are cleared.
 """
 
+import inspect
 import logging
 import random
-from collections.abc import Sequence
-from pathlib import Path
-from functools import lru_cache, wraps
-import inspect
 import zipfile
+from collections.abc import Sequence
+from functools import lru_cache, wraps
+from pathlib import Path
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -23,8 +23,7 @@ from molmo_spaces.molmo_spaces_constants import (
     OBJECT_LIBRARY_TO_GRASP_LIBRARIES,
     USER_GRASP_LIBRARIES,
 )
-from molmo_spaces.utils.lazy_loading_utils import locate_uid_package, get_user_grasp_library_index
-
+from molmo_spaces.utils.lazy_loading_utils import get_user_grasp_library_index, locate_uid_package
 
 log = logging.getLogger(__name__)
 

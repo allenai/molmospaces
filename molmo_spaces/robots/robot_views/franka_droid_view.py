@@ -12,7 +12,6 @@ from molmo_spaces.robots.robot_views.abstract import (
     RobotView,
 )
 from molmo_spaces.robots.robot_views.franka_fr3_view import FrankaFR3ArmGroup, FrankaFR3BaseGroup
-from molmo_spaces.utils.mj_model_and_data_utils import site_pose
 
 
 class RobotIQGripperGroup(MJCFFrameMixin, GripperGroup):

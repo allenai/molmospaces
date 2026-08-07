@@ -36,19 +36,19 @@ def detect_task_type(path: str) -> str | None:
         return "close"
     if "open" in p or "opening" in p:
         return "open"
-    
+
     if "pickandplacenextto" in p:
         return "pick_and_place_next_to"
-    
+
     if "pickandplacecolor" in p:
         return "pick_and_place_color"
-    
+
     if "pickandplace" in p:
         return "pick_and_place"
 
     if "pick" in p or "pnp" in p:
         return "pick"
-    
+
     return None
 
 def detect_num_words(path: str) -> str | None:
@@ -58,7 +58,7 @@ def detect_num_words(path: str) -> str | None:
         return 1
     else:
         return None
-        
+
 def find_benchmarks(root: str) -> list[str]:
     result = subprocess.run(
         ["find", root, "-iname", "benchmark.json"],
@@ -104,15 +104,14 @@ if __name__ == "__main__":
     # --- update_task_descriptions.py (once per benchmark.json) ---
     print("# update_task_descriptions.py")
     for bench in benchmarks:
-        
+
         cmd = build_patch_cmd(bench, dry_run=args.dry_run)
         print(" ".join(cmd))
         if not args.print_only:
             subprocess.run(cmd, check=True)
-            
+
 
         cmd = build_update_cmd(bench, dry_run=args.dry_run)
         print(" ".join(cmd))
         if not args.print_only:
             subprocess.run(cmd, check=True)
-        

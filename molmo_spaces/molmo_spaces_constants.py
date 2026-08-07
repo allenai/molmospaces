@@ -11,8 +11,8 @@ import json
 import logging
 import os
 from collections import defaultdict
-from pathlib import Path
 from copy import deepcopy
+from pathlib import Path
 
 import compress_json
 from molmospaces_resources import (
@@ -669,10 +669,10 @@ def get_robot_paths() -> dict[str, Path]:
 
 
 def install_missing_source(data_type: str, missing_source: str, existing_sources: list[str]):
-    from molmospaces_resources.manager import _lock_context, LOCAL_MANIFEST_NAME
+    from molmospaces_resources.manager import LOCAL_MANIFEST_NAME, _lock_context
     from molmospaces_resources.setup_utils import (
-        _get_current_install,
         _RESOURCE_MANAGERS,
+        _get_current_install,
         _manager_key,
     )
 

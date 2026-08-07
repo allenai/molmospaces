@@ -17,7 +17,7 @@ from molmo_spaces.robots.robot_views.abstract import (
     RobotView,
     SimplyActuatedMoveGroup,
 )
-from molmo_spaces.utils.mj_model_and_data_utils import body_pose, site_pose
+from molmo_spaces.utils.mj_model_and_data_utils import body_pose
 
 
 class FrankaFR3BaseGroup(MocapRobotBaseGroup):

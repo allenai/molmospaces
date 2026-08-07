@@ -25,19 +25,19 @@ from molmo_spaces.tasks.task_sampler_errors import (
 )
 from molmo_spaces.utils.asset_names import get_thor_name
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
+from molmo_spaces.utils.grasp_sample import (
+    get_noncolliding_grasp_mask,
+)
 from molmo_spaces.utils.grasps import (
     get_pickup_grasps,
     has_pickup_grasp_path,
     has_valid_pickup_grasps,
 )
-from molmo_spaces.utils.grasp_sample import (
-    get_noncolliding_grasp_mask,
-)
 from molmo_spaces.utils.lazy_loading_utils import install_uid
 from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
 from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom, place_object_near
 from molmo_spaces.utils.object_metadata import ObjectMeta
-from molmo_spaces.utils.pose import pos_quat_to_pose_mat, pose_mat_to_7d
+from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.task_relevant_objects_and_workspace_utils import (
     compute_workspace_center,
     get_task_relevant_objects,
