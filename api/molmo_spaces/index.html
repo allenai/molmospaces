@@ -4289,10 +4289,10 @@ It must have already been registered.</p>
 <span class="normal"><a href="#__codelineno-0-701">701</a></span>
 <span class="normal"><a href="#__codelineno-0-702">702</a></span>
 <span class="normal"><a href="#__codelineno-0-703">703</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="k">def</span><span class="w"> </span><span class="nf">install_missing_source</span><span class="p">(</span><span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">missing_source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">existing_sources</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmospaces_resources.manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">_lock_context</span><span class="p">,</span> <span class="n">LOCAL_MANIFEST_NAME</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmospaces_resources.manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOCAL_MANIFEST_NAME</span><span class="p">,</span> <span class="n">_lock_context</span>
 <a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">molmospaces_resources.setup_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="n">_get_current_install</span><span class="p">,</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>        <span class="n">_RESOURCE_MANAGERS</span><span class="p">,</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="n">_RESOURCE_MANAGERS</span><span class="p">,</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>        <span class="n">_get_current_install</span><span class="p">,</span>
 <a id="__codelineno-0-677" name="__codelineno-0-677"></a>        <span class="n">_manager_key</span><span class="p">,</span>
 <a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="p">)</span>
 <a id="__codelineno-0-679" name="__codelineno-0-679"></a>
