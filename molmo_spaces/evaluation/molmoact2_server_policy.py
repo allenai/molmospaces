@@ -80,7 +80,12 @@ class Molmoact2ServerPolicy(InferencePolicy, StatefulPolicy):
         exp_config: MlSpacesExpConfig,
         task_type: str,
     ) -> None:
-        super().__init__(exp_config, task_type)
+        # BasePolicy's second parameter is `task: BaseMujocoTask | None`, not a task-type
+        # string. Passing task_type here set self.task = "pick", so _resolve_prompt hit
+        # "pick".get_task_description(). In server mode there is no task object -- the
+        # prompt arrives in the observation -- and both self.task call sites already
+        # guard on None, which is the path they were written for.
+        super().__init__(exp_config)
         policy_config = exp_config.policy_config
         self.checkpoint_path = policy_config.checkpoint_path
         self.mm_olmo_path = policy_config.mm_olmo_path

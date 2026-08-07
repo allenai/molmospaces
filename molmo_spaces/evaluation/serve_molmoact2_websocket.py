@@ -87,6 +87,11 @@ def build_policy(args: argparse.Namespace) -> Molmoact2ServerPolicy:
         grasping_type=args.grasping_type,
         grasping_threshold=float(args.grasping_threshold),
         chunk_size=int(chunk_size),
+        # BasePolicy.__init__ reads policy_config.force_enable_depth unconditionally.
+        # This stub stands in for BasePolicyConfig but does not inherit it, so the
+        # field has to be supplied explicitly; False matches BasePolicyConfig's default
+        # and keeps the depth/camera_config branch (which this stub also lacks) unused.
+        force_enable_depth=False,
     )
     exp_config = SimpleNamespace(policy_config=policy_config, task_type="pick")
     return Molmoact2ServerPolicy(exp_config, task_type="pick")
