@@ -81,10 +81,29 @@ def episode_fingerprint(traj: h5py.Group) -> tuple | None:
     return tuple(parts)
 
 
-def load_run(path: str) -> tuple[dict[tuple[int, int], bool], dict[tuple[int, int], tuple]]:
-    """Return {(house, traj_idx): success} and {(house, traj_idx): fingerprint}."""
+def load_run(
+    path: str,
+    task_horizon: int | None = None,
+    nearby_radius_m: float | None = None,
+    nearby_max_bin: int = 5,
+) -> tuple[dict[tuple[int, int], bool], dict[tuple[int, int], tuple], dict[tuple[int, int], str]]:
+    """Return {(house, traj_idx): success}, {key: fingerprint}, {key: nearby bucket}.
+
+    task_horizon truncates the success array, matching how a run was launched. Policies
+    evaluated with different --task_horizon_steps are not comparable without it: an
+    episode solved at step 400 counts here but could never have counted for a policy
+    that was stopped at 300.
+
+    The nearby bucket reuses thor_analysis so the bins match analyze_run.py exactly.
+    """
     success: dict[tuple[int, int], bool] = {}
     fingerprints: dict[tuple[int, int], tuple] = {}
+    buckets: dict[tuple[int, int], str] = {}
+
+    ta = None
+    if nearby_radius_m is not None:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import thor_analysis as ta  # noqa: PLC0415
 
     for house_dir in sorted(glob.glob(os.path.join(path, "house_*"))):
         m = HOUSE_RE.search(os.path.normpath(house_dir))
@@ -102,13 +121,22 @@ def load_run(path: str) -> tuple[dict[tuple[int, int], bool], dict[tuple[int, in
                         if idx_match is None:
                             continue
                         key = (house, int(idx_match.group(1)))
-                        success[key] = bool(np.asarray(traj["success"]).any())
+                        arr = np.asarray(traj["success"])[:task_horizon]
+                        success[key] = bool(arr.any())
                         fp = episode_fingerprint(traj)
                         if fp is not None:
                             fingerprints[key] = fp
+                        if ta is not None:
+                            label = "unknown"
+                            if "obs_scene" in traj:
+                                frozen = ta.extract_frozen_config_from_bytes(traj["obs_scene"][()])
+                                if frozen is not None:
+                                    count = ta.compute_num_nearby_graspable(frozen, nearby_radius_m)
+                                    label = ta.bin_num_nearby_count(count, nearby_max_bin)
+                            buckets[key] = label
             except OSError as exc:
                 print(f"  warning: could not read {h5_path}: {exc}", file=sys.stderr)
-    return success, fingerprints
+    return success, fingerprints, buckets
 
 
 def check_alignment(labels, runs, fingerprints, common) -> int:
@@ -258,6 +286,34 @@ def main() -> int:
         action="store_true",
         help="Only print the conditional-probability table (skip phi/Fisher/McNemar).",
     )
+    parser.add_argument(
+        "--task-horizon",
+        type=int,
+        default=None,
+        help=(
+            "Truncate every episode's success array at this step before scoring. "
+            "Use it when the runs were launched with different --task_horizon_steps; "
+            "without it a policy allowed to run longer gets credit for successes the "
+            "others had no chance to reach. Default: whole episode."
+        ),
+    )
+    parser.add_argument(
+        "--bucket-by-nearby",
+        action="store_true",
+        help="Also print per-bucket tables, bucketed by nearby graspable-object count.",
+    )
+    parser.add_argument(
+        "--nearby-radius-m",
+        type=float,
+        default=0.30,
+        help="Radius for the nearby-object count (default 0.30, matching analyze_run.py).",
+    )
+    parser.add_argument(
+        "--nearby-max-bin",
+        type=int,
+        default=5,
+        help="Counts at or above this collapse into a '>=N' bucket (default 5 -> 0,1,2,3,4,>=5).",
+    )
     args = parser.parse_args()
 
     labels = [label for label, _ in args.runs]
@@ -268,14 +324,23 @@ def main() -> int:
 
     runs: dict[str, dict] = {}
     fingerprints: dict[str, dict] = {}
+    buckets_by_run: dict[str, dict] = {}
     print("Loading runs...")
+    if args.task_horizon is not None:
+        print(f"  (scoring truncated at step {args.task_horizon})")
     for label, path in args.runs:
-        succ, fps = load_run(path)
+        succ, fps, bkt = load_run(
+            path,
+            task_horizon=args.task_horizon,
+            nearby_radius_m=args.nearby_radius_m if args.bucket_by_nearby else None,
+            nearby_max_bin=args.nearby_max_bin,
+        )
         if not succ:
             print(f"  ERROR: no episodes found in {path}", file=sys.stderr)
             return 1
         runs[label] = succ
         fingerprints[label] = fps
+        buckets_by_run[label] = bkt
         n = len(succ)
         s = sum(succ.values())
         print(f"  {label:<14} {n:>5} episodes  {s:>4} successes  {100.0*s/n:>6.2f}%   {path}")
@@ -308,52 +373,154 @@ def main() -> int:
         label: np.array([runs[label][k] for k in common_sorted], dtype=bool) for label in labels
     }
 
-    # cell[x][y] = P(y succeeded | x succeeded)
     n_labels = len(labels)
-    matrix = np.full((n_labels, n_labels), np.nan)
-    for i, x in enumerate(labels):
-        x_succ = vectors[x]
-        denom = int(x_succ.sum())
-        for j, y in enumerate(labels):
+    width = max(12, max(len(x) for x in labels) + 2)
+
+    def conditional_matrix(invert: bool) -> np.ndarray:
+        """cell[x][y] = P(y outcome | x outcome); invert=True conditions on failure."""
+        out = np.full((n_labels, n_labels), np.nan)
+        for i, x in enumerate(labels):
+            x_vec = ~vectors[x] if invert else vectors[x]
+            denom = int(x_vec.sum())
             if denom == 0:
                 continue
-            matrix[i, j] = float((x_succ & vectors[y]).sum()) / denom
+            for j, y in enumerate(labels):
+                y_vec = ~vectors[y] if invert else vectors[y]
+                out[i, j] = float((x_vec & y_vec).sum()) / denom
+        return out
 
-    width = max(12, max(len(x) for x in labels) + 2)
-    print("\n" + "=" * 78)
-    print("P( column policy succeeded | row policy succeeded )")
-    print("=" * 78)
-    header = " " * width + "".join(f"{y:>{width}}" for y in labels)
-    print(header)
-    for i, x in enumerate(labels):
-        row = f"{x:<{width}}" + "".join(
-            ("     n/a    " if np.isnan(matrix[i, j]) else f"{100*matrix[i,j]:>{width-1}.1f}%")
-            for j in range(n_labels)
+    def print_table(matrix: np.ndarray, title: str, marginals, marginal_title: str) -> None:
+        print("\n" + "=" * 78)
+        print(title)
+        print("=" * 78)
+        print(" " * width + "".join(f"{y:>{width}}" for y in labels))
+        for i, x in enumerate(labels):
+            row = f"{x:<{width}}" + "".join(
+                ("     n/a    " if np.isnan(matrix[i, j]) else f"{100*matrix[i,j]:>{width-1}.1f}%")
+                for j in range(n_labels)
+            )
+            print(row)
+        print(f"\n{marginal_title}")
+        for label, (rate, count, total) in marginals.items():
+            print(f"  {label:<{width}}{100.0*rate:>6.2f}%   ({count}/{total})")
+
+    success_matrix = conditional_matrix(invert=False)
+    failure_matrix = conditional_matrix(invert=True)
+
+    succ_marg = {
+        label: (float(vectors[label].mean()), int(vectors[label].sum()), len(vectors[label]))
+        for label in labels
+    }
+    fail_marg = {
+        label: (
+            float((~vectors[label]).mean()),
+            int((~vectors[label]).sum()),
+            len(vectors[label]),
         )
-        print(row)
+        for label in labels
+    }
 
-    print("\nMarginal success rate (baseline for reading each column):")
-    for label in labels:
-        v = vectors[label]
-        print(f"  {label:<{width}}{100.0*v.mean():>6.2f}%   ({int(v.sum())}/{len(v)})")
+    print_table(
+        success_matrix,
+        "P( column policy SUCCEEDED | row policy SUCCEEDED )",
+        succ_marg,
+        "Marginal success rate (baseline for reading each column):",
+    )
     print(
         "\nA cell above the column's marginal means that policy does better than usual on\n"
         "episodes the row policy also solved (correlated competence). A cell near the\n"
         "marginal means the two policies' successes are roughly independent."
     )
 
+    print_table(
+        failure_matrix,
+        "P( column policy FAILED | row policy FAILED )",
+        fail_marg,
+        "Marginal failure rate (baseline for reading each column):",
+    )
+    print(
+        "\nNote these cells are high by construction when failure is the common outcome --\n"
+        "compare each against the column's marginal failure rate, not against 50%. The lift\n"
+        "over marginal is the same evidence of association as in the success table, but it\n"
+        "looks smaller here because the base rate is already large."
+    )
+
+    matrix = success_matrix  # retained for CSV output below
+
+    if args.bucket_by_nearby:
+        # The bucket is a property of the scene, so every run should agree on it.
+        # Take the first run's labels and report any run that disagrees.
+        reference = buckets_by_run[labels[0]]
+        disagree = sum(
+            1
+            for k in common_sorted
+            for other in labels[1:]
+            if buckets_by_run[other].get(k, "unknown") != reference.get(k, "unknown")
+        )
+        if disagree:
+            print(
+                f"\n  WARNING: {disagree} episode/run pairs disagree on the nearby-object "
+                f"bucket; using {labels[0]}'s labels."
+            )
+        ep_bucket = np.array([reference.get(k, "unknown") for k in common_sorted])
+
+        order = [str(i) for i in range(args.nearby_max_bin)] + [f">={args.nearby_max_bin}"]
+        order = [b for b in order if (ep_bucket == b).any()]
+        if (ep_bucket == "unknown").any():
+            order.append("unknown")
+
+        print("\n" + "=" * 78)
+        print(
+            f"P( column SUCCEEDED | row SUCCEEDED ), split by nearby graspable objects "
+            f"(r={args.nearby_radius_m:.2f} m)"
+        )
+        print("=" * 78)
+        for bucket in order:
+            mask = ep_bucket == bucket
+            n_ep = int(mask.sum())
+            sub = {label: vectors[label][mask] for label in labels}
+            rates = "  ".join(f"{label} {100*sub[label].mean():.1f}%" for label in labels)
+            print(f"\n--- {bucket} nearby object(s):  {n_ep} episodes   [{rates}]")
+            print(" " * width + "".join(f"{y:>{width}}" for y in labels))
+            for x in labels:
+                denom = int(sub[x].sum())
+                cells = ""
+                for y in labels:
+                    if denom == 0:
+                        cells += f"{'n/a':>{width}}"
+                    else:
+                        cells += f"{100*float((sub[x] & sub[y]).sum())/denom:>{width-1}.1f}%"
+                print(f"{x:<{width}}{cells}")
+        print(
+            "\n  Read each cell against that bucket's marginal (shown in brackets), not against\n"
+            "  the overall rate. Small buckets give noisy cells -- check the episode count."
+        )
+
     if not args.no_stats:
         report_statistics(labels, vectors, width)
 
     if args.csv:
         with open(args.csv, "w") as fh:
+            fh.write("# P(column succeeded | row succeeded)\n")
             fh.write("given_x_succeeded," + ",".join(labels) + "\n")
             for i, x in enumerate(labels):
-                cells = ["" if np.isnan(matrix[i, j]) else f"{matrix[i,j]:.6f}" for j in range(n_labels)]
+                cells = [
+                    "" if np.isnan(success_matrix[i, j]) else f"{success_matrix[i,j]:.6f}"
+                    for j in range(n_labels)
+                ]
                 fh.write(x + "," + ",".join(cells) + "\n")
-            fh.write("\nmarginal_success_rate\n")
+            fh.write("\n# P(column failed | row failed)\n")
+            fh.write("given_x_failed," + ",".join(labels) + "\n")
+            for i, x in enumerate(labels):
+                cells = [
+                    "" if np.isnan(failure_matrix[i, j]) else f"{failure_matrix[i,j]:.6f}"
+                    for j in range(n_labels)
+                ]
+                fh.write(x + "," + ",".join(cells) + "\n")
+            fh.write("\nmarginal_success_rate,marginal_failure_rate\n")
             for label in labels:
-                fh.write(f"{label},{vectors[label].mean():.6f}\n")
+                m = float(vectors[label].mean())
+                fh.write(f"{label},{m:.6f},{1.0-m:.6f}\n")
             fh.write(f"\nepisodes_compared,{len(common_sorted)}\n")
         print(f"\nWrote {args.csv}")
 

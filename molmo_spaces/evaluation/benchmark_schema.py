@@ -193,6 +193,27 @@ class PickTaskSpec(BaseTaskSpec):
     succ_pos_threshold: float = 0.01  # lift height threshold in meters
 
 
+class MugBallPickTaskSpec(PickTaskSpec):
+    """Task-specific parameters for the mug-ball (object permanence) pick task.
+
+    Exists solely to carry `scene_settle_duration`. The mug-ball sampler sets it
+    imperatively at datagen time (mug_ball_pick_task_sampler.py) and it was never part
+    of any TaskSpec, so it did not survive serialization into the benchmark JSON. At
+    eval it therefore fell back to the task-config default of 0.0, which disables the
+    whole settle block in MugBallPickTask.step(): the scene is not given time to settle
+    (the policy acts while the mugs are still falling) AND pickup_obj_start_pose /
+    pickup_obj_goal_pose are never refreshed to the settled poses.
+
+    Declaring it here fixes existing benchmarks without regenerating them, because
+    apply_task_spec_to_config() runs model_validate() on the stored task dict and
+    model_dump() fills in schema defaults for absent fields.
+    """
+
+    # Seconds of forced no-op actions while the mugs fall. Matches the value the
+    # sampler used at datagen time.
+    scene_settle_duration: float = 5.0
+
+
 class PickAndPlaceTaskSpec(PickTaskSpec):
     """Task-specific parameters for pick and place tasks."""
 
@@ -294,6 +315,7 @@ TaskSpec = (
 # All TaskSpec subclasses for introspection
 ALL_TASK_SPEC_CLASSES: list[type[BaseTaskSpec]] = [
     PickTaskSpec,
+    MugBallPickTaskSpec,
     PickAndPlaceTaskSpec,
     PickAndPlaceNextToTaskSpec,
     PickAndPlaceColorTaskSpec,

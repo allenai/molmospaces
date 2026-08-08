@@ -58,6 +58,7 @@ from molmo_spaces.evaluation.benchmark_schema import (
     DoorOpeningTaskSpec,
     EpisodeSpec,
     ExocentricCameraSpec,
+    MugBallPickTaskSpec,
     NavToObjTaskSpec,
     OpenCloseTaskSpec,
     PickAndPlaceColorTaskSpec,
@@ -112,7 +113,10 @@ TASK_CLASS_TO_SPEC_CLASS: dict[str, type[BaseTaskSpec]] = {
     "DoorOpeningTask": DoorOpeningTaskSpec,
     "NavToObjTask": NavToObjTaskSpec,
     "BlockSupportTask": BlockSupportTaskSpec,
-    "MugBallPickTask": PickTaskSpec,
+    # Not PickTaskSpec: MugBallPickTaskSpec adds scene_settle_duration, without which
+    # MugBallPickTask.step() skips its settle window and never refreshes the object
+    # poses to their post-fall values.
+    "MugBallPickTask": MugBallPickTaskSpec,
     "SemanticGraspPickTask": PickTaskSpec,
 }
 

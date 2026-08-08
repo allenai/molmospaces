@@ -153,6 +153,33 @@ class CAPPolicyConfig(BasePolicyConfig):
             self.policy_factory = make_lenient(CAP_Policy)
 
 
+class GeminiCAPPolicyConfig(CAPPolicyConfig):
+    """CAP anchored on a Gemini object-permanence point rather than ground truth."""
+
+    # Frames buffered before querying Gemini. Keep <= the settle window (10 steps at
+    # 2 Hz for mug/ball) so accumulation happens while the arm is frozen and the
+    # viewpoint is static.
+    num_accum_frames: int = 10
+    point_camera: str = "exo_camera_1"  # needs record_depth=True; the CAP override sets it
+    gemini_model: str = "gemini-robotics-er-1.6-preview"
+    gemini_temperature: float = 0.0
+
+    # Forced on: the inherited anchor logic must take the VLM (point + depth) branch.
+    use_vlm: bool = True
+
+    policy_cls: type = None
+    policy_factory: PolicyFactory | None = None
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        BasePolicyConfig.model_post_init(self, __context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.learned_policy.gemini_cap_policy import GeminiCAP_Policy
+
+            self.policy_cls = GeminiCAP_Policy
+            self.policy_factory = make_lenient(GeminiCAP_Policy)
+
+
 class TeleopPolicyConfig(BasePolicyConfig):
     device: str = "keyboard"  # "spacemouse", "keyboard", "phone"
     policy_cls: type = None

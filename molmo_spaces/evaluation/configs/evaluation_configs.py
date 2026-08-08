@@ -38,6 +38,7 @@ from molmo_spaces.configs.policy_configs import (
 )
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
+    GeminiCAPPolicyConfig,
     DreamZeroPolicyConfig,
     Molmoact2PolicyConfig,
     PiPolicyConfig,
@@ -220,6 +221,17 @@ class CAPPolicyEvalConfig(JsonBenchmarkEvalConfig):
     def model_post_init(self, __context):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
+
+
+class GeminiCAPPolicyEvalConfig(CAPPolicyEvalConfig):
+    """CAP anchored on a Gemini object-permanence point (mug/ball task).
+
+    Not registered: reference it by module path, e.g.
+      molmo_spaces.evaluation.configs.evaluation_configs:GeminiCAPPolicyEvalConfig
+    Requires GEMINI_API_KEY in the environment.
+    """
+
+    policy_config: GeminiCAPPolicyConfig = GeminiCAPPolicyConfig()
 
 
 class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):

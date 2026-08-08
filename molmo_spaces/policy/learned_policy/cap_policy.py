@@ -60,6 +60,14 @@ class CAP_Policy(InferencePolicy):
                     raise
 
     def reset(self):
+        # The server keeps per-connection history (3-frame image buffer, 2-step action
+        # buffer) that outlives an episode: prepare_model() connects once and the session
+        # is only torn down on disconnect. Without this, the opening steps of every
+        # episode after the first are conditioned on the previous episode's frames and
+        # actions. Guarded because task.reset() runs before the lazy connect in
+        # obs_to_model_input(), so self.model is still None on the first episode.
+        if self.model is not None:
+            self.model.reset()
         self.starting_time = None
         self.T_world_object = None
         self.T_world_camera = None
@@ -73,30 +81,51 @@ class CAP_Policy(InferencePolicy):
         cv2.waitKey(1)
 
     def obs_to_model_input(self, obs):
+        # The rollout loop passes a batched list (one entry per env); every other
+        # learned policy unwraps it the same way (cf. dreamzero_policy, pi_policy).
+        # Without this, obs["object_poses"] below raises
+        # "TypeError: list indices must be integers or slices, not str".
+        if isinstance(obs, list):
+            if len(obs) > 1:
+                log.warning("obs list has %d elements, only using the first", len(obs))
+            obs = obs[0]
         if self.model is None:
             self.prepare_model()
 
+        # Invalidate the cached anchor on the ground-truth path so it is recomputed every
+        # step. A task may rewrite pickup_obj_start_pose mid-episode -- MugBallPickTask
+        # does exactly that when its settle window ends (mug_ball_pick_task.py:37-50),
+        # once the mugs have finished falling. Caching would pin the anchor to the value
+        # read on the first call, and the first call is always inside the settle window:
+        # the rollout loop invokes get_action() before task.step() applies the no-op
+        # substitution (pipeline.py:864-882), so step 0 sees the pre-fall pose.
+        #
+        # Only the ground-truth path is invalidated. The VLM path below must stay cached
+        # because infer_point() is a paid API call, and re-running it per step would also
+        # make the anchor jitter with detection noise.
+        if not self.use_vlm:
+            self.T_world_object = None
+
         if hasattr(self, "T_world_object") is False or self.T_world_object is None:
             if not self.use_vlm:
-                T_base_object = obs["object_poses"][self.task.config.task_config.pickup_obj_name]
-                T_world_base = np.eye(4)
-                T_world_base[:3, 3] = obs["robot_base_pose"][:3]
-                T_world_base[:3, :3] = R.from_quat(
-                    obs["robot_base_pose"][3:7], scalar_first=True
+                # "object_poses" is only registered for RBY1 (rby1_sensors.py:272) and
+                # "pickup_obj_pose" only for nav tasks (sensors.py:1110). The pick task's
+                # suite (pick_task.py:63-79) exposes the pickup object's WORLD-frame pose
+                # as "obj_start" (7D: x, y, z, qw, qx, qy, qz), so no base composition is
+                # needed. Reading it is an array lookup, not a sim query, so recomputing
+                # every step is cheap.
+                obj_start = np.asarray(obs["obj_start"], dtype=np.float64)
+                self.T_world_object = np.eye(4)
+                self.T_world_object[:3, 3] = obj_start[:3]
+                self.T_world_object[:3, :3] = R.from_quat(
+                    obj_start[3:7], scalar_first=True
                 ).as_matrix()
-                self.T_world_object = T_world_base @ T_base_object
             else:
                 exo_depth = obs["exo_camera_1_depth"]
                 exo_rgb = obs["exo_camera_1"]
                 ego_depth = obs["wrist_camera_depth"]
                 ego_rgb = obs["wrist_camera"]
-                point_norm = self.model.infer_point(
-                    rgb=exo_rgb if self.use_exo else ego_rgb,
-                    object_name=self.task.config.task_config.referral_expressions[
-                        "pickup_obj_name"
-                    ],
-                    task=self.config.task_type,
-                )
+                point_norm = self._infer_point_norm(obs, exo_rgb if self.use_exo else ego_rgb)
                 if self.use_exo:
                     K = np.array(obs["sensor_param_exo_camera_1"]["intrinsic_cv"])
                 else:
@@ -160,6 +189,20 @@ class CAP_Policy(InferencePolicy):
             "object_3d_position": object_3d_position,
         }
 
+    def _infer_point_norm(self, obs, rgb: np.ndarray) -> np.ndarray:
+        """Return the 2D point to anchor on, as (x, y) normalized to [0, 1].
+
+        Overridable hook: everything downstream of this (intrinsics, depth lookup, the
+        world-frame lift) is independent of how the point was obtained. GeminiCAP_Policy
+        overrides it to supply a point reasoned over a sequence of frames instead of a
+        single-image object query.
+        """
+        return self.model.infer_point(
+            rgb=rgb,
+            object_name=self.task.config.task_config.referral_expressions["pickup_obj_name"],
+            task=self.config.task_type,
+        )
+
     def inference_model(self, model_input):
         self.step_counter += 1
 
@@ -170,7 +213,20 @@ class CAP_Policy(InferencePolicy):
         model_output[0][3:6] = np.array(
             [-model_output[0][3], -model_output[0][5], -model_output[0][4]]
         )
-        self.is_grasping = max(self.is_grasping, model_output[0][6] < self.grasping_threshold)
+        # Per-step, NOT latched. This mirrors upstream, which re-evaluates
+        # `self.gripper <= closing_threshold` every step (cap-policy robot/controller.py:368)
+        # and additionally breaks the rollout at the first close (:426) -- so a sticky flag
+        # there would be harmless. Here the rollout runs the full horizon, and a
+        # `max()` latch made the first dip below threshold irreversible: the gripper was
+        # welded shut and object_3d_position was pinned to GRIPPER_FROM_CAMERA for the rest
+        # of the episode, so CAP got exactly one grasp attempt.
+        #
+        # Replaying real episodes through the policy shows the raw gripper signal
+        # oscillates and recovers on its own (e.g. 0.65 0.53 0.49 0.34 0.22 -> 0.65 0.71
+        # 1.00 1.00), so latching discards a re-attempt the model is actively trying to
+        # make. It also fires inside the settle no-op window on most episodes, which would
+        # burn the single attempt before the arm has moved at all.
+        self.is_grasping = bool(model_output[0][6] < self.grasping_threshold)
         delta_pose_mat = action_tensor_to_matrix(model_output[0][:6], "euler")
         T_world_ego = self.T_world_camera @ delta_pose_mat
         self.T_world_rum = T_world_ego
