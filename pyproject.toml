@@ -227,3 +227,10 @@ extra-paths = ["./typings"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.isort]
+# Without this, ruff's isort classification of `wandb` as third-party vs.
+# first-party is environment-dependent (observed to differ between local dev
+# envs and CI's bare pre-commit runner, which has no project deps installed).
+# Pin it explicitly so the grouping is deterministic everywhere.
+known-third-party = ["wandb"]
