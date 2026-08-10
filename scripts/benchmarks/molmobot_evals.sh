@@ -1,5 +1,5 @@
 # Mini-Bench results.
-python eval_to_csv.py /weka/prior/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125125_pick_msproc_paligemma/eval_data/pi/200000/PiPnPBenchmarkEvalConfig/20260311_045917 palig --success-condition oracle --output-csv data/pick_easy/palig.csv 
+python eval_to_csv.py /weka/prior/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125125_pick_msproc_paligemma/eval_data/pi/200000/PiPnPBenchmarkEvalConfig/20260311_045917 palig --success-condition oracle --output-csv data/pick_easy/palig.csv
 python eval_to_csv.py /weka/prior/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125201_pick_msproc_pi05ft/eval_data/pi/15000/PiPnPBenchmarkEvalConfig/20260311_050236 pi05ft --success-condition oracle  --output-csv data/pick_easy/pi05ft.csv
 python eval_to_csv.py /weka/prior/datasets/robomolmo/eval_results/eval_pick_full_mi-Frnk-8n_abs_vid_2f_8gap_2p-03-08-18-52-01_bs1024_dbs16_stp50000-mix_5_feb20-step50000_20260310183024 molmobot_f2 --success-condition oracle  --output-csv data/pick_easy/molmobot_f2.csv
 python eval_to_csv.py /weka/prior/datasets/robomolmo/eval_results/eval_pick_full_mi-Frnk-16n_abs_vid_3f_8gap_2p-03-08-22-40-23_bs1024_dbs8_stp50000-mix_5_feb20-step30000_20260310173326 molmobot_f3 --success-condition oracle  --output-csv data/pick_easy/molmobot_f3t.csv
@@ -35,5 +35,3 @@ magic-wormhole send /root/code/mujoco-thor/scripts/benchmarks/data/pick_easy
 # python eval_to_csv.py /weka/prior/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125227_pnp_nextto_pi05ft/eval_data/pi/15000/PiPnPBenchmarkEvalConfig/20260311_050123 pi05ft --output-csv pi05ft_pnp_nt.csv
 # python eval_to_csv.py /weka/prior/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125232_pnp_color_pi05ft/eval_data/pi/15000/PiPnPBenchmarkEvalConfig/20260311_050158 pi05ft --output-csv pi05ft_pnp_cl.csv
 # zip pi05ft_results.zip pi05ft_pick_msproc.csv pi05ft_pick_cls.csv pi05ft_pick_fil.csv pi05ft_pick_rnd.csv pi05ft_pnp.csv pi05ft_pnp_nt.csv pi05ft_pnp_cl.csv
-
-

@@ -1,6 +1,6 @@
 import logging
 import random
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -24,7 +24,7 @@ from molmo_spaces.utils.profiler_utils import Timer
 log = logging.getLogger(__name__)
 
 
-class PickAndPlacePhase(str, Enum):
+class PickAndPlacePhase(StrEnum):
     PREGRASP = "pregrasp"
     GRASP = "grasp"
     LIFT = "lift"

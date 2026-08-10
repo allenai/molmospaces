@@ -455,7 +455,7 @@ class ProcTHORMap(THORMap):
             raise ValueError(f"Unsupported file format: {path}")
 
     @staticmethod
-    def safe_model_data(spec, data=None):
+    def safe_model_data(spec, data=None) -> tuple[mujoco.MjModel, mujoco.MjData]:
         # Delete bodies that match blacklisted asset UIDs (prevents compile errors)
         _delete_blacklisted_bodies(spec)
 

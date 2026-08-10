@@ -239,17 +239,18 @@ jobs:
           python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
 
   ruff-checks:
+    # Job id kept as `ruff-checks` -- required by main's branch protection status
+    # checks. Runs the exact same hooks (and pinned tool versions) as
+    # `.pre-commit-config.yaml` via `pre-commit/action`, so CI can never drift
+    # from what runs locally.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup ruff for formatting and linting
-        uses: astral-sh/ruff-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          version: "latest"
-          args: "--version"
+          python-version: "3.11"
 
-      - name: Run formatting using ruff
-        run: |
-          ruff format --check .
+      - uses: pre-commit/action@v3.0.1
