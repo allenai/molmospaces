@@ -256,61 +256,33 @@ jobs:
           ls -la "$REF_PATH" || echo "REF_PATH does not exist"
           ls -la test_data/rby1_door_opening/ 2>&1 | head -5 || echo "local test_data/rby1_door_opening/ does not exist"
           cp "$REF_PATH" /tmp/old.npy
+          # Run the ACTUAL unmodified generation script (not a reimplementation) as 4
+          # separate subprocess invocations, to check whether curobo's GPU motion
+          # planning is genuinely bit-reproducible run-to-run, independent of any
+          # reset-count or replication-fidelity question. Two earlier separate
+          # invocations of this exact script both gave an exact 0.0 diff; two
+          # different inline reimplementations of "equivalent" logic both gave ~0.12
+          # diffs -- so this isolates whether it's about the script vs process
+          # boundary/module context, or genuine GPU non-determinism.
+          for i in 1 2 3 4; do
+            python generate_test_data_rby1_door_opening.py > /tmp/gen_run_$i.log 2>&1
+            cp "$REF_PATH" /tmp/run_$i.npy
+          done
           python -c "
-          import sys
           import numpy as np
-          from molmo_spaces.data_generation.config.door_opening_configs import DoorOpeningDataGenConfig
-          from molmo_spaces.utils.test_utils import run_task_for_steps_with_observations
-
-          def make_config():
-              config = DoorOpeningDataGenConfig()
-              config.seed = 0
-              config.task_horizon = 6
-              config.use_passive_viewer = False
-              config.profile = True
-              config.use_wandb = False
-              config.task_sampler_config.samples_per_house = 1
-              config.task_sampler_config.house_inds = [22]
-              config.num_workers = 1
-              config.filter_for_successful_trajectories = False
-              if config.policy_config is not None:
-                  for planner_cfg in [config.policy_config.left_curobo_planner_config, config.policy_config.right_curobo_planner_config]:
-                      if planner_cfg is not None:
-                          planner_cfg.collision_cache = {'mesh': 500, 'obb': 80}
-              return config
-
           old = np.load('/tmp/old.npy')
           print('=== old (saved reference) ===')
           print(repr(old))
-
-          def run_once(label, use_get_observations, n_task_resets):
-              config = make_config()
-              task_sampler_class = config.task_sampler_config.task_sampler_class
-              task_sampler = task_sampler_class(config)
-              task_sampler.reset()
-              task = task_sampler.sample_task()
-              if use_get_observations:
-                  task.get_observations()
-              for _ in range(n_task_resets):
-                  task.reset()
-              policy = config.policy_config.policy_factory(config, task)
-              policy.reset()
-              _, final_qpos, _, _ = run_task_for_steps_with_observations(task, policy, num_steps=10, profiler=config.profiler)
-              diff = np.abs(old - final_qpos)
-              print(f'=== {label} ===')
-              print('max abs diff vs old:', np.max(diff))
-              sys.stdout.flush()
-              task_sampler.env.close()
-
-          # (a) Exact replica of generate_test_data_rby1_door_opening.py: get_observations()
-          # once, no extra task.reset() (run_task_for_steps_with_observations calls it once
-          # internally). Should match the saved reference exactly if this replica is faithful.
-          run_once('(a) script replica: get_observations + 1 total reset', use_get_observations=True, n_task_resets=0)
-
-          # (b) Exact replica of the pytest flow: test_task_observations calls task.reset()
-          # once (no get_observations), then policy_results' own explicit task.reset() is
-          # the 2nd, then run_task_for_steps_with_observations' internal reset is the 3rd.
-          run_once('(b) pytest replica: no get_observations + 2 extra resets (3 total)', use_get_observations=False, n_task_resets=2)
+          for i in range(1, 5):
+              r = np.load(f'/tmp/run_{i}.npy')
+              print(f'=== run {i} vs old ===')
+              print('max abs diff:', np.max(np.abs(old - r)))
+          print()
+          print('=== pairwise diffs among the 4 fresh runs (are THEY consistent with each other?) ===')
+          runs = [np.load(f'/tmp/run_{i}.npy') for i in range(1, 5)]
+          for i in range(4):
+              for j in range(i + 1, 4):
+                  print(f'run{i+1} vs run{j+1}: max abs diff =', np.max(np.abs(runs[i] - runs[j])))
           "
 
   ruff-checks:
