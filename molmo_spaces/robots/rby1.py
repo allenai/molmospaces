@@ -375,11 +375,33 @@ class RBY1(Robot):
         strip_meshes: bool = False,
     ) -> None:
         assert prefix == "robot_0/", "RBY1 robot namespace must be 'robot_0/'"
+
+        # RBY1's own MJCF wraps robot_model_root_name() ("base") inside an
+        # intermediate body carrying a +0.005m Z offset (the same ground-clearance
+        # constant used below for the "world" site). attach_body() only grafts the
+        # specified root and its descendants, so that ancestor -- and its offset --
+        # gets silently dropped, leaving the attached robot ~5mm too low. That's
+        # enough to push its wheels past the named floor body into the raw "world"
+        # ground plane, which check_robot_collision_in_current_pose doesn't
+        # recognize as an exempt floor contact. Reapply the offset here.
+        #
+        # RBY1's MJCF also defines two mocap marker bodies (target_ee_pose_left/
+        # right, used only to visualize task_config.viz_target_ee) as top-level
+        # siblings of that same wrapper body, so they're dropped for the same
+        # reason -- attach_body() only grafts "base"'s own subtree. Unlike the Z
+        # offset, these aren't reattached: they share mesh assets (e.g. "EE_BODY")
+        # with "base"'s own subtree, and MjSpec's attach_body raises on those
+        # shared-asset IDs when attaching a second body from the same source spec.
+        # See check_if_use_flip_side_handle/get_target_ee_pose's model.nmocap
+        # guard for the corresponding graceful fallback.
+        base_pos_3d = pos + [0.0] if len(pos) == 2 else list(pos)
+        base_pos_3d[2] += 0.005
+
         super().add_robot_to_scene(
             robot_config=robot_config,
             spec=spec,
             prefix="",  # elements already have robot_0/ prefix in MJCF
-            pos=pos,
+            pos=base_pos_3d,
             quat=quat,
             randomize_textures=randomize_textures,
             strip_meshes=strip_meshes,
@@ -387,7 +409,8 @@ class RBY1(Robot):
 
         # RBY1 doesn't support insertion not at the origin or identity rotation
         # This can be fixed if it's worth the effort (see mobile franka for example)
-        assert np.allclose(np.array(pos), [0, 0, 0]), "RBY1 insertion position is not zero!"
+        pos_check = pos + [0.0] if len(pos) == 2 else pos
+        assert np.allclose(np.array(pos_check), [0, 0, 0]), "RBY1 insertion position is not zero!"
         assert np.allclose(np.array(quat), [1, 0, 0, 0]), "RBY1 insertion rotation is not identity!"
 
         def add_slider_act(
