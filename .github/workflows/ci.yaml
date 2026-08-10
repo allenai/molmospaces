@@ -238,6 +238,37 @@ jobs:
           source .venv/bin/activate
           python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
 
+      - name: DIAGNOSTIC - regenerate rby1 door opening qpos twice, diff vs saved
+        if: always()
+        run: |
+          source .venv/bin/activate
+          cd mlspaces_tests/data_generation_curobo
+          cp test_data/rby1_door_opening/rby1_door_opening_policy_final_qpos.npy /tmp/old.npy
+          python generate_test_data_rby1_door_opening.py
+          cp test_data/rby1_door_opening/rby1_door_opening_policy_final_qpos.npy /tmp/run1.npy
+          python generate_test_data_rby1_door_opening.py
+          cp test_data/rby1_door_opening/rby1_door_opening_policy_final_qpos.npy /tmp/run2.npy
+          python -c "
+          import numpy as np
+          old = np.load('/tmp/old.npy')
+          r1 = np.load('/tmp/run1.npy')
+          r2 = np.load('/tmp/run2.npy')
+          print('=== old (saved reference) ===')
+          print(repr(old))
+          print('=== run1 (regenerated on this branch) ===')
+          print(repr(r1))
+          print('=== run2 (regenerated again, same branch) ===')
+          print(repr(r2))
+          print()
+          print('=== run1 vs run2: is regeneration itself deterministic on this branch? ===')
+          print('max abs diff:', np.max(np.abs(r1 - r2)))
+          print('all close (atol=1e-6):', np.allclose(r1, r2, atol=1e-6))
+          print()
+          print('=== old vs run1: how far did the golden reference drift? ===')
+          print('max abs diff:', np.max(np.abs(old - r1)))
+          print('per-component abs diff:', np.abs(old - r1))
+          "
+
   ruff-checks:
     runs-on: ubuntu-latest
     steps:
