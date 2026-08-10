@@ -256,21 +256,55 @@ jobs:
           ls -la "$REF_PATH" || echo "REF_PATH does not exist"
           ls -la test_data/rby1_door_opening/ 2>&1 | head -5 || echo "local test_data/rby1_door_opening/ does not exist"
           cp "$REF_PATH" /tmp/old.npy
-          python generate_test_data_rby1_door_opening.py
-          find . -name "rby1_door_opening_policy_final_qpos.npy" -newer /tmp/old.npy
-          cp "$REF_PATH" /tmp/run1.npy 2>&1 || echo "REF_PATH still not updated by generation script"
           python -c "
+          import sys
           import numpy as np
+          from molmo_spaces.data_generation.config.door_opening_configs import DoorOpeningDataGenConfig
+          from molmo_spaces.utils.test_utils import run_task_for_steps_with_observations
+
+          # pytest's actual test flow calls task.reset() three times before capturing
+          # final_qpos: once in test_task_observations, once explicitly in the
+          # policy_results fixture, and once more inside
+          # run_task_for_steps_with_observations itself. The standalone generation
+          # script only calls it once (via that same helper). Replicate 1/2/3 resets
+          # in isolation to find out which call count the divergence appears after.
+          config = DoorOpeningDataGenConfig()
+          config.seed = 0
+          config.task_horizon = 6
+          config.use_passive_viewer = False
+          config.profile = True
+          config.use_wandb = False
+          config.task_sampler_config.samples_per_house = 1
+          config.task_sampler_config.house_inds = [22]
+          config.num_workers = 1
+          config.filter_for_successful_trajectories = False
+          if config.policy_config is not None:
+              for planner_cfg in [config.policy_config.left_curobo_planner_config, config.policy_config.right_curobo_planner_config]:
+                  if planner_cfg is not None:
+                      planner_cfg.collision_cache = {'mesh': 500, 'obb': 80}
+
           old = np.load('/tmp/old.npy')
           print('=== old (saved reference) ===')
           print(repr(old))
-          import os
-          if os.path.exists('/tmp/run1.npy'):
-              r1 = np.load('/tmp/run1.npy')
-              print('=== run1 (regenerated on this branch, via REF_PATH) ===')
-              print(repr(r1))
-              print('max abs diff:', np.max(np.abs(old - r1)))
-              print('per-component abs diff:', np.abs(old - r1))
+
+          # Fresh task_sampler + sample_task() per iteration, so each measurement is
+          # independent (not contaminated by the previous iteration's resets/steps).
+          for n_extra_resets in [0, 1, 2]:
+              task_sampler_class = config.task_sampler_config.task_sampler_class
+              task_sampler = task_sampler_class(config)
+              task_sampler.reset()
+              task = task_sampler.sample_task()
+              for _ in range(n_extra_resets):
+                  task.reset()
+              policy_config = config.policy_config
+              policy = policy_config.policy_factory(config, task)
+              policy.reset()
+              _, final_qpos, _, _ = run_task_for_steps_with_observations(task, policy, num_steps=10, profiler=config.profiler)
+              diff = np.abs(old - final_qpos)
+              print(f'=== extra resets before run={n_extra_resets} (total task.reset() calls={n_extra_resets + 1}) ===')
+              print('max abs diff vs old:', np.max(diff))
+              sys.stdout.flush()
+              task_sampler.env.close()
           "
 
   ruff-checks:
