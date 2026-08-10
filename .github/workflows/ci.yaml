@@ -238,53 +238,6 @@ jobs:
           source .venv/bin/activate
           python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
 
-      - name: DIAGNOSTIC - regenerate rby1 door opening qpos twice, diff vs saved
-        if: always()
-        run: |
-          source .venv/bin/activate
-          python -c "
-          from molmo_spaces.molmo_spaces_constants import get_resource_manager
-          print('resource_manager.symlink_dir =', get_resource_manager().symlink_dir)
-          "
-          cd mlspaces_tests/data_generation_curobo
-          REF_PATH=$(python -c "
-          from molmo_spaces.molmo_spaces_constants import get_resource_manager
-          p = get_resource_manager().symlink_dir / 'test_data' / 'rby1_door_opening' / 'rby1_door_opening_policy_final_qpos.npy'
-          print(p)
-          ")
-          echo "REF_PATH resolved to: $REF_PATH"
-          ls -la "$REF_PATH" || echo "REF_PATH does not exist"
-          ls -la test_data/rby1_door_opening/ 2>&1 | head -5 || echo "local test_data/rby1_door_opening/ does not exist"
-          cp "$REF_PATH" /tmp/old.npy
-          # Run the ACTUAL unmodified generation script (not a reimplementation) as 4
-          # separate subprocess invocations, to check whether curobo's GPU motion
-          # planning is genuinely bit-reproducible run-to-run, independent of any
-          # reset-count or replication-fidelity question. Two earlier separate
-          # invocations of this exact script both gave an exact 0.0 diff; two
-          # different inline reimplementations of "equivalent" logic both gave ~0.12
-          # diffs -- so this isolates whether it's about the script vs process
-          # boundary/module context, or genuine GPU non-determinism.
-          for i in 1 2 3 4; do
-            python generate_test_data_rby1_door_opening.py > /tmp/gen_run_$i.log 2>&1
-            cp "$REF_PATH" /tmp/run_$i.npy
-          done
-          python -c "
-          import numpy as np
-          old = np.load('/tmp/old.npy')
-          print('=== old (saved reference) ===')
-          print(repr(old))
-          for i in range(1, 5):
-              r = np.load(f'/tmp/run_{i}.npy')
-              print(f'=== run {i} vs old ===')
-              print('max abs diff:', np.max(np.abs(old - r)))
-          print()
-          print('=== pairwise diffs among the 4 fresh runs (are THEY consistent with each other?) ===')
-          runs = [np.load(f'/tmp/run_{i}.npy') for i in range(1, 5)]
-          for i in range(4):
-              for j in range(i + 1, 4):
-                  print(f'run{i+1} vs run{j+1}: max abs diff =', np.max(np.abs(runs[i] - runs[j])))
-          "
-
   ruff-checks:
     runs-on: ubuntu-latest
     steps:
