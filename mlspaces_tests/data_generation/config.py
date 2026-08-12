@@ -80,6 +80,8 @@ class FrankaPickDroidTestConfig(FrankaPickDroidDataGenConfig):
         # Disable action noise
         self.robot_config.action_noise_config.enabled = False
 
+        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
+
 
 class FrankaPickRandomizedTestConfig(FrankaPickRandomizedDataGenConfig):
     """Test configuration for Franka pick with randomized cameras - disables randomization for deterministic tests."""
@@ -117,6 +119,8 @@ class FrankaPickRandomizedTestConfig(FrankaPickRandomizedDataGenConfig):
         # Disable action noise
         self.robot_config.action_noise_config.enabled = False
 
+        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
+
 
 class FrankaPickAndPlaceDroidTestConfig(FrankaPickAndPlaceDroidDataGenConfig):
     def model_post_init(self, __context) -> None:
@@ -147,6 +151,8 @@ class FrankaPickAndPlaceDroidTestConfig(FrankaPickAndPlaceDroidDataGenConfig):
 
         # Disable action noise
         self.robot_config.action_noise_config.enabled = False
+
+        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
 
 
 class FrankaPickAndPlaceGoProD405D455TestConfig(FrankaPickAndPlaceDroidDataGenConfig):
@@ -215,7 +221,7 @@ class RUMPickTestConfig(RUMPickDataGenConfig):
         self.task_sampler_config.pickup_types = ["TissueBox"]
         # Texture randomization
         self.task_sampler_config.enable_texture_randomization = False
-        self.camera_config.img_resolution = (640, 360)  # reset to test-data defaults
+        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
 
         # Robot joint position noise (RUM uses gripper, not arm)
         self.robot_config.init_qpos_noise_range = {}
@@ -282,6 +288,8 @@ class RUMOpenTestConfig(OpeningBaseConfig):
         self.policy_config.grasp_vertical_cost_weight = 0.0
         self.policy_config.grasp_com_dist_cost_weight = 0.0
 
+        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
+
 
 class RUMCloseTestConfig(OpeningBaseConfig):
     """Test configuration for RUM close task - disables randomization for deterministic tests."""
@@ -301,6 +309,7 @@ class RUMCloseTestConfig(OpeningBaseConfig):
         # Set task type to close
         self.task_type = "close"
         self.task_sampler_config.target_initial_state_open_percentage = 0.5
+        self.camera_config.img_resolution = (624, 352)  # reset to test-data defaults
 
         # Use iTHOR for testing instead of ProcTHOR
         self.scene_dataset = "ithor"
