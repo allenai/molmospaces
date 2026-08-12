@@ -242,10 +242,11 @@ def get_resource_manager(
         use_global = False
 
     if _RESOURCE_MANAGER is None or not use_global:
-
         MIN_VERSION = "0.0.2"
         if Version(version("molmospaces_resources")) < Version(MIN_VERSION):
-            raise ValueError(f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>)")
+            raise ValueError(
+                f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>)"
+            )
 
         def post_setup(manager: ResourceManager):
             if not os.environ.get("_IN_MULTIPROCESSING_CHILD") and str2bool(

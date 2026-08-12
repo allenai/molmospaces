@@ -465,8 +465,8 @@ def resolve_robot_license(data_source, identifier):
     elif "rocketbox" in data_source:
         cur_license = {
             **common_license,
-            "creator_username": 'Microsoft',
-            "attribution": 'Copyright (c) 2020 Microsoft',
+            "creator_username": "Microsoft",
+            "attribution": "Copyright (c) 2020 Microsoft",
             "source": "microsoft/Microsoft-Rocketbox",
             "license": "MIT",
             "uri": "https://github.com/microsoft/Microsoft-Rocketbox/blob/master/LICENSE.md",
