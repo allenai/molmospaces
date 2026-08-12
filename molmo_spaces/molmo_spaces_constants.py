@@ -119,7 +119,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     test_data={
         "franka_pick": "20260610",
         "franka_pick_and_place": "20260529",
-        "rby1_door_opening": "20260812",
+        "rby1_door_opening": "20260812_2",
         "rby1_pnp": "20260610",
         "rum_open_close": "20260305",
         "rum_pick": "20260209",
