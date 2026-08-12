@@ -70,6 +70,12 @@ def droid_task_sampler(droid_config):
     task_sampler_config = droid_config.task_sampler_config
     task_sampler_class = task_sampler_config.task_sampler_class
     task_sampler = task_sampler_class(droid_config)
+    # Re-seed right before sampling starts, so this test's determinism is
+    # anchored at the moment sampling begins rather than depending on anything
+    # that happened earlier in __init__ (env/resource-manager setup). This is
+    # a defensive hardening, not a root-cause fix for a specific known issue --
+    # see PR discussion for what's actually been ruled in/out.
+    task_sampler.seed_task_sampling(task_sampler.current_seed)
     task_sampler.reset()
     yield task_sampler
     task_sampler.env.close()
@@ -126,6 +132,12 @@ def gopro_task_sampler(gopro_config):
     task_sampler_config = gopro_config.task_sampler_config
     task_sampler_class = task_sampler_config.task_sampler_class
     task_sampler = task_sampler_class(gopro_config)
+    # Re-seed right before sampling starts, so this test's determinism is
+    # anchored at the moment sampling begins rather than depending on anything
+    # that happened earlier in __init__ (env/resource-manager setup). This is
+    # a defensive hardening, not a root-cause fix for a specific known issue --
+    # see PR discussion for what's actually been ruled in/out.
+    task_sampler.seed_task_sampling(task_sampler.current_seed)
     task_sampler.reset()
     yield task_sampler
     task_sampler.env.close()
