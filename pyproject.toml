@@ -73,6 +73,7 @@ dependencies = [
     "websockets",
     "pytest", # note (yejin): moved from dev deps since needed in Docker builds
     "molmospaces-resources==0.0.2",
+    "packaging~=26.2",
 ]
 [project.optional-dependencies]
 dev = [

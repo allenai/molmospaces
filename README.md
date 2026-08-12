@@ -338,7 +338,7 @@ The XML files have been modified from the original versions provided by the foll
 - [RUM Gripper](https://github.com/jeffacce/cap-policy) - Copyright (c) 2026 NYU Generalizable Robotics and AI Lab (GRAIL)
 - [I2RT Robotics / i2rt Python API](https://github.com/i2rt-robotics/i2rt) - Copyright (c) I2RT Robotics
 - [mujoco_menagerie / unitree_g1](https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_g1) - Copyright (c) 2016-2023 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")
-- [Microsoft-Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) Copyright (c) 2020 Microsoft
+- [Microsoft-Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) - Copyright (c) 2020 Microsoft
 
 ## Citing
 
