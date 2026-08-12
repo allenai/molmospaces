@@ -87,8 +87,8 @@ def process_json(dirpath, fname):
 
 
 def check_configs():
-    a_base = "/weka/prior/datasets/robomolmo/bench"
-    b_base = "/weka/prior/datasets/robomolmo/bench_v2"
+    a_base = "/weka/robots-default/datasets/robomolmo/bench"
+    b_base = "/weka/robots-default/datasets/robomolmo/bench_v2"
     pairs = [
             ("FrankaPickDroidBench_20251219_benchmark", "FrankaPickDroidBench_2000ep_json_benchmark"),
             ("FrankaPickHardBench_20251222_benchmark", "FrankaPickHardBench_2000ep_json_benchmark"),

@@ -1270,11 +1270,11 @@ def _pickupable_class_ranking() -> list[tuple[str, list[str]]]:
 
 
 VALID_PICKUPABLE_OBJA_UIDS_PATH = (
-    "/weka/prior/datasets/robomolmo/asset_utility_refs/valid_pickupable_obja_uids.txt"
+    "/weka/robots-default/datasets/robomolmo/asset_utility_refs/valid_pickupable_obja_uids.txt"
 )
 
 BENCHMARK_BLACKLIST_UIDS_PATH = (
-    "/weka/prior/datasets/robomolmo/asset_utility_refs/benchmark_blacklist_uids.txt"
+    "/weka/robots-default/datasets/robomolmo/asset_utility_refs/benchmark_blacklist_uids.txt"
 )
 
 

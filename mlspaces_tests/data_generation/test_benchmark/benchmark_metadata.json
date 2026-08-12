@@ -1,7 +1,7 @@
 {
     "description": "JSON benchmark from val",
     "created_at": "2026-01-22T07:04:12.923407",
-    "source_datagen_path": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val",
+    "source_datagen_path": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val",
     "num_episodes": 10,
     "num_houses": 10,
     "task_cls_counts": {

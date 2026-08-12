@@ -19,10 +19,10 @@ from tqdm import tqdm
 ROOT_DIR = Path(__file__).parent.parent.parent
 
 DEFAULT_HOUSES_FOLDER_WEKA = (
-    "/weka/prior-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}-refactor"
+    "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}-refactor"
 )
 DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
-DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/prior-default/datasets/mujoco-thor/assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
 DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
 
 RESULTS_FILEPATH = "history_runtime_test_{dataset}_{split}_{identifier}.json"
