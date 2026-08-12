@@ -95,6 +95,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "franka_fr3": "20260303",
         "i2rt_yam": "20260223",
         "g1": "20260802",
+        "humans_rocketbox": "20260812",
     },
     scenes={
         "ithor": "20251217_with_occupancy",

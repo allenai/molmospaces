@@ -33,7 +33,7 @@ def resolve_license(data_type, data_source, identifier):
     if data_type == "grasps":
         return resolve_grasps_license(data_source, identifier)
     if data_type == "robots":
-        return resolve_robot_license(data_source, data_source)
+        return resolve_robot_license(data_source, identifier or data_source)
 
     raise ValueError(f"Non-valid {data_type=}")
 
@@ -460,6 +460,16 @@ def resolve_robot_license(data_source, identifier):
             "source": "mujoco_menagerie/unitree_g1",
             "license": "BSD-3-Clause License",
             "uri": "https://github.com/google-deepmind/mujoco_menagerie/blob/main/unitree_g1/LICENSE",
+            "downloaded": "2026",
+        }
+    elif "rocketbox" in data_source:
+        cur_license = {
+            **common_license,
+            "creator_username": 'Microsoft',
+            "attribution": 'Copyright (c) 2020 Microsoft',
+            "source": "microsoft/Microsoft-Rocketbox",
+            "license": "MIT",
+            "uri": "https://github.com/microsoft/Microsoft-Rocketbox/blob/master/LICENSE.md",
             "downloaded": "2026",
         }
     else:
