@@ -45,7 +45,7 @@ def config():
     from molmo_spaces.utils.profiler_utils import Profiler
 
     config = DoorOpeningDataGenConfig()
-    config.seed = 0
+    config.seed = 4734
     config.task_horizon = 6
     config.use_passive_viewer = False
     config.profile = True
