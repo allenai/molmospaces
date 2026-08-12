@@ -35,5 +35,3 @@ magic-wormhole send /root/code/mujoco-thor/scripts/benchmarks/data/pick_easy
 # python eval_to_csv.py /weka/robots-default/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125227_pnp_nextto_pi05ft/eval_data/pi/15000/PiPnPBenchmarkEvalConfig/20260311_050123 pi05ft --output-csv pi05ft_pnp_nt.csv
 # python eval_to_csv.py /weka/robots-default/abhayd/sim_cotraining_output/eval_runs_openpi/20260311_125232_pnp_color_pi05ft/eval_data/pi/15000/PiPnPBenchmarkEvalConfig/20260311_050158 pi05ft --output-csv pi05ft_pnp_cl.csv
 # zip pi05ft_results.zip pi05ft_pick_msproc.csv pi05ft_pick_cls.csv pi05ft_pick_fil.csv pi05ft_pick_rnd.csv pi05ft_pnp.csv pi05ft_pnp_nt.csv pi05ft_pnp_cl.csv
-
-

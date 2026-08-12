@@ -51,6 +51,10 @@ def droid_config():
     config.use_passive_viewer = False
     config.profile = True
     config.use_wandb = False
+    # Saved reference data (task_description, etc.) was generated with CLIP-based
+    # referral expression filtering on; keep it on here so this test doesn't drift
+    # from that fixture now that it defaults to off.
+    config.task_sampler_config.referral_expression_clip_filter = True
     return config
 
 
@@ -62,6 +66,10 @@ def randomized_config():
     config.use_passive_viewer = False
     config.profile = True
     config.use_wandb = False
+    # Saved reference data (task_description, etc.) was generated with CLIP-based
+    # referral expression filtering on; keep it on here so this test doesn't drift
+    # from that fixture now that it defaults to off.
+    config.task_sampler_config.referral_expression_clip_filter = True
     return config
 
 

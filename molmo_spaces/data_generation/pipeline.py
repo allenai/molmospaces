@@ -17,8 +17,8 @@ import mujoco
 # import mujoco.viewer
 import psutil
 import torch
-
 import wandb
+
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.molmo_spaces_constants import get_scenes
 from molmo_spaces.policy.base_policy import BasePolicy

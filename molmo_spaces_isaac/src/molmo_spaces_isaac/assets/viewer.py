@@ -19,7 +19,7 @@ app_launcher = AppLauncher(args)
 simulation_app = app_launcher.app
 
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
@@ -60,7 +60,7 @@ DEFAULT_USD_THOR_METADATA = molmo_spaces_isaac_ROOT / "usd_assets_metadata.json"
 FIX_ASSETS_ROTATION = R.from_rotvec([90, 0, 0], degrees=True)
 
 
-class eMode(str, Enum):
+class eMode(StrEnum):
     SINGLE = "single"
     CATEGORY = "category"
     SCENE = "scene"

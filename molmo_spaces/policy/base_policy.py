@@ -6,7 +6,8 @@ that can interact with the environment to collect data.
 
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, TypeAlias
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from mujoco import MjSpec
 

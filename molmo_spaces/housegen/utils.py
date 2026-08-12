@@ -11,7 +11,7 @@ from collections import Counter
 from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
@@ -59,7 +59,7 @@ DEFAULT_SITES_GROUP = 5
 HOLE_WALL_MARGIN = 0.05
 
 
-class SceneObjectType(str, Enum):
+class SceneObjectType(StrEnum):
     GENERIC = "generic"
     WALL = "wall"
     ROOM = "room"

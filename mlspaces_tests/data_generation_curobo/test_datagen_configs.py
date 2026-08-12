@@ -408,35 +408,45 @@ class TestConfigUniqueness:
     """Tests to ensure configs are unique and don't conflict."""
 
     def _get_all_configs(self):
-        """Get all registered configs (Franka + RBY1) dynamically."""
+        """Get all registered configs (Franka + RBY1) dynamically, paired with
+        their registered --config name (e.g. "InteractiveShellG1") so failures
+        below can name the offending configs instead of just the colliding
+        value."""
         all_config_names = list_available_configs()
+        return [(name, get_config_class(name)()) for name in all_config_names]
 
-        # Instantiate all configs
-        configs = []
-        for name in all_config_names:
-            config_cls = get_config_class(name)
-            configs.append(config_cls())
-
-        return configs
+    @staticmethod
+    def _find_duplicates(named_values: list[tuple[str, str]]) -> dict[str, list[str]]:
+        """Group config names by a shared value, keeping only values shared by
+        more than one config."""
+        by_value: dict[str, list[str]] = {}
+        for name, value in named_values:
+            by_value.setdefault(value, []).append(name)
+        return {value: names for value, names in by_value.items() if len(names) > 1}
 
     def test_all_configs_have_unique_output_dirs(self):
         """Test that all configs have unique output directories."""
-        configs = self._get_all_configs()
+        named_configs = self._get_all_configs()
 
         # Ensure we found at least some configs
-        assert len(configs) > 0, "Should find at least one config in registry"
+        assert len(named_configs) > 0, "Should find at least one config in registry"
 
-        output_dirs = [str(config.output_dir) for config in configs]
-        assert len(output_dirs) == len(set(output_dirs)), (
-            f"All configs should have unique output directories. Found duplicates in: {output_dirs}"
+        named_output_dirs = [(name, str(config.output_dir)) for name, config in named_configs]
+        duplicates = self._find_duplicates(named_output_dirs)
+        assert not duplicates, (
+            "All configs should have unique output directories. "
+            f"Configs sharing the same output_dir: {duplicates}"
         )
 
     def test_all_configs_have_unique_tags(self):
         """Test that all configs have unique tags."""
-        configs = self._get_all_configs()
+        named_configs = self._get_all_configs()
 
         # Ensure we found at least some configs
-        assert len(configs) > 0, "Should find at least one config in registry"
+        assert len(named_configs) > 0, "Should find at least one config in registry"
 
-        tags = [config.tag for config in configs]
-        assert len(tags) == len(set(tags)), f"All configs should have unique tags. Found: {tags}"
+        named_tags = [(name, config.tag) for name, config in named_configs]
+        duplicates = self._find_duplicates(named_tags)
+        assert not duplicates, (
+            f"All configs should have unique tags. Configs sharing the same tag: {duplicates}"
+        )

@@ -89,9 +89,14 @@ class OpenTaskSampler(PickTaskSampler):
         # Note: choosing a referral expression via sampling
         om = env.object_managers[env.current_batch_index]
         context_objects = om.get_context_objects(pickup_obj_name, Context.OBJECT)
-        try:
-            expression_priority = om.referral_expression_priority(pickup_obj_name, context_objects)
-        except ValueError:
+        if self.config.task_sampler_config.referral_expression_clip_filter:
+            try:
+                expression_priority = om.referral_expression_priority(
+                    pickup_obj_name, context_objects
+                )
+            except (ValueError, ImportError):
+                expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
+        else:
             expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
         self.config.task_config.referral_expressions["pickup_obj_name"] = om.sample_expression(
             expression_priority

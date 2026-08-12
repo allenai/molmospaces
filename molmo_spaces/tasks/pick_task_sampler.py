@@ -759,16 +759,24 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("generate_context_expressions")
 
-        try:
-            expression_priority = om.referral_expression_priority(pickup_obj_name, context_objects)
-            filtered_expression_priority = om.thresholded_expression_priority(expression_priority)
-            if len(filtered_expression_priority) == 0:
-                log.info(
-                    f"No filtered expression priorities for {pickup_obj_name}, "
-                    f"using unfiltered ({len(expression_priority)} expressions)"
+        if self.config.task_sampler_config.referral_expression_clip_filter:
+            try:
+                expression_priority = om.referral_expression_priority(
+                    pickup_obj_name, context_objects
                 )
+                filtered_expression_priority = om.thresholded_expression_priority(
+                    expression_priority
+                )
+                if len(filtered_expression_priority) == 0:
+                    log.info(
+                        f"No filtered expression priorities for {pickup_obj_name}, "
+                        f"using unfiltered ({len(expression_priority)} expressions)"
+                    )
+                    filtered_expression_priority = expression_priority
+            except ImportError:
+                expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
                 filtered_expression_priority = expression_priority
-        except NameError:
+        else:
             expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
             filtered_expression_priority = expression_priority
 

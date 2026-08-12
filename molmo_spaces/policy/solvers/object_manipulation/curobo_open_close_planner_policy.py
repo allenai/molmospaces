@@ -1,6 +1,6 @@
 import logging
 import random
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import mujoco
@@ -32,7 +32,7 @@ from molmo_spaces.utils.profiler_utils import Timer
 log = logging.getLogger(__name__)
 
 
-class OpenClosePhase(str, Enum):
+class OpenClosePhase(StrEnum):
     HEIGHT_SELECTION = "height_selection"
     PREGRASP = "pregrasp"
     GRASP = "grasp"

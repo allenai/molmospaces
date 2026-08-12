@@ -2,21 +2,33 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Sequence
 from functools import cache, lru_cache
 
-
-def _ensure_nltk():
-    import nltk
-
-    for corpus in ["wordnet", "wordnet2022"]:
-        nltk.download(corpus)
-
-
-_ensure_nltk()
-
-from nltk.corpus import wordnet2022 as wn
-
-wn.abspaths()
-
 from nltk.corpus.reader import Synset
+
+_WORDNET = None
+
+
+def get_wordnet():
+    """Lazily download NLTK's wordnet corpora and return the wordnet2022 module.
+
+    Downloading/importing wordnet is deferred to first actual use (rather than
+    module import time) since this module is imported by config/env code that
+    loads on every entry point invocation, regardless of whether any wordnet
+    lookup is ever performed.
+    """
+    global _WORDNET
+    if _WORDNET is None:
+        import nltk
+
+        for corpus in ["wordnet", "wordnet2022"]:
+            nltk.download(corpus)
+
+        from nltk.corpus import wordnet2022 as wn
+
+        wn.abspaths()
+        _WORDNET = wn
+
+    return _WORDNET
+
 
 from molmo_spaces.utils.constants.object_constants import AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET
 from molmo_spaces.utils.object_metadata import ObjectMeta
@@ -916,7 +928,7 @@ def generate_all_hypernyms_with_exclusions(
         return set()
 
     if isinstance(synset, str):
-        synset = wn.synset(synset)
+        synset = get_wordnet().synset(synset)
 
     return set(
         h
@@ -929,10 +941,10 @@ def generate_all_hypernyms_with_exclusions(
 @lru_cache(maxsize=10000, typed=True)
 def is_hypernym_of(synset: str | Synset, possible_hypernym: str | Synset) -> bool:
     if isinstance(synset, str):
-        synset = wn.synset(synset)
+        synset = get_wordnet().synset(synset)
 
     if isinstance(possible_hypernym, str):
-        possible_hypernym = wn.synset(possible_hypernym)
+        possible_hypernym = get_wordnet().synset(possible_hypernym)
 
     return possible_hypernym in synset.lowest_common_hypernyms(possible_hypernym)
 
@@ -954,14 +966,14 @@ def generate_hypernym_to_descendants(
         return {}
 
     if isinstance(synsets[0], str):
-        synsets = [wn.synset(s) for s in synsets]
+        synsets = [get_wordnet().synset(s) for s in synsets]
 
     synsets = set(synsets)
     synsets = [s.name() for s in synsets]
 
     hypernym_to_descendants = defaultdict(list)
     for s in synsets:
-        s = wn.synset(s)
+        s = get_wordnet().synset(s)
         paths = s.hypernym_paths()
         for hypernym in set(sum(paths, [])):
             hypernym_to_descendants[hypernym.name()].append(s)
@@ -994,7 +1006,7 @@ def get_all_synsets_in_metadata() -> list[Synset]:
     synsets = set(ann["synset"] for ann in anns.values() if "synset" in ann) | set(
         AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET.values()
     )
-    synsets = sorted(list(set([wn.synset(s) for s in synsets])), key=lambda s: s.name())
+    synsets = sorted(list(set([get_wordnet().synset(s) for s in synsets])), key=lambda s: s.name())
     return synsets
 
 
@@ -1006,7 +1018,7 @@ def get_hypernym_to_descendants_for_all_metadata_synsets():
 @lru_cache(maxsize=10000, typed=True)
 def get_hyponyms_of_synset(synset: str | Synset, return_strings: bool) -> set[Synset] | set[str]:
     if isinstance(synset, str):
-        synset = wn.synset(synset)
+        synset = get_wordnet().synset(synset)
 
     if return_strings:
         hyps = {synset.name()}
@@ -1050,7 +1062,7 @@ def get_highest_relevant_hypernym(
     excluded: set[str] | str = EXCLUDED_HYPERNYMS,
 ) -> Synset:
     if isinstance(synset, str):
-        synset = wn.synset(synset)
+        synset = get_wordnet().synset(synset)
 
     for hpath in synset.hypernym_paths():
         for hyp in hpath:
@@ -1217,7 +1229,7 @@ PICKUPABLE_EXCLUDED_EXACT_SYNSETS: dict[str, str] = {
 
 def canonical_lemma(synset_name: str) -> str:
     """Return the first (most canonical) lemma for a WordNet synset name."""
-    return wn.synset(synset_name).lemma_names()[0].replace("_", " ")
+    return get_wordnet().synset(synset_name).lemma_names()[0].replace("_", " ")
 
 
 def _build_pickupable_category_exclusion_set() -> dict[str, str]:
