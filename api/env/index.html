@@ -78206,7 +78206,7 @@ Priority is based on margin, similarity to target, expression length,</p>
 <a id="__codelineno-0-1095" name="__codelineno-0-1095"></a>    <span class="p">)</span>
 <a id="__codelineno-0-1096" name="__codelineno-0-1096"></a>    <span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-0-1097" name="__codelineno-0-1097"></a>        <span class="n">sim</span> <span class="o">=</span> <span class="n">clip_sim</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">compute_text_clip</span><span class="p">(</span><span class="n">descriptions</span><span class="p">))</span>
-<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a>    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a>    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
 <a id="__codelineno-0-1099" name="__codelineno-0-1099"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No CLIP module, using dummy description scores.&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>        <span class="c1"># e.g. when you don&#39;t want to install it / no gpu (?)</span>
 <a id="__codelineno-0-1101" name="__codelineno-0-1101"></a>        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_natural_object_names</span><span class="p">(</span><span class="n">object_or_name_or_id</span><span class="p">,</span> <span class="p">[])</span>
