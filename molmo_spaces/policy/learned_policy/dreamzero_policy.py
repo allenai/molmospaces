@@ -4,10 +4,10 @@ import time
 import uuid
 
 import cv2
+import msgpack_numpy
 import numpy as np
 import websockets.exceptions
 import websockets.sync.client
-import msgpack_numpy
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy

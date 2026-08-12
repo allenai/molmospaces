@@ -25,19 +25,19 @@ from molmo_spaces.tasks.task_sampler_errors import (
 )
 from molmo_spaces.utils.asset_names import get_thor_name
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
+from molmo_spaces.utils.grasp_sample import (
+    get_noncolliding_grasp_mask,
+)
 from molmo_spaces.utils.grasps import (
     get_pickup_grasps,
     has_pickup_grasp_path,
     has_valid_pickup_grasps,
 )
-from molmo_spaces.utils.grasp_sample import (
-    get_noncolliding_grasp_mask,
-)
 from molmo_spaces.utils.lazy_loading_utils import install_uid
 from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
 from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom, place_object_near
 from molmo_spaces.utils.object_metadata import ObjectMeta
-from molmo_spaces.utils.pose import pos_quat_to_pose_mat, pose_mat_to_7d
+from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.task_relevant_objects_and_workspace_utils import (
     compute_workspace_center,
     get_task_relevant_objects,
@@ -759,16 +759,24 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("generate_context_expressions")
 
-        try:
-            expression_priority = om.referral_expression_priority(pickup_obj_name, context_objects)
-            filtered_expression_priority = om.thresholded_expression_priority(expression_priority)
-            if len(filtered_expression_priority) == 0:
-                log.info(
-                    f"No filtered expression priorities for {pickup_obj_name}, "
-                    f"using unfiltered ({len(expression_priority)} expressions)"
+        if self.config.task_sampler_config.referral_expression_clip_filter:
+            try:
+                expression_priority = om.referral_expression_priority(
+                    pickup_obj_name, context_objects
                 )
+                filtered_expression_priority = om.thresholded_expression_priority(
+                    expression_priority
+                )
+                if len(filtered_expression_priority) == 0:
+                    log.info(
+                        f"No filtered expression priorities for {pickup_obj_name}, "
+                        f"using unfiltered ({len(expression_priority)} expressions)"
+                    )
+                    filtered_expression_priority = expression_priority
+            except ImportError:
+                expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
                 filtered_expression_priority = expression_priority
-        except NameError:
+        else:
             expression_priority = [(1.0, 1.0, om.fallback_expression(pickup_obj_name))]
             filtered_expression_priority = expression_priority
 

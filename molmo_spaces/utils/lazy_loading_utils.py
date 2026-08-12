@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
-from pathlib import Path
 from functools import cache
+from pathlib import Path
 
 from molmospaces_resources import split_query_tokens
 from pydantic import BaseModel, Field, TypeAdapter

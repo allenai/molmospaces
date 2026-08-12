@@ -45,12 +45,12 @@ from typing import TYPE_CHECKING, Any
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.robot_configs import ActionNoiseConfig
 from molmo_spaces.data_generation.config_registry import get_config_class
-from molmo_spaces.evaluation.robot_eval_overrides import OverrideFn
 from molmo_spaces.evaluation.benchmark_schema import (
     EpisodeSpec,
     load_all_episodes,
 )
 from molmo_spaces.evaluation.json_eval_runner import JsonEvalRunner
+from molmo_spaces.evaluation.robot_eval_overrides import OverrideFn
 from molmo_spaces.molmo_spaces_constants import DATA_TYPE_TO_SOURCE_TO_VERSION
 from molmo_spaces.utils.eval_utils import (
     EpisodeResult,
@@ -70,12 +70,17 @@ _EXPECTED_DATA_VERSIONS = {
         "rby1m": "20251224",
         "franka_droid": "20260127",
         "floating_rum": "20251110",
+        "g1": "20260802",
     },
     "scenes": {
         "ithor": ["20251217", "20251217_with_occupancy"],
         "refs": "20250923",
         "procthor-10k-train": ["20251122", "20251122_with_occupancy"],
-        "procthor-10k-val": ["20251217", "20251217_with_occupancy"],
+        "procthor-10k-val": [
+            "20251121",
+            "20251217",
+            "20251217_with_occupancy",
+        ],  # "20251121" is for nav_to_obj bench
         "procthor-10k-test": ["20251121", "20251121_with_occupancy"],
         "holodeck-objaverse-train": ["20251217", "20251217_with_occupancy"],
         "holodeck-objaverse-val": ["20251217", "20251217_with_occupancy"],

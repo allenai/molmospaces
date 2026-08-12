@@ -17,8 +17,8 @@ import mujoco
 # import mujoco.viewer
 import psutil
 import torch
-
 import wandb
+
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.molmo_spaces_constants import get_scenes
 from molmo_spaces.policy.base_policy import BasePolicy
@@ -738,6 +738,8 @@ class ParallelRolloutRunner:
 
         try:
             task.env.current_model.opt.enableflags |= int(mujoco.mjtEnableBit.mjENBL_SLEEP)
+            # mujoco 3.11 raised the default sleep_tolerance from 1e-4 to 1e-3
+            task.env.current_model.opt.sleep_tolerance = 1e-3
         except AttributeError:
             print("Not setting mujoco sleep. Needs version >=mujoco-3.8")
 
@@ -754,7 +756,9 @@ class ParallelRolloutRunner:
                 profiler.start("policy_get_action")
             if datagen_profiler is not None:
                 datagen_profiler.start("policy_get_action")
-            action_cmd = policy.get_action(observation)
+            # An action chunk is a list of actions to be applied open-loop before a
+            # new observation is needed.
+            action_chunk = policy.get_action_chunk(observation) or [policy.get_action(observation)]
             if profiler is not None:
                 profiler.end("policy_get_action")
             if datagen_profiler is not None:
@@ -765,16 +769,17 @@ class ParallelRolloutRunner:
                 profiler.start("task_step")
             if datagen_profiler is not None:
                 datagen_profiler.start("task_step")
-            if action_cmd is None:
+            if action_chunk[0] is None:
                 print("Policy returned None action, ending episode")
                 break
-            observation, reward, terminal, truncated, infos = task.step(action_cmd)
+            observation, reward, terminal, truncated, infos = task.step_chunk(
+                action_chunk, stop_on_success=end_on_success
+            )
+            step_count += len(action_chunk)
             if profiler is not None:
                 profiler.end("task_step")
             if datagen_profiler is not None:
                 datagen_profiler.end("task_step")
-
-            step_count += 1
             # Add termination if succ
             if end_on_success and "success" in infos[0] and infos[0]["success"]:
                 success = True

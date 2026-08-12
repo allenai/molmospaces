@@ -22,8 +22,8 @@ from molmo_spaces.robots.robot_views.abstract import (
     HoloJointsRobotBaseGroup,
     MJCFFrameMixin,
     RobotBaseGroup,
-    SimplyActuatedMoveGroup,
     RobotView,
+    SimplyActuatedMoveGroup,
 )
 from molmo_spaces.utils.linalg_utils import normalize_ang_error
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose

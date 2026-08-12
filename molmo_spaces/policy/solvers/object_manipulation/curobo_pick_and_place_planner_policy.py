@@ -1,6 +1,6 @@
 import logging
 import random
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -24,7 +24,7 @@ from molmo_spaces.utils.profiler_utils import Timer
 log = logging.getLogger(__name__)
 
 
-class PickAndPlacePhase(str, Enum):
+class PickAndPlacePhase(StrEnum):
     PREGRASP = "pregrasp"
     GRASP = "grasp"
     LIFT = "lift"
@@ -85,7 +85,6 @@ class CuroboPickAndPlacePlannerPolicy(CuroboPlannerPolicy, PickAndPlacePlannerPo
 
     def _get_pregrasp_poses(self) -> np.ndarray:
         from molmo_spaces.utils.grasp_sample import get_noncolliding_grasp_mask
-        from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 
         task_config = self.config.task_config
         om = self.task.env.object_managers[self.task.env.current_batch_index]

@@ -1,24 +1,16 @@
 import gzip
 import json
-from pathlib import Path
 import pickle
-from typing import TYPE_CHECKING
 from collections.abc import Mapping
 from functools import cache, lru_cache
 from itertools import chain
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from filelock import FileLock
-from tqdm import tqdm
-
-from molmo_spaces.utils.lazy_loading_utils import UserAssetLibraryIndexEntry, get_user_library_index
-
-try:
-    import open_clip
-except ImportError:
-    print("Try `pip install open-clip-torch` for open_clip")
-
 from molmospaces_resources import PickleLMDBMap
+from tqdm import tqdm
 
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
@@ -26,6 +18,7 @@ from molmo_spaces.molmo_spaces_constants import (
     USER_ASSET_LIBRARIES,
     get_resource_manager,
 )
+from molmo_spaces.utils.lazy_loading_utils import UserAssetLibraryIndexEntry, get_user_library_index
 
 
 def get_metadata_lmdb_dir():
@@ -59,9 +52,18 @@ def get_annotation():
 
 
 def get_clip_model():
+    """Lazily load open_clip's model/tokenizer -- and lazily import open_clip
+    itself. open_clip (plus its ViT-L-14 checkpoint download) is a heavy
+    optional dependency; nothing above this function touches it, so simply
+    importing this module (needed pervasively for ObjectMeta, which only
+    reads precomputed embeddings/JSON metadata) never imports open_clip.
+    Only code paths that actually need to embed new text at runtime -- see
+    compute_text_clip -- reach this function at all."""
     global _CLIP
 
     if _CLIP is None:
+        import open_clip
+
         clip_model, _, clip_preprocess = open_clip.create_model_and_transforms(
             DEFAULT_CLIP_MODEL, pretrained=DEFAULT_CLIP_PRETRAIN, device=DEFAULT_DEVICE
         )

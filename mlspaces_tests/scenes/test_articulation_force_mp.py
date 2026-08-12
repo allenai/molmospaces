@@ -28,10 +28,10 @@ from molmo_spaces.env.arena.scene_tweaks import (
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 DEFAULT_HOUSES_FOLDER_WEKA = (
-    "/weka/prior-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}"
+    "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}"
 )
 DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
-DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/prior-default/datasets/mujoco-thor/assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
 DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
 
 results_filepath_TEMPLATE = "history_articulation_force_test_{dataset}_{split}_{identifier}.json"

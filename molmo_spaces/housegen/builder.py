@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -128,7 +128,7 @@ REF_SCALE_FRAME_WIDTH = 0.0125
 INTERSECTION_THRESHOLD = -0.01
 
 
-class SceneType(str, Enum):
+class SceneType(StrEnum):
     ITHOR = "ithor"
     PROCTHOR_10K = "procthor-10k"
     PROCTHOR_OBJAVERSE = "procthor-objaverse"

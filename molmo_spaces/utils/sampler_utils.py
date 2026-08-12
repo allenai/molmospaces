@@ -3,6 +3,7 @@ from typing import NoReturn
 
 import cv2
 import numpy as np
+
 from molmo_spaces.utils.linalg_utils import relative_to_global_transform
 from molmo_spaces.utils.scene_maps import ProcTHORMap
 

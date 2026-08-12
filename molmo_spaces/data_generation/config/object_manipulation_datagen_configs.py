@@ -5,8 +5,8 @@ These configs subclass from the base_pick_config and are registered
 for use in the data generation pipeline.
 """
 
-from functools import cache
 import math
+from functools import cache
 from pathlib import Path
 
 from molmo_spaces.configs import BasePolicyConfig, BaseRobotConfig

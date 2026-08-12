@@ -613,16 +613,13 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
                 try:
                     body = create_mlspaces_body(data, body_name)
                 except KeyError:
-                    # Get available body names for debugging
-                    available_bodies = [data.body(i).name for i in range(model.nbody)]
-                    log.error(
-                        f"Body '{body_name}' from episode_spec not found in scene. "
+                    log.warning(
+                        f"Body '{body_name}' from object_poses not found in scene — skipping. "
                         f"Episode spec: house_index={self.episode_spec.house_index}, "
                         f"scene_dataset={self.episode_spec.scene_dataset}, "
-                        f"data_split={self.episode_spec.data_split}. "
-                        f"Available bodies ({len(available_bodies)}): {available_bodies[:10]}..."
+                        f"data_split={self.episode_spec.data_split}."
                     )
-                    raise
+                    continue
                 pos_close = np.allclose(body.position, pose[0:3], atol=1e-3)
                 orn_diff = R.from_quat(body.quat).inv() * R.from_quat(pose[3:7])
                 orn_close = orn_diff.magnitude() < 1e-2

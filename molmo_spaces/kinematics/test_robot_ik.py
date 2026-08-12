@@ -11,9 +11,9 @@ import time
 import mujoco
 from mujoco.viewer import launch_passive
 
-from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
-from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.configs.robot_configs import BaseRobotConfig
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
+from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 
 
 def main() -> None:
@@ -44,7 +44,7 @@ def main() -> None:
 
     config_module = importlib.import_module(args.config_module)
     config_class = getattr(config_module, args.config_class)
-    robot_config: "BaseRobotConfig" = config_class()
+    robot_config: BaseRobotConfig = config_class()
 
     if args.parallel:
         kinematics = SimpleWarpKinematics(robot_config)

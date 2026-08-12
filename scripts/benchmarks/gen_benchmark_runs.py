@@ -41,7 +41,7 @@ for exp_config_name in exp_config_names:
 
         tag = f"{exp_config_name.lower()}_{scene_dataset}_bench_run"
 
-        output_dir = f"/weka/prior/datasets/robomolmo/bench_new/{scene_dataset}/"
+        output_dir = f"/weka/robots-default/datasets/robomolmo/bench_new/{scene_dataset}/"
 
         if (Path(output_dir) / exp_config_name).exists():
             skiplog.append(Path(output_dir) / exp_config_name)
@@ -64,7 +64,7 @@ for entry in skiplog:
 for exp_config_name in exp_config_names:
     for scene_dataset in scene_datasets:
         output_dir = (
-            f"/weka/prior/datasets/robomolmo/bench_new/{scene_dataset}/{exp_config_name}/val"
+            f"/weka/robots-default/datasets/robomolmo/bench_new/{scene_dataset}/{exp_config_name}/val"
         )
         command = benchmark_template.format(
             output_dir=output_dir,

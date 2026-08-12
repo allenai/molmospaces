@@ -4,11 +4,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+import gymnasium.spaces as gyms
 import mujoco
 import numpy as np
 from mujoco import MjSpec
 from scipy.spatial.transform import Rotation as R
-import gymnasium.spaces as gyms
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.policy_configs import ObjectManipulationPlannerPolicyConfig

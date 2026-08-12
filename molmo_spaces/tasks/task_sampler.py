@@ -200,7 +200,6 @@ def extract_asset_uid_from_object_name(object_name: str) -> str | None:
 
 
 from molmo_spaces.robots.abstract import Robot
-from molmo_spaces.tasks.scene_xml_utils import xml_add_rby1_to_scene
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask
 from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
@@ -549,18 +548,7 @@ class BaseMujocoTaskSampler:
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("compile_xml_load")
 
-        robot_file_path = robot_config.get_robot_xml_path()
-        use_include = robot_config.name == "rby1" or robot_config.name == "rby1m"
-
-        if use_include:
-            # for whatever reason, the rby1 specifically doesn't play nice with MjSpec insertion,
-            # so we directly insert the rby1 xml into the scene. For all other robots,
-            # we use spec editing.
-            spec = xml_add_rby1_to_scene(
-                self.config.task_sampler_config, scene_file_path, robot_file_path
-            )
-        else:
-            spec = MjSpec.from_file(str(scene_file_path))
+        spec = MjSpec.from_file(str(scene_file_path))
 
         # Hack(wilbert): only run on 3.5.1 onwards for now (custom mujoco wheel)
         if MJC_VERSION >= (3, 5, 1):
@@ -596,19 +584,18 @@ class BaseMujocoTaskSampler:
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("compile_robot_add")
 
-        if not use_include:
-            # Add the robot using a default position
-            self.config.robot_config.robot_cls.add_robot_to_scene(
-                self.config.robot_config,
-                spec,
-                prefix="robot_0/",
-                pos=[0.0, 0.0],
-                quat=[1.0, 0.0, 0.0, 0.0],
-                randomize_textures=self.config.task_sampler_config.randomize_robot_textures,
-            )
+        # Add the robot using a default position
+        robot_config.robot_cls.add_robot_to_scene(
+            robot_config,
+            spec,
+            prefix="robot_0/",
+            pos=[0.0, 0.0],
+            quat=[1.0, 0.0, 0.0, 0.0],
+            randomize_textures=self.config.task_sampler_config.randomize_robot_textures,
+        )
 
         # apply robot control overrides
-        self.config.robot_config.robot_cls.apply_control_overrides(spec, self.config.robot_config)
+        robot_config.robot_cls.apply_control_overrides(spec, robot_config)
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_robot_add")

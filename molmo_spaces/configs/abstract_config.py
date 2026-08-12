@@ -3,7 +3,7 @@ This module provides a base configuration class that can be extended to create s
 It uses Pydantic for data validation and can return dicts or jsons or save or load jsons from files.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Config(BaseModel):
@@ -12,9 +12,10 @@ class Config(BaseModel):
     Provides methods to convert to dict, json, and to save/load from files.
     """
 
-    class Config:
-        arbitrary_types_allowed = True  # allow arbitrary types in the config
-        # frozen = True  # (Optional) Make the config immutable
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,  # allow arbitrary types in the config
+        # frozen=True,  # (Optional) Make the config immutable
+    )
 
     def to_dict(self) -> dict:
         """Convert the configuration to a dictionary."""

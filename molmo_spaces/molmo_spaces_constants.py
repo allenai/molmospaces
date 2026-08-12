@@ -11,8 +11,9 @@ import json
 import logging
 import os
 from collections import defaultdict
-from pathlib import Path
 from copy import deepcopy
+from importlib.metadata import version
+from pathlib import Path
 
 import compress_json
 from molmospaces_resources import (
@@ -22,6 +23,7 @@ from molmospaces_resources import (
     setup_resource_manager,
     str2bool,
 )
+from packaging.version import Version
 
 
 def single_thread_environment():
@@ -94,12 +96,14 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "floating_robotiq": "20260208_retry4",
         "franka_fr3": "20260303",
         "i2rt_yam": "20260223",
+        "g1": "20260802",
+        "humans_rocketbox": "20260812",
     },
     scenes={
         "ithor": "20251217_with_occupancy",
         "refs": "20250923",
         "procthor-10k-train": "20251122_with_occupancy",
-        "procthor-10k-val": "20251217_with_occupancy",
+        "procthor-10k-val": "20251217_with_occupancy",  # "20251121" for nav_to_obj benchmark
         "procthor-10k-test": "20251121_with_occupancy",
         "holodeck-objaverse-train": "20251217_with_occupancy",
         "holodeck-objaverse-val": "20251217_with_occupancy",
@@ -118,7 +122,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     test_data={
         "franka_pick": "20260610",
         "franka_pick_and_place": "20260529",
-        "rby1_door_opening": "20260228",
+        "rby1_door_opening": "20260812_2",
         "rby1_pnp": "20260610",
         "rum_open_close": "20260305",
         "rum_pick": "20260209",
@@ -238,6 +242,11 @@ def get_resource_manager(
         use_global = False
 
     if _RESOURCE_MANAGER is None or not use_global:
+        MIN_VERSION = "0.0.2"
+        if Version(version("molmospaces-resources")) < Version(MIN_VERSION):
+            raise ImportError(
+                f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>)"
+            )
 
         def post_setup(manager: ResourceManager):
             if not os.environ.get("_IN_MULTIPROCESSING_CHILD") and str2bool(
@@ -669,10 +678,10 @@ def get_robot_paths() -> dict[str, Path]:
 
 
 def install_missing_source(data_type: str, missing_source: str, existing_sources: list[str]):
-    from molmospaces_resources.manager import _lock_context, LOCAL_MANIFEST_NAME
+    from molmospaces_resources.manager import LOCAL_MANIFEST_NAME, _lock_context
     from molmospaces_resources.setup_utils import (
-        _get_current_install,
         _RESOURCE_MANAGERS,
+        _get_current_install,
         _manager_key,
     )
 
@@ -720,7 +729,7 @@ def get_robot_path(robot_name) -> Path:
     return ROBOTS_DIR / robot_name
 
 
-def print_license_info(data_type, data_source, asset_or_tar_id):
+def print_license_info(data_type, data_source, asset_or_tar_id=None):
     from molmo_spaces.utils.license_utils import resolve_license
 
     def get_identifiers():
@@ -730,6 +739,11 @@ def print_license_info(data_type, data_source, asset_or_tar_id):
                 data_type, data_source
             )
         ]
+
+    if asset_or_tar_id is None and data_type != "robots":
+        raise ValueError(
+            f"Missing asset_or_tar_id for {data_type=} {data_source=}. Maybe try with '--list_all'"
+        )
 
     if asset_or_tar_id == "--list_all":
         print(f"Possible identifiers: {sorted(get_identifiers())}")

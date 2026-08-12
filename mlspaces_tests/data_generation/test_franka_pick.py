@@ -37,13 +37,13 @@ TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "test_output"
 DEBUG_IMAGES_DIR = Path(__file__).resolve().parent / "test_debug_images"
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def setup_env(tmp_path_factory):
     """Set up environment variables for all tests."""
     yield
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def droid_config():
     """Create test-specific config instance for DROID cameras (shared across all tests)."""
     config = FrankaPickDroidTestConfig()
@@ -51,10 +51,14 @@ def droid_config():
     config.use_passive_viewer = False
     config.profile = True
     config.use_wandb = False
+    # Saved reference data (task_description, etc.) was generated with CLIP-based
+    # referral expression filtering on; keep it on here so this test doesn't drift
+    # from that fixture now that it defaults to off.
+    config.task_sampler_config.referral_expression_clip_filter = True
     return config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def randomized_config():
     """Create test-specific config instance for randomized cameras (shared across all tests)."""
     config = FrankaPickRandomizedTestConfig()
@@ -62,44 +66,50 @@ def randomized_config():
     config.use_passive_viewer = False
     config.profile = True
     config.use_wandb = False
+    # Saved reference data (task_description, etc.) was generated with CLIP-based
+    # referral expression filtering on; keep it on here so this test doesn't drift
+    # from that fixture now that it defaults to off.
+    config.task_sampler_config.referral_expression_clip_filter = True
     return config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def droid_task_sampler(droid_config):
     """Create and initialize task sampler once for all DROID tests (expensive initialization)."""
     task_sampler_config = droid_config.task_sampler_config
     task_sampler_class = task_sampler_config.task_sampler_class
     task_sampler = task_sampler_class(droid_config)
     task_sampler.reset()
-    return task_sampler
+    yield task_sampler
+    task_sampler.env.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def droid_task(droid_task_sampler):
     """Sample task once for all DROID tests (expensive operation)."""
     task = droid_task_sampler.sample_task()
     return task
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def randomized_task_sampler(randomized_config):
     """Create and initialize task sampler once for all randomized tests (expensive initialization)."""
     task_sampler_config = randomized_config.task_sampler_config
     task_sampler_class = task_sampler_config.task_sampler_class
     task_sampler = task_sampler_class(randomized_config)
     task_sampler.reset()
-    return task_sampler
+    yield task_sampler
+    task_sampler.env.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def randomized_task(randomized_task_sampler):
     """Sample task once for all randomized tests (expensive operation)."""
     task = randomized_task_sampler.sample_task()
     return task
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def droid_policy_results(droid_config, droid_task):
     """Run policy once for all DROID tests (expensive operation)."""
     # Reset task to initial state
@@ -126,7 +136,7 @@ def droid_policy_results(droid_config, droid_task):
     }
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def randomized_policy_results(randomized_config, randomized_task):
     """Run policy once for all randomized tests (expensive operation)."""
     # Reset task to initial state

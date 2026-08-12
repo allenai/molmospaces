@@ -728,6 +728,37 @@ def _save_agent_data_from_batched(obs_group, episode_data) -> None:
         log.warning("No qvel found in episode_data, cannot save qvel!")
 
 
+EXTRA_DATA_BLACKLIST = {
+    # Agent data, saved by _save_agent_data_from_batched
+    "qpos",
+    "qvel",
+    # Actions, saved by _save_actions_from_batched (episode_group["actions"])
+    "actions",
+    # Environment states, saved by _save_env_states_from_batched
+    "env_states",
+    # Episode-level metadata, saved directly in save_trajectories_from_batched
+    "terminals",
+    "truncateds",
+    "rewards",
+    "successes",
+    "obs_scene",
+}
+
+
+def _is_reserved_extra_key(sensor_name: str) -> bool:
+    """Check whether a key is already saved elsewhere and should be skipped in obs/extra."""
+    if sensor_name in EXTRA_DATA_BLACKLIST:
+        return True
+    # Action sensors (e.g. "actions/joint_pos"), saved by _save_actions_from_batched
+    if sensor_name.startswith("actions/"):
+        return True
+    # Camera parameters, saved by _save_sensor_params_from_batched
+    if sensor_name.startswith("sensor_param_"):
+        return True
+    # Camera frame data (rgb/depth/segmentation), saved by _save_sensor_data_from_batched
+    return sensor_name.endswith("_depth") or sensor_name.endswith("_seg") or "camera" in sensor_name
+
+
 def _save_extra_data_from_batched(obs_group, episode_data) -> None:
     """Save extra task data (pose sensors) from batched observations."""
     extra_group = obs_group.create_group("extra")
@@ -758,6 +789,8 @@ def _save_extra_data_from_batched(obs_group, episode_data) -> None:
                     log.warning(f"Could not save data for {name_prefix}: {type(data)}, error: {e}")
 
     for sensor_name in episode_data:
+        if _is_reserved_extra_key(sensor_name):
+            continue
         # Use recursive loop for all sensors - handles both simple tensors and nested dicts
         sensor_data = episode_data[sensor_name]
         _save_nested_data(sensor_data, extra_group, sensor_name)

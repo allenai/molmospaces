@@ -29,8 +29,8 @@ from molmo_spaces.utils.object_metadata import ObjectMeta, clip_sim, compute_tex
 from molmo_spaces.utils.synset_utils import (
     filter_synsets_to_remove_hyponyms,
     generate_all_hypernyms_with_exclusions,
+    get_wordnet,
     is_hypernym_of,
-    wn,
 )
 
 if TYPE_CHECKING:
@@ -437,7 +437,7 @@ class ObjectManager:
         res = []
         seen_versions = set()
 
-        for lemma in wn.synset(synset).lemma_names():
+        for lemma in get_wordnet().synset(synset).lemma_names():
             space = normalize_expression(lemma).strip()
             # lower = space.replace(" ", "")
             # snake = space.replace(" ", "_")
@@ -1095,7 +1095,7 @@ class ObjectManager:
         )
         try:
             sim = clip_sim(img, compute_text_clip(descriptions))
-        except NameError:
+        except ImportError:
             log.warning("No CLIP module, using dummy description scores.")
             # e.g. when you don't want to install it / no gpu (?)
             names = self.get_natural_object_names(object_or_name_or_id, [])

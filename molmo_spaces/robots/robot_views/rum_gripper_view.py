@@ -12,7 +12,6 @@ from molmo_spaces.robots.robot_views.abstract import (
     RobotBaseGroup,
     RobotView,
 )
-from molmo_spaces.utils.mj_model_and_data_utils import site_pose
 
 
 class RUMGripperGroup(MJCFFrameMixin, GripperGroup):

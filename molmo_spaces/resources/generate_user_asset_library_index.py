@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 import mujoco
-from mujoco import MjModel, MjData
+from mujoco import MjData, MjModel
 
 from molmo_spaces.utils.lazy_loading_utils import UserAssetLibraryIndex, UserAssetLibraryIndexEntry
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb

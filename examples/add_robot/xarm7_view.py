@@ -1,5 +1,5 @@
-import numpy as np
 import mujoco
+import numpy as np
 from mujoco import MjData
 
 from molmo_spaces.robots.robot_views.abstract import (

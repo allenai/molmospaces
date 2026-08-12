@@ -82,6 +82,14 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         None  # Will be set by importing module to avoid circular imports
     )
 
+    # When False (default), referral expressions skip CLIP similarity scoring
+    # entirely -- never calls ObjectManager.referral_expression_priority() (which
+    # lazily imports open_clip and downloads its ViT-L-14 checkpoint on first
+    # use) and just uses the pickup object's plain fallback expression instead.
+    # Set True to prioritize referring expressions by CLIP similarity margin
+    # against distractor objects (requires open_clip installed).
+    referral_expression_clip_filter: bool = False
+
     task_batch_size: int = 1
 
     place_target_name: str | None = None  # Placement target will be added to the scene

@@ -112,15 +112,20 @@ Each `BaseMujocoTask` subclass implements
 from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.sensors import GraspStateSensor, ObjectStartPoseSensor, get_core_sensors
 
+
 class MyTask(BaseMujocoTask):
     def _create_sensor_suite_from_config(self, config):
         sensors = get_core_sensors(config)
-        sensors.extend([
-            ObjectStartPoseSensor(object_name=config.task_config.pickup_obj_name,
-                                  uuid="obj_start"),
-            GraspStateSensor(object_name=config.task_config.pickup_obj_name,
-                             uuid="grasp_state_pickup_obj"),
-        ])
+        sensors.extend(
+            [
+                ObjectStartPoseSensor(
+                    object_name=config.task_config.pickup_obj_name, uuid="obj_start"
+                ),
+                GraspStateSensor(
+                    object_name=config.task_config.pickup_obj_name, uuid="grasp_state_pickup_obj"
+                ),
+            ]
+        )
         return SensorSuite(sensors)
 ```
 

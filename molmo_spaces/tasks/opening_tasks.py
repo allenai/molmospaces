@@ -503,7 +503,7 @@ class DoorOpeningTask(BaseMujocoTask):
             target_ee_rot_flipped = target_ee_rot * flip_rotation
             target_ee_quat_flipped = target_ee_rot_flipped.as_quat(scalar_first=True)
             target_ee_pose_flipped = np.concatenate([target_ee_pos, target_ee_quat_flipped])
-            if self.exp_config.task_config.viz_target_ee:
+            if self.exp_config.task_config.viz_target_ee and self.env.current_model.nmocap > 0:
                 self.env.mj_datas[0].mocap_pos[0] = target_ee_pose[:3]
                 self.env.mj_datas[0].mocap_quat[0] = target_ee_pose[3:]
             return target_ee_pose, target_ee_pose_flipped
@@ -519,7 +519,7 @@ class DoorOpeningTask(BaseMujocoTask):
             )
 
         # Optional: Visualize target ee pose
-        if self.exp_config.task_config.viz_target_ee:
+        if self.exp_config.task_config.viz_target_ee and self.env.current_model.nmocap > 0:
             self.env.mj_datas[0].mocap_pos[0] = target_ee_pose[:3]
             self.env.mj_datas[0].mocap_quat[0] = target_ee_pose[3:]
         return target_ee_pose

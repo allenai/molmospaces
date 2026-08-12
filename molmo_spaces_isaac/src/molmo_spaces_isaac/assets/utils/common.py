@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 import msgspec
 import mujoco as mj
@@ -10,7 +10,7 @@ from scipy.spatial.transform import Rotation as R
 QUAT_TOLERANCE = 1e-10
 
 
-class SceneObjectType(str, Enum):
+class SceneObjectType(StrEnum):
     THOR_OBJ = "thor_obj"
     OBJAVERSE_OBJ = "objaverse_obj"
     CUSTOM_OBJ = "custom_obj"  # type associated to custom geometry from iTHOR houses

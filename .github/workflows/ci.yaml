@@ -23,9 +23,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Log disk space
+      - name: Log disk space & memory
         run: |
           df -h /
+          free -h || vm_stat || true
 
       - name: Free disk space (Ubuntu)
         if: runner.os == 'Linux'
@@ -36,6 +37,16 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install OSMesa dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglew-dev libosmesa6-dev
+
+      - name: Set MuJoCo rendering backend
+        if: runner.os == 'Linux'
+        run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
 
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
@@ -59,20 +70,187 @@ jobs:
       - name: Run component tests
         run: |
           source .venv/bin/activate
-          python -m pytest mlspaces_tests/component_tests/ -v --tb=short
+          python -m pytest mlspaces_tests/component_tests/ -v --tb=short -x
+
+  data-generation-tests:
+    # Split across 4 parallel jobs (pytest-split) instead of one long-running job,
+    # both for speed and to reduce exposure to mid-run cancellation/timeouts.
+    # data_generation tests exercise MjOpenGLRenderer, which requires a headless GL
+    # backend -- macOS CI runners can't create an offscreen CGL context (no
+    # EGL/OSMesa backend available for macOS in mujoco), so Linux-only.
+    strategy:
+      fail-fast: true
+      matrix:
+        group: [1, 2, 3, 4]
+        python-version: ["3.11"]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log disk space & memory
+        run: |
+          df -h /
+          free -h
+
+      - name: Free disk space (Ubuntu)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache
+          sudo apt-get clean
+          df -h /
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OSMesa dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglew-dev libosmesa6-dev
+
+      - name: Set MuJoCo rendering backend
+        run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
+
+      - name: Install UV package manager
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create and setup virtual environment
+        run: |
+          uv venv --python ${{ matrix.python-version }}
+          source .venv/bin/activate
+
+      - name: Install package
+        run: |
+          source .venv/bin/activate
+          uv pip install --no-cache -e .[dev,mujoco]
+
+      - name: Run data generation tests (group ${{ matrix.group }}/4)
+        run: |
+          source .venv/bin/activate
+          # Background memory sampler so we can tell OOM apart from a timeout or
+          # a cancelled run (e.g. superseded by a newer push in this workflow's
+          # concurrency group) after the fact, even if the test process is killed.
+          ( while true; do date; free -h; sleep 15; done ) > memory_usage.log &
+          MONITOR_PID=$!
+          python -m pytest mlspaces_tests/data_generation/ -v --tb=short -x \
+            --splits 4 --group ${{ matrix.group }}
+          TEST_EXIT=$?
+          kill "$MONITOR_PID" 2>/dev/null || true
+          exit $TEST_EXIT
+
+      - name: Diagnose data generation test failure (memory/OOM/cancellation)
+        if: always()
+        run: |
+          echo "=== tail of memory_usage.log ==="
+          tail -n 100 memory_usage.log 2>/dev/null || echo "(no memory_usage.log; step may not have started)"
+          echo
+          echo "=== dmesg: OOM-killer activity ==="
+          sudo dmesg -T 2>/dev/null | grep -iE 'killed process|out of memory|oom' \
+            || echo "No OOM-killer messages found in dmesg (exit 143 is likely a cancellation, not OOM)"
+
+  data-generation-curobo-tests:
+    # nvidia-curobo's collision/motion-planning kernels require an actual NVIDIA
+    # GPU, not just more CPU -- needs a GPU-backed runner rather than a standard
+    # hosted one. No OSMesa/MUJOCO_GL=osmesa workaround here: with a real GPU
+    # present, device_id gets set and MjOpenGLRenderer uses its EGL path instead.
+    timeout-minutes: 90
+    runs-on: GPU-Enabled-Runner
+
+    steps:
+      - name: Log disk space & memory
+        run: |
+          df -h /
+          free -h || true
+          nvidia-smi || true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install CUDA 12.8 toolkit
+        # nvidia-smi's "CUDA Version" column reports the max version the driver
+        # supports -- it does NOT mean the toolkit (nvcc, headers) is installed.
+        # Ubuntu's generic `nvidia-cuda-toolkit` apt package installs whatever
+        # (older) version is in that release's repos (confirmed: gave 12.0, which
+        # then mismatched the resolved PyTorch build's CUDA 13.0). Pin to exactly
+        # 12.8 via NVIDIA's own apt repo instead -- pyproject.toml's torch comment
+        # already flags 12.8 as this project's intended version.
+        run: |
+          if [ ! -d /usr/local/cuda-12.8 ]; then
+            . /etc/os-release
+            DISTRO="ubuntu$(echo "$VERSION_ID" | tr -d '.')"
+            wget -q "https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/x86_64/cuda-keyring_1.1-1_all.deb" \
+              -O /tmp/cuda-keyring.deb
+            sudo dpkg -i /tmp/cuda-keyring.deb
+            sudo apt-get update
+            sudo apt-get install -y cuda-toolkit-12-8
+          fi
+          echo "CUDA_HOME=/usr/local/cuda-12.8" >> "$GITHUB_ENV"
+          /usr/local/cuda-12.8/bin/nvcc --version
+
+      - name: Install UV package manager
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Create and setup virtual environment
+        run: |
+          uv venv --python 3.11
+          source .venv/bin/activate
+
+      - name: Install package
+        run: |
+          echo "Using CUDA_HOME=${CUDA_HOME:-<unset>}"
+          source .venv/bin/activate
+          # Default PyPI torch wheels are built against a different bundled CUDA
+          # runtime. pyproject.toml's [tool.uv] extra-index-url includes
+          # pypi.org, and uv's default "first-index-wins" dependency-confusion
+          # protection means once "torch" is found on ANY index it stops
+          # looking -- our --index-url alone doesn't override that, so the
+          # exact +cu128 pin was reported "not found" against pypi.org even
+          # though it's confirmed present on download.pytorch.org. All indices
+          # here are trusted, so bypass that safety check for this one install.
+          uv pip install --no-cache "torch==2.7.1+cu128" \
+            --index-url https://download.pytorch.org/whl/cu128 \
+            --index-strategy unsafe-best-match
+          # curobo's [build-system] requires setuptools_scm to compute its version
+          # from git metadata. With build isolation skipped below, uv no longer
+          # auto-installs that build-time requirement into a throwaway env, so
+          # without it present here setup.py silently falls back to version
+          # "0.0.0" for its metadata while the wheel filename still gets the real
+          # git-derived version -- causing a "metadata != wheel filename" error.
+          uv pip install --no-cache setuptools setuptools_scm wheel
+          # No --extra-index-url here: torch already satisfies its constraint from
+          # the step above, and PyTorch's index only serves torch-family packages --
+          # pointing the full-project install at it too caused an unrelated
+          # setuptools/packaging build-isolation failure.
+          # nvidia-curobo's setup.py compiles CUDA extensions against whatever torch
+          # is importable at build time. By default uv builds each package in a
+          # fresh, isolated env, so curobo would resolve its OWN torch from default
+          # PyPI (a non-cu128 build) instead of seeing the cu128 torch installed
+          # above -- that mismatch is what produced the "12.8 vs 13.0" CUDA error.
+          # Skipping build isolation just for curobo makes it build against the
+          # already-installed, correct torch.
+          uv pip install --no-cache -e .[dev,mujoco,curobo] \
+            --no-build-isolation-package nvidia-curobo
+
+      - name: Run data generation curobo tests
+        run: |
+          source .venv/bin/activate
+          python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
 
   ruff-checks:
+    # Job id kept as `ruff-checks` -- required by main's branch protection status
+    # checks. Runs the exact same hooks (and pinned tool versions) as
+    # `.pre-commit-config.yaml` via `pre-commit/action`, so CI can never drift
+    # from what runs locally.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup ruff for formatting and linting
-        uses: astral-sh/ruff-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          version: "latest"
-          args: "--version"
+          python-version: "3.11"
 
-      - name: Run formatting using ruff
-        run: |
-          ruff format --check .
+      - uses: pre-commit/action@v3.0.1

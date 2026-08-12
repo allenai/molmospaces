@@ -73,7 +73,7 @@ python scripts/housegen/beaker_launch_houses_generation.py --action generate \
 
 This will launch 10 experiment jobs on beaker, each running with 50 parallel workers to generate the
 houses for `procthor-objaverse-train`. The generated houses will be stored on weka at the location
-`/weka/prior-default/datasets/molmo-spaces/assets/scenes/procthor-objaverse-train`
+`/weka/robots-default/datasets/molmo-spaces/assets/scenes/procthor-objaverse-train`
 
 If after generation you want to run tests+filtering of the houses, you can run the following:
 

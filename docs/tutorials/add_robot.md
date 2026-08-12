@@ -129,9 +129,7 @@ we'll leave unimplemented for the moment, as we'll measure this empirically from
 
 ```python
 class XArm7GripperGroup(MJCFFrameMixin, GripperGroup):
-    def __init__(
-        self, mj_data: MjData, base_group: XArm7BaseGroup, namespace: str = ""
-    ) -> None:
+    def __init__(self, mj_data: MjData, base_group: XArm7BaseGroup, namespace: str = "") -> None:
         model = mj_data.model
         self._namespace = namespace
         joint_ids = [

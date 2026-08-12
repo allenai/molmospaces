@@ -12,7 +12,7 @@ python molmo_spaces/evaluation/eval_main.py \
 Please see detailed commands for each task type below, and replace `<YOUR_POLICY_CONFIG>` with your evaluation config (e.g. `molmo_spaces.evaluation.configs.evaluation_configs:PiPolicyEvalConfig`).
 
 Finally, run the evaluation output script that aggregates results as csv files:
-```bash 
+```bash
 python scripts/benchmarks/eval_to_csv.py \
   <eval_output_dir>/<date_str> \
   <policy_name> \

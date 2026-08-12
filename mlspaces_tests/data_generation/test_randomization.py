@@ -584,13 +584,13 @@ def _setup_model_and_randomizers(
     return model, data, randomizers
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def config():
     """Fixture providing RandomizationTestConfig."""
     return RandomizationTestConfig()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def install_scenes(config: RandomizationTestConfig):
     """Install scenes from molmospaces-resources before running tests."""
     scene = get_scenes(config.house_type)["train"][config.house_index]
@@ -603,7 +603,7 @@ def install_scenes(config: RandomizationTestConfig):
     install_scene_with_objects_and_grasps_from_path(scene_path)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def scene_path(config: RandomizationTestConfig, install_scenes):
     """Fixture providing scene path from config.
 
@@ -612,7 +612,7 @@ def scene_path(config: RandomizationTestConfig, install_scenes):
     return get_scene_path(config.house_type, config.house_index)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def baseline_file(scene_path: str):
     """Fixture providing baseline metadata file path."""
     scene_stem = Path(scene_path).stem

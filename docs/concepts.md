@@ -112,8 +112,8 @@ Robot configs (`BaseRobotConfig`) reference move group IDs as dictionary keys:
 
 ```python
 class BaseRobotConfig:
-    init_qpos: dict[str, list[float]]      # e.g. {"arm": [...], "gripper": [...]}
-    command_mode: dict[str, str]            # e.g. {"arm": "joint_position", "gripper": "joint_position"}
+    init_qpos: dict[str, list[float]]  # e.g. {"arm": [...], "gripper": [...]}
+    command_mode: dict[str, str]  # e.g. {"arm": "joint_position", "gripper": "joint_position"}
 ```
 
 These keys must match the names of the robot's move groups.

@@ -15,7 +15,6 @@ from molmo_spaces.env.sensors import (
     LastCommandedRelativeJointPosSensor,
     ObjectImagePointsSensor,
     ObjectPoseSensor,
-    PolicyPhaseSensor,
     RobotBasePoseSensor,
     RobotJointPositionSensor,
     RobotJointVelocitySensor,

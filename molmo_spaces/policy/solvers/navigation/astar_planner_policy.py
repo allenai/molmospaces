@@ -232,7 +232,7 @@ class AStarPlannerPolicy(PlannerPolicy):
     def max_angle_waypoints(self, angles: np.ndarray) -> np.ndarray:
         assert angles.shape == (2, 1)
 
-        angle = float(abs(normalize_ang_error(angles[1] - angles[0])))
+        angle = float(abs(normalize_ang_error(angles[1] - angles[0])).squeeze())
         num_points = int(np.ceil(angle / self.config.policy_config.path_max_inter_waypoint_angle))
         if num_points <= 1:
             # Enofrce always at least one orientation correction
