@@ -585,8 +585,8 @@ class BaseMujocoTaskSampler:
             self._datagen_profiler.start("compile_robot_add")
 
         # Add the robot using a default position
-        self.config.robot_config.robot_cls.add_robot_to_scene(
-            self.config.robot_config,
+        robot_config.robot_cls.add_robot_to_scene(
+            robot_config,
             spec,
             prefix="robot_0/",
             pos=[0.0, 0.0],
@@ -595,7 +595,7 @@ class BaseMujocoTaskSampler:
         )
 
         # apply robot control overrides
-        self.config.robot_config.robot_cls.apply_control_overrides(spec, self.config.robot_config)
+        robot_config.robot_cls.apply_control_overrides(spec, robot_config)
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_robot_add")

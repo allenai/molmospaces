@@ -2,12 +2,12 @@
 Command-line script to combine trajectory files using thor_analysis module.
 
 Usage:
-    python combine_trajectories.py <folder_path> [--output OUTPUT] [--first-n N]
+    python combine_trajs_into_h5.py <folder_path> [--output OUTPUT] [--first-n N]
 
 Examples:
-    python combine_trajectories.py /weka/prior-default/aguru/datasets/pi_hard_bench_0108
-    python combine_trajectories.py /weka/prior-default/aguru/datasets/pi_hard_bench_0108 --output combined.h5
-    python combine_trajectories.py /weka/prior-default/aguru/datasets/pi_hard_bench_0108 --output combined.h5 --first-n 100
+    python combine_trajectories.py /weka/robots-default/aguru/datasets/pi_hard_bench_0108
+    python combine_trajectories.py /weka/robots-default/aguru/datasets/pi_hard_bench_0108 --output combined.h5
+    python combine_trajectories.py /weka/robots-default/aguru/datasets/pi_hard_bench_0108 --output combined.h5 --first-n 100
 """
 
 import argparse

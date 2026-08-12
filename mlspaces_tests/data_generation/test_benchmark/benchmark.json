@@ -1,7 +1,7 @@
 [
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_1194/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_1194/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_3",
             "episode_length": 38,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -367,7 +367,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_1603/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_1603/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_0",
             "episode_length": 57,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -1001,7 +1001,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_2853/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_2853/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_1",
             "episode_length": 71,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -1494,7 +1494,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_3491/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_3491/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_2",
             "episode_length": 47,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -2455,7 +2455,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_3681/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_3681/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_2",
             "episode_length": 43,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -2695,7 +2695,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_4558/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_4558/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_1",
             "episode_length": 53,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -2944,7 +2944,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_4587/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_4587/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_0",
             "episode_length": 40,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -3866,7 +3866,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_5294/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_5294/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_4",
             "episode_length": 55,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -4300,7 +4300,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_7142/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_7142/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_4",
             "episode_length": 41,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",
@@ -4553,7 +4553,7 @@
     },
     {
         "source": {
-            "h5_file": "/weka/prior/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_8226/trajectories_batch_1_of_1.h5",
+            "h5_file": "/weka/robots-default/datasets/robomolmo/bench/FrankaPickHolodeckHardBench/val/house_8226/trajectories_batch_1_of_1.h5",
             "traj_key": "traj_4",
             "episode_length": 78,
             "camera_system_class": "FrankaRandomizedDroidCameraSystem",

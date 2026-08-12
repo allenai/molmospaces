@@ -26,10 +26,10 @@ WARNINGS_FILEPATH = "penetration_test_warnings_{dataset}_{split}_{identifier}.js
 ERRORS_FILEPATH = "penetration_test_errors_{dataset}_{split}_{identifier}.json"
 
 DEFAULT_HOUSES_FOLDER_WEKA = (
-    "/weka/prior-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}-refactor"
+    "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}-refactor"
 )
 DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
-DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/prior-default/datasets/mujoco-thor/assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
 DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
 
 DEFAULT_TIMESTEP = 0.002

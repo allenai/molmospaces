@@ -29,10 +29,10 @@ from molmo_spaces.utils.constants.object_constants import (
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 DEFAULT_HOUSES_FOLDER_WEKA = (
-    "/weka/prior-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}"
+    "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}"
 )
 DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
-DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/prior-default/datasets/mujoco-thor/assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
 DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
 
 HISTORY_RESULTS_INFO_PATH_TEMPLATE = "history_lift_force_test_{dataset}_{split}_{identifier}.json"
