@@ -12,9 +12,8 @@ import logging
 import os
 from collections import defaultdict
 from copy import deepcopy
-from pathlib import Path
 from importlib.metadata import version
-from packaging.version import Version
+from pathlib import Path
 
 import compress_json
 from molmospaces_resources import (
@@ -24,6 +23,7 @@ from molmospaces_resources import (
     setup_resource_manager,
     str2bool,
 )
+from packaging.version import Version
 
 
 def single_thread_environment():
