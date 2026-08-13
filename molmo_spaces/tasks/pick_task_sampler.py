@@ -2,7 +2,6 @@ import logging
 from collections.abc import Collection
 from typing import TYPE_CHECKING
 
-import mink
 import mujoco
 import numpy as np
 from mujoco import MjSpec, mjtGeom
@@ -1142,6 +1141,13 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         ~35-DOF robot-only model), but kept independent of the policy layer
         since this runs during task sampling, before a policy exists.
         """
+        # Deferred: mink is an optional dependency (see pyproject.toml's `mink`
+        # extra) needed only for this G1-only reset_precheck_grasp path -- a
+        # module-level import here would make it a hard dependency for every
+        # caller of this module, which is imported unconditionally by
+        # base_pick_config.py and therefore nearly every config/test in the repo.
+        import mink
+
         if getattr(self, "_precheck_mink_cfg", None) is None:
             robot_config = env.current_robot.exp_config.robot_config
             model = mujoco.MjModel.from_xml_path(str(robot_config.get_robot_xml_path()))
@@ -1227,6 +1233,11 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             return True
         if len(candidate_grasps) == 0:
             return True
+
+        # Deferred: see _ensure_ik_precheck_setup's docstring -- mink is an
+        # optional dependency, only pulled in once we know this attempt is
+        # actually G1 and has candidates worth IK-checking.
+        import mink
 
         try:
             top_grasps = select_grasp_pose(
