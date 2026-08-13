@@ -56,6 +56,7 @@ from molmo_spaces.configs.task_sampler_configs import (
 # scenes, robots, camera, task_sampler, policy, output
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_path
+from molmo_spaces.tasks.interactive_shell_task_sampler import InteractiveShellTaskSampler
 from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
 from molmo_spaces.tasks.pick_and_place_color_task_sampler import PickAndPlaceColorTaskSampler
 from molmo_spaces.tasks.pick_and_place_next_to_task_sampler import PickAndPlaceNextToTaskSampler
@@ -966,6 +967,114 @@ class RUMPickAndPlaceMultiDataGenConfig(PickAndPlaceDataGenConfig):
     @property
     def tag(self) -> str:
         return "pnpmulti_bench"
+
+
+@register_config("InteractiveShell")
+class InteractiveShellDataGenConfig(PickAndPlaceDataGenConfig):
+    """Drops the user into a live Python shell to drive the robot via nav_to/pick/etc.
+
+    Run with:
+        python scripts/datagen/run_pipeline.py --config InteractiveShell --viewer
+    """
+
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell"
+    scene_dataset: str = "ithor"  # ithor no floor
+    # FloatingRUMRobotConfig has a mobile base (unlike FrankaRobotConfig's fixed mount),
+    # which nav_to()'s A* planner requires, while still working with the same
+    # PickPlannerPolicy/OpenClosePlannerPolicy used by pick/open_object/close_object
+    # (see RUMPickDataGenConfig/RUMOpenTestConfig/RUMCloseTestConfig).
+    robot_config: BaseRobotConfig = FloatingRUMRobotConfig()
+    camera_config: FrankaDroidCameraSystem = FrankaRandomizedD405D455CameraSystem(
+        img_resolution=(960, 720),
+        visibility_constraints=None,
+        allow_relaxed_constraints=True,
+    )
+    use_passive_viewer: bool = True
+    task_horizon: int = 400
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+        task_sampler_class=InteractiveShellTaskSampler,
+        pickup_types=[],
+        max_robot_to_target_dist=10.0,
+        max_robot_to_obj_dist=10.0,
+        max_robot_to_place_receptacle_dist=10.0,
+        samples_per_house=1,
+        house_inds=[8],
+        check_robot_placement_visibility=False,
+        robot_object_z_offset=0,
+        base_pose_sampling_radius_range=(0, 0.4),
+        robot_safety_radius=0.2,
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell"
+
+
+@register_config("InteractiveShellG1")
+class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
+    """InteractiveShell variant driving the G1 humanoid (Phase 3 whole-body walking).
+
+    Run with:
+        python scripts/datagen/run_pipeline.py --config InteractiveShellG1 --viewer
+
+    nav_to()'s A* planner commands a planar [x, y, theta] "base" action, bridged
+    into G1WalkController's [vx, vy, yaw_rate, height, waist] velocity-command
+    interface (see G1Robot._waypoint_to_velocity_target).
+
+    Uses the parent's base_pose_sampling_radius_range (0, 0.4) -- spawns close to
+    the target object, same as every other InteractiveShell variant. (Briefly
+    widened to (0, 10.0) while tuning nav_to() over longer paths; reverted once
+    that tuning was done so other skills, e.g. open_object()/pick(), aren't stuck
+    with a long, unrelated walk to the target every time.)
+
+    Scenes: procthor-10k (val split), restricted to sampling only Bowl objects
+    to pick up -- a simpler, more consistently-shaped target than the parent's
+    unrestricted iTHOR object set for exercising FetchmanPickPlannerPolicy.
+    """
+
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1"
+    robot_config: BaseRobotConfig = G1Config()
+    camera_config: G1CameraSystem = G1CameraSystem()
+    scene_dataset: str = "procthor-10k"
+    data_split: str = "val"
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+        task_sampler_class=InteractiveShellTaskSampler,
+        pickup_types=["Bowl"],
+        max_robot_to_target_dist=10.0,
+        max_robot_to_obj_dist=10.0,
+        max_robot_to_place_receptacle_dist=10.0,
+        samples_per_house=1,
+        house_inds=list(range(101)),
+        check_robot_placement_visibility=False,
+        robot_object_z_offset=0,
+        base_pose_sampling_radius_range=(0, 0.4),
+        robot_safety_radius=0.2,
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1"
+
+
+@register_config("InteractiveShellG1Holo")
+class InteractiveShellG1HoloDataGenConfig(InteractiveShellG1DataGenConfig):
+    """InteractiveShellG1 variant using G1's holo-base mode instead of whole-body walking.
+
+    Run with:
+        python scripts/datagen/run_pipeline.py --config InteractiveShellG1Holo --viewer
+
+    legs_waist holds a static pose (no active balance) and the base is moved
+    directly via a mocap-weld target (see G1HoloBaseGroup) -- nav_to()'s absolute
+    waypoints map onto this directly, unlike the velocity-integration bridge the
+    whole-body-walking mode needs.
+    """
+
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_holo"
+    robot_config: BaseRobotConfig = G1Config(use_holo_base=True)
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_holo"
 
 
 @register_config("FrankaPickBatchTestConfig")

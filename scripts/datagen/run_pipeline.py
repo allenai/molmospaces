@@ -63,7 +63,8 @@ from molmo_spaces.data_generation.config.object_manipulation_datagen_configs imp
     FrankaPickAndPlaceNextToDroidDataGenConfig,
 )
 from molmo_spaces.data_generation.config_registry import get_config_class
-from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner
+from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner, setup_viewer
+from molmo_spaces.tasks.interactive_shell_task_sampler import InteractiveShellTaskSampler
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.profiler_utils import Profiler
 
@@ -319,6 +320,29 @@ def get_output_dir(args, exp_config):
     return output_dir
 
 
+def run_interactive_shell(exp_config: MlSpacesExpConfig, commands: list[str] | None = None) -> None:
+    """Sample one task and hand off to InteractiveShellTask.run_shell().
+
+    Unlike ParallelRolloutRunner.run(), this never steps a policy in a loop -
+    the human drives the robot live via nav_to/pick/pick_and_place/etc.
+    """
+    task_sampler_class = exp_config.task_sampler_config.task_sampler_class
+    task_sampler = task_sampler_class(exp_config)
+    task_sampler.reset()
+
+    task = task_sampler.sample_task()
+    task.reset()
+
+    viewer = setup_viewer(exp_config, task, policy=None, current_viewer=None)
+    task.viewer = viewer
+
+    task.list_objects()
+    task.run_shell(commands=commands)
+
+    if viewer is not None:
+        viewer.close()
+
+
 def main(args: argparse.ArgumentParser) -> None:
     if args.eval:  # 1) load an benchmark config
         log.info(f"Loading pre-saved config from {args.eval}. This will override other settings.")
@@ -336,6 +360,10 @@ def main(args: argparse.ArgumentParser) -> None:
     # overload some config values
     exp_config.num_workers = 1
     exp_config.use_passive_viewer = args.viewer
+
+    if exp_config.task_sampler_config.task_sampler_class is InteractiveShellTaskSampler:
+        run_interactive_shell(exp_config, commands=args.command)
+        return
 
     # Overload robot
     if args.robot == "rum" or args.policy == "rum":
@@ -372,6 +400,15 @@ if __name__ == "__main__":
     args.add_argument("--eval", type=str, default=None, help="Load a fixed benchmark")
     args.add_argument("--config", type=str, default=None, help="Load a fixed config")
     args.add_argument("--viewer", action="store_true", help="single step")
+    args.add_argument(
+        "--command",
+        action="append",
+        default=None,
+        metavar="STATEMENT",
+        help="InteractiveShell only: run STATEMENT (e.g. 'nav_to(object=\"apple_...\")') "
+        "before dropping into the shell prompt. Repeatable, runs in order; results stay "
+        "bound in the shell namespace (e.g. 'result = nav_to(...)').",
+    )
     args.add_argument(
         "--robot",
         type=str,
