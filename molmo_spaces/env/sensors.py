@@ -29,15 +29,14 @@ def _cmd_joint_pos(robot: Robot):
     if unnoised_cmd_jp is not None:
         return unnoised_cmd_jp
 
-    # robot.update_control() hasn't been called yet, recover the command from the controllers
+    # robot.update_control() hasn't been called yet, recover the command from the controllers.
+    # Non-position controllers (e.g. G1WalkController, whose target is a velocity/height/waist
+    # command, not a joint position) have no sane "position" to report here, so they're omitted
+    # rather than raising -- this path only runs before the first update_control() call.
     cmd_jp: dict[str, np.ndarray] = {}
     for name, controller in robot.controllers.items():
         if isinstance(controller, AbstractPositionController):
             cmd_jp[name] = controller.target_pos
-        else:
-            raise NotImplementedError(
-                f"Controller '{name}' is not a position controller, saving is unsupported!"
-            )
     return cmd_jp
 
 

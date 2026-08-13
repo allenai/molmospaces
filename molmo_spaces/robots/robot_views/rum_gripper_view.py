@@ -3,6 +3,7 @@ from functools import cached_property
 import mujoco
 import numpy as np
 from mujoco import MjData
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.robots.robot_views.abstract import (
@@ -12,6 +13,7 @@ from molmo_spaces.robots.robot_views.abstract import (
     RobotBaseGroup,
     RobotView,
 )
+from molmo_spaces.utils.linalg_utils import normalize_ang_error
 
 
 class RUMGripperGroup(MJCFFrameMixin, GripperGroup):
@@ -122,6 +124,28 @@ class FloatingRUMRobotView(RobotView):
     @property
     def base(self) -> FloatingRUMBaseGroup:
         return self._move_groups["base"]
+
+    def is_close_to(
+        self, move_group_ids: list[str], target_pose: list, threshold: float = 0.05
+    ) -> bool:
+        """Check if the current planar base pose is close to the target pose"""
+        return self.distance_to(move_group_ids, target_pose) < threshold
+
+    def distance_to(self, move_group_ids: list[str], target_pose: list) -> float:
+        """Calculate the planar (x, y, theta) distance from the base's current pose to a target pose.
+
+        The floating base's pose is a full 6-DOF transform (see FreeJointRobotBaseGroup.pose),
+        unlike a holonomic base's native [x, y, theta] joints, so we project it down to the
+        world-frame yaw for comparison against the [x, y, theta] waypoints the A* nav planner uses.
+        """
+        assert move_group_ids == ["base"], f"Expected ['base'], got {move_group_ids}"
+        assert len(target_pose) == 3, f"Expected [x, y, theta] pose, got {target_pose}"
+        pose = self.base.pose
+        theta = R.from_matrix(pose[:3, :3]).as_euler("xyz")[2]
+        x_delta = pose[0, 3] - target_pose[0]
+        y_delta = pose[1, 3] - target_pose[1]
+        theta_delta = normalize_ang_error(theta - target_pose[2])
+        return float(np.linalg.norm(np.array([x_delta, y_delta, theta_delta])))
 
 
 if __name__ == "__main__":

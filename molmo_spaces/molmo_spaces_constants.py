@@ -314,6 +314,16 @@ if PINNED_ASSETS_FILE:
         _merge_dicts(DATA_TYPE_TO_SOURCE_TO_VERSION, pinned_assets)
 
 
+def log_data_versions() -> None:
+    """Log the data versions currently in use.
+
+    Call this once from a script's entry point (see the "entry points" section of
+    the README) rather than from library code, so that merely importing molmospaces
+    modules doesn't spam logs.
+    """
+    logging.getLogger(__name__).info(f"Data versions in use: {DATA_TYPE_TO_SOURCE_TO_VERSION}")
+
+
 # ------------------------------
 # Scene dataset helpers
 # ------------------------------

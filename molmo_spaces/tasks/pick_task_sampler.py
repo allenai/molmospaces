@@ -2,6 +2,7 @@ import logging
 from collections.abc import Collection
 from typing import TYPE_CHECKING
 
+import mink
 import mujoco
 import numpy as np
 from mujoco import MjSpec, mjtGeom
@@ -27,6 +28,7 @@ from molmo_spaces.utils.asset_names import get_thor_name
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
 from molmo_spaces.utils.grasp_sample import (
     get_noncolliding_grasp_mask,
+    select_grasp_pose,
 )
 from molmo_spaces.utils.grasps import (
     get_pickup_grasps,
@@ -132,6 +134,29 @@ def _get_cached_valid_pickupables(
             pickupable_synsets_categories_or_uids, split=split
         )
     return _VALID_PICKUPABLE_CACHE
+
+
+# G1 arm/waist joint names and standalone-model reach envelope, for the
+# reset-time reachability precheck (_precheck_grasp_reachable). Duplicated
+# from FetchmanPickPlannerPolicy's own copies (rather than imported) to keep
+# task-sampling-time code independent of the policy layer -- these are
+# G1 MJCF joint names, unlikely to drift out of sync.
+_PRECHECK_ARM_JOINTS = (
+    "shoulder_pitch_joint",
+    "shoulder_roll_joint",
+    "shoulder_yaw_joint",
+    "elbow_joint",
+    "wrist_roll_joint",
+    "wrist_pitch_joint",
+    "wrist_yaw_joint",
+)
+_PRECHECK_WAIST_JOINTS = ("waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint")
+_PRECHECK_HEIGHT_MIN, _PRECHECK_HEIGHT_MAX = 0.35, 0.793
+# g1_molmo's own fast-precheck mode ("just smell-test the best candidate")
+# uses a single lumped pos+rot error threshold of 0.1 and few iterations --
+# it only needs to reject clearly-unreachable spawns, not certify precision.
+_PRECHECK_MAX_ITERS = 300
+_PRECHECK_ERROR_THRESHOLD = 0.1
 
 
 class PickTaskSampler(BaseMujocoTaskSampler):
@@ -673,7 +698,54 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_place_robot")
 
+            if not self._check_placement_walk_reachable(env, pickup_obj_name):
+                log.info(f"Robot placement not walk-reachable for {pickup_obj_name}")
+                self.report_grasp_failure(pickup_obj_name)
+                continue
+
             mujoco.mj_forward(env.current_model, env.current_data)
+
+            # Height randomization (g1_molmo ports) -- must run before the
+            # reachability precheck right below, on the same (object,
+            # placement) attempt: g1_molmo randomizes support/robot height
+            # as part of the same reset attempt it then reachability-checks,
+            # not as a separate step after an attempt is already committed.
+            self._randomize_target_support_height(env, pickup_obj_name, supporting_geom_id)
+            self._randomize_robot_standing_height(env)
+            mujoco.mj_forward(env.current_model, env.current_data)
+
+            # Re-capture pickup_obj_start_pose here, AFTER height
+            # randomization -- _sample_and_place_robot (above) already set it
+            # once, but against the object's pre-randomization pose. Left
+            # uncorrected, every downstream lift_height computation
+            # (PickTask.get_reward/get_info, PickG1Task) measures against a
+            # stale reference: since randomize_height_favored skews the
+            # random draw toward the object's own (higher) natural height,
+            # the pre-randomization pose is typically well above the actual
+            # post-randomization starting height, so lift_height reads
+            # spuriously negative even when the object never moved at all
+            # after being placed. Matches g1_molmo's own ordering exactly:
+            # its env randomizes support height, *then* calls
+            # task.init_target_tracking (which sets _target_z0) --
+            # never the other way around.
+            pickup_obj_for_start_pose = om.get_object_by_name(pickup_obj_name)
+            self.config.task_config.pickup_obj_start_pose = pose_mat_to_7d(
+                pickup_obj_for_start_pose.pose
+            ).tolist()
+
+            # Reset-time grasp-reachability precheck (port of g1_molmo's
+            # agent.precheck_grasp / env reset_precheck_grasp=True default):
+            # reject this (object, placement) attempt outright if not even
+            # the best grasp candidate is plausibly IK-reachable from here,
+            # instead of committing to an episode that can only discover
+            # this later as a guaranteed-fail rollout during policy
+            # execution ("IK failed for pregrasp pose").
+            if self.config.task_sampler_config.reset_precheck_grasp:
+                pickup_obj_for_precheck = om.get_object_by_name(pickup_obj_name)
+                if not self._precheck_grasp_reachable(env, pickup_obj_for_precheck):
+                    log.info(f"Reachability precheck failed for {pickup_obj_name}")
+                    self.report_grasp_failure(pickup_obj_name)
+                    continue
 
             # Check grasp feasibility
             if self._datagen_profiler is not None:
@@ -829,12 +901,20 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("sample_task_create")
 
-        task = PickTask(env, self.config)
+        task = self._task_cls()(env, self.config)
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_task_create")
 
         return task
+
+    def _task_cls(self) -> type[PickTask]:
+        """Hook: task class to instantiate in _sample_task. Override to swap
+        in a task with different success/reward semantics -- see
+        PickG1Task, which matches g1_molmo's own success criteria instead of
+        this class's own (see PickG1Task's docstring for the difference).
+        """
+        return PickTask
 
     def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MlSpacesObject]:
         """
@@ -952,6 +1032,303 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             return False
         return True
 
+    def _randomize_target_support_height(
+        self, env: CPUMujocoEnv, pickup_obj_name: str, supporting_geom_id: int
+    ) -> None:
+        """Port of g1_molmo's env._randomize_target_support_height: move the
+        pickup object's supporting surface (and the object with it) to a
+        randomized height, so the pickup object doesn't always sit at
+        whatever height it happened to be authored at.
+
+        The sampled height is drawn from a triangular distribution over
+        [randomize_height_min, upper] (upper = the object's own current
+        height, further capped by randomize_height_max if set) with mode
+        randomize_height_favored -- for most objects (whose natural height is
+        below the g1_molmo-matching default of 0.95m), the mode ends up
+        clipped to the object's own current height, so most draws land near
+        the unmodified default and only occasionally go much lower.
+
+        Scoped down from g1_molmo's reference implementation, which also (a)
+        traces through multiple stacked free-jointed supports, (b) unions in
+        contact-graph neighbors for edge-perched objects a pure ancestor walk
+        misses, and (c) cascades the move to furniture sitting underneath the
+        support when lowering. This handles the common case of a single
+        object resting on one fixed (non-free-jointed) support -- the large
+        majority of pick targets.
+        """
+        cfg = self.config.task_sampler_config
+        if not cfg.randomize_height:
+            return
+        om = env.object_managers[env.current_batch_index]
+        pickup_obj = om.get_object_by_name(pickup_obj_name)
+        if getattr(pickup_obj, "is_articulated", False):
+            return
+
+        model, data = env.current_model, env.current_data
+        sup_root = int(model.geom_bodyid[supporting_geom_id])
+        for _ in range(10):
+            if int(model.body_parentid[sup_root]) == 0:
+                break
+            sup_root = int(model.body_parentid[sup_root])
+        else:
+            return
+        if sup_root == 0:
+            return
+
+        sup_top_z = float(pickup_obj.position[2])
+        upper = sup_top_z
+        if cfg.randomize_height_max is not None:
+            upper = min(upper, cfg.randomize_height_max)
+        if upper <= cfg.randomize_height_min:
+            return
+
+        mode = float(np.clip(cfg.randomize_height_favored, cfg.randomize_height_min, upper))
+        new_top = float(np.random.triangular(cfg.randomize_height_min, mode, upper))
+        dz = new_top - sup_top_z
+        if abs(dz) < 1e-3:
+            return
+
+        # Static support furniture moves via body_pos -- MuJoCo's "simple"/
+        # "sameframe" compile-time flags can otherwise cache a stale
+        # transform for a body with a fixed offset from its parent, silently
+        # ignoring this change.
+        model.body_simple[sup_root] = 0
+        model.body_sameframe[sup_root] = 0
+        model.body_pos[sup_root, 2] += dz
+
+        # The pickup object itself moves via its own free joint's qpos.
+        body_id = om.get_object_body_id(pickup_obj_name)
+        jnt_adr = int(model.body_jntadr[body_id])
+        assert jnt_adr >= 0 and model.jnt_type[jnt_adr] == mujoco.mjtJoint.mjJNT_FREE, (
+            f"{pickup_obj_name} has no free joint to reposition for height randomization"
+        )
+        qposadr = int(model.jnt_qposadr[jnt_adr])
+        data.qpos[qposadr + 2] += dz
+
+        mujoco.mj_forward(model, data)
+        log.info(
+            f"[HEIGHT RANDOMIZATION] {pickup_obj_name}: support surface "
+            f"{sup_top_z:.3f}m -> {new_top:.3f}m (dz={dz:+.3f}m)"
+        )
+
+    def _randomize_robot_standing_height(self, env: CPUMujocoEnv) -> None:
+        """Port of g1_molmo's env randomize_robot_height: draw a uniform
+        random initial WBC height command for the robot each episode instead
+        of always starting at the controller's fixed default (0.74m).
+        g1_molmo only applies this when the robot spawns already at its
+        final grasp position (spawn_at_grasp); applied unconditionally here.
+        No-op for robots without a legs_waist WBC controller (i.e. anything
+        but G1 in its default walking mode).
+        """
+        cfg = self.config.task_sampler_config
+        if not cfg.randomize_robot_height:
+            return
+        controller = env.current_robot.controllers.get("legs_waist")
+        if controller is None or not hasattr(controller, "set_target"):
+            return
+        height = float(
+            np.random.uniform(cfg.randomize_robot_height_min, cfg.randomize_robot_height_max)
+        )
+        controller.set_target(np.array([0.0, 0.0, 0.0, height, 0.0, 0.0, 0.0], dtype=np.float32))
+        log.info(f"[ROBOT HEIGHT RANDOMIZATION] init height -> {height:.3f}m")
+
+    def _ensure_ik_precheck_setup(self, env: CPUMujocoEnv) -> None:
+        """Lazily build a standalone, robot-only mink model for
+        _precheck_grasp_reachable, cached on this (long-lived, spans many
+        houses) task sampler instance. Mirrors FetchmanPickPlannerPolicy.
+        _ensure_mink_setup's standalone-model approach (see that method's
+        docstring for why: solving on the live scene model, with its
+        free joint per movable object, is ~2600x slower than a standalone
+        ~35-DOF robot-only model), but kept independent of the policy layer
+        since this runs during task sampling, before a policy exists.
+        """
+        if getattr(self, "_precheck_mink_cfg", None) is None:
+            robot_config = env.current_robot.exp_config.robot_config
+            model = mujoco.MjModel.from_xml_path(str(robot_config.get_robot_xml_path()))
+            self._precheck_mink_model = model
+            self._precheck_mink_cfg = mink.Configuration(model)
+
+            def jid(name):
+                return mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+
+            self._precheck_arm_dofadr = np.array(
+                [model.jnt_dofadr[jid(f"right_{n}")] for n in _PRECHECK_ARM_JOINTS]
+            )
+            self._precheck_waist_dofadr = np.array(
+                [model.jnt_dofadr[jid(n)] for n in _PRECHECK_WAIST_JOINTS]
+            )
+            fj_id = jid("floating_base_joint")
+            self._precheck_fj_dofadr = model.jnt_dofadr[fj_id]
+            self._precheck_fj_qposadr = model.jnt_qposadr[fj_id]
+            # A posture task is not optional here, even for a "just check
+            # reachability" precheck: without one, the null space of this
+            # redundant (7 arm + 3 waist + 1 height = 11 DOF for a 6-DOF
+            # target) IK has no preferred direction at all, and the QP
+            # solver can wander/stall inside it well short of
+            # _PRECHECK_MAX_ITERS. Confirmed empirically: omitting this
+            # entirely (an earlier bug in this method) produced huge,
+            # inconsistent errors (0.1-1.4) across essentially every
+            # candidate in every house tested, unlike
+            # FetchmanPickPlannerPolicy's real solve (which always includes
+            # one) converging to within 0.02-0.05 on comparable poses.
+            posture_cost = np.full(model.nv, 0.1)
+            posture_cost[self._precheck_waist_dofadr] = 0.2
+            posture_cost[self._precheck_fj_dofadr + 2] = 0.1
+            self._precheck_posture_cost = posture_cost
+            self._precheck_synced_scene_model = None
+
+        # The scene model changes identity every time the task sampler moves
+        # to a new house -- rebuild the (cheap, ~35-joint) sync pairs
+        # whenever that happens rather than caching them forever against a
+        # since-replaced scene.
+        if env.current_model is not self._precheck_synced_scene_model:
+            model = self._precheck_mink_model
+            scene_model = env.current_model
+            sync_pairs = []
+            for sjid in range(model.njnt):
+                name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, sjid)
+                cjid = mujoco.mj_name2id(scene_model, mujoco.mjtObj.mjOBJ_JOINT, f"robot_0/{name}")
+                if cjid < 0:
+                    continue
+                ndim = 7 if model.jnt_type[sjid] == mujoco.mjtJoint.mjJNT_FREE else 1
+                sync_pairs.append((model.jnt_qposadr[sjid], scene_model.jnt_qposadr[cjid], ndim))
+            self._precheck_sync_pairs = sync_pairs
+            self._precheck_synced_scene_model = scene_model
+
+    def _precheck_grasp_reachable(self, env: CPUMujocoEnv, pickup_obj: MlSpacesObject) -> bool:
+        """Cheap IK feasibility check for the grasp pose only (no
+        pregrasp/lift), mirroring g1_molmo's agent.precheck_grasp /
+        GraspPolicy.plan(_fast_precheck=True): reject this (object,
+        placement) attempt if none of the top-ranked grasp candidates are
+        plausibly reachable, instead of committing to an episode that can
+        only discover this later as a guaranteed-fail rollout during policy
+        execution. Tries several candidates (not just the single best, as
+        g1_molmo's own fast-precheck mode does) since without that
+        cushion, an otherwise-fine spawn is one bad top-ranked candidate
+        away from a false rejection -- FetchmanPickPlannerPolicy's real
+        execution-time planning also falls through multiple candidates for
+        exactly this reason (see its grasp_candidates_to_try). Also applies
+        the same 180-degree roll-flip disambiguation the real policy uses
+        (_closer_roll_flip) -- skipping it was an earlier bug in this
+        method that made otherwise-reachable candidates look unreachable
+        purely from an avoidable orientation mismatch.
+
+        G1 only -- returns True (don't block) for any robot without a
+        legs_waist WBC controller, or if no grasp data exists to check
+        against.
+        """
+        if env.current_robot.controllers.get("legs_waist") is None:
+            return True
+        try:
+            candidate_grasps = get_pickup_grasps(
+                env, pickup_obj, grasp_libraries=self.config.task_sampler_config.grasp_libraries
+            )
+        except (KeyError, ValueError):
+            return True
+        if len(candidate_grasps) == 0:
+            return True
+
+        try:
+            top_grasps = select_grasp_pose(
+                env,
+                candidate_grasps,
+                pickup_obj.pose,
+                check_collision=True,
+                n_collision_checks=512,
+                collision_batch_size=64,
+                check_ik=False,
+                n_ik_checks=0,
+                ik_batch_size=0,
+                # Same orientation preference as FetchmanPickPlannerPolicyConfig's
+                # defaults (see that config's grasp_vertical/horizontal_cost_weight
+                # comment) -- the precheck should reject/accept based on the same
+                # candidates the real policy would actually attempt.
+                vertical_cost_weight=0.0,
+                horizontal_cost_weight=2.0,
+                top_k=5,
+            )
+        except ValueError:
+            # No non-colliding candidate at all -- the existing collision
+            # -based feasibility check right after this call already
+            # handles rejecting this attempt for that reason.
+            return True
+        if top_grasps.ndim == 2:
+            top_grasps = top_grasps[None]
+
+        self._ensure_ik_precheck_setup(env)
+        data = env.current_data
+        model_prefix = "robot_0/"
+        site_id = mujoco.mj_name2id(
+            env.current_model, mujoco.mjtObj.mjOBJ_SITE, f"{model_prefix}right_grasp"
+        )
+        current_rot = R.from_matrix(data.site_xmat[site_id].reshape(3, 3))
+
+        for grasp_pose_world in top_grasps:
+            original_rot = R.from_matrix(grasp_pose_world[:3, :3])
+            flipped_rot = original_rot * R.from_euler("z", np.pi)
+            if (current_rot.inv() * flipped_rot).magnitude() < (
+                current_rot.inv() * original_rot
+            ).magnitude():
+                grasp_pose_world = grasp_pose_world.copy()
+                grasp_pose_world[:3, :3] = flipped_rot.as_matrix()
+
+            config = self._precheck_mink_cfg
+            q = config.q
+            for s_adr, c_adr, ndim in self._precheck_sync_pairs:
+                q[s_adr : s_adr + ndim] = data.qpos[c_adr : c_adr + ndim]
+            config.update(q)
+
+            mask = np.zeros(config.model.nv)
+            mask[self._precheck_arm_dofadr] = 1.0
+            mask[self._precheck_waist_dofadr] = 1.0
+            mask[self._precheck_fj_dofadr + 2] = 1.0
+
+            frame_task = mink.FrameTask(
+                frame_name="right_grasp",
+                frame_type="site",
+                position_cost=100,
+                orientation_cost=1,
+                lm_damping=1,
+            )
+            rot = mink.SO3.from_matrix(grasp_pose_world[:3, :3])
+            frame_task.set_target(
+                mink.SE3.from_rotation_and_translation(rot, np.asarray(grasp_pose_world[:3, 3]))
+            )
+            posture_task = mink.PostureTask(config.model, cost=self._precheck_posture_cost)
+            posture_task.set_target_from_configuration(config)
+            posture_task.target_q[self._precheck_fj_qposadr + 2] = _PRECHECK_HEIGHT_MAX
+            limits = [mink.ConfigurationLimit(config.model)]
+
+            err = float("inf")
+            for _ in range(_PRECHECK_MAX_ITERS):
+                try:
+                    vel = mink.solve_ik(
+                        config,
+                        [frame_task, posture_task],
+                        1e-2,
+                        "daqp",
+                        damping=1e-1,
+                        limits=limits,
+                    )
+                except Exception:
+                    break
+                vel = vel * mask
+                config.integrate_inplace(vel, 1e-2)
+                q = config.q.copy()
+                q[self._precheck_fj_qposadr + 2] = np.clip(
+                    q[self._precheck_fj_qposadr + 2], _PRECHECK_HEIGHT_MIN, _PRECHECK_HEIGHT_MAX
+                )
+                config.update(q)
+                raw_err = frame_task.compute_error(config)
+                err = float(np.linalg.norm(raw_err[:3]) + np.linalg.norm(raw_err[3:]))
+                if err < _PRECHECK_ERROR_THRESHOLD:
+                    break
+
+            if err < _PRECHECK_ERROR_THRESHOLD:
+                return True
+
+        return False
+
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         """Sample a pickup object and receptacle, place robot using occupancy map, and return sampled params.
 
@@ -985,14 +1362,23 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         else:
             raise ValueError(f"Invalid pickup object type: {type(pickup_obj)}")
 
-        initial_robot_z = (
-            target_pos[2]
-            + self.config.task_sampler_config.robot_object_z_offset
-            + np.random.uniform(
-                self.config.task_sampler_config.robot_object_z_offset_random_min,
-                self.config.task_sampler_config.robot_object_z_offset_random_max,
+        fixed_base_height = self.config.robot_config.fixed_base_height
+        if fixed_base_height is not None:
+            # This robot's base height is held constant by its own controller
+            # regardless of placement (see BaseRobotConfig.fixed_base_height) --
+            # deriving a target-relative spawn height below would place it
+            # somewhere physics/the controller immediately corrects away from,
+            # silently invalidating any grasp/reach poses planned against it.
+            initial_robot_z = fixed_base_height
+        else:
+            initial_robot_z = (
+                target_pos[2]
+                + self.config.task_sampler_config.robot_object_z_offset
+                + np.random.uniform(
+                    self.config.task_sampler_config.robot_object_z_offset_random_min,
+                    self.config.task_sampler_config.robot_object_z_offset_random_max,
+                )
             )
-        )
 
         # place robot near receptacle - this is the expensive call with collision/visibility checks
         if self._datagen_profiler is not None:
@@ -1000,7 +1386,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         robot_placed = env.place_robot_near(
             robot_view=robot_view,
             target=pickup_obj,
-            max_tries=10,  # Use config value or reasonable default
+            max_tries=self.config.task_sampler_config.max_robot_placement_attempts,
             sampling_radius_range=self.config.task_sampler_config.base_pose_sampling_radius_range,
             robot_safety_radius=self.config.task_sampler_config.robot_safety_radius,
             preserve_z=initial_robot_z,
@@ -1028,6 +1414,32 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         task_cfg.pickup_obj_goal_pose = pickup_obj_goal_pose.tolist()
 
         log.info(f"Supporting receptacle: {self.config.task_config.receptacle_name}")
+
+    def _check_placement_walk_reachable(self, env: CPUMujocoEnv, pickup_obj_name: str) -> bool:
+        """Hook: verify the just-placed robot can actually reach a walk
+        standoff point near the pickup object, using the same nav-goal-
+        sampling + A*/line-of-sight machinery a walk-phase policy would use
+        at reset() time -- rejecting an unreachable placement here (which
+        retries with a freshly, independently sampled robot position) rather
+        than only discovering the mismatch during policy.reset(), after the
+        rest of this attempt's setup (height randomization, camera setup,
+        grasp feasibility) has already been paid for.
+
+        Robot placement (this class's own occupancy-map-based sampling) and
+        walk-goal sampling (a policy's separate NavGoalSampler/AStarPlanner)
+        are otherwise two independent computations with no guarantee of
+        agreeing on what's reachable from what -- g1_molmo's own env avoids
+        this class of problem entirely by computing a single standoff point
+        and spawning the robot directly there, so start==goal by
+        construction. We don't share that architecture (this class's
+        placement supports considerations -- visibility, exclusion zones --
+        a walk-goal sampler doesn't), so this hook instead validates
+        consistency after the fact rather than guaranteeing it up front.
+
+        No-op by default (True) -- meaningful only for configs with an
+        actual walk phase; see PickG1TaskSampler's override.
+        """
+        return True
 
     def _place_target_near_object(
         self, env: CPUMujocoEnv, object_pos: np.ndarray, placement_region=None

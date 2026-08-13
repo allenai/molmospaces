@@ -26,17 +26,20 @@ from molmo_spaces.configs.camera_configs import (
     FrankaOmniPurposeCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
     FrankaRandomizedDroidCameraSystem,
+    G1CameraSystem,
     RBY1GoProD455CameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
     CuroboOpenClosePlannerPolicyConfig,
     CuroboPickAndPlacePlannerPolicyConfig,
+    FetchmanPickPlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickPlannerPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import (
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
+    G1Config,
     RBY1MConfig,
     RBY1MOpenCloseConfig,
 )
@@ -60,6 +63,7 @@ from molmo_spaces.tasks.pick_and_place_task_sampler import (
     PickAndPlaceMultiTaskSampler,
     PickAndPlaceTaskSampler,
 )
+from molmo_spaces.tasks.pick_g1_task_sampler import PickG1TaskSampler
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 from molmo_spaces.utils.synset_utils import get_valid_pickupable_obja_uids
@@ -122,6 +126,100 @@ class RUMPickDataGenConfig(PickBaseConfig):
     @property
     def tag(self) -> str:
         return "rum_pick_datagen"
+
+
+@register_config("PickG1Bowl")
+class PickG1DataGenConfig(PickBaseConfig):
+    """Direct (non-interactive) G1 pick task -- no InteractiveShell, no place
+    target. Tries to reproduce the spawn configuration that works reliably in
+    g1_molmo's own datagen (~/code/g1_molmo/molmospaces/configs/
+    bowl_mixed_grasponly.py): procthor-10k scenes, Bowl-only pickup, and a
+    wider standoff annulus + more placement retries than InteractiveShell's
+    (0, 0.4)/10-try defaults (see PickG1TaskSampler's docstring for why that
+    combination fails almost every sample when pickup_types is this narrow).
+
+    Run with:
+        python scripts/datagen/run_pipeline.py --config PickG1Bowl --viewer
+    """
+
+    scene_dataset: str = "procthor-10k"
+    data_split: str = "val"
+    robot_config: BaseRobotConfig = G1Config()
+    camera_config: G1CameraSystem = G1CameraSystem()
+    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+        task_sampler_class=PickG1TaskSampler,
+        pickup_types=["Bowl"],
+        house_inds=list(range(101)),
+        base_pose_sampling_radius_range=(0.2, 0.5),  # g1_molmo's grasp_spawn_radius_min/max
+        max_robot_placement_attempts=25,  # g1_molmo's _sample_goal_pose(attempts=25)
+        robot_safety_radius=0.2,
+        # ParallelRolloutRunner.process_single_house counts a house as an
+        # "irrecoverable failure" (toward this sequential-failure circuit
+        # breaker) whenever it ever raises HouseInvalidForTask -- even if that
+        # house already yielded valid rollouts earlier (e.g. it simply ran out
+        # of remaining Bowl candidates on its last attempt). Across a 101-house
+        # sweep with a narrow pickup_types filter, hitting a handful of houses
+        # with no/few bowls, or a scene MuJoCo can't even mj_forward cleanly
+        # (see e.g. house 3's "FactorizeHessian: rank-deficient sparse
+        # Hessian", a pre-existing scene/robot compatibility issue unrelated
+        # to this policy), is expected noise, not a sign the whole run is
+        # broken -- the shared default (5) exits the entire worker after only
+        # a handful of such houses, abandoning the other ~95.
+        max_allowed_sequential_irrecoverable_failures=30,
+        # Match g1_molmo's own actual reference config for this exact task
+        # (~/code/g1_molmo/molmospaces/configs/bowl_mixed_grasponly.py:
+        # objects="bowl", randomize_height_min=0.1, randomize_height_max=0.9,
+        # randomize_height_favored=0.75) -- NOT the bare constructor defaults
+        # (min=0.0, max=None, favored=0.95) an earlier pass here used, which
+        # only apply when a config doesn't override them.
+        randomize_height=True,
+        randomize_height_min=0.1,
+        randomize_height_max=0.9,
+        randomize_height_favored=0.75,
+        # Same reference config also randomizes the robot's own initial
+        # standing height (randomize_robot_height=True,
+        # randomize_robot_height_min=0.74, randomize_robot_height_max=0.77) --
+        # a narrow band around G1WalkController's default (0.74).
+        randomize_robot_height=True,
+        randomize_robot_height_min=0.74,
+        randomize_robot_height_max=0.77,
+        # g1_molmo's env defaults to reset_precheck_grasp=True: reject an
+        # (object, placement) sample outright if the best grasp candidate
+        # isn't even plausibly IK-reachable, instead of committing to a
+        # guaranteed-fail episode discovered only during execution.
+        reset_precheck_grasp=True,
+    )
+    policy_config: FetchmanPickPlannerPolicyConfig = FetchmanPickPlannerPolicyConfig()
+    # g1_molmo's own components/controller.py set_env() runs its policy
+    # (G1Controller.sample_actions, i.e. one _solve_ik_wbc call) once every
+    # single physics step, at model.opt.timestep=0.005 (n_substeps=1) -- a
+    # real 5ms policy tick. G1Config.physics_timestep now applies that same
+    # 0.005s physics timestep to our own model too (see its docstring and
+    # G1Robot.__init__), instead of the scene's own 0.002s default -- so
+    # sim_dt_ms/ctrl_dt_ms/policy_dt_ms can all be set to the true matching
+    # value (5.0) here, rather than the closest-reachable approximation an
+    # earlier version of this port used (4.0, back when the physics timestep
+    # itself was left at 0.002s and only the policy tick could be adjusted --
+    # see git history/PR description if this comment predates cleanup).
+    sim_dt_ms: float = 5.0
+    ctrl_dt_ms: float = 5.0
+    policy_dt_ms: float = 5.0
+    # g1_molmo's own main.py gives each episode a fixed 60s sim-time budget
+    # (`time_limit = 60.0`, checked against env.time) for the full walk+grasp
+    # sequence, timed from after its 70-step settle -- not the ~500-step
+    # default PickBaseConfig.task_horizon inherited here, which predates
+    # FetchmanPickPlannerPolicy's walk phase and was tuned for policies that
+    # assumed the robot was already placed within arm's reach.
+    # 60s / 0.005s/step (policy_dt_ms=5.0 above) = 12000 steps exactly --
+    # the same real 60s budget g1_molmo gives itself, just expressed in our
+    # own step-counted task_horizon rather than g1_molmo's own continuous
+    # env.time check.
+    task_horizon: int = 12000
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_g1_bowl_v1"
+
+    @property
+    def tag(self) -> str:
+        return "pick_g1_bowl_datagen"
 
 
 @register_config("FrankaPickAndPlaceDataGenConfig")

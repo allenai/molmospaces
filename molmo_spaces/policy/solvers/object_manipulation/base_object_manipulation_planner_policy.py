@@ -48,11 +48,23 @@ class TCPMoveSegment(MoveSegment):
     start_pose: np.ndarray
     end_pose: np.ndarray
     speed: float
+    # rad/s -- caps how fast the segment's slerp asks the TCP to rotate. Only
+    # matters when a segment needs a large reorientation over a small
+    # translation (duration was previously sized from linear distance alone,
+    # discarding the angular twist component entirely -- forcing an
+    # arbitrarily fast implied rotation rate for e.g. a short pregrasp
+    # approach that still needs to swing the gripper 90+ degrees). Can only
+    # lengthen a segment relative to the old linear-only duration, never
+    # shorten it, so this is safe for controllers that already tracked fine.
+    angular_speed: float = 1.5
 
     @property
     def duration(self) -> float:
-        lin_vel, _ = transform_to_twist(np.linalg.inv(self.start_pose) @ self.end_pose)
-        return np.linalg.norm(lin_vel) / self.speed
+        lin_vel, ang_vel = transform_to_twist(np.linalg.inv(self.start_pose) @ self.end_pose)
+        return max(
+            np.linalg.norm(lin_vel) / self.speed,
+            np.linalg.norm(ang_vel) / self.angular_speed,
+        )
 
 
 @dataclass
@@ -83,6 +95,10 @@ class ActionPrimitive(ABC):
         self.robot_view = robot_view
         self.duration = duration
         self.start_time = None
+        # Set by check_failure() on the primitive it returns True for -- surfaced
+        # by BaseObjectManipulationPlannerPolicy._handle_failure() so "Failure
+        # detected!" logs say *why* instead of just *that*.
+        self.last_failure_reason: str = ""
 
     @abstractmethod
     def execute(self) -> bool:
@@ -183,13 +199,13 @@ class MoveSequence(ActionPrimitive):
         if self.is_holding_object:
             gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[0]
             gripper = self.robot_view.get_gripper(gripper_mg_id)
-            if (
-                gripper.inter_finger_dist
-                < gripper.inter_finger_dist_range[0] + self.gripper_empty_threshold
-            ):
-                log.info(
-                    f"Object is not in grasp! {gripper.inter_finger_dist:.05f} < {gripper.inter_finger_dist_range[0] + self.gripper_empty_threshold:05f}"
+            min_dist = gripper.inter_finger_dist_range[0] + self.gripper_empty_threshold
+            if gripper.inter_finger_dist < min_dist:
+                self.last_failure_reason = (
+                    f"object slipped out of grasp during '{self.get_current_phase()}': "
+                    f"inter_finger_dist={gripper.inter_finger_dist:.5f}m < {min_dist:.5f}m"
                 )
+                log.info(f"❌ {self.last_failure_reason}")
                 return True
 
         return False
@@ -266,7 +282,15 @@ class TCPMoveSequence(MoveSequence):
         trf = np.linalg.inv(gripper.leaf_frame_to_world) @ curr_target_pose
         pos_err = np.linalg.norm(trf[:3, 3])
         rot_err = R.from_matrix(trf[:3, :3]).magnitude()
-        return pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold
+        if pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold:
+            self.last_failure_reason = (
+                f"TCP tracking error exceeded threshold during '{self.get_current_phase()}': "
+                f"pos_err={pos_err:.4f}m (max {self.tcp_pos_err_threshold:.4f}m), "
+                f"rot_err={np.degrees(rot_err):.1f}deg (max {np.degrees(self.tcp_rot_err_threshold):.1f}deg)"
+            )
+            log.info(f"❌ {self.last_failure_reason}")
+            return True
+        return False
 
 
 class JointMoveSequence(MoveSequence):
@@ -525,13 +549,26 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
         return action_primitive.check_failure()
 
     def _handle_failure(self) -> dict[str, Any]:
+        # Grab the reason before reset() below replaces action_primitives with a
+        # freshly recomputed trajectory (which starts with a blank
+        # last_failure_reason).
+        reason = (
+            self.action_primitives[self.action_idx].last_failure_reason
+            if self.action_idx < len(self.action_primitives)
+            else "ran out of action primitives without completing"
+        )
+
         if self.retry_count >= self.policy_config.max_retries:
-            log.info(f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed.")
+            log.info(
+                f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed. "
+                f"Last failure: {reason}"
+            )
             return {"done": True, "success": False}
 
         self._retry_count += 1
         log.info(
-            f"🔄 Failure detected! Initiating retry {self.retry_count}/{self.policy_config.max_retries}"
+            f"🔄 Failure detected ({reason})! Initiating retry "
+            f"{self.retry_count}/{self.policy_config.max_retries}"
         )
         self.reset(reset_retries=False)
 
