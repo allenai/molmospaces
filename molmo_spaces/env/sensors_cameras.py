@@ -168,3 +168,74 @@ class CameraParameterSensor(Sensor):
             "intrinsic_cv": intrinsic_cv.tolist(),
         }
         return data
+
+
+class ObjectPointInCameraSensor(Sensor):
+    """Analytic (no-render) pixel projection of a task object's 3D position
+    into each configured camera view -- normalized (u, v) in [0, 1], or
+    (-1, -1) if the object is behind the camera. Matches g1_molmo's own
+    target_point_in_head() (~/code/g1_molmo/molmospaces/env.py): a pure
+    pinhole projection using the camera's known intrinsics/extrinsics, not a
+    render. Reuses the exact extrinsic_cv/intrinsic_cv math
+    CameraParameterSensor already computes analytically (env.camera_manager
+    poses, not a rendered frame).
+
+    Contrast with ObjectImagePointsSensor, which calls
+    env.get_segmentation_mask_of_object() -- a real render -- every time
+    it's polled; that's the right tool when you need the object's actual
+    on-screen *extent* (its silhouette), but this sensor is for when only a
+    single representative point is needed and a render's cost isn't
+    justified (e.g. an oracle/scripted policy that never looks at pixels at
+    all, only records them for a downstream consumer -- see PickG1Task).
+    """
+
+    def __init__(
+        self,
+        exp_config,
+        object_name_attr: str = "pickup_obj_name",
+        camera_names: list[str] | None = None,
+        uuid: str = "object_point_in_camera",
+    ) -> None:
+        self.object_name_attr = object_name_attr
+        all_camera_specs = {c.name: c for c in exp_config.camera_config.cameras}
+        self.camera_names = (
+            list(all_camera_specs.keys())
+            if camera_names is None
+            else [n for n in camera_names if n in all_camera_specs]
+        )
+        self.img_resolution = exp_config.camera_config.img_resolution
+        observation_space = gyms.Dict(
+            {
+                name: gyms.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
+                for name in self.camera_names
+            }
+        )
+        super().__init__(uuid=uuid, observation_space=observation_space)
+
+    def get_observation(
+        self, env, task, batch_index: int = 0, *args, **kwargs
+    ) -> dict[str, np.ndarray]:
+        from molmo_spaces.env.data_views import MlSpacesObject
+
+        result = {name: np.array([-1.0, -1.0], dtype=np.float32) for name in self.camera_names}
+        object_name = getattr(task.config.task_config, self.object_name_attr, None)
+        if not object_name:
+            return result
+
+        data = env.mj_datas[batch_index]
+        obj = MlSpacesObject(data=data, object_name=object_name)
+        world_point = np.append(obj.position.astype(np.float64), 1.0)
+        width, height = self.img_resolution
+
+        for name in self.camera_names:
+            camera = env.camera_manager.registry[name]
+            cam2world_gl = camera.get_pose()
+            focal = (height / 2.0) / np.tan(np.radians(camera.fov / 2.0))
+            p_cam = np.linalg.inv(cam2world_gl) @ world_point
+            xc, yc, zc = p_cam[:3]
+            if zc <= 1e-6:
+                continue  # behind the camera, not imageable
+            u = width / 2.0 + focal * xc / zc
+            v = height / 2.0 + focal * yc / zc
+            result[name] = np.array([u / width, v / height], dtype=np.float32)
+        return result

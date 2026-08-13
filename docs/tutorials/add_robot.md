@@ -129,7 +129,9 @@ we'll leave unimplemented for the moment, as we'll measure this empirically from
 
 ```python
 class XArm7GripperGroup(MJCFFrameMixin, GripperGroup):
-    def __init__(self, mj_data: MjData, base_group: XArm7BaseGroup, namespace: str = "") -> None:
+    def __init__(
+        self, mj_data: MjData, base_group: XArm7BaseGroup, namespace: str = ""
+    ) -> None:
         model = mj_data.model
         self._namespace = namespace
         joint_ids = [
@@ -387,7 +389,7 @@ In `xarm7_datagen.py`, add the following camera system config. Note the slightly
 
 ```python
 class XArm7CameraSystem(CameraSystemConfig):
-    img_resolution: tuple[int, int] = (624, 352)
+    img_resolution: tuple[int, int] = (640, 360)
 
     cameras: list[AllCameraTypes] = [
         MjcfCameraConfig(

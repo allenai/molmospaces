@@ -9,6 +9,7 @@ import numpy as np
 
 import molmo_spaces.configs.policy_configs_baselines  # noqa: F401
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+from molmo_spaces.configs.base_base_motion_config import BaseMotionBaseConfig
 from molmo_spaces.configs.base_nav_to_obj_config import NavToObjBaseConfig
 from molmo_spaces.configs.base_open_task_configs import OpeningBaseConfig, ClosingBaseConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
@@ -23,33 +24,30 @@ from molmo_spaces.configs.camera_configs import (
     BimanualYamCameraSystem,
     FrankaDroidCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
+    G1CameraSystem,
     RBY1GoProD455CameraSystem,
     I2rtYamCameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
     AStarNavToObjPolicyConfig,
+    FetchManBasePlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickAndPlaceNextToPlannerPolicyConfig,
     PickAndPlacePlannerPolicyConfig,
     PickPlannerPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import (
-    FloatingRUMRobotConfig,
-    FrankaRobotConfig,
-    I2rtYamRobotConfig,
-    RBY1Config,
     ActionNoiseConfig,
-)
-from molmo_spaces.configs.robot_configs import (
     BimanualYamRobotConfig,
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
+    G1Config,
     I2rtYamRobotConfig,
     RBY1Config,
-    ActionNoiseConfig,
 )
 from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
+    log_data_versions,
     resolve_license_policy,
     set_license_policy,
 )
@@ -67,7 +65,6 @@ from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.profiler_utils import Profiler
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("websockets").setLevel(logging.WARNING)
 
 
@@ -168,6 +165,9 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     elif task_type == "nav_to_obj":
         datagen_cfg = NavToObjBaseConfig()
         datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
+    elif task_type == "base_motion":
+        datagen_cfg = BaseMotionBaseConfig()
+        datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
     else:
         raise ValueError(f"Invalid task type: {task_type}")
 
@@ -232,6 +232,34 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.camera_config = RBY1GoProD455CameraSystem()
         datagen_cfg.task_sampler_config.base_pose_sampling_radius_range = (3.0, 10.0)
         datagen_cfg.task_sampler_config.robot_safety_radius = 0.35
+    elif robot == "g1":
+        datagen_cfg.robot_config = G1Config()
+        datagen_cfg.camera_config = G1CameraSystem()
+        datagen_cfg.task_sampler_config.robot_safety_radius = 0.35
+        if isinstance(datagen_cfg.policy_config, AStarNavToObjPolicyConfig):
+            if datagen_cfg.robot_config.use_holo_base:
+                # AStar's rotate-then-drive waypoint schedule works with the holo
+                # base's direct [x,y,theta] mocap-weld target, but G1WalkController
+                # converges markedly slower (see G1RobotView.is_close_to's higher
+                # default threshold, for the same reason): widen waypoint
+                # spacing/retries so segments are long enough to actually cruise
+                # instead of stop-and-reconverging every short segment. Mirrors
+                # InteractiveShellTask.nav_to()'s identical override.
+                datagen_cfg.policy_config = AStarNavToObjPolicyConfig(
+                    plan_fail_after_waypoint_steps=50,
+                    plan_max_retries=5,
+                    path_max_inter_waypoint_dist=1.0,
+                    path_max_inter_waypoint_angle=np.radians(30),
+                )
+            else:
+                # WBC mode (the default): G1Robot.update_control only reads a
+                # "base_velocity" [vx, vy, yaw_rate] action -- AStar's pre-baked
+                # waypoint schedule doesn't produce that, no matter how it's
+                # tuned. FetchManBasePlannerPolicy (a live per-step velocity-
+                # command controller, ported from g1_molmo) does, and is the
+                # default InteractiveShellTask.nav_to() already picks for this
+                # exact case (robot_config.name == "g1" and not use_holo_base).
+                datagen_cfg.policy_config = FetchManBasePlannerPolicyConfig()
     elif robot == "yam":
         datagen_cfg.robot_config = I2rtYamRobotConfig()
         datagen_cfg.camera_config = I2rtYamCameraSystem()
@@ -295,6 +323,7 @@ def main(args: argparse.ArgumentParser) -> None:
         exp_config.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)  # for eval
     elif args.config:  # 2) load an experiment config
         exp_config = get_config_class(args.config)()
+        exp_config.seed = args.seed
     else:  # 3) create config from arguments
         exp_config = setup_config(args)
 
@@ -348,7 +377,10 @@ if __name__ == "__main__":
     args.add_argument("--config", type=str, default=None, help="Load a fixed config")
     args.add_argument("--viewer", action="store_true", help="single step")
     args.add_argument(
-        "--robot", type=str, default="droid", help="franka, droid, rum, rby1, yam, or bimanual_yam"
+        "--robot",
+        type=str,
+        default="droid",
+        help="franka, droid, rum, rby1, g1, yam, or bimanual_yam",
     )
     args.add_argument(
         "--policy",
@@ -359,7 +391,16 @@ if __name__ == "__main__":
     )
 
     # Arguments below ONLY used for policy from scratch (no eval or config given)
-    args.add_argument("--task_type", type=str, default="pick", help="pick or open")
+    args.add_argument(
+        "--task_type",
+        type=str,
+        default="pick",
+        help=(
+            "pick, open, close, pick_and_place, pick_and_place_color, "
+            "pick_and_place_next_to, packing, nav_to_obj, base_motion, or "
+            "pick_with_avatars"
+        ),
+    )
     args.add_argument("--single_step", action="store_true", help="single step")
     args.add_argument(
         "--scene_dataset",
@@ -394,5 +435,14 @@ if __name__ == "__main__":
         choices=["none", "commercial_safe"],
         help="Filter non-commercial assets during datagen (not used for eval)",
     )
+    args.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="logging verbosity",
+    )
     args = args.parse_args()
+    logging.basicConfig(level=args.log_level)
+    log_data_versions()
     main(args)

@@ -31,7 +31,6 @@ from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mls
 # Dataset helpers for house index mapping
 from molmo_spaces.molmo_spaces_constants import (
     ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR,
-    DATA_TYPE_TO_SOURCE_TO_VERSION,
     get_scenes,
     get_scenes_root,
 )
@@ -311,9 +310,6 @@ class BaseMujocoTaskSampler:
         # If no seed provided, generate a random one
         seed = self.config.seed if self.config.seed is not None else np.random.randint(0, 100000000)
         self.seed_task_sampling(seed)
-
-        # Log data versions being used
-        log.info(f"Data versions in use: {DATA_TYPE_TO_SOURCE_TO_VERSION}")
 
     @property
     def env(self) -> BaseMujocoEnv:

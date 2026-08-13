@@ -2,12 +2,14 @@ import logging
 from typing import Any
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import BaseMujocoEnv
 from molmo_spaces.tasks.task import BaseMujocoTask
+from molmo_spaces.utils.linalg_utils import normalize_ang_error
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +25,19 @@ class NavToObjTask(BaseMujocoTask):
         self._reconstruct_candidate_list_if_needed(env)
 
         self.nav_objs = self._get_nav_objects()
+
+        # Path-quality tracking (how well the robot moves, not just whether it
+        # arrived) -- see reset()/get_info() for how these are populated.
+        self._episode_start_xy: np.ndarray | None = None
+        self._path_length: float = 0.0
+        self._prev_base_xy: np.ndarray | None = None
+
+        # Scene-disturbance tracking: how far scene objects have drifted from
+        # their episode-start positions (position only, no rotation) -- e.g. if
+        # the robot bumps a trajectory obstacle (or the goal itself) while
+        # moving. Populated on the first get_info() call after reset(), like
+        # _prev_base_xy above.
+        self._initial_object_positions: dict[str, np.ndarray] | None = None
 
     def _reconstruct_candidate_list_if_needed(self, env: BaseMujocoEnv) -> None:
         """Reconstruct candidate list from category for eval mode.
@@ -216,6 +231,17 @@ class NavToObjTask(BaseMujocoTask):
         sensors = get_nav_task_sensors(exp_config)
         return SensorSuite(sensors)
 
+    def reset(self):
+        # Reset path-quality tracking before super().reset() -- its own initial
+        # get_and_cache_all_step_information() call will populate _episode_start_xy/
+        # _prev_base_xy from wherever the robot actually starts, without counting
+        # that first observation as movement (see get_info()).
+        self._episode_start_xy = None
+        self._path_length = 0.0
+        self._prev_base_xy = None
+        self._initial_object_positions = None
+        return super().reset()
+
     def calculate_distance(self, index: int) -> float:
         """Calculate the distance to the NEAREST navigation object of the target type.
 
@@ -234,12 +260,61 @@ class NavToObjTask(BaseMujocoTask):
 
         return np.linalg.norm(nearest_obj.position[:2] - robot_base_pos[:2])
 
+    def calculate_rotation_error(self, index: int) -> float:
+        """Calculate the robot's heading error relative to facing the nearest
+        navigation object directly.
+
+        This is a path-quality metric (see get_info()), not a success
+        criterion -- get_reward()/judge_success() are position-only.
+
+        Args:
+            index: Index of the environment batch
+
+        Returns:
+            Absolute angle (radians, in [0, pi]) between the robot's current
+            heading and the heading that points directly at the nearest
+            object of the target type.
+        """
+        robot = self._env.robots[index]
+        robot_base_pose = robot.robot_view.base.pose
+        robot_base_pos = robot_base_pose[:2, 3]
+        robot_yaw = float(R.from_matrix(robot_base_pose[:3, :3]).as_euler("xyz")[2])
+
+        nearest_obj = self.get_nearest_nav_object(index)
+        delta = nearest_obj.position[:2] - robot_base_pos
+        target_yaw = float(np.arctan2(delta[1], delta[0]))
+
+        return float(abs(normalize_ang_error(target_yaw - robot_yaw)))
+
+    def _resolve_visibility_camera_name(self) -> str:
+        """Pick a camera to use for visibility checks.
+
+        Prefers 'head_camera' (RBY1's head-mounted camera, the original target
+        for this check), then any exocentric camera (wide external view, more
+        likely to see the nav target than an arm/wrist-mounted camera on
+        robots without a head, e.g. Franka), then falls back to whatever
+        camera is registered first.
+        """
+        registry = self._env.camera_manager.registry
+        if "head_camera" in registry:
+            return "head_camera"
+
+        camera_names = list(registry.keys())
+        if not camera_names:
+            raise KeyError("No cameras registered; cannot check object visibility.")
+
+        for name in camera_names:
+            if "exo" in name:
+                return name
+
+        return camera_names[0]
+
     def check_object_visible(self, index: int) -> bool:
-        """Check if the nearest navigation object is visible from head camera."""
+        """Check if the nearest navigation object is visible from a robot camera."""
         nearest_obj = self.get_nearest_nav_object(index)
 
-        # Use 'head_camera' (registry name), not 'robot_0/head_camera' (MJCF name)
-        visibility = self._env.check_visibility("head_camera", nearest_obj.name)
+        camera_name = self._resolve_visibility_camera_name()
+        visibility = self._env.check_visibility(camera_name, nearest_obj.name)
         return visibility > 0.0  # Any non-zero visibility fraction
 
     def get_reward(self) -> np.ndarray:
@@ -250,12 +325,13 @@ class NavToObjTask(BaseMujocoTask):
         """
         rewards = []
 
+        require_visibility = self.config.task_config.require_visibility
         for i in range(self._env.n_batch):
             # Calculate distance-based reward (negative distance)
             distance = self.calculate_distance(i)
 
-            # Success: robot is close enough AND object is visible (visual navigation)
-            if not self.check_object_visible(i):
+            # Success: robot is close enough AND (optionally) object is visible (visual navigation)
+            if require_visibility and not self.check_object_visible(i):
                 reward = 0.0
             else:
                 # Linearly scale reward from 1 → 0 as distance goes from 0 → threshold
@@ -289,20 +365,69 @@ class NavToObjTask(BaseMujocoTask):
         # Calculate rewards once for all environments
         rewards = self.get_reward()
 
+        # Path-quality tracking (single robot/batch_index 0 -- matches the rest of
+        # this class's n_batch==1 assumption, e.g. is_terminal()).
+        base_xy = self._env.robots[0].robot_view.base.pose[:2, 3]
+        if self._prev_base_xy is None:
+            self._episode_start_xy = base_xy.copy()
+        else:
+            self._path_length += float(np.linalg.norm(base_xy - self._prev_base_xy))
+        self._prev_base_xy = base_xy.copy()
+
+        total_object_displacement, max_object_displacement = self._get_object_displacement()
+
         for i in range(self._env.n_batch):
             distance = self.calculate_distance(i)
+            rotation_error = self.calculate_rotation_error(i)
             # Use pre-calculated reward
             success = rewards[i] > 0.0
+
+            start_to_goal_distance = float(
+                np.linalg.norm(self._episode_start_xy - self.get_nearest_nav_object(i).position[:2])
+            )
+            path_efficiency = (
+                start_to_goal_distance / self._path_length if self._path_length > 1e-6 else None
+            )
 
             metrics.append(
                 {
                     "position_error": distance,
+                    "rotation_error": rotation_error,
                     "success": success,
                     "episode_step": self.episode_step_count,
+                    "path_length": self._path_length,
+                    "start_to_goal_distance": start_to_goal_distance,
+                    "path_efficiency": path_efficiency,
+                    "total_object_displacement": total_object_displacement,
+                    "max_object_displacement": max_object_displacement,
                 }
             )
 
         return metrics
+
+    def _get_object_displacement(self) -> tuple[float, float]:
+        """Total and max displacement (position only, no rotation) of scene objects
+        from their episode-start positions -- e.g. objects the robot bumps while
+        moving. Lazily snapshots the baseline on the first call after reset()."""
+        om = self._env.object_managers[self._env.current_batch_index]
+
+        if self._initial_object_positions is None:
+            self._initial_object_positions = {
+                obj.name: obj.position.copy() for obj in om.get_mobile_objects()
+            }
+            return 0.0, 0.0
+
+        total_displacement = 0.0
+        max_displacement = 0.0
+        for name, initial_pos in self._initial_object_positions.items():
+            obj = om.get_object_by_name(name)
+            if obj is None:
+                continue
+            displacement = float(np.linalg.norm(obj.position - initial_pos))
+            total_displacement += displacement
+            max_displacement = max(max_displacement, displacement)
+
+        return total_displacement, max_displacement
 
     def get_obs_scene(self):
         """

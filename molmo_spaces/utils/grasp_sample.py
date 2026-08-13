@@ -166,7 +166,16 @@ def select_grasp_pose(
     vertical_cost_weight: float = 2.0,
     horizontal_cost_weight: float = 0,
     com_dist_cost_weight: float = 8.0,
+    top_k: int = 1,
 ) -> np.ndarray:
+    """... top_k: with check_ik=False, return the top_k non-colliding
+    candidates ranked by cost instead of just the single best one -- shape
+    (4, 4) when top_k=1 (default, preserves prior behavior for existing
+    callers), else (min(top_k, n_valid), 4, 4). Callers that want a
+    reachability-aware fallback across multiple candidates (e.g. when their
+    own IK isn't the arm-only kinematics check_ik=True would otherwise use)
+    can check_ik=False + top_k>1 and try each candidate themselves.
+    """
     robot = env.current_robot
     gripper_mg_id = robot.robot_view.get_gripper_movegroup_ids()[0]
     tcp_pose = robot.robot_view.get_move_group(gripper_mg_id).leaf_frame_to_world
@@ -228,12 +237,14 @@ def select_grasp_pose(
             )
             if noncolliding_grasp_idx is not None:
                 grasp_idx = noncolliding_close_grasp_ids[noncolliding_grasp_idx]
-    elif noncolliding_close_grasp_ids.size > 0:
-        grasp_idx = int(noncolliding_close_grasp_ids[0])
-    else:
-        grasp_idx = None
 
-    if grasp_idx is None:
+        if grasp_idx is None:
+            raise ValueError("No feasible grasp found")
+        return grasp_poses_world[grasp_idx]
+
+    if noncolliding_close_grasp_ids.size == 0:
         raise ValueError("No feasible grasp found")
 
-    return grasp_poses_world[grasp_idx]
+    if top_k == 1:
+        return grasp_poses_world[noncolliding_close_grasp_ids[0]]
+    return grasp_poses_world[noncolliding_close_grasp_ids[:top_k]]

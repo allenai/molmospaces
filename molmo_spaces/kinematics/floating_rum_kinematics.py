@@ -24,7 +24,13 @@ class FloatingRUMKinematics(MlSpacesKinematics):
         max_iter: int = 1000,
         damping: float = 1e-12,
         dt: float = 1.0,
+        move_group_weights: dict[str, float] | None = None,
     ):
+        # move_group_weights (see MlSpacesKinematics.ik) penalizes a move group's
+        # contribution to an iterative weighted-DLS Jacobian solve. FloatingRUM's
+        # "base" is placed directly/analytically below (no Jacobian, no
+        # iteration), so there's nothing to weight -- accepted only so this
+        # overrides the same call signature callers use for every robot.
         if move_group_id == "gripper":
             ee_to_base = self._robot_view.get_move_group("gripper").leaf_frame_to_robot
             pose = pose @ np.linalg.inv(ee_to_base)
