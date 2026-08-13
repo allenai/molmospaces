@@ -13,6 +13,7 @@ from molmo_spaces.configs.base_base_motion_config import BaseMotionBaseConfig
 from molmo_spaces.configs.base_nav_to_obj_config import NavToObjBaseConfig
 from molmo_spaces.configs.base_open_task_configs import OpeningBaseConfig, ClosingBaseConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
+from molmo_spaces.configs.base_pick_with_avatars_config import PickWithAvatarsBaseConfig
 from molmo_spaces.configs.policy_configs_baselines import (
     BimanualYamPiPolicyConfig,
     PiPolicyConfig,
@@ -170,6 +171,9 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     elif task_type == "base_motion":
         datagen_cfg = BaseMotionBaseConfig()
         datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
+    elif task_type == "pick_with_avatars":
+        datagen_cfg = PickWithAvatarsBaseConfig()
+        datagen_cfg.policy_config = PickPlannerPolicyConfig()
     else:
         raise ValueError(f"Invalid task type: {task_type}")
 

@@ -216,6 +216,32 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
             self.objaverse_oversampling_factor = 1
 
 
+class PickWithAvatarsTaskSamplerConfig(PickTaskSamplerConfig):
+    """PickTaskSamplerConfig plus scattering humanoid avatars (scene
+    population / soft obstacles) around a Pick episode, placed via the same
+    occupancy-map machinery used for robot placement."""
+
+    # True (default): articulated ragdolls (ASSETS_DIR/avatars_articulated,
+    # ~20-body ball-joint chain). False: static mannequins
+    # (ASSETS_DIR/avatars, single free-jointed body). Both need
+    # scripts/assets/convert_rocketbox_avatars.py run first (articulate/convert
+    # --all respectively) -- see molmo_spaces/tasks/pick_with_avatars_task_sampler.py.
+    avatar_articulated: bool = True
+    # None = auto-discover every UID in the registered avatar user asset library.
+    avatar_uids: list[str] | None = None
+    num_avatars: int = 10
+    avatar_namespace: str = "avatar/"
+    # Occupancy-map dilation radius used to find candidate points for avatars --
+    # deliberately separate from robot_safety_radius (tuned for a small stationary
+    # arm base): avatars are human-sized (~0.2m capsule radius), so a point that's
+    # "free" for the robot's much smaller radius often isn't wide enough to also
+    # fit a standing person without a placement collision.
+    avatar_agent_radius: float = 0.3
+    avatar_placement_radius: float = 0.15  # mirrors trajectory_obstacle_placement_radius
+    avatar_min_spacing: float = 0.6  # min distance between two avatars' sampled points
+    max_avatar_point_attempts: int = 20  # per-avatar retry budget for a valid map point
+
+
 class OpenTaskSamplerConfig(PickTaskSamplerConfig):
     robot_object_z_offset: float = -1.0
     robot_placement_radius_range: tuple[float, float] = (0.30, 0.8)
