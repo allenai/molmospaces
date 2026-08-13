@@ -307,7 +307,7 @@ class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     runtime information without modifying the camera config.
     """
 
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
     cameras: list[AllCameraTypes] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
@@ -359,7 +359,7 @@ class FrankaDroidCameraSystem(CameraSystemConfig):
 
     img_resolution: tuple[int, int] = (
         640,
-        360,
+        368,
     )  # 16:9 aspect ratio and divisible by 16px for video encoding
     cameras: list[AllCameraTypes] = [
         # Wrist-mounted camera (with depth for D405 simulation)
@@ -393,7 +393,7 @@ class FrankaEasyRandomizedDroidCameraSystem(CameraSystemConfig):
     runtime information without modifying the camera config.
     """
 
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
     cameras: list[AllCameraTypes] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
@@ -444,7 +444,7 @@ class FrankaOmniPurposeCameraSystem(CameraSystemConfig):
     runtime information without modifying the camera config.
     """
 
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
     cameras: list[AllCameraTypes] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
@@ -524,7 +524,7 @@ class FrankaRandomizedDroidCameraSystem(CameraSystemConfig):
     runtime information without modifying the camera config.
     """
 
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
     cameras: list[AllCameraTypes] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
@@ -770,7 +770,7 @@ class BimanualYamCameraSystem(CameraSystemConfig):
     The exo camera is positioned slightly back and higher to capture both arms.
     """
 
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
     cameras: list[AllCameraTypes] = [
         # Left wrist camera (defined in yam.xml, attached to left_link_6)
         MjcfCameraConfig(
@@ -823,7 +823,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
     Exo camera pos/forward/up are placeholders; the runtime loads stored poses from episode specs.
     """
 
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
 
     ref_level_ranges: ClassVar[
         list[tuple[float, dict[str, dict[str, float | tuple[float, ...]]]]]

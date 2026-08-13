@@ -10,7 +10,7 @@ from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 
 
 class XArm7CameraSystem(CameraSystemConfig):
-    img_resolution: tuple[int, int] = (640, 360)
+    img_resolution: tuple[int, int] = (640, 368)
 
     cameras: list[AllCameraTypes] = [
         MjcfCameraConfig(

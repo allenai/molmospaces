@@ -44,13 +44,13 @@ log = logging.getLogger(__name__)
 CAMERA_SYSTEM_IMG_RESOLUTIONS: dict[str, tuple[int, int]] = {
     "RBY1MjcfCameraSystem": (640, 480),
     "RBY1GoProD455CameraSystem": (1024, 576),
-    "FrankaRandomizedD405D455CameraSystem": (640, 360),
-    "FrankaDroidCameraSystem": (640, 360),
-    "FrankaEasyRandomizedDroidCameraSystem": (640, 360),
-    "FrankaRandomizedDroidCameraSystem": (640, 360),
+    "FrankaRandomizedD405D455CameraSystem": (640, 368),
+    "FrankaDroidCameraSystem": (640, 368),
+    "FrankaEasyRandomizedDroidCameraSystem": (640, 368),
+    "FrankaRandomizedDroidCameraSystem": (640, 368),
     "FrankaGoProD405D455CameraSystem": (640, 480),
     "FrankaGoProD405RandomizedCameraSystem": (640, 480),
-    "FrankaOmniPurposeCameraSystem": (640, 360),
+    "FrankaOmniPurposeCameraSystem": (640, 368),
 
 }
 
