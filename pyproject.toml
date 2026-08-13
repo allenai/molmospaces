@@ -47,7 +47,6 @@ dependencies = [
     "numpy-quaternion~=2024.0.10",
     "nvidia-ml-py",
     "omegaconf>=2.3.0",
-    "onnxruntime>=1.18.0",
     "open_clip_torch~=3.2.0",
     "opencv-python",
     "pandas>=2.3.1",
@@ -104,12 +103,14 @@ curobo = [
 mujoco = [
     "mujoco~=3.5.0",
 ]
-mink = [
+g1 = [
     # mink>=1.0 declares mujoco>=3.8.1, which conflicts with this project's
     # mujoco-warp/mujoco-mjx pin (~3.5.0); pip's resolver doesn't enforce that at
     # runtime, and mink's actual API surface used here works fine against 3.5.0.
     "mink",
     "mujoco~=3.5.0",
+    # G1WalkController's whole-body walking policy (see molmo_spaces.controllers.g1_walk).
+    "onnxruntime>=1.18.0",
 ]
 mujoco-filament = [
     "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",

@@ -61,7 +61,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco]
+          uv pip install --no-cache -e .[dev,mujoco,g1]
 
       - name: Log disk space
         run: |
@@ -122,7 +122,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco]
+          uv pip install --no-cache -e .[dev,mujoco,g1]
 
       - name: Run data generation tests (group ${{ matrix.group }}/4)
         run: |
@@ -230,7 +230,7 @@ jobs:
           # above -- that mismatch is what produced the "12.8 vs 13.0" CUDA error.
           # Skipping build isolation just for curobo makes it build against the
           # already-installed, correct torch.
-          uv pip install --no-cache -e .[dev,mujoco,curobo] \
+          uv pip install --no-cache -e .[dev,mujoco,g1,curobo] \
             --no-build-isolation-package nvidia-curobo
 
       - name: Run data generation curobo tests
