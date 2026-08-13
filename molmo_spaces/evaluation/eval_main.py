@@ -51,7 +51,7 @@ from molmo_spaces.evaluation.benchmark_schema import (
 )
 from molmo_spaces.evaluation.json_eval_runner import JsonEvalRunner
 from molmo_spaces.evaluation.robot_eval_overrides import OverrideFn
-from molmo_spaces.molmo_spaces_constants import DATA_TYPE_TO_SOURCE_TO_VERSION
+from molmo_spaces.molmo_spaces_constants import DATA_TYPE_TO_SOURCE_TO_VERSION, log_data_versions
 from molmo_spaces.utils.eval_utils import (
     EpisodeResult,
     collect_episode_results,
@@ -722,6 +722,7 @@ def run_evaluation(
 def main() -> None:
     """Command-line entry point for evaluation."""
     args = get_args()
+    log_data_versions()
 
     # Build eval camera config from CLI flags (None if --use_eval_cameras not passed)
     from molmo_spaces.utils.eval_camera_randomization_utils import (

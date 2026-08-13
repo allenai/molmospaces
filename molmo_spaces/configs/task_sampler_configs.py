@@ -132,6 +132,46 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         0.7,
     )  # Radius to sample robot base pose around receptacle
 
+    # Support-height randomization (port of g1_molmo's env.
+    # _randomize_target_support_height): each episode, move the pickup
+    # object's supporting surface (and the object with it) down to a
+    # randomly-drawn height, instead of always sitting at whatever height it
+    # was originally authored at. Off by default (only PickG1DataGenConfig
+    # enables it, to match g1_molmo's own default settings for direct
+    # comparison) since it changes the reachability distribution for
+    # existing, already-tuned pick configs. randomize_height_favored=0.95
+    # matches g1_molmo's own default exactly -- for most objects (whose
+    # natural height is below 0.95m), the sampled triangular distribution's
+    # mode ends up clipped to the object's own current height, so most draws
+    # land near the unmodified default and only occasionally go much lower.
+    randomize_height: bool = False
+    randomize_height_min: float = 0.0
+    randomize_height_favored: float = 0.95
+    randomize_height_max: float | None = None
+
+    # Robot standing-height randomization (port of g1_molmo's env
+    # randomize_robot_height): uniformly randomize the robot's initial WBC
+    # height command per episode, instead of always starting at the
+    # controller's fixed default. g1_molmo only applies this when the robot
+    # spawns already at its final grasp position (spawn_at_grasp -- i.e. no
+    # separate walk leg), which is what PickG1DataGenConfig's tight
+    # base_pose_sampling_radius_range models; applied unconditionally here
+    # since we don't distinguish nav vs grasp-only spawns.
+    randomize_robot_height: bool = False
+    randomize_robot_height_min: float = 0.7
+    randomize_robot_height_max: float = 0.793
+
+    # Reset-time grasp-reachability precheck (port of g1_molmo's
+    # agent.precheck_grasp, gated behind env's reset_precheck_grasp=True
+    # default): reject an (object, placement) attempt outright if not even
+    # the best-ranked grasp candidate is plausibly IK-reachable from the
+    # sampled robot pose, instead of committing to an episode that only
+    # discovers this later as a guaranteed-fail rollout during policy
+    # execution. G1-only (see PickTaskSampler._precheck_grasp_reachable);
+    # off by default since it adds a real per-attempt cost (a whole-body
+    # mink IK solve) to task sampling for every existing pick config.
+    reset_precheck_grasp: bool = False
+
     # -- Added pickup objects (pick-from-set mode) --
     # When not None, external objects matching these synsets/categories/UIDs are added to the
     # scene and used as pickup targets instead of the scene's own objects (which serve only as
@@ -221,6 +261,11 @@ class PickAndPlaceTaskSamplerConfig(PickTaskSamplerConfig):
     num_place_receptacles: int = 3
     # Auto-advance to next receptacle after this many episodes (0 = disabled)
     episodes_per_receptacle: int = 2
+
+    # XXX: below are WIP changes made for testing, don't commit!
+    max_robot_to_target_dist: float = 10.0
+    max_robot_to_obj_dist: float = 10.0
+    max_robot_to_place_receptacle_dist: float = 10.0
 
 
 class PickAndPlaceNextToTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
@@ -325,3 +370,32 @@ class NavToObjTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     verbose: bool = False  # Whether to print verbose debug info
 
     max_valid_candidates: int = 6  # maximum number of instances of type in scene to accept the task
+
+    # Base-motion evaluation: with this probability (0-100), place the robot near a
+    # randomly sampled scene object other than the nav target (mirroring how
+    # pick-and-place places one object near another), instead of always starting
+    # near the nav target itself. 0 (default) preserves prior behavior exactly.
+    start_near_object_probability: float = 0.0
+    min_start_object_dist: float = 2.0  # meters; kept above succ_pos_threshold's default
+    max_start_object_dist: float = 5.0  # meters
+    # Radius range for placing the robot around the sampled start object. Deliberately
+    # tighter than base_pose_sampling_radius_range (whose (1.0, 10.0) default is tuned
+    # for "start far from the nav target"): confirmed empirically that reusing that
+    # wide range let the robot land closer to the goal than to the intended start
+    # object, defeating the point of a start-to-goal traversal.
+    start_object_sampling_radius_range: tuple[float, float] = (0.5, 1.5)
+
+    # Trajectory obstacles: scatter random scene objects along the robot's actual
+    # start->goal path to make navigation harder (force detours instead of a clear
+    # line). Off by default -- opt in explicitly, since it mutates scene contents.
+    sample_trajectory_obstacles: bool = False
+    num_trajectory_obstacles: int = 3
+    trajectory_obstacle_lateral_jitter: float = 0.5  # meters, perpendicular to the line
+    trajectory_obstacle_min_frac: float = 0.15  # fraction along start->goal line
+    trajectory_obstacle_max_frac: float = 0.85  # (avoid placing right on either endpoint)
+    trajectory_obstacle_placement_radius: float = 0.15  # meters, passed to place_object_near
+    # Height above the floor to drop obstacles from, regardless of the object's
+    # original resting surface (counter, floor, etc.) -- physics settles the rest
+    # once the episode steps. Small enough to settle quickly, large enough to
+    # clear typical floor clutter without spawning inside it.
+    trajectory_obstacle_drop_height: float = 0.1

@@ -801,6 +801,36 @@ class RobotView(ABC):
         ]
         return self._gripper_movegroup_ids_cache
 
+    def get_ik_excluded_movegroup_ids(self) -> list[str]:
+        """Move groups that generic IK-based manipulation policies should never
+        unlock or overwrite, on top of grippers (see get_gripper_movegroup_ids()).
+
+        Default empty: existing robots (RBY1's holonomic base, Franka's fixed
+        mount, etc.) have few enough non-arm DOF that letting a manipulation
+        policy's IK solver treat "every non-gripper move group" as free to help
+        reach a target (see base_object_manipulation_planner_policy._tcp_to_jp_fn)
+        is reasonable. Override for robots where that assumption breaks down --
+        e.g. a bipedal humanoid's legs, which have no business being moved by an
+        arm-reach IK solve.
+        """
+        return []
+
+    def get_ik_movegroup_weights(self) -> dict[str, float]:
+        """Per-move-group penalty weights for generic IK-based manipulation
+        policies' weighted damped-least-squares solve (see
+        MlSpacesKinematics.ik's move_group_weights). Move groups not present
+        default to weight 1.0 (unpenalized).
+
+        Default empty (every unlocked move group weighted equally, i.e. no
+        change from a plain damped-least-squares solve). Override for a mobile
+        robot whose base should be usable as a last-resort redundant DOF for
+        arm-reach IK (see get_ik_excluded_movegroup_ids) without it wandering
+        far from its current position for every reach -- e.g. a large weight
+        on "base" lets it move a little to help close a marginal reach gap,
+        while a small gap is still closed with the arm alone.
+        """
+        return {}
+
     def get_jacobian(self, move_group_id: str, input_move_group_ids: list[str]) -> np.ndarray:
         """Calculate the Jacobian of a move group with respect to specific input move groups.
 

@@ -7,6 +7,8 @@ style, applied to the offline distortion utility) -- this only exercises the
 live cubemap-compositing path that fisheye_warping.py doesn't cover.
 """
 
+import sys
+
 import mujoco
 import numpy as np
 import pytest
@@ -63,6 +65,8 @@ def renderer(model):
 
 @pytest.fixture
 def mj_renderer(model):
+    if sys.platform == "darwin":
+        pytest.skip("mujoco.Renderer/CGL can't create an offscreen context headlessly on macOS")
     r = mujoco.Renderer(model, 64, 64)
     yield r
     r.close()

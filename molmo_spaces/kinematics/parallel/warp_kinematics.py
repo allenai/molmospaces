@@ -544,6 +544,7 @@ class SimpleWarpKinematics(ParallelKinematics):
         max_iter: int = 50,
         damping: float = 1e-12,
         dt: float = 1.0,
+        move_group_weights: dict[str, float] | None = None,
     ):
         """
         Solve inverse kinematics to reach a target pose.
@@ -560,6 +561,12 @@ class SimpleWarpKinematics(ParallelKinematics):
             max_iter: The maximum number of iterations.
             damping: The damping factor for the Levenberg-Marquardt solver.
             dt: The time step for velocity integration.
+            move_group_weights: Unused -- accepted only so this matches the call
+                signature used for every robot (see MlSpacesKinematics.ik, which
+                does implement per-move-group weighting for its CPU DLS solve).
+                self._create_jacobian_mask is a binary lock/unlock mask, not a
+                per-group weight, so there's currently no equivalent to apply
+                this to on the warp/GPU path.
 
         Returns:
             A list of qpos dictionaries for each robot in the batch, or a single qpos dictionary if unbatched.

@@ -988,7 +988,10 @@ class ObjectManager:
                             for tt in self.get_possible_object_types(aname):
                                 if tt == "room":
                                     return aname
-                        raise ValueError("BUG? Floor has no room ancestor")
+                        # Scenes without room-level geometry (e.g. iTHOR floor plans,
+                        # which are single-room and have no "room_"-prefixed bodies)
+                        # have no room ancestor to find - there's just the one room.
+                        return None
 
                 # else: keep searching
                 return dfs(support_name)
@@ -1009,13 +1012,13 @@ class ObjectManager:
         obj = self.get_object(object_or_name_or_id)
         name = obj.name
         category = self.get_annotation_category(obj)
-        synset = self.get_annotation_synset(obj)
-        pos = obj.position
         support = self.get_support_below(obj, receptacle_types)
         room = self.infer_room_name(obj, receptacle_types)
-        on_str = f"on {support}" if support else "on <unknown>"
-        room_str = f"in {room}" if room else "in <unknown>"
-        return f"{name} (category={category} synset={synset}) center=({pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}) {on_str}, {room_str}"
+        if support and support != room:
+            loc_str = f"on {support} ({room})" if room else f"on {support}"
+        else:
+            loc_str = f"in {room}" if room else "in <unknown>"
+        return f"{name} [{category}] {loc_str}"
 
     @staticmethod
     def prefilter_with_clip(

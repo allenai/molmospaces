@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from mujoco import MjData, MjSpec, mjtEq, mjtObj
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.sensors import TCPPoseSensor
 from molmo_spaces.kinematics.floating_rum_kinematics import FloatingRUMKinematics
@@ -65,8 +66,22 @@ class FloatingRUMRobot(Robot):
     def compute_control(self) -> None:
         assert self._last_cmd_action is not None
         for mg_id, ctrl in self._last_cmd_action.items():
+            # Some policies (e.g. AStarPlannerPolicy) include non-move-group control
+            # flags like "done" in the action dict; only "done": True is meant to be
+            # consumed (by BaseMujocoTask._apply_action, which pops it beforehand).
+            if mg_id not in self._robot_view.move_group_ids():
+                continue
             if ctrl is not None:
-                self._robot_view.get_move_group(mg_id).ctrl = ctrl
+                move_group = self._robot_view.get_move_group(mg_id)
+                if mg_id == "base" and len(ctrl) == 3:
+                    # Nav policies (e.g. AStarPlannerPolicy) command the mobile base as
+                    # a planar [x, y, theta] waypoint. Translate that into this floating
+                    # base's [x, y, z, qw, qx, qy, qz] ctrl, keeping the current height
+                    # and a level (roll=pitch=0) orientation.
+                    current_z = move_group.ctrl[2]
+                    quat = R.from_euler("z", ctrl[2]).as_quat(scalar_first=True)
+                    ctrl = np.array([ctrl[0], ctrl[1], current_z, *quat])
+                move_group.ctrl = ctrl
 
     def reset(self):
         self._last_cmd_action = None

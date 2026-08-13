@@ -156,6 +156,189 @@ class PickPlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
             self.policy_factory = PickPlannerPolicy
 
 
+class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
+    """PickPlannerPolicy variant using mink's whole-body IK (waist + pelvis
+    height assist reach) instead of arm-only analytical IK. G1-only; requires
+    G1Config's default WBC-walking mode (use_holo_base=False). See
+    FetchmanPickPlannerPolicy's docstring.
+    """
+
+    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+
+    # g1_molmo has no mid-trajectory grip-quality abort at all: it never
+    # checks (or retries a plan over) how tightly the gripper closed --
+    # success is judged purely at the end, by the task's own reward/contact
+    # check (see PickG1Task). Our own TCPMoveSequence.check_failure's
+    # gripper_empty_threshold-based abort (base default 0.002) fires the
+    # instant the "lift" phase starts if the gripper closed too near its own
+    # fully-closed joint limit -- for a thin-rimmed object like a bowl, a
+    # perfectly good grip can land right in that rejection zone (confirmed
+    # empirically: real failures landed just 0.00003-0.0018m past threshold,
+    # firing before the lift motion had even begun), aborting a pick before
+    # it ever gets a chance to succeed. -inf disables the comparison
+    # entirely (inter_finger_dist can never be less than -inf) rather than
+    # just loosening the margin, matching g1_molmo's real "never abort for
+    # this reason" behavior. Safe to disable: PickG1Task's own success check
+    # independently requires real lift height AND real finger-object
+    # contact, so a genuinely-dropped object still can't report success.
+    gripper_empty_threshold: float = float("-inf")
+
+    # g1_molmo's GraspPolicy.LIFT -- how far above the grasp pose the lift
+    # target sits. Overrides PickPlannerPolicyConfig's postgrasp_z_offset=0.08
+    # (a different, arm-only-IK-tuned pipeline's value; not g1_molmo-derived).
+    postgrasp_z_offset: float = 0.15
+
+    # Unlike PickPlannerPolicy's pregrasp_z_offset (a pure world-Z lift above the
+    # grasp pose), g1_molmo's reference retreats the pregrasp pose along the
+    # grasp pose's own local Z (approach) axis instead, by a randomly-drawn
+    # distance -- see FetchmanPickPlannerPolicy.PREGRASP_OFFSET_RANGE and
+    # _compute_target_poses (ported directly, including the randomization: not
+    # just the direction) and g1_molmo's GraspPolicy.PREGRASP_OFFSET.
+
+    # How many cost-ranked grasp candidates FetchmanPickPlannerPolicy tries
+    # (falling through to the next if pregrasp/grasp/lift IK fails) before
+    # giving up. Matches g1_molmo's GraspPolicy.plan() PATH_CHECK_K=5 ("the
+    # lowest-error candidate is almost always the right pick -- the rest are
+    # insurance"). select_grasp_pose's cost function has no notion of
+    # "reachable from the robot's current pose", so the single geometrically-
+    # best candidate can require more reach/twist than a nearby alternative.
+    grasp_candidates_to_try: int = 5
+
+    # Low-pass filter coefficient for the height/waist *command* sent to
+    # G1WalkController each tick, applied in FetchmanPickPlannerPolicy.
+    # _tcp_to_jp_fn: new = old + alpha * (fresh_ik_solution - old). Matches
+    # g1_molmo's own execution loop exactly (see _advance_grasp: height_cmd =
+    # self._height_cmd + 0.1 * (ik_h - self._height_cmd)): both sides now run
+    # at the same real 5ms policy tick (G1Config.physics_timestep +
+    # PickG1DataGenConfig.policy_dt_ms=5.0, see their own docstrings), so the
+    # raw alpha is directly comparable again -- unlike an earlier version of
+    # this port, which copied this same 0.1 while still running at a 66ms
+    # (then 4ms) tick, giving it a ~13x (then ~1.25x) slower real-time time
+    # constant than g1_molmo actually has. Re-derive this (and IK_DECIM)
+    # together if either side's tick duration ever changes again.
+    height_waist_smoothing_alpha: float = 0.1
+
+    # PickPlannerPolicy._compute_trajectory uses speed_fast for the pregrasp
+    # approach (safe/quick since not near the object yet) and speed_slow for
+    # grasp/lift. That assumes near-instantaneous joint tracking, true for the
+    # arm's JointPosController but not for G1's waist/height, which move via
+    # G1WalkController's torque-PD-tracked WBC (a trained ONNX policy
+    # converging over real simulated dynamics). Slowing the pregrasp approach
+    # to match speed_slow reduces (but doesn't eliminate) the lag.
+    speed_fast: float = 0.08
+
+    # g1_molmo's reference GraspPolicy has no analogue of TCPMoveSequence's
+    # mid-motion tracking-error abort at all (see _grasp_phase_done in
+    # ~/code/g1_molmo/molmospaces/agents/policy.py): it just keeps refining
+    # the WBC's IK target every tick and only *advances* a phase once the
+    # gripper actually converges near it (pos_err<0.035, with a minimum-step
+    # floor but no maximum) -- transient lag while the WBC is still catching
+    # up is expected and never treated as a failure. TCPMoveSequence's fixed-
+    # duration-then-settle model doesn't have a real equivalent of "wait for
+    # convergence", so approximate it here: don't abort on transient tracking
+    # error (WBC needs real time, not instant tracking) and give a generous
+    # fixed settle window at the end of each move for it to actually catch up.
+    tcp_pos_err_threshold: float = 1.0
+    tcp_rot_err_threshold: float = np.radians(60.0)
+    move_settle_time: float = 1.0
+
+    # select_grasp_pose's "vertical_cost_weight * dists_up" term (its base
+    # ObjectManipulationPlannerPolicyConfig default is 2.0) uses the *signed*
+    # z-component of the grasp frame's approach axis, not abs/squared -- so it
+    # doesn't penalize vertical orientations symmetrically as intended, it
+    # actively rewards top-down approaches (dists_up ~ -1 gives cost ~ -2.0).
+    # Confirmed by direct comparison against g1_molmo's real grasp choices for
+    # the same object/library: g1_molmo (no cost-based re-ranking, just raw
+    # IK-error sort) consistently lands on horizontal side grasps, while ours
+    # was ranking top-down cap grasps highest for the identical candidate
+    # pool. OpenClosePlannerPolicyConfig already independently discovered
+    # this and works around it the same way: disable the buggy signed term
+    # and use grasp_horizontal_cost_weight's squared, symmetric term instead.
+    grasp_vertical_cost_weight: float = 0.0
+    grasp_horizontal_cost_weight: float = 2.0
+
+    # Walk phase (see FetchmanPickPlannerPolicy._plan_walk_path/_update_nav_command):
+    # g1_molmo's G1Controller spawns the robot anywhere reachable in the scene
+    # (its own initial-spawn radius is unrelated to arm reach) and A*-walks it
+    # to a standoff point near the pickup object before ever attempting the
+    # arm-only WBC grasp reach -- PickPlannerPolicy/FetchmanPickPlannerPolicy
+    # previously had no such phase and assumed the task sampler's
+    # place_robot_near already left the robot within arm's reach. These fields
+    # mirror FetchManBasePlannerPolicyConfig's (the existing standalone port of
+    # g1_molmo's navigation policy) field-for-field, so the two share identical
+    # walk behavior/tuning; kept as a separate field set (not inherited from a
+    # shared base) since the two config classes don't share a common ancestor.
+    planner_config: AStarPlannerConfig = AStarPlannerConfig()
+    downscale: int = 4
+    wall_radius: int = 10
+    wall_gain: float = 6.0
+    wall_exp: float = 2.0
+    simplify_clearance: int = 6
+    waypoint_reach: float = 0.10
+    # g1_molmo's own value (0.05) plus the smoothstep brake's min_speed floor
+    # (needed to clear G1Robot's velocity deadband -- see
+    # _update_nav_command's floor-at-min_speed comment) combine into an
+    # effective minimum turning radius of roughly min_speed/drive_max_turn
+    # (~0.15/0.3 = 0.5m here) that the robot physically cannot converge
+    # tighter than while still translating -- demanding arrival within 0.09m
+    # (final_reach+stop_pad) left it orbiting the goal forever instead of
+    # ever satisfying the check. Raised well above that radius so "close
+    # enough" is reachable; the terminal facing turn (pure rotation, no
+    # minimum-speed constraint) handles final heading precision instead.
+    final_reach: float = 0.3
+    turn_kp: float = 2.0
+    max_turn: float = 1.0
+    face_turn: float = 1.2
+    # See FetchManBasePlannerPolicyConfig's face_tol/face_wp_tol comment: both
+    # loosened from g1_molmo's original 0.1/0.25 rad, which sit at/below
+    # G1Robot's G1WalkController's own documented ~15deg yaw-tracking ceiling
+    # and cause a turn/drive hunting oscillation that never converges.
+    face_tol: float = 0.35
+    face_wp_tol: float = 0.524
+    speed: float = 0.4
+    min_speed: float = 0.15
+    brake_dist: float = 0.70
+    stop_pad: float = 0.04
+    drive_max_turn: float = 0.3
+    # Standoff distance from the pickup object for the walk goal (NavGoalSampler's
+    # distance_threshold) -- matches FetchManBasePlannerPolicy/NavGoalSampler's own
+    # default rather than a Fetchman-specific value, since the standoff point just
+    # needs to land within arm's reach, same requirement either policy has.
+    walk_goal_distance_threshold: float = 0.5
+
+    # g1_molmo's GRASP_PROFILE (spawn_at_grasp=True, which PickG1DataGenConfig's
+    # short base_pose_sampling_radius_range=(0.2, 0.5) mirrors) never invokes A*
+    # walk-planning at all -- the env spawns the robot directly at the intended
+    # standoff pose, so start==goal by construction and there's nothing to walk.
+    # Our own task sampler places the robot within a similarly short radius of
+    # the object, but independently, via its own occupancy-based validity check
+    # -- not the same computation NavGoalSampler/A* use to pick and route to a
+    # standoff point, so the two don't always agree on what's "reachable" even
+    # when the robot is already sitting almost exactly there. Confirmed
+    # empirically: a real, deterministic case (procthor-10k-val house 0's bowl)
+    # where the robot spawns ~0.85m from a valid NavGoalSampler standoff point
+    # (comfortably within arm's reach, no meaningful walk needed) but A*'s
+    # coarse costmap reports no path at all -- almost certainly the robot's own
+    # spawn cell (right next to the same counter the bowl sits on) falling
+    # inside the wall-clearance inflation buffer that keeps the coarse grid
+    # simple. If the sampled standoff goal is already within this distance,
+    # skip A* and treat the robot as arrived on the spot, matching what
+    # g1_molmo's short-radius spawn effectively guarantees.
+    direct_arrival_max_dist: float = 1.2
+
+    def model_post_init(self, __context) -> None:
+        # Skip PickPlannerPolicyConfig.model_post_init (it would set policy_cls
+        # to PickPlannerPolicy) and go straight to its own parent.
+        super(PickPlannerPolicyConfig, self).model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.solvers.object_manipulation.fetchman_pick_planner_policy import (
+                FetchmanPickPlannerPolicy,
+            )
+
+            self.policy_cls = FetchmanPickPlannerPolicy
+            self.policy_factory = FetchmanPickPlannerPolicy
+
+
 class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
     move_settle_time: float = 0.5
@@ -426,6 +609,78 @@ class AStarNavToObjPolicyConfig(NavToObjPlannerPolicyConfig):
 
             self.policy_cls = AStarSmoothPlannerPolicy
             self.policy_factory = AStarSmoothPlannerPolicy
+
+
+class FetchManBasePlannerPolicyConfig(NavToObjPlannerPolicyConfig):
+    """Configuration for FetchManBasePlannerPolicy -- a port of g1_molmo's
+    navigation policy (molmospaces/agents/policy.py in the g1_molmo reference
+    repo). Unlike AStarPlannerPolicy, which pre-bakes an explicit
+    rotate-then-drive waypoint schedule at plan time, this recomputes a
+    [vx, vy, yaw_rate] base velocity command from the robot's live pose every
+    step (see FetchManBasePlannerPolicy._update_nav_command)."""
+
+    policy_cls: type = None
+
+    # Grid A* (ported from g1_molmo's _astar/_coarsen_and_dist)
+    planner_config: AStarPlannerConfig = AStarPlannerConfig()
+    downscale: int = 4  # Coarsening factor for the A* search grid
+    wall_radius: int = 10  # Distance (in coarse cells) at which the wall-clearance cost reaches 0
+    wall_gain: float = 6.0
+    wall_exp: float = 2.0
+    simplify_clearance: int = 6  # Px clearance required for a line-of-sight path shortcut
+
+    # Live waypoint-following control law (ported from g1_molmo's _update_nav_command)
+    waypoint_reach: float = 0.10  # Distance to advance to the next non-final waypoint
+    # See FetchmanPickPlannerPolicyConfig's final_reach comment: raised from
+    # g1_molmo's 0.05 to clear the effective minimum turning radius imposed by
+    # G1Robot's velocity deadband/floor (min_speed/drive_max_turn) -- 0.05
+    # left the robot orbiting the goal forever instead of ever arriving.
+    final_reach: float = 0.3  # Distance to consider the final waypoint reached
+    turn_kp: float = 2.0  # Proportional gain, heading error -> yaw rate
+    max_turn: float = 1.0  # Max yaw rate (rad/s) while driving
+    face_turn: float = 1.2  # Max yaw rate (rad/s) during the terminal face-the-target turn
+    # g1_molmo's own values here (0.1/0.25 rad) sit at or below G1Robot's
+    # G1WalkController's own documented yaw-tracking ceiling (~15deg -- see
+    # g1.py's _YAW_GATE_THRESHOLD comment: "G1WalkController's yaw tracking
+    # has its own residual convergence ceiling around 15deg"). At those tight
+    # values the heading error can never settle inside tolerance, so the
+    # turn/drive branches hunt back and forth indefinitely instead of
+    # converging -- confirmed empirically via FetchmanPickPlannerPolicy's walk
+    # phase stalling ~0.3m short of goal, oscillating between a pure-turn and
+    # a drive command every few dozen ticks. Loosened to comfortably clear
+    # that ceiling, matching (face_wp_tol) or exceeding (face_tol) the already
+    # -proven _YAW_GATE_THRESHOLD=30deg used by G1Robot's own sibling
+    # (_waypoint_to_velocity_target) nav-command path.
+    face_tol: float = 0.35  # ~20deg -- heading error tolerance to end the terminal facing turn
+    face_wp_tol: float = 0.524  # 30deg -- heading error above which translation is suppressed
+    speed: float = 0.4  # Cruise linear speed (m/s)
+    min_speed: float = 0.15  # Minimum linear speed while still short of a non-final waypoint
+    brake_dist: float = 0.70  # Distance from the goal at which the smoothstep brake engages
+    stop_pad: float = 0.04  # Extra margin added to final_reach to absorb walking inertia
+    # Separate, tighter yaw-rate cap for the *simultaneous* turn correction
+    # applied while already translating (once heading is within face_wp_tol) --
+    # distinct from max_turn/face_turn, which are for pure in-place turning
+    # with zero forward command. Confirmed empirically (reproduces identically
+    # via the pre-existing, unmodified FetchManBasePlannerPolicy, so this is a
+    # genuine G1WalkController characteristic, not specific to this port):
+    # G1WalkController's real gait effectively stalls forward progress to a
+    # crawl when commanded a forward speed together with a yaw_rate anywhere
+    # close to max_turn (e.g. vx=0.2 + yaw_rate=0.5-0.6 measured near-zero net
+    # displacement over 30+ seconds), even though either alone works fine.
+    drive_max_turn: float = 0.3
+
+    plan_max_retries: int = 3  # Number of alternate target candidates to try if planning fails
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy import (
+                FetchManBasePlannerPolicy,
+            )
+
+            self.policy_cls = FetchManBasePlannerPolicy
+            self.policy_factory = FetchManBasePlannerPolicy
 
 
 class DummyPolicyConfig(BasePolicyConfig):

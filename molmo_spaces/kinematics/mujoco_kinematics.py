@@ -174,6 +174,7 @@ class MlSpacesKinematics:
         max_iter: int = 1000,
         damping: float = 1e-12,
         dt: float = 1.0,
+        move_group_weights: dict[str, float] | None = None,
     ):
         """Solve inverse kinematics to reach a target pose.
 
@@ -192,6 +193,15 @@ class MlSpacesKinematics:
             max_iter: Maximum number of iterations
             damping: Damping factor for the damped least squares solution
             dt: Time step for velocity integration
+            move_group_weights: Optional per-move-group penalty weights (default 1.0)
+                for the weighted damped-least-squares solve. A move group with weight
+                W moves ~W times less than a weight-1.0 group for the same error
+                reduction. Use a large weight (e.g. 100) on a move group that should
+                only serve as a last-resort redundant DOF -- e.g. a mobile robot's
+                base, which can technically help an arm reach but shouldn't wander
+                far to do so when the arm alone is close to sufficient. Move groups
+                not present in the dict default to weight 1.0 (unpenalized, same as
+                omitting this argument entirely).
 
         Returns:
             Dictionary mapping move group IDs to their joint positions if successful, None if failed
@@ -213,6 +223,18 @@ class MlSpacesKinematics:
             pose = self._robot_view.base.pose @ pose
 
         move_group = self._robot_view.get_move_group(move_group_id)
+
+        weights = move_group_weights or {}
+        inv_weights = np.concatenate(
+            [
+                np.full(
+                    self._robot_view.get_move_group(mg_id).vel_dim,
+                    1.0 / weights.get(mg_id, 1.0),
+                )
+                for mg_id in unlocked_move_group_ids
+            ]
+        )
+
         for i in range(max_iter):
             mujoco.mj_fwdPosition(self._mj_model, self._mj_data)
             mujoco.mj_sensorPos(self._mj_model, self._mj_data)
@@ -233,13 +255,17 @@ class MlSpacesKinematics:
                 break
 
             J: np.ndarray = self._robot_view.get_jacobian(move_group_id, unlocked_move_group_ids)
-            if (JJT_det := np.linalg.det(J @ J.T)) < 1e-20:
+            # Weighted damped least squares: q_dot = Winv @ J^T @ (J @ Winv @ J^T + damping*I)^-1 @ err,
+            # with Winv = diag(inv_weights). J_scaled == J @ Winv (columns scaled by 1/weight);
+            # J @ J_scaled^T == J @ Winv @ J^T since Winv is diagonal (hence symmetric).
+            J_scaled = J * inv_weights[None, :]
+            if (JJT_det := np.linalg.det(J @ J_scaled.T)) < 1e-20:
                 log.warning(
                     f"[MlSpacesKinematics][{self._robot_view.name}] IK Jacobian is rank deficient! det(JJ^T)={JJT_det:.0e}"
                 )
 
-            H = J @ J.T + damping * np.eye(J.shape[0])
-            q_dot = J.T @ np.linalg.solve(H, err)
+            H = J @ J_scaled.T + damping * np.eye(J.shape[0])
+            q_dot = J_scaled.T @ np.linalg.solve(H, err)
             dq = q_dot * dt
 
             j = 0

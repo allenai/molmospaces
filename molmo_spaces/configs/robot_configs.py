@@ -115,6 +115,30 @@ class BaseRobotConfig(Config):
     # Action noise configuration - applied per-robot in Robot.apply_action_noise()
     action_noise_config: ActionNoiseConfig | None = None
 
+    # If set, task samplers should place the robot's base at this world-frame z
+    # height rather than deriving spawn height from the target object's height
+    # (target_z + robot_object_z_offset +/- noise, see PickTaskSampler). That
+    # target-relative placement assumes an adjustable base height (RBY1's torso
+    # lift, FloatingRUM's freely-positioned floating base) and produces an
+    # unnatural spawn height for a robot whose base height is fixed by its own
+    # controller (e.g. G1WalkController's WBC holds a constant standing height
+    # regardless of where the robot is placed) -- planning code that reads the
+    # robot's pose at task reset (before physics has run) would then see a
+    # spawn height physics is about to correct away, silently invalidating any
+    # grasp/reach poses computed from it.
+    fixed_base_height: float | None = None
+
+    # If set, overrides the scene's compiled model.opt.timestep (normally
+    # 0.002s, set in molmo_spaces/resources/base_scene.xml) once the robot is
+    # constructed -- see Robot subclasses' __init__ (e.g. G1Robot's, which
+    # sets this for G1). None (default) leaves the scene's own timestep
+    # untouched. Only override this for a robot whose controller was
+    # trained/tuned at a specific physics rate that differs from our own
+    # scene default (see G1Config's own physics_timestep for why G1 needs
+    # this) -- mutating model.opt.timestep for a robot whose controllers
+    # don't care is pure risk with no benefit.
+    physics_timestep: float | None = None
+
     def model_post_init(self, _context):
         """Ensure action_noise_config is always initialized, even when loading from old configs."""
         if self.action_noise_config is None:
@@ -327,12 +351,21 @@ class RBY1MOpenCloseConfig(RBY1MConfig):
 
 
 class G1Config(BaseRobotConfig):
-    """Configuration for the Unitree G1 humanoid robot (standing only for now).
+    """Configuration for the Unitree G1 humanoid robot.
 
-    No walking controller yet (see the project roadmap) -- every actuated
-    move group is driven by a plain JointPosController, relying on the MJCF's
-    own tuned PD actuator gains. The base has no actuators (free-floating
-    pelvis integrated directly by MuJoCo's physics).
+    Two base control modes (see `use_holo_base`):
+    - Whole-body walking (default): the combined `legs_waist` move group is
+      driven by `G1WalkController` (a PD-torque law plus an ONNX walking
+      policy -- see `molmo_spaces.controllers.g1_walk`), commanded via
+      `set_target([vx, vy, yaw_rate, height, waist_yaw, waist_roll,
+      waist_pitch])`. The base has no actuators (free-floating pelvis
+      integrated directly by MuJoCo's physics).
+    - Holo base (`use_holo_base=True`): legs_waist instead holds a static pose
+      via a plain JointPosController (no active balance), and the base is
+      moved directly through a mocap-weld target (see `G1HoloBaseGroup`).
+
+    Both arms and the right gripper always stay on plain JointPosControllers,
+    relying on the MJCF's own tuned PD actuator gains.
     """
 
     robot_cls: type[G1Robot] | None = G1Robot
@@ -342,24 +375,79 @@ class G1Config(BaseRobotConfig):
     name: str = "g1"
     robot_xml_path: Path = Path("g1_dex.xml")
     # Default standing pose, taken from the source G1 stack's validated
-    # gravity-settled/nominal joint values.
+    # gravity-settled/nominal joint values. Note this is the *reset* pose, a
+    # different (more upright) pose than G1WalkController's own internal
+    # `_DEFAULT_POSE` action-space reference offset -- both exist in the
+    # source stack too, for the same reason (env reset vs. policy reference).
     init_qpos: dict[str, np.ndarray] = {
-        "legs": np.array(
-            [-0.312, 0.0, 0.0, 0.669, -0.363, 0.0, -0.312, 0.0, 0.0, 0.669, -0.363, 0.0]
+        "legs_waist": np.array(
+            [
+                -0.312,
+                0.0,
+                0.0,
+                0.669,
+                -0.363,
+                0.0,
+                -0.312,
+                0.0,
+                0.0,
+                0.669,
+                -0.363,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
         ),
-        "waist": np.array([0.0, 0.0, 0.0]),
         "left_arm": np.array([0.212, -0.017, 0.062, 1.216, 0.005, 0.258, 0.006]),
         "right_arm": np.array([0.2, -0.2, 0.0, -0.2, 0.0, 0.0, 0.0]),
         "right_gripper": np.array([-0.0222]),
     }
     init_qpos_noise_range: dict[str, np.ndarray] | None = None
     command_mode: dict[str, str | None] = {
-        "legs": "joint_position",
-        "waist": "joint_position",
+        "legs_waist": "joint_position",
         "arm": "joint_position",
         "gripper": "joint_position",
     }
     gravcomp: bool = False
+
+    # Matches g1_molmo's own components/controller.py set_env(), which does
+    # `m.opt.timestep = 0.005` unconditionally for G1 -- G1WalkController's
+    # ONNX walking policy (controllers/g1_walk.py) was trained/tuned assuming
+    # this exact physics rate, not our scene default (0.002s, see
+    # molmo_spaces/resources/base_scene.xml). Applied in G1Robot.__init__; see
+    # BaseRobotConfig.physics_timestep's own docstring. g1_walk.py's
+    # _CONTROL_DECIMATION is set to match this value (4, not a rescaled
+    # workaround) -- both must be changed together if this value ever changes.
+    physics_timestep: float = 0.005
+
+    # Toggle between the two base control modes:
+    #   False (default): whole-body walking via G1WalkController -- legs_waist
+    #     actively balances/walks, base is a passive free-floating pelvis.
+    #   True: legs_waist holds a static pose (plain JointPosController, no active
+    #     balance) and the base is instead moved directly, mocap-weld driven like
+    #     FloatingRUMRobotConfig ("similar to RBY1" in spirit -- base motion
+    #     decoupled from leg actuation -- though RBY1 itself drives real
+    #     holonomic joint actuators rather than a weld target).
+    use_holo_base: bool = False
+
+    # G1's pelvis height is held constant by G1WalkController's WBC (or, in
+    # holo-base mode, by G1HoloBaseGroup's mocap weld) regardless of where the
+    # robot is placed -- unlike RBY1 (torso lift) or FloatingRUM (freely
+    # positioned floating base), it has no way to actually stand at a
+    # target-object-relative height. See BaseRobotConfig.fixed_base_height.
+    #
+    # 0.793m, not G1WalkController's own _DEFAULT_HEIGHT_CMD (0.74) -- that's a
+    # *different* reference pose (the WBC's internal crouched action-space
+    # offset), not the height this class's own init_qpos leg configuration
+    # (the "gravity-settled/nominal" pose, see init_qpos above) actually stands
+    # at pre-physics. Using 0.74 here left the ankles penetrating the floor at
+    # every sampled placement (init_qpos's leg angles don't clear the ground at
+    # that height), failing 10/10 placement attempts. 0.793 is the pelvis
+    # height measured with this exact init_qpos right after reset()/mj_forward,
+    # before the WBC has taken over -- confirmed stable (no penetration, no
+    # tipping) for 3s+ in the standing smoke test.
+    fixed_base_height: float | None = 0.793
 
 
 class FloatingRUMRobotConfig(BaseRobotConfig):
