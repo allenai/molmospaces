@@ -19,11 +19,11 @@ import mujoco
 import numpy as np
 
 from molmo_spaces.g1_molmo_port.components.constants import joint_grasp_path
-from molmo_spaces.g1_molmo_port.components.prompt_sampler import (
-    PromptSampler,
+from molmo_spaces.utils.prompt_sampler import (
+    PromptSamplerSimple,
     get_object_name,
 )
-from molmo_spaces.g1_molmo_port.components.prompt_sampler import (
+from molmo_spaces.utils.prompt_sampler import (
     get_config as get_prompt_config,
 )
 
@@ -43,7 +43,7 @@ class OpenTask:
         prompt_cfg = config.prompts
         if "mode" in prompt_cfg or hasattr(prompt_cfg, "mode"):
             prompt_cfg = type(prompt_cfg)({**dict(prompt_cfg), "mode": self._task_type})
-        self._prompt_sampler = PromptSampler(config=prompt_cfg)
+        self._prompt_sampler = PromptSamplerSimple(config=prompt_cfg)
         self._prompt = ""
 
         self.target = None
