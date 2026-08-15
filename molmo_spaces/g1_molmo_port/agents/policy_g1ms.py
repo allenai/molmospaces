@@ -19,8 +19,8 @@ from molmo_spaces.g1_molmo_port.components.controller_g1ms import (
     ACT_WAIST,
     ACTION_DIM,
 )
-from molmo_spaces.g1_molmo_port.components.robot import JOINT_NAMES as _JOINTS
-from molmo_spaces.g1_molmo_port.components.robot import PELVIS_FORWARD_OFFSET as _PELVIS_FWD
+from molmo_spaces.g1_molmo_port.components.robot_g1ms import JOINT_NAMES as _JOINTS
+from molmo_spaces.g1_molmo_port.components.robot_g1ms import PELVIS_FORWARD_OFFSET as _PELVIS_FWD
 
 # molmo_spaces' own FetchmanPickPlannerPolicy (the target shape this file is
 # being reshaped towards) logs its G1_MOLMO_TRACE lines via `log.info(...)`
