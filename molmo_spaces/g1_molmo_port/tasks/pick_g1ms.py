@@ -5,8 +5,8 @@ import numpy as np
 
 from molmo_spaces.g1_molmo_port import grasp_source_dir
 from molmo_spaces.g1_molmo_port.components.constants import has_valid_grasp
-from molmo_spaces.g1_molmo_port.components.prompt_sampler import PromptSampler, get_object_name
-from molmo_spaces.g1_molmo_port.components.prompt_sampler import get_config as get_prompt_config
+from molmo_spaces.utils.prompt_sampler import PromptSamplerSimple, get_object_name
+from molmo_spaces.utils.prompt_sampler import get_config as get_prompt_config
 
 
 class PickTask:
@@ -15,7 +15,7 @@ class PickTask:
         self._object_regex = object_regex or ".*"
         self._randomize_object = config.randomize_object
         self._object_noise = config.object_noise
-        self._prompt_sampler = PromptSampler(config=config.prompts)
+        self._prompt_sampler = PromptSamplerSimple(config=config.prompts)
         self._prompt = ""
 
         self.target = None
