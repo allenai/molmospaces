@@ -728,6 +728,57 @@ class ObjectManager:
 
         return sorted(results, key=lambda x: x.name)
 
+    def get_articulation_joints(
+        self, object_or_name_or_id: ObjectOrNameOrIdType
+    ) -> tuple[list[str], list[int], list[str], list[int]]:
+        """For a top-level object, enumerate every non-free joint in its subtree
+        whose xml name maps to a THOR joint name in the scene metadata's
+        `name_map.joints`. Returns (joint_xml_names, joint_ids, joint_thor_names,
+        joint_body_ids), all the same length -- empty for non-articulated objects.
+        """
+        cache_in_use = self._model_cache
+        oname = self.get_object_name(object_or_name_or_id)
+
+        if "articulation_joints" not in cache_in_use[oname]:
+            jmap = (self.object_metadata(oname).get("name_map") or {}).get("joints") or {}
+            result: tuple[list[str], list[int], list[str], list[int]] = ([], [], [], [])
+            if jmap:
+                root_body_id = self.get_object_body_id(oname)
+                subtree = set()
+                stack = [root_body_id]
+                while stack:
+                    b = stack.pop()
+                    if b in subtree:
+                        continue
+                    subtree.add(b)
+                    for cb in range(self.model.nbody):
+                        if int(self.model.body_parentid[cb]) == b:
+                            stack.append(cb)
+                xml_names, jids, thor_names, body_ids = [], [], [], []
+                for xml_name, thor_name in jmap.items():
+                    if "free" in thor_name.lower():
+                        continue
+                    jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, xml_name)
+                    if jid < 0:
+                        continue
+                    if int(self.model.jnt_type[jid]) == int(mujoco.mjtJoint.mjJNT_FREE):
+                        continue
+                    jbid = int(self.model.jnt_bodyid[jid])
+                    if jbid not in subtree:
+                        continue
+                    xml_names.append(xml_name)
+                    jids.append(jid)
+                    thor_names.append(thor_name)
+                    body_ids.append(jbid)
+                result = (xml_names, jids, thor_names, body_ids)
+            if self._caching_enabled:
+                cache_in_use[oname]["articulation_joints"] = result
+            else:
+                cache_in_use.pop(oname, None)
+                return result
+
+        return cache_in_use[oname]["articulation_joints"]
+
     def is_object_articulable(self, object_name: str) -> bool:
         """
         If it has at least one hinge or slide joint, return True

@@ -758,6 +758,19 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
         return thormap
 
+    def get_occupancy_map(
+        self, agent_radius: float = 0.35, px_per_m: int = 200
+    ) -> "ProcTHORMap | iTHORMap":
+        """Blessed entry point for a scene's occupancy map, aliasing get_thormap.
+
+        Same name/shape as G1Env.get_occupancy_map so callers written against
+        either env don't need to know which one they have. ProcTHORMap/iTHORMap
+        now also carry OccupancyMap-shaped query methods (is_free, dilated,
+        any_free_in_annulus, same_free_component, sample_near, sample_robot_pose)
+        with matching True=free semantics.
+        """
+        return self.get_thormap(agent_radius=agent_radius, px_per_m=px_per_m)
+
     def place_robot_near(
         self,
         robot_view,

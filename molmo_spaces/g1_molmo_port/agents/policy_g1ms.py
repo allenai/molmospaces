@@ -1625,6 +1625,22 @@ class G1Controller:
             action[ACT_UPPER] = self._upper_cmd
         return action
 
+    def get_action(self, observation):
+        """BasePolicy.get_action's calling convention (molmo_spaces/policy/
+        base_policy.py) -- thin wrapper, not a port: returns the same flat
+        ACTION_DIM array sample_actions always has, not
+        FetchmanPickPlannerPolicy's per-move-group dict (env.step here
+        consumes flat arrays, so that representation isn't ported)."""
+        return self.sample_actions(observation)
+
+    def get_action_chunk(self, observation):
+        """BasePolicy.get_action_chunk's calling convention -- see
+        get_action's docstring. Always a single-action chunk (no
+        FetchmanPickPlannerPolicy-style RENDER_DECIM batching), so callers
+        written against either policy's `get_action_chunk(obs) or
+        [get_action(obs)]` fallback pattern work here too."""
+        return [self.sample_actions(observation)]
+
     # molmo_spaces' PlannerPolicy interface (molmo_spaces/policy/base_policy.py)
     # -- planners()/get_phase()/get_all_phases()/retry_count are all abstract
     # there. Added here purely as read-only views onto state sample_actions()

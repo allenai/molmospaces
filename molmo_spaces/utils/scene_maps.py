@@ -1,3 +1,4 @@
+import copy
 import gc
 import glob
 import json
@@ -357,6 +358,128 @@ class ProcTHORMap(THORMap):
         ret[in_range_mask] = self.occupancy[pos_px[in_range_mask, 0], pos_px[in_range_mask, 1]]
         # ret[~in_range_mask] = True
         return ret
+
+    def is_free(self, xy) -> bool:
+        """True=free -- same convention and result as check_collision (its name
+        is misleading: `occupancy` is already True=free here), given the
+        g1_molmo_port OccupancyMap-shaped name callers expect from get_occupancy_map."""
+        return bool(self.check_collision(np.array([float(xy[0]), float(xy[1]), 0.0])))
+
+    def dilated(self, extra_radius_m: float) -> "ProcTHORMap":
+        """Return a copy with obstacles inflated by extra_radius_m. Shallow copy
+        (shares world_to_map/map_to_world/room_map) so it works for iTHORMap too,
+        whose __init__ doesn't take room_map/room_ids_to_name."""
+        if extra_radius_m <= 0:
+            return self
+        rad_px = max(1, int(extra_radius_m * self.px_per_m))
+        kernel = circular_kernel(rad_px)
+        free_eroded = cv2.erode(self.occupancy.astype(np.uint8), kernel).astype(bool)
+        new = copy.copy(self)
+        new.occupancy = free_eroded
+        if hasattr(new, "_free_labels_cache"):
+            del new._free_labels_cache
+        return new
+
+    def _free_labels(self):
+        lab = getattr(self, "_free_labels_cache", None)
+        if lab is None:
+            from scipy import ndimage
+
+            lab, _ = ndimage.label(self.occupancy.astype(np.uint8))
+            self._free_labels_cache = lab
+        return lab
+
+    def label_at(self, xy) -> int:
+        """Connected-component id of the free cell at xy. 0 = occupied / out-of-bounds."""
+        r, c = (int(v) for v in self.pos_m_to_px(np.array([float(xy[0]), float(xy[1]), 0.0])))
+        h, w = self.occupancy.shape
+        if r < 0 or r >= h or c < 0 or c >= w:
+            return 0
+        return int(self._free_labels()[r, c])
+
+    def nearest_free_label(self, xy, max_radius_px: int = 80) -> int:
+        lab = self._free_labels()
+        r0, c0 = (int(v) for v in self.pos_m_to_px(np.array([float(xy[0]), float(xy[1]), 0.0])))
+        h, w = self.occupancy.shape
+        if 0 <= r0 < h and 0 <= c0 < w and lab[r0, c0] > 0:
+            return int(lab[r0, c0])
+        for rad in range(1, max_radius_px + 1):
+            r_lo, r_hi = max(0, r0 - rad), min(h - 1, r0 + rad)
+            c_lo, c_hi = max(0, c0 - rad), min(w - 1, c0 + rad)
+            sub = lab[r_lo : r_hi + 1, c_lo : c_hi + 1]
+            free = sub[sub > 0]
+            if free.size:
+                return int(free.flat[0])
+        return 0
+
+    def same_free_component(self, xy_a, xy_b) -> bool:
+        la = self.label_at(xy_a)
+        if la == 0:
+            return False
+        return la == self.nearest_free_label(xy_b)
+
+    def any_free_in_annulus(self, center_xy, r_min: float, r_max: float) -> bool:
+        r0, c0 = (
+            int(v)
+            for v in self.pos_m_to_px(np.array([float(center_xy[0]), float(center_xy[1]), 0.0]))
+        )
+        rad = int(np.ceil(r_max * self.px_per_m))
+        h, w = self.occupancy.shape
+        rlo, rhi = max(0, r0 - rad), min(h, r0 + rad + 1)
+        clo, chi = max(0, c0 - rad), min(w, c0 + rad + 1)
+        if rlo >= rhi or clo >= chi:
+            return False
+        ys, xs = np.ogrid[rlo:rhi, clo:chi]
+        d2 = (ys - r0) ** 2 + (xs - c0) ** 2
+        rmin_px2 = (r_min * self.px_per_m) ** 2
+        ring = (d2 >= rmin_px2) & (d2 <= rad * rad)
+        return bool(self.occupancy[rlo:rhi, clo:chi][ring].any())
+
+    def sample_near(
+        self,
+        target_xy,
+        radius_min: float = 0.0,
+        radius_max: float = 0.7,
+        max_attempts: int = 500,
+        np_random=None,
+    ):
+        if np_random is None:
+            np_random = np.random.default_rng()
+        for _ in range(max_attempts):
+            theta = np_random.uniform(0, 2 * np.pi)
+            r = np_random.uniform(radius_min, radius_max)
+            pt = np.asarray(target_xy[:2]) + np.array([r * np.cos(theta), r * np.sin(theta)])
+            if self.is_free(pt):
+                return pt
+        return None
+
+    def sample_robot_pose(
+        self,
+        target_xyz,
+        z_offset: float = 0.0,
+        radius_range=(0.0, 0.7),
+        max_tries: int = 10,
+        np_random=None,
+        yaw_noise: float = 0.0,
+    ):
+        from scipy.spatial.transform import Rotation as SciRotation
+
+        if np_random is None:
+            np_random = np.random.default_rng()
+        for _ in range(max_tries):
+            xy = self.sample_near(
+                target_xyz[:2], radius_range[0], radius_range[1], np_random=np_random
+            )
+            if xy is not None:
+                z = target_xyz[2] + z_offset
+                yaw = np.arctan2(target_xyz[1] - xy[1], target_xyz[0] - xy[0])
+                if yaw_noise > 0:
+                    yaw += np_random.normal(0, yaw_noise)
+                pose = np.eye(4)
+                pose[:3, 3] = [xy[0], xy[1], z]
+                pose[:3, :3] = SciRotation.from_euler("xyz", [0, 0, yaw]).as_matrix()
+                return pose
+        return None
 
     def save(self, path: str):
         if path.endswith(".png"):
