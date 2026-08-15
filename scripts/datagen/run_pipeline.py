@@ -179,15 +179,17 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         raise ValueError(f"Invalid task type: {task_type}")
 
     datagen_cfg.seed = args.seed
-    datagen_cfg.scene_dataset = args.scene_dataset  # ithor, procthor-10k, procthor-objaverse
-    datagen_cfg.data_split = args.data_split  # train or test
+    # ithor, procthor-10k, procthor-objaverse
+    datagen_cfg.scene_dataset = getattr(args, "scene_dataset", "ithor")
+    datagen_cfg.data_split = getattr(args, "data_split", "train")  # train or test
     datagen_cfg.task_type = task_type
 
     datagen_cfg.task_horizon = 300
-    if args.target_types:
-        datagen_cfg.task_sampler_config.pickup_types = args.target_types.split(",")
-    datagen_cfg.task_sampler_config.samples_per_house = (
-        args.samples_per_house
+    target_types = getattr(args, "target_types", None)
+    if target_types:
+        datagen_cfg.task_sampler_config.pickup_types = target_types.split(",")
+    datagen_cfg.task_sampler_config.samples_per_house = getattr(
+        args, "samples_per_house", 4
     )  # overwrite with scene samples
 
     # randomize scene
@@ -210,12 +212,13 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.frozen_config_path = Path(args.eval)
         datagen_cfg.seed = 42
 
-    if args.house_inds is None:
+    house_inds = getattr(args, "house_inds", 1)
+    if house_inds is None:
         datagen_cfg.task_sampler_config.house_inds = None  # list(range(0,20))  # default is (0,20)
-    elif isinstance(args.house_inds, int):
-        datagen_cfg.task_sampler_config.house_inds = [args.house_inds]
-    elif isinstance(args.house_inds, (list, tuple)):
-        datagen_cfg.task_sampler_config.house_inds = args.house_inds
+    elif isinstance(house_inds, int):
+        datagen_cfg.task_sampler_config.house_inds = [house_inds]
+    elif isinstance(house_inds, (list, tuple)):
+        datagen_cfg.task_sampler_config.house_inds = house_inds
     else:
         raise ValueError()
 
@@ -354,6 +357,22 @@ def main(args: argparse.ArgumentParser) -> None:
     elif args.config:  # 2) load an experiment config
         exp_config = get_config_class(args.config)()
         exp_config.seed = args.seed
+        # Only override the config's own values when the user explicitly passed
+        # these flags (they default to argparse.SUPPRESS so unset ones are absent
+        # from `args` and don't clobber the named config's scene_dataset/etc.).
+        if hasattr(args, "scene_dataset"):
+            exp_config.scene_dataset = args.scene_dataset
+        if hasattr(args, "data_split"):
+            exp_config.data_split = args.data_split
+        if hasattr(args, "house_inds"):
+            house_inds = args.house_inds
+            if isinstance(house_inds, int):
+                house_inds = [house_inds]
+            exp_config.task_sampler_config.house_inds = house_inds
+        if hasattr(args, "target_types") and args.target_types:
+            exp_config.task_sampler_config.pickup_types = args.target_types.split(",")
+        if hasattr(args, "samples_per_house"):
+            exp_config.task_sampler_config.samples_per_house = args.samples_per_house
     else:  # 3) create config from arguments
         exp_config = setup_config(args)
 
@@ -435,19 +454,33 @@ if __name__ == "__main__":
         ),
     )
     args.add_argument("--single_step", action="store_true", help="single step")
+    # These default to SUPPRESS (rather than a concrete value) so that when
+    # combined with --config, only explicitly-passed flags override the named
+    # config's values; setup_config() (used when neither --eval nor --config is
+    # given) falls back to the same defaults via getattr(args, name, default).
     args.add_argument(
         "--scene_dataset",
         type=str,
-        default="ithor",
-        help="ithor, procthor-10k, procthor-objaverse, procthor-100k-debug",
+        default=argparse.SUPPRESS,
+        help="ithor, procthor-10k, procthor-objaverse, procthor-100k-debug (default: ithor)",
     )
-    args.add_argument("--data_split", type=str, default="train", help="train or test")
-    args.add_argument("--house_inds", type=int, default=1, help="house indices")
+    args.add_argument(
+        "--data_split",
+        type=str,
+        default=argparse.SUPPRESS,
+        help="train or test (default: train)",
+    )
+    args.add_argument(
+        "--house_inds", type=int, default=argparse.SUPPRESS, help="house indices (default: 1)"
+    )
     args.add_argument(
         "--target_types", type=str, default=None, help="comma separated list of target types"
     )
     args.add_argument(
-        "--samples_per_house", type=int, default=4, help="number of samples per house"
+        "--samples_per_house",
+        type=int,
+        default=argparse.SUPPRESS,
+        help="number of samples per house (default: 4)",
     )
     args.add_argument(
         "--filter_for_successful_trajectories",
