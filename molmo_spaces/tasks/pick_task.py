@@ -76,11 +76,7 @@ class PickTask(BaseMujocoTask):
 
     def judge_success(self) -> bool:
         """Judge if the task was successful (for data generation)."""
-
-        if self.config.task_type == "pick":
-            return self.get_info()[0]["success"]
-        else:
-            raise ValueError(f"Invalid action_type {self.config.task_type}")
+        return self.get_info()[0]["success"]
 
     def get_reward(self) -> np.ndarray:
         """Calculate reward for each environment in the batch."""
