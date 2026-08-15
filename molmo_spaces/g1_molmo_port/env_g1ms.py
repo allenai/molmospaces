@@ -113,6 +113,11 @@ class CameraManager:
 
 
 class G1Env(gym.Env):
+    # Matches gold's own env.py class attribute exactly (same keys/values as
+    # CameraManager.NAMES above) -- LeRobotRecorder (dataset/lerobot_recorder.py)
+    # reads `env.cameras` directly, ported verbatim from gold's own usage.
+    cameras = CameraManager.NAMES
+
     def __init__(
         self,
         scene,
