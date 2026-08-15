@@ -35,6 +35,10 @@ dependencies = [
     "imageio[ffmpeg]",
     "jax~=0.6.2",
     "lxml>=5.0.0",
+    # mink>=1.0 declares mujoco>=3.8.1, which conflicts with this project's
+    # mujoco-warp/mujoco-mjx pin (~3.5.0); pip's resolver doesn't enforce that at
+    # runtime, and mink's actual API surface used here works fine against 3.5.0.
+    "mink",
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
@@ -102,13 +106,6 @@ curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
 ]
 mujoco = [
-    "mujoco~=3.5.0",
-]
-mink = [
-    # mink>=1.0 declares mujoco>=3.8.1, which conflicts with this project's
-    # mujoco-warp/mujoco-mjx pin (~3.5.0); pip's resolver doesn't enforce that at
-    # runtime, and mink's actual API surface used here works fine against 3.5.0.
-    "mink",
     "mujoco~=3.5.0",
 ]
 mujoco-filament = [
