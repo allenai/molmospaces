@@ -53,8 +53,3 @@ mlspaces_tests/**/test_data
 # pytest
 .pytest_cache/
 __pycache__/
-
-# g1_molmo_port bring-up: WBC ONNX weights kept on disk for local runs but
-# not tracked in git (repo convention is asset-manager-downloaded, not
-# committed binaries -- see check-added-large-files in .pre-commit-config.yaml).
-molmo_spaces/g1_molmo_port/agents/models/*.onnx
