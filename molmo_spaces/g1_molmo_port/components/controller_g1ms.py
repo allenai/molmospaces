@@ -7,6 +7,7 @@ import mujoco
 import numpy as np
 import onnxruntime as ort
 
+from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.components.robot_g1ms import DEFAULT_QPOS as _ROBOT_DEFAULT_QPOS
 from molmo_spaces.g1_molmo_port.components.robot_g1ms import JOINT_NAMES as _JOINTS
 
@@ -103,7 +104,12 @@ def _gravity_orientation(quat):
     )
 
 
-_DEFAULT_MODELS_DIR = Path(__file__).resolve().parent.parent / "agents" / "models"
+# Resolved through molmo_spaces' own asset manager (same location the real
+# G1Robot/G1WalkController -- robots/g1.py's
+# `robot_config.get_robot_dir() / "policies"` -- already loads these same
+# ONNX weights from) rather than a locally-copied agents/models/ dir, so
+# this port carries no binary weight files of its own at all.
+_DEFAULT_MODELS_DIR = ASSETS_DIR / "robots" / "g1" / "policies"
 
 
 class MoveGroup:
