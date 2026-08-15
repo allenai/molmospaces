@@ -1,78 +1,15 @@
 import functools
 
 from molmo_spaces.g1_molmo_port import GRASPS_DIR, grasp_source_dir
+from molmo_spaces.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
 
-THOR_PICKUP_TYPES = [
-    "alarmclock",
-    "aluminumfoil",
-    "apple",
-    "bathtowel",
-    "boot",
-    "bottle",
-    "bowl",
-    "box",
-    "bread",
-    "butterknife",
-    "candle",
-    "cd",
-    "cellphone",
-    "cloth",
-    "creditcard",
-    "cup",
-    "dishsponge",
-    "dogstatue",
-    "dumbbell",
-    "egg",
-    "eggcracked",
-    "fork",
-    "handtowel",
-    "kettle",
-    "keychain",
-    "knife",
-    "ladle",
-    "laptop",
-    "lettuce",
-    "mug",
-    "newspaper",
-    "pan",
-    "papertowel",
-    "pen",
-    "pencil",
-    "peppershaker",
-    "pillow",
-    "plate",
-    "plunger",
-    "pot",
-    "potato",
-    "remote",
-    "saltshaker",
-    "scrubbrush",
-    "soapbar",
-    "soapbottle",
-    "spatula",
-    "spoon",
-    "spraybottle",
-    "stonestatue",
-    "tabletopdecor",
-    "teddybear",
-    "tennisracquet",
-    "tissuebox",
-    "toilet",
-    "toiletpaper",
-    "toiletpaperused up",
-    "tomato",
-    "towelstatue",
-    "vasedecorative",
-    "vaseflat",
-    "vasemedium",
-    "vaseopen",
-    "vasetall",
-    "walldecorpainting",
-    "watch",
-    "wateringcan",
-    "wavingstatue",
-    "winebottle",
-]
+# Byte-for-byte the same 69-category list as molmo_spaces' own canonical
+# THOR_PICKUP_OBJECTS_LOWERCASE (verified via a full element-by-element diff)
+# -- this g1_molmo_port fork previously carried its own copy with one typo
+# ("toiletpaperused up", a stray literal space) that the canonical list
+# doesn't have. Aliased under gold's own name since is_pickup_type() and
+# scene.py both reference THOR_PICKUP_TYPES.
+THOR_PICKUP_TYPES = THOR_PICKUP_OBJECTS_LOWERCASE
 
 # Categories excluded from THOR_PICKUP_TYPES — too soft / large / deformable to grasp well.
 THOR_PICKUP_BLACKLIST = [
