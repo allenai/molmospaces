@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import mink
 import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -22,32 +21,6 @@ log = logging.getLogger(__name__)
 # own action output is a move-group-keyed dict (see get_action_chunk), not
 # g1_molmo's own flat, joint-order-indexed array.
 _PELVIS_FWD = 0.05
-
-HEIGHT_MIN, HEIGHT_MAX = 0.35, 0.793
-
-_WAIST = ["waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint"]
-
-
-def _hand(side):
-    return dict(
-        arm=[
-            f"{side}_{j}"
-            for j in [
-                "shoulder_pitch_joint",
-                "shoulder_roll_joint",
-                "shoulder_yaw_joint",
-                "elbow_joint",
-                "wrist_roll_joint",
-                "wrist_pitch_joint",
-                "wrist_yaw_joint",
-            ]
-        ],
-        gripper=f"{side}_Joint1_1",
-        site=f"{side}_grasp",
-    )
-
-
-_HANDS = {s: _hand(s) for s in ("left", "right")}
 
 # g1_molmo's own module-level _astar/_coarsen_and_dist/_simplify_path
 # (occupancy-grid A* over its own env's occupancy map representation), and
@@ -319,9 +292,9 @@ class FetchmanPickPlannerPolicy(PickPlannerPolicy):
     REALIGN_SETTLE = 80
 
     # g1_molmo's own IK_DT/EXECUTION_IK_MAX_ITERS_*/IK_POS_TOLERANCE etc. --
-    # see _solve_ik_wbc/_wbc_ik_error for how these are used; kept as class
-    # constants (g1_molmo's own reference values) rather than the previous
-    # port's separately-named EXECUTION_IK_MAX_ITERS_APPROACH/_PRECISION.
+    # see G1Robot.kinematics_wbc/_wbc_ik_error for how these are used; kept
+    # as a class constant (g1_molmo's own reference value) rather than the
+    # previous port's separately-named EXECUTION_IK_MAX_ITERS_APPROACH/_PRECISION.
     IK_DT = 1e-2
 
     def __init__(self, config, task) -> None:
@@ -359,112 +332,11 @@ class FetchmanPickPlannerPolicy(PickPlannerPolicy):
         # class isn't part of molmo_spaces.
         self._height_cmd = 0.74
 
-        # mink whole-body IK setup -- g1_molmo's own setup(model, data,
-        # prefix) loads a *fixed* robot XML path (its own components/robot.py
-        # XML_PATH); this instead loads molmo_spaces' own standalone,
-        # robot-only model (robot_config.get_robot_xml_path()) for the same
-        # reason an earlier version of this port already established:
-        # solving mink IK against the live *scene* model (1000+ DOF in a
-        # cluttered procthor house) measured ~2600x slower per iteration than
-        # a standalone ~35-DOF model -- prohibitive for candidate ranking,
-        # which solves up to 30 candidates per plan() call.
-        ik_model = mujoco.MjModel.from_xml_path(str(robot_config.get_robot_xml_path()))
-        # Torso-tilt safety envelope, tighter than the MJCF's raw joint
-        # ranges (keep in sync with g1_server deploy clips) -- must be
-        # applied before mink.Configuration(ik_model) below, matching
-        # g1_molmo's own setup() ordering.
-        for jn, lo, hi in [
-            ("waist_yaw_joint", -0.5, 0.5),
-            ("waist_roll_joint", -0.4, 0.4),
-            ("waist_pitch_joint", -0.1, 0.4),  # pitch asymmetric
-        ]:
-            jid_ = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)
-            if jid_ >= 0:
-                ik_model.jnt_range[jid_] = [lo, hi]
-
-        self._ik_cfg = mink.Configuration(ik_model)
-        ik_fj = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, "floating_base_joint")
-        self._ik_fj_dof = ik_model.jnt_dofadr[ik_fj]
-        self._ik_fj_qa = ik_model.jnt_qposadr[ik_fj]
-        scene_model = self.task.env.current_model
-        self._scene_to_ik_qpos = []
-        for jid in range(ik_model.njnt):
-            jname = mujoco.mj_id2name(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jid)
-            if not jname:
-                continue
-            scene_jid = mujoco.mj_name2id(
-                scene_model, mujoco.mjtObj.mjOBJ_JOINT, self._prefix + jname
-            )
-            if scene_jid < 0:
-                continue
-            qsz = 7 if ik_model.jnt_type[jid] == mujoco.mjtJoint.mjJNT_FREE else 1
-            self._scene_to_ik_qpos.append(
-                (scene_model.jnt_qposadr[scene_jid], ik_model.jnt_qposadr[jid], qsz)
-            )
-
-        self._ik_hand_cfg = {}
-        for hand in ("right", "left"):
-            cfg = _HANDS[hand]
-            arm_joints = list(cfg["arm"])
-            site = cfg["site"]
-            mask = np.zeros(ik_model.nv)
-            for jn in arm_joints + _WAIST:
-                jid = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)
-                if jid >= 0:
-                    mask[ik_model.jnt_dofadr[jid]] = 1.0
-            mask_h = mask.copy()
-            mask_h[self._ik_fj_dof + 2] = 1.0
-            task_ = mink.FrameTask(
-                frame_name=site,
-                frame_type="site",
-                position_cost=100,
-                orientation_cost=1,
-                lm_damping=1,
-            )
-            arm_qa = np.array(
-                [
-                    ik_model.jnt_qposadr[mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)]
-                    for jn in arm_joints
-                ],
-                dtype=np.int32,
-            )
-            self._ik_hand_cfg[hand] = {
-                "mask": mask,
-                "mask_h": mask_h,
-                "task": task_,
-                "arm_joints": arm_joints,
-                "arm_qa": arm_qa,
-            }
-
-        posture_cost = np.full(ik_model.nv, 0.1)
-        # Waist cost below the pelvis-z cost so reaching prefers tilting the torso
-        # over crouching. Still springs back toward upright (target=0, per-step).
-        for jn in _WAIST:
-            jid = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)
-            if jid >= 0:
-                posture_cost[ik_model.jnt_dofadr[jid]] = 0.2
-        posture_cost[self._ik_fj_dof + 2] = 0.1
-        self._waist_qa = np.array(
-            [
-                ik_model.jnt_qposadr[mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)]
-                for jn in _WAIST
-            ],
-            dtype=np.int32,
-        )
-        self._ik_posture = mink.PostureTask(ik_model, cost=posture_cost)
-        # Per-axis position cost: keep xy strongly anchored (walking unaffected) but
-        # leave z loose so the wrist task can pull the base down for low handles.
-        # The z spring still wins when the wrist task doesn't need a crouch -> restores.
-        self._ik_pelvis_task = mink.FrameTask(
-            frame_name="pelvis",
-            frame_type="body",
-            position_cost=[5.0, 5.0, 0.3],
-            orientation_cost=0,
-            lm_damping=1,
-        )
-        self._ik_limits = [mink.ConfigurationLimit(ik_model)]
-        # Self-collision limit; applied only during grasp execution (see _solve_ik_wbc).
-        self._self_collision_limit = self._build_self_collision_limit(ik_model)
+        # Whole-body grasp IK (mink, standalone ~35-DOF model, not the live
+        # scene model -- ~2600x faster per iteration, needed since plan()
+        # solves up to 30 candidates per call) now lives on G1Robot itself
+        # (kinematics_wbc()/_ensure_wbc_ik_setup()), built lazily on first
+        # use there instead of duplicated per-policy here.
         self._active_hand = "right"
 
         self._waypoints = []
@@ -637,104 +509,15 @@ class FetchmanPickPlannerPolicy(PickPlannerPolicy):
     # returns now. self._nav_noise_scale is also always 0.0 here (see
     # reset()), so it would have been a no-op regardless.
 
-    def _wbc_ik_error(self, T, hand):
-        saved_hand = self._active_hand
-        self._active_hand = hand
-        _, _, _, err = self._solve_ik_wbc(T[:3, 3], T[:3, :3])
-        self._active_hand = saved_hand
-        return err
-
-    def _sync_ik_qpos(self):
-        data = self.task.env.current_data
-        ik_q = np.zeros(self._ik_cfg.model.nq, dtype=np.float64)
-        for scene_qa, ik_qa, qsz in self._scene_to_ik_qpos:
-            ik_q[ik_qa : ik_qa + qsz] = data.qpos[scene_qa : scene_qa + qsz]
-        return ik_q
-
-    def _build_self_collision_limit(self, ik_model):
-        """Self-collision limit: arm↔torso/pelvis/waist/hip + arm↔arm geom pairs.
-        Returns None if no collidable pairs exist."""
-        right_arm, left_arm, body = [], [], []
-        for gid in range(ik_model.ngeom):
-            # Only geoms that actually collide (skip visual-only meshes).
-            if ik_model.geom_contype[gid] == 0 and ik_model.geom_conaffinity[gid] == 0:
-                continue
-            bid = ik_model.geom_bodyid[gid]
-            bname = mujoco.mj_id2name(ik_model, mujoco.mjtObj.mjOBJ_BODY, bid) or ""
-            if any(s in bname for s in ("shoulder", "elbow", "wrist", "gripper")):
-                (right_arm if "right" in bname else left_arm if "left" in bname else []).append(gid)
-            elif any(s in bname for s in ("pelvis", "torso", "hip", "waist")):
-                body.append(gid)
-        arm = right_arm + left_arm
-        pairs = []
-        if arm and body:
-            pairs.append((arm, body))
-        if right_arm and left_arm:
-            pairs.append((right_arm, left_arm))
-        if not pairs:
-            return None
-        return mink.CollisionAvoidanceLimit(
-            model=ik_model,
-            geom_pairs=pairs,
-            minimum_distance_from_collisions=0.02,
-            collision_detection_distance=0.08,
-        )
-
-    def _solve_ik_wbc(self, target_pos, target_rot=None, avoid_self_collision=False):
-        hcfg = self._ik_hand_cfg[self._active_hand]
-        self._ik_cfg.update(self._sync_ik_qpos())
-        q_post = self._ik_cfg.q.copy()
-        q_post[self._waist_qa] = 0.0
-        self._ik_posture.set_target(q_post)
-        # Anchor pelvis xy to current (walking unaffected) but z to standing height
-        # so the IK actively wants to stand back up when the wrist target allows it.
-        pelvis_T = self._ik_cfg.get_transform_frame_to_world("pelvis", "body")
-        pelvis_pos = pelvis_T.translation().copy()
-        pelvis_pos[2] = HEIGHT_MAX
-        self._ik_pelvis_task.set_target(
-            mink.SE3.from_rotation_and_translation(pelvis_T.rotation(), pelvis_pos)
-        )
-        rot = mink.SO3.from_matrix(target_rot) if target_rot is not None else mink.SO3.identity()
-        hcfg["task"].set_target(
-            mink.SE3.from_rotation_and_translation(rot, np.asarray(target_pos, dtype=np.float64))
-        )
+    def _in_precision_grasp_phase(self) -> bool:
         # Tighter IK during precision phases — wrist has to actually land on the grasp/close target.
-        precision = self._grasp_phase in (PHASE_DESCEND, PHASE_CLOSE, PHASE_POST_CLOSE, PHASE_LIFT)
-        max_iters = 60 if precision else 20
-        conv_thresh = 0.0015 if precision else 0.005
-        prev_err = float("inf")
-        err = float("inf")
-        limits = self._ik_limits
-        if avoid_self_collision and self._self_collision_limit is not None:
-            limits = self._ik_limits + [self._self_collision_limit]
-        for step in range(max_iters):
-            try:
-                vel = mink.solve_ik(
-                    self._ik_cfg,
-                    [hcfg["task"], self._ik_posture, self._ik_pelvis_task],
-                    1e-2,
-                    "daqp",
-                    damping=1e-1,
-                    limits=limits,
-                )
-            except Exception:
-                break
-            vel *= hcfg["mask_h"]
-            self._ik_cfg.integrate_inplace(vel, 1e-2)
-            q_tmp = self._ik_cfg.q.copy()
-            q_tmp[self._ik_fj_qa + 2] = np.clip(q_tmp[self._ik_fj_qa + 2], HEIGHT_MIN, HEIGHT_MAX)
-            self._ik_cfg.update(q_tmp)
-            err = float(np.linalg.norm(hcfg["task"].compute_error(self._ik_cfg)[:3]))
-            if err < conv_thresh:
-                break
-            if step > 10 and err > prev_err - 1e-5:
-                break
-            prev_err = err
-        q = self._ik_cfg.q
-        arm = q[hcfg["arm_qa"]].astype(np.float32)
-        waist = q[self._waist_qa].astype(np.float32)
-        ik_h = float(np.clip(q[self._ik_fj_qa + 2], HEIGHT_MIN, HEIGHT_MAX))
-        return arm, waist, ik_h, err
+        return self._grasp_phase in (PHASE_DESCEND, PHASE_CLOSE, PHASE_POST_CLOSE, PHASE_LIFT)
+
+    def _wbc_ik_error(self, T, hand):
+        _, _, _, err = self.task.env.current_robot.kinematics_wbc(
+            T[:3, 3], T[:3, :3], hand=hand, precision=self._in_precision_grasp_phase()
+        )
+        return err
 
     def _start_grasp(self, info=None) -> None:
         """g1_molmo's own version also has a "_start_at_pregrasp cached
@@ -1149,8 +932,12 @@ class FetchmanPickPlannerPolicy(PickPlannerPolicy):
             cache = getattr(self, "_ik_cache", None)
             if cache is None or (self._step_counter % IK_DECIM) == 0:
                 # Self-collision avoidance on only during grasp execution.
-                arm_joints, waist_joints, ik_h, _ = self._solve_ik_wbc(
-                    pos, rot, avoid_self_collision=True
+                arm_joints, waist_joints, ik_h, _ = self.task.env.current_robot.kinematics_wbc(
+                    pos,
+                    rot,
+                    hand=self._active_hand,
+                    avoid_self_collision=True,
+                    precision=self._in_precision_grasp_phase(),
                 )
                 self._ik_cache = (arm_joints, waist_joints, ik_h)
             else:
