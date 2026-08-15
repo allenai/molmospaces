@@ -493,7 +493,7 @@ class G1Env(gym.Env):
             or self.camera_manager.fisheye.output_h != output_h
             or self.camera_manager.fisheye.output_w != output_w
         ):
-            from molmo_spaces.g1_molmo_port.components.fisheye import FisheyeRenderer
+            from molmo_spaces.utils.fisheye_warping_g1 import FisheyeRenderer
 
             tile_names = [
                 f"{PREFIX}{base_cam_name}_tile_{face}"
