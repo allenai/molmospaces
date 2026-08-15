@@ -16,6 +16,7 @@ from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyParallelKinematics
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.robots.robot_views.g1_view import (
+    ARM_JOINT_SUFFIXES,
     HOLO_BASE_TARGET_BODY_NAME,
     LEGS_WAIST_JOINT_SUFFIXES,
     G1RobotView,
@@ -351,6 +352,32 @@ class G1Robot(Robot):
                 actuator.biastype = mujoco.mjtBias.mjBIAS_NONE
                 actuator.gainprm[0] = 1.0
                 actuator.biasprm[:] = 0.0
+
+            # The arms' own "walk_{side}_*" actuators are authored in the MJCF
+            # with much weaker gains than G1WalkController's IK targets assume
+            # (e.g. the wrist actuators cap out around +-5 N*m) -- reconfigure
+            # them to the same kp/kd the reference g1_molmo stack uses
+            # (components/controller_g1ms.py's G1Controller.setup()), or the
+            # arm/wrist can't physically reach IK-commanded orientations:
+            # position converges "close enough" while rotation error stalls
+            # at a fixed residual forever. Left arm is zero-gained (hangs
+            # passively under gravity, matching the reference) even though it
+            # still sits behind a JointPosController -- gain=0 makes whatever
+            # that controller writes moot.
+            for joint_name in ARM_JOINT_SUFFIXES:
+                left_actuator = spec.actuator(f"{namespace}walk_left_{joint_name}")
+                assert left_actuator is not None, f"Missing walk_left_{joint_name} actuator"
+                left_actuator.gainprm[0] = 0.0
+                left_actuator.biasprm[:] = 0.0
+                left_actuator.forcerange[:] = [-400, 400]
+
+                right_actuator = spec.actuator(f"{namespace}walk_right_{joint_name}")
+                assert right_actuator is not None, f"Missing walk_right_{joint_name} actuator"
+                right_actuator.gainprm[0] = 2000.0
+                right_actuator.biasprm[0] = 0.0
+                right_actuator.biasprm[1] = -2000.0
+                right_actuator.biasprm[2] = -60.0
+                right_actuator.forcerange[:] = [-400, 400]
 
         # The MJCF puts the head/mount/logo visual geoms on group 5 (every other
         # visual geom uses the "visual" class default of group 2). mujoco.MjvOption's

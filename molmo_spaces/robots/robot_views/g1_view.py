@@ -73,6 +73,10 @@ _ARM_JOINT_SUFFIXES = (
     "wrist_pitch_joint",
     "wrist_yaw_joint",
 )
+# Public alias, mirroring LEGS_WAIST_JOINT_SUFFIXES above -- used by
+# G1Robot.apply_control_overrides to reconfigure the "walk_{side}_*" arm
+# actuators (see G1ArmGroup.__init__'s own actuator-name construction).
+ARM_JOINT_SUFFIXES = _ARM_JOINT_SUFFIXES
 
 
 class G1BaseGroup(FreeJointRobotBaseGroup):
