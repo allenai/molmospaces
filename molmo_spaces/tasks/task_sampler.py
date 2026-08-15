@@ -313,11 +313,6 @@ class BaseMujocoTaskSampler:
 
     @property
     def env(self) -> BaseMujocoEnv:
-        # """Get the environment instance, creating it if necessary."""
-        # if self._env is None:
-        #     # Create environment without any scene loaded
-        #     # Scene will be loaded via load_scene() when needed
-        #     self._env = self._create_env()
         return self._env
 
     def close(self) -> None:

@@ -1037,6 +1037,16 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
     camera_config: G1CameraSystem = G1CameraSystem()
     scene_dataset: str = "procthor-10k"
     data_split: str = "val"
+    # G1Config.physics_timestep forces mj_model.opt.timestep to 5ms (see its
+    # docstring), overriding the scene default (2ms) that the parent's
+    # ctrl_dt_ms/sim_dt_ms=2.0 assume. Match that here so BaseMujocoTask's
+    # ctrl-dt/sim-dt divisibility check passes. policy_dt_ms must in turn stay
+    # a multiple of ctrl_dt_ms (MlSpacesExpConfig.model_post_init asserts
+    # this); not used in the interactive shell's manual-drive loop, but still
+    # validated at construction time.
+    ctrl_dt_ms: float = 5.0
+    sim_dt_ms: float = 5.0
+    policy_dt_ms: float = 70.0
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=InteractiveShellTaskSampler,
         pickup_types=["Bowl"],
@@ -1047,7 +1057,7 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
         house_inds=list(range(101)),
         check_robot_placement_visibility=False,
         robot_object_z_offset=0,
-        base_pose_sampling_radius_range=(0, 0.4),
+        base_pose_sampling_radius_range=(0, 0.8),
         robot_safety_radius=0.2,
     )
 
