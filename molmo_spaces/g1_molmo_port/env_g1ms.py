@@ -8,6 +8,7 @@ import mujoco.viewer
 import numpy as np
 from gymnasium import spaces
 
+from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.components import Scene
 from molmo_spaces.g1_molmo_port.components.robot_g1ms import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
@@ -112,7 +113,37 @@ class CameraManager:
         self.head_cam_quat0_all = []
 
 
-class G1Env(gym.Env):
+class G1Env(gym.Env, CPUMujocoEnv):
+    """Inherits molmo_spaces' own BaseMujocoEnv/CPUMujocoEnv ABC (env/env.py)
+    for interface compatibility -- current_data/current_model/current_robot/
+    current_model_path/is_loaded()/rgb_frame etc. all become available via
+    the real BaseMujocoEnv property chain once mj_datas/n_batch/robots are
+    overridden below (see those properties' own docstrings).
+
+    Deliberately does NOT call CPUMujocoEnv.__init__ (that constructs N
+    batched MjData via its own mujoco.mj_forward + sim_settle_timesteps
+    mj_step loop, a real GPU renderer via MjOpenGLRenderer/MjFilamentRenderer,
+    a ThreadPoolExecutor, and one ObjectManager per batch item) -- none of
+    that matches gold's own settle/reset sequencing, which
+    G1TaskSampler's reset()/sample_task() already reproduces bit-exactly
+    (verified via the g1_molmo_comparison harness). Running CPUMujocoEnv's
+    own settle loop on top would inject extra, different physics steps and
+    RNG consumption gold's own reference never does. Calls
+    BaseMujocoEnv.__init__ directly instead, for its safe, side-effect-free
+    placeholder state (self.config, self._mj_model, rendering placeholders)
+    -- G1Env's own already-verified `_load_scene` stays the only thing that
+    actually builds/reloads the scene.
+
+    `object_managers` stays an empty list (BaseMujocoEnv's own type-hinted
+    attribute, not populated) and CPUMujocoEnv's own higher-level methods
+    (get_thormap, place_robot_near, check_visibility,
+    get_segmentation_mask_of_object, ...) are NOT safely callable on a G1Env
+    instance -- all of them assume the real renderer/object_managers/batch
+    construction this class deliberately skips. That's real, deferred
+    Scene/Object -> real ObjectManager work (see components/scene.py's own
+    docstring), not part of this inheritance step.
+    """
+
     # Matches gold's own env.py class attribute exactly (same keys/values as
     # CameraManager.NAMES above) -- LeRobotRecorder (dataset/lerobot_recorder.py)
     # reads `env.cameras` directly, ported verbatim from gold's own usage.
@@ -146,7 +177,16 @@ class G1Env(gym.Env):
         config dict to both constructors; each only names the parameters it
         actually stores. See G1TaskSampler.__init__'s matching docstring.
         """
-        super().__init__()
+        # Explicit by-name calls, not super().__init__() -- gym.Env and
+        # BaseMujocoEnv are unrelated hierarchies (neither cooperatively
+        # chains via super() into the other), so a single super().__init__()
+        # call would only ever reach gym.Env's. BaseMujocoEnv.__init__ is the
+        # safe, side-effect-free one (self.config, self._mj_model, rendering
+        # placeholders) -- see the class docstring for why CPUMujocoEnv.
+        # __init__ itself is deliberately never called.
+        gym.Env.__init__(self)
+        BaseMujocoEnv.__init__(self, exp_config=None, mj_model=None)
+        self.object_managers = []
         self._viewer = None
         self._launch_viewer = launch_viewer
         self._scene_paths = _resolve_scene_paths(scene)
@@ -319,6 +359,12 @@ class G1Env(gym.Env):
             scene_textures=self._scene_texture_paths,
             articulated_regex=self._articulated_regex,
         )
+        # Keep BaseMujocoEnv's own model/path/metadata state in sync with the
+        # scene this class actually (re)builds -- current_model/is_loaded()/
+        # current_model_path (inherited, unmodified) all read these.
+        self._mj_model = self.scene.model
+        self._mj_base_scene_path = str(xml_path)
+        self._scene_metadata = None
         hl = self.scene.model.vis.headlight
         self._init_headlight = (hl.ambient.copy(), hl.diffuse.copy(), hl.specular.copy())
         self.occ = self.scene.occupancy_map(agent_radius=0.15)
@@ -434,6 +480,27 @@ class G1Env(gym.Env):
     @property
     def time(self):
         return self._sim_time
+
+    # BaseMujocoEnv abstract properties, overridden as single-element
+    # wrappers around G1Env's own single-scene/single-robot state --
+    # this class is genuinely single-batch (n_batch always 1), unlike
+    # CPUMujocoEnv's real multi-batch construction (deliberately not used,
+    # see the class docstring). Overriding these three is what makes
+    # current_data/current_model/current_robot/is_loaded() (all inherited,
+    # unmodified from BaseMujocoEnv) resolve correctly against this class's
+    # own state instead of raising AttributeError on CPUMujocoEnv's own
+    # (never-populated) _mj_datas/_n_batch/_robots.
+    @property
+    def mj_datas(self):
+        return [self.scene.data]
+
+    @property
+    def n_batch(self) -> int:
+        return 1
+
+    @property
+    def robots(self):
+        return (self.robot,)
 
     def _ensure_renderer(self, h, w):
         key = (int(h), int(w))
