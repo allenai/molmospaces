@@ -30,7 +30,10 @@ from molmo_spaces.g1_molmo_port.agents.policy_g1ms import (
 )
 from molmo_spaces.g1_molmo_port.components.robot_g1ms import PREFIX
 from molmo_spaces.g1_molmo_port.env_g1ms import BASE_MOVE_GROUP, NOISE_MOVE_GROUP, G1Env
+from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.g1_molmo_port.sensors_g1ms import OBS_SENSORS, TARGET_POINT_IN_HEAD_SENSOR
+
+_SENSOR_SUITE = SensorSuite(OBS_SENSORS)
 
 
 def build_thor_texture_pools():
@@ -548,7 +551,7 @@ class G1TaskSampler:
         self.env.robot.place(xy, yaw)
 
     def _build_obs(self):
-        return {s.uuid: s.get_observation(self.env) for s in OBS_SENSORS}
+        return _SENSOR_SUITE.get_observations(self.env, self.env.task)
 
     def _robot_touches_world(self):
         """Returns True if any robot geom is in contact with a non-robot, non-floor,
