@@ -1350,7 +1350,7 @@ class G1TaskSampler:
                 w1 * z0 + x1 * y0 - y1 * x0 + z1 * w0,
             ]
         if (fn > 0 or dn > 0) and self.env.camera_manager.fisheye is not None:
-            from molmo_spaces.g1_molmo_port.components.fisheye import HEAD_FISHEYE_D, HEAD_FISHEYE_K
+            from molmo_spaces.utils.fisheye_warping_g1 import HEAD_FISHEYE_D, HEAD_FISHEYE_K
 
             K = HEAD_FISHEYE_K.copy()
             D = HEAD_FISHEYE_D.copy()
