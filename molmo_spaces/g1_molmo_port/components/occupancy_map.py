@@ -11,19 +11,18 @@ from scipy.spatial.transform import Rotation as R
 
 # Patch MuJoCo's segmentation renderer: size segid2output to the actual max segid,
 # not scene.ngeom (decorator/skybox IDs can exceed it on dense scenes, → IndexError).
-# g1_molmo's own mujoco build (3.11.0) exposes this class at
-# mujoco.rendering.classic.renderer.Renderer; molmospaces' own mujoco build
-# (3.5.0, pre-restructure) has the same class flat at mujoco.renderer.Renderer.
-# Bring-up phase: try both, skip the patch entirely if neither exists rather
-# than hard-failing the whole import (the underlying IndexError this guards
-# against may simply not exist in every mujoco build's segmentation renderer).
+# This package only ever runs under molmospaces' own mlspaces conda env
+# (never g1_molmo's), whose mujoco build (3.5.0) exposes this class flat at
+# mujoco.renderer.Renderer -- unlike g1_molmo's own mujoco build (3.11.0),
+# which nests it at mujoco.rendering.classic.renderer.Renderer post-restructure.
+# Guarded rather than a bare import so a future mujoco upgrade in this env
+# that removes/renames the class skips the patch instead of hard-failing
+# the whole import (the underlying IndexError this guards against may
+# simply not exist in a different mujoco build's segmentation renderer).
 try:
-    from mujoco.rendering.classic import renderer as _mj_cls_renderer
+    import mujoco.renderer as _mj_cls_renderer
 except ImportError:
-    try:
-        import mujoco.renderer as _mj_cls_renderer
-    except ImportError:
-        _mj_cls_renderer = None
+    _mj_cls_renderer = None
 
 if _mj_cls_renderer is not None and not getattr(_mj_cls_renderer.Renderer, "_segid_patched", False):
     _orig_render = _mj_cls_renderer.Renderer.render
