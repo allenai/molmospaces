@@ -1,6 +1,7 @@
 import gc
 import glob
 from pathlib import Path
+from types import SimpleNamespace
 
 import gymnasium as gym
 import mujoco
@@ -9,8 +10,10 @@ import numpy as np
 from gymnasium import spaces
 
 from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
+from molmo_spaces.env.object_manager import ObjectManager
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.components import Scene
+from molmo_spaces.g1_molmo_port.components.constants import ROBOT_PREFIX
 from molmo_spaces.g1_molmo_port.components.robot_g1ms import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
 from molmo_spaces.g1_molmo_port.tasks.open import OpenTask
 from molmo_spaces.g1_molmo_port.tasks.open import get_config as get_open_task_config
@@ -186,6 +189,11 @@ class G1Env(gym.Env, CPUMujocoEnv):
         # __init__ itself is deliberately never called.
         gym.Env.__init__(self)
         BaseMujocoEnv.__init__(self, exp_config=None, mj_model=None)
+        # ObjectManager.is_excluded reads env.config.robot_config.robot_namespace
+        # as a substring check against body names -- give it the same shape
+        # CPUMujocoEnv's real exp_config would have, without pulling in the rest
+        # of MlSpacesExpConfig.
+        self.config = SimpleNamespace(robot_config=SimpleNamespace(robot_namespace=ROBOT_PREFIX))
         self.object_managers = []
         self._viewer = None
         self._launch_viewer = launch_viewer
@@ -364,10 +372,15 @@ class G1Env(gym.Env, CPUMujocoEnv):
         # current_model_path (inherited, unmodified) all read these.
         self._mj_model = self.scene.model
         self._mj_base_scene_path = str(xml_path)
-        self._scene_metadata = None
+        self._scene_metadata = self.scene.metadata
+        # Fresh per scene (re)load -- Scene rebuilds its own MjModel/MjData each
+        # time, so a stale ObjectManager would otherwise reference dead arrays.
+        self.object_manager = ObjectManager(self, batch_idx=0)
+        self.object_managers = [self.object_manager]
+        self.scene.object_manager = self.object_manager
         hl = self.scene.model.vis.headlight
         self._init_headlight = (hl.ambient.copy(), hl.diffuse.copy(), hl.specular.copy())
-        self.occ = self.scene.occupancy_map(agent_radius=0.15)
+        self.occ = self.get_occupancy_map(agent_radius=0.15)
         # Extra-inflated for A* path planning; goal sampling still uses self.occ.
         self.occ_safe = self.occ.dilated(0.125)
         self.robot = G1Robot(self.scene.model, self.scene.data, env=self, low_level=_prev_low_level)
@@ -501,6 +514,15 @@ class G1Env(gym.Env, CPUMujocoEnv):
     @property
     def robots(self):
         return (self.robot,)
+
+    def get_occupancy_map(self, agent_radius: float = 0.15):
+        """Same name/shape as CPUMujocoEnv.get_occupancy_map -- callers written
+        against either env don't need to know which one they have. Goes through
+        Scene.occupancy_map (g1_molmo_port's own OccupancyMap), not
+        CPUMujocoEnv.get_thormap's ProcTHORMap/from_mj_model_path pipeline,
+        which assumes the real batched renderer this class deliberately skips
+        (see the class docstring)."""
+        return self.scene.occupancy_map(agent_radius=agent_radius)
 
     def _ensure_renderer(self, h, w):
         key = (int(h), int(w))

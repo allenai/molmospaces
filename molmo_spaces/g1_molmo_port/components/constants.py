@@ -3,6 +3,11 @@ import functools
 from molmo_spaces.g1_molmo_port import GRASPS_DIR, grasp_source_dir
 from molmo_spaces.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE
 
+# Shared by Scene (attach prefix) and G1Env (ObjectManager's is_excluded uses
+# `env.config.robot_config.robot_namespace` as a substring check) so both stay
+# in sync with a single literal.
+ROBOT_PREFIX = "robot_0/"
+
 # Byte-for-byte the same 69-category list as molmo_spaces' own canonical
 # THOR_PICKUP_OBJECTS_LOWERCASE (verified via a full element-by-element diff)
 # -- this g1_molmo_port fork previously carried its own copy with one typo

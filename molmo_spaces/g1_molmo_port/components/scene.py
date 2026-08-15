@@ -7,7 +7,7 @@ import mujoco
 import numpy as np
 
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
-from molmo_spaces.g1_molmo_port.components.constants import is_pickup_type
+from molmo_spaces.g1_molmo_port.components.constants import ROBOT_PREFIX, is_pickup_type
 from molmo_spaces.g1_molmo_port.components.object import Object
 from molmo_spaces.g1_molmo_port.components.occupancy_map import OccupancyMap
 
@@ -44,7 +44,7 @@ class Scene:
             xml_path = ASSETS_DIR / xml_path
         self.xml_path = xml_path
         self.robot_xml = Path(robot_xml)
-        self._robot_prefix = "robot_0/"
+        self._robot_prefix = ROBOT_PREFIX
         spec = mujoco.MjSpec.from_file(str(_strip_skybox(xml_path)))
         robot_spec = mujoco.MjSpec.from_file(str(self.robot_xml))
         frame = spec.worldbody.add_frame()
@@ -84,6 +84,9 @@ class Scene:
         if meta_path.exists():
             with open(meta_path) as f:
                 metadata = json.load(f).get("objects", {})
+        # Shape ObjectManager.object_metadata expects: scene_metadata["objects"][name].
+        # Set as current_scene_metadata by G1Env once the owning env exists.
+        self.metadata: dict = {"objects": metadata}
 
         self._optimize(spec, metadata, mobile_regex, articulated_regex)
         self._add_grasp_probe(spec)
@@ -176,93 +179,72 @@ class Scene:
                 self.scene_geom_ids[cat].append(gid)
         self.grasp_probe_body_id = self.model.body("grasp_probe").id
         self.grasp_probe_qposadr = self.model.joint("grasp_probe_joint").qposadr[0]
-        self._objects: list[Object] = []
-        for i in range(self.model.nbody):
-            name = self.model.body(i).name
-            if not name or name.startswith(self._robot_prefix) or name in ("grasp_probe",):
-                continue
-            jnt_adr = self.model.body(i).jntadr[0]
-            has_fj = jnt_adr >= 0 and self.model.jnt_type[jnt_adr] == mujoco.mjtJoint.mjJNT_FREE
-            meta = metadata.get(name, {})
+        # Set by G1Env right after construction (needs self.data to exist first,
+        # per ObjectManager's own `env.mj_datas[batch_idx]` construction). Object
+        # views below are derived lazily through it -- no eager per-body scan.
+        self.object_manager = None
+        self._object_cache: dict[str, Object] = {}
+
+    def _make_object(self, name: str) -> Object:
+        if name not in self._object_cache:
+            om = self.object_manager
+            has_fj = om.has_free_joint(name)
+            jxml_names, jids, jthor_names, jbody_ids = om.get_articulation_joints(name)
+            meta = om.object_metadata(name)
             thor_name = (meta.get("name_map") or {}).get("bodies", {}).get(name, "")
-            jxml_names, jids, jthor_names, jbody_ids = self._collect_articulation(meta, i)
-            self._objects.append(
-                Object(
-                    body_id=i,
-                    name=name,
-                    category=meta.get("category", name.split("_")[0]),
-                    asset_id=meta.get("asset_id", ""),
-                    is_static=meta.get("is_static", not has_fj),
-                    has_freejoint=has_fj,
-                    thor_name=thor_name,
-                    joint_xml_names=jxml_names,
-                    joint_ids=jids,
-                    joint_thor_names=jthor_names,
-                    joint_body_ids=jbody_ids,
-                )
+            self._object_cache[name] = Object(
+                body_id=om.get_object_body_id(name),
+                name=name,
+                category=om.get_annotation_category(name),
+                asset_id=meta.get("asset_id", ""),
+                is_static=meta.get("is_static", not has_fj),
+                has_freejoint=has_fj,
+                thor_name=thor_name,
+                joint_xml_names=jxml_names,
+                joint_ids=jids,
+                joint_thor_names=jthor_names,
+                joint_body_ids=jbody_ids,
             )
-        self._by_name = {o.name: o for o in self._objects}
+        return self._object_cache[name]
 
     @property
     def objects(self):
-        return self._objects
+        # Deliberately not ObjectManager.get_objects_of_type: it drops
+        # is_structural() bodies (doorways included -- STRUCTURAL_TYPES has
+        # "doorway"), but the open/close task needs doors as legitimate
+        # articulated targets. Only robot/grasp-probe bodies get excluded here,
+        # same as the old eager scan -- reuse ObjectManager just for the
+        # cached top-level-body listing and per-object derivation below. Order
+        # matters too: task samplers draw target/spawn candidates by list
+        # position against a seeded RNG, so this must stay in body-creation
+        # order (top_level_bodies() is already ascending by body id).
+        om = self.object_manager
+        names = []
+        for body_id in om.top_level_bodies():
+            name = om.get_object_name(body_id)
+            if not name or name.startswith(self._robot_prefix) or name in ("grasp_probe",):
+                continue
+            names.append(name)
+        return [self._make_object(n) for n in names]
 
     @property
     def pickable(self):
-        return [o for o in self._objects if o.has_freejoint]
+        return [o for o in self.objects if o.has_freejoint]
 
     @property
     def static(self):
-        return [o for o in self._objects if o.is_static]
+        return [o for o in self.objects if o.is_static]
 
     @property
     def articulated(self):
-        return [o for o in self._objects if o.is_articulated]
-
-    def _collect_articulation(self, meta, root_body_id):
-        """For an articulated root body, enumerate every non-free joint that lives
-        in its subtree and survived `_optimize`. Returns (xml_names, jids,
-        thor_names, body_ids) all the same length. Empty lists for non-articulated
-        bodies."""
-        jmap = (meta.get("name_map") or {}).get("joints") or {}
-        if not jmap:
-            return [], [], [], []
-        # Subtree body set so we only keep joints rooted under this object.
-        subtree = set()
-        stack = [root_body_id]
-        while stack:
-            b = stack.pop()
-            if b in subtree:
-                continue
-            subtree.add(b)
-            for cb in range(self.model.nbody):
-                if int(self.model.body_parentid[cb]) == b:
-                    stack.append(cb)
-        xml_names, jids, thor_names, body_ids = [], [], [], []
-        for xml_name, thor_name in jmap.items():
-            if "free" in thor_name.lower():
-                continue
-            jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, xml_name)
-            if jid < 0:
-                continue
-            jt = int(self.model.jnt_type[jid])
-            if jt == int(mujoco.mjtJoint.mjJNT_FREE):
-                continue
-            jbid = int(self.model.jnt_bodyid[jid])
-            if jbid not in subtree:
-                continue
-            xml_names.append(xml_name)
-            jids.append(jid)
-            thor_names.append(thor_name)
-            body_ids.append(jbid)
-        return xml_names, jids, thor_names, body_ids
+        return [o for o in self.objects if o.is_articulated]
 
     def get(self, name):
-        return self._by_name[name]
+        return self._make_object(name)
 
     def by_category(self, category):
         c = category.lower()
-        return [o for o in self._objects if o.category.lower() == c]
+        return [o for o in self.objects if o.category.lower() == c]
 
     def forward(self):
         mujoco.mj_forward(self.model, self.data)
