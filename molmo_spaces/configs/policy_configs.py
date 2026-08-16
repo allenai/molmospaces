@@ -326,6 +326,38 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     # g1_molmo's short-radius spawn effectively guarantees.
     direct_arrival_max_dist: float = 1.2
 
+    # Walk goal for G1PickPlannerPolicy (the reference stack), which does its own
+    # goal sampling + A* inside G1Controller rather than going through
+    # NavGoalSampler/AStarPlanner -- so the walk_* fields above don't reach it.
+    # Both values are g1_molmo's own, for the same two computations:
+    #   - the standoff annulus around the pickup object that its env samples the
+    #     grasp pose on (env.py's grasp_spawn_radius_min/max = 0.25/0.80)
+    #   - occ_safe = occ.dilated(0.125): the extra inflation its A* plans on, on
+    #     top of the occupancy map's own agent radius. Goal sampling uses the
+    #     un-inflated map (a standoff pose hugging the counter the object sits on
+    #     is fine to stand at, just not to route through).
+    # Deliberately not folded into the task sampler's
+    # base_pose_sampling_radius_range: that one decides where the robot *spawns*,
+    # this one where it must end up to grasp, and datagen configs set the former
+    # wide on purpose to exercise the walk phase.
+    goal_standoff_radius_range: tuple[float, float] = (0.25, 0.80)
+    nav_map_extra_inflation: float = 0.125
+    # Candidate standoff poses to try before giving up (g1_molmo's
+    # _sample_goal_pose attempts=25). Each rejected candidate costs one
+    # occupancy lookup plus a connected-component query, no simulation.
+    goal_sampling_attempts: int = 25
+    # G1Controller gives up on the walk once env.time passes walk_timeout_s --
+    # absolute sim time, not time-in-phase. g1_molmo's own 20.0 is fine for its
+    # spawns (a few metres at most, ~0.3-0.5 m/s), but a walk goal further out
+    # than roughly speed*20s would be abandoned mid-stride, so the timeout is
+    # raised to fit the planned path: path_length / speed * walk_timeout_slack.
+    # The slack covers what a straight-line estimate leaves out -- turning in
+    # place at each waypoint, the smoothstep brake ramp, and the terminal facing
+    # turn. Measured 2.05m in 7.5s against a commanded 0.308 m/s (~1.15x), so 2.0
+    # is a margin, not a fit. Never lowers the timeout below walk_timeout_s.
+    walk_timeout_s: float = 20.0
+    walk_timeout_slack: float = 2.0
+
     def model_post_init(self, __context) -> None:
         # Skip PickPlannerPolicyConfig.model_post_init (it would set policy_cls
         # to PickPlannerPolicy) and go straight to its own parent.
