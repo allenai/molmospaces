@@ -16,7 +16,7 @@ import pytest
 
 from molmo_spaces.configs.robot_configs import ActionNoiseConfig, G1Config
 from molmo_spaces.molmo_spaces_constants import ROBOTS_DIR
-from molmo_spaces.robots.g1 import G1Robot
+from molmo_spaces.robots.g1_old_reference import G1Robot
 
 _G1_ASSETS_DIR = ROBOTS_DIR / "g1"
 _G1_POLICIES_DIR = _G1_ASSETS_DIR / "policies"

@@ -1,12 +1,12 @@
-"""Navigation smoke test for molmo_spaces/robots/g1_ported.py's G1Robot.
+"""Navigation smoke test for molmo_spaces/robots/g1.py's G1Robot.
 
 The pick rollout (generate_ported_rollout.py) exercises this robot's grasp
 path. This exercises the *navigation* path instead: it drives the robot to a
 sequence of absolute [x, y, yaw] waypoints through
 `G1Robot.waypoint_to_velocity_target` -- the same waypoint -> base-velocity
-bridge native molmo_spaces/robots/g1.py uses, so a molmo_spaces navigation
-policy (e.g. AStarPlannerPolicy, which emits exactly these waypoints) can
-drive this robot unchanged.
+bridge molmo_spaces/robots/g1_old_reference.py uses, so a molmo_spaces
+navigation policy (e.g. AStarPlannerPolicy, which emits exactly these
+waypoints) can drive this robot unchanged.
 
 Waypoints are picked relative to the robot's own spawn pose and checked
 against the scene occupancy map, so this works on whatever house the config

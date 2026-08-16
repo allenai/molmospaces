@@ -1,3 +1,4 @@
+import contextlib
 import gc
 import glob
 from pathlib import Path
@@ -14,11 +15,11 @@ from molmo_spaces.env.object_manager import ObjectManager
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.components import Scene
 from molmo_spaces.g1_molmo_port.components.constants import ROBOT_PREFIX
-from molmo_spaces.robots.g1_ported import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
 from molmo_spaces.g1_molmo_port.tasks.open import OpenTask
 from molmo_spaces.g1_molmo_port.tasks.open import get_config as get_open_task_config
 from molmo_spaces.g1_molmo_port.tasks.pick_g1ms import PickTask
 from molmo_spaces.g1_molmo_port.tasks.pick_g1ms import get_config as get_task_config
+from molmo_spaces.robots.g1 import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
 
 
 def _resolve_scene_paths(pattern):
@@ -350,10 +351,8 @@ class G1Env(gym.Env, CPUMujocoEnv):
         if self.robot is not None and hasattr(self.robot, "close"):
             self.robot.close()
         for r in self.camera_manager.renderers.values():
-            try:
+            with contextlib.suppress(Exception):
                 r.close()
-            except Exception:
-                pass
         self.camera_manager.renderers.clear()
         self.camera_manager.renderer = None
         self.camera_manager.fisheye = None
@@ -451,10 +450,8 @@ class G1Env(gym.Env, CPUMujocoEnv):
         # scene model changes (randomize_scene), the old viewer keeps showing
         # the old model — close + relaunch so it tracks the new scene.
         if self._viewer is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._viewer.close()
-            except Exception:
-                pass
             self._viewer = None
         if self._launch_viewer:
             self._viewer = mujoco.viewer.launch_passive(
