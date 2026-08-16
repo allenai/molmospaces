@@ -101,6 +101,33 @@ navigation — see §3.
 > case with that handler bypassed (or in a REPL) to get the call site — this
 > costs one minute and saves a lot of guessing.
 
+### Scene textures / renders
+
+Neither gate above looks at pixels, and the two stacks used to sample
+*different* textures (gold: its repo-local `assets/textures/<Category>/`
+pack; ported: pools reconstructed from THOR's `material-database.json`).
+The pack now lives in the ResourceManager cache as
+`$ASSETS_DIR/textures/fetchman/<Category>/*.png` and is mandatory —
+`build_thor_texture_pools()` raises a `JORDI-TODO` error if it is missing,
+rather than silently falling back. It is not yet a registered
+`molmospaces_resources` source; until it is, unzip `textures.zip` into
+`$ASSETS_DIR`.
+
+```bash
+cd /Users/maxa/code/g1_molmo && conda run -n g1_molmo python \
+    /Users/maxa/code/molmospaces/scripts/g1_molmo_port_comparison/check_texture_parity.py \
+    --stack gold --out /tmp/tex_gold
+cd /Users/maxa/code/molmospaces && conda run -n mlspaces python \
+    scripts/g1_molmo_port_comparison/check_texture_parity.py --stack ported --out /tmp/tex_ported
+conda run -n mlspaces python scripts/g1_molmo_port_comparison/check_texture_parity.py \
+    --compare /tmp/tex_gold /tmp/tex_ported
+```
+
+**Expected:** `PASS pool_basenames` (258 files / 5 categories), `PASS
+applied_basenames` (25 files), `wrist_image` byte-identical, `head_image`
+`mean|diff|≈0.09, max 25` — faint edge-antialiasing noise from the same
+MuJoCo 3.11-vs-3.5 split as above, not a texture difference.
+
 ---
 
 ## 2. What is already done

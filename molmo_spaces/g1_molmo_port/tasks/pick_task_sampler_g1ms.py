@@ -9,8 +9,6 @@ task_sampler.py's role, in its own file matching molmo_spaces' layout
 tasks/pick_g1_task_sampler.py).
 """
 
-import glob
-import json as _json
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -37,91 +35,59 @@ _SENSOR_SUITE = SensorSuite(OBS_SENSORS)
 
 
 def build_thor_texture_pools():
-    """Discover available THOR/repo-local texture files per scene-texture
-    category. Pure filesystem/JSON I/O, zero RNG, zero instance state --
-    moved here (out of G1Env) since it's "texture randomization stuff", even
-    though the actual per-reset *selection* from these pools
-    (resolve_texture_pools below is discovery only; G1Env._sample_scene_textures
-    is the RNG-dependent selection) has to stay wherever np_random lives
-    (G1Env -- construction-order reasons documented on G1TaskSampler's own
-    __init__ docstring prevented moving np_random itself in this pass).
-    Relocated verbatim from G1Env's old @staticmethod _build_thor_texture_pools.
+    """Discover the scene-texture files available per category. Pure
+    filesystem I/O, zero RNG, zero instance state -- moved here (out of
+    G1Env) since it's "texture randomization stuff", even though the actual
+    per-reset *selection* from these pools (resolve_texture_pools below is
+    discovery only; G1Env._sample_scene_textures is the RNG-dependent
+    selection) has to stay wherever np_random lives (G1Env -- construction-
+    order reasons documented on G1TaskSampler's own __init__ docstring
+    prevented moving np_random itself in this pass). Relocated from G1Env's
+    old @staticmethod _build_thor_texture_pools.
+
+    Gold picks its repo-local assets/textures/<Category>/ pack first and only
+    reconstructs pools from THOR's material-database.json if that's absent.
+    Here the pack is mandatory (it lives in the ResourceManager cache under
+    textures/fetchman/), and its absence is an error rather than a silent
+    fall-through: the db-derived pools are different (larger, differently
+    categorized) sets, so falling back renders the same scenes with different
+    textures than gold -- exactly the divergence this pack exists to close.
     """
     from molmo_spaces.g1_molmo_port.components.constants import SCENE_TEXTURE_CATEGORIES
 
-    # repo-local assets/textures/<Category>/ takes precedence over the THOR db
     canonical = set(SCENE_TEXTURE_CATEGORIES.values())
-    local_root = ASSETS_DIR / "textures"
+    local_root = ASSETS_DIR / "textures" / "fetchman"
+    local_pools = {}
     if local_root.is_dir():
-        local_pools = {}
         for cat in sorted(canonical):
             files = sorted(str(p) for p in (local_root / cat).glob("*.png"))
             if files:
                 local_pools[cat] = files
-        if local_pools:
-            return local_pools
-    db_path = ASSETS_DIR / "objects" / "thor" / "material-database.json"
-    mt_path = ASSETS_DIR / "objects" / "thor" / "material_to_textures.json"
-    if not db_path.exists() or not mt_path.exists():
-        return {}
-    with open(db_path) as f:
-        cat_db = _json.load(f)
-    with open(mt_path) as f:
-        mat_tex = _json.load(f)
-    canonical = set(SCENE_TEXTURE_CATEGORIES.values())
-    canon_by_lc = {c.lower(): c for c in canonical}
-
-    pools: dict[str, set[str]] = {c: set() for c in canonical}
-    for db_cat, mats in cat_db.items():
-        target = canon_by_lc.get(db_cat.lower())
-        if target is None:
-            continue
-        for m in mats:
-            rec = mat_tex.get(m) or {}
-            tex = rec.get("_MainTex")
-            if not tex:
-                continue
-            rel = tex.split("Assets/ThorAssets/Textures/", 1)[-1]
-            rel = rel.split("Textures/", 1)[-1]
-            abs_path = ASSETS_DIR / "objects" / "thor" / "Textures" / rel
-            if not abs_path.exists():
-                continue
-            # MuJoCo's loader only accepts PNG; fall back to sibling .png.
-            if abs_path.suffix.lower() != ".png":
-                png_alt = abs_path.with_suffix(".png")
-                if png_alt.exists():
-                    abs_path = png_alt
-                else:
-                    continue
-            pools[target].add(str(abs_path))
-    return {c: sorted(v) for c, v in pools.items() if v}
+    if not local_pools:
+        raise FileNotFoundError(
+            f"JORDI-TODO: the fetchman scene-texture pack is missing from {local_root}. "
+            f"Texture randomization for the G1/fetchman port needs the curated per-category "
+            f"pools ({', '.join(sorted(canonical))}) that gold ships in its repo-local "
+            f"assets/textures/. Install it with the asset manager (molmospaces_resources) "
+            f"into {ASSETS_DIR}/textures/fetchman/<Category>/*.png -- it is not yet a "
+            f"registered source in DATA_TYPE_TO_SOURCE_TO_VERSION, so until it is, unzip "
+            f"the textures.zip pack into {ASSETS_DIR}."
+        )
+    return local_pools
 
 
 def resolve_texture_pools(randomize_textures, scene_textures_glob):
-    """Discovery + fallback-glob + disable-if-empty logic, relocated verbatim
-    from G1Env.__init__'s old inline texture-pool setup block. Returns
-    (texture_pools, randomize_textures) -- the returned bool may come back
-    False even if the input was True, matching gold's own "disable if
-    nothing available" fallback (same semantics, just returned instead of
-    mutated in place).
+    """Discovery + disable-if-off, relocated from G1Env.__init__'s old inline
+    texture-pool setup block. Returns (texture_pools, randomize_textures).
+
+    scene_textures_glob is kept for signature parity with gold (callers still
+    pass it) but is no longer consulted: it fed gold's legacy flat-glob
+    fallback, which only ran when no per-category pool existed -- a state
+    build_thor_texture_pools now raises on instead.
     """
     if not randomize_textures:
         return {}, False
-    texture_pools = build_thor_texture_pools()
-    if not texture_pools:
-        # Fallback: legacy flat glob replicated across all categories.
-        if Path(scene_textures_glob).is_absolute():
-            flat = sorted(glob.glob(scene_textures_glob))
-        else:
-            flat = sorted(str(p) for p in ASSETS_DIR.glob(scene_textures_glob))
-        if flat:
-            from molmo_spaces.g1_molmo_port.components.constants import SCENE_TEXTURE_CATEGORIES
-
-            texture_pools = {c: list(flat) for c in set(SCENE_TEXTURE_CATEGORIES.values())}
-    if not texture_pools:
-        print("[env] texture randomization requested but no textures available; disabling")
-        return {}, False
-    return texture_pools, True
+    return build_thor_texture_pools(), True
 
 
 class G1TaskSampler:
