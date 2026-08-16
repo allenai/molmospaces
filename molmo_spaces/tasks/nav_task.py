@@ -354,7 +354,7 @@ class NavToObjTask(BaseMujocoTask):
         if not success:
             distance = self.calculate_distance(0)
             object_visible = self.check_object_visible(0)
-            log.info(f"[Nav fail] Distance: {distance:.2f}m, Object visible: {object_visible}")
+            log.info(f"[Nav-ing] Distance: {distance:.2f}m, Object visible: {object_visible}")
 
         return success
 
