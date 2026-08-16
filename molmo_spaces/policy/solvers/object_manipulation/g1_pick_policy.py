@@ -1785,6 +1785,9 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
                 f"{type(robot).__name__}. Point G1Config.robot_factory at "
                 "G1Robot.from_mj_data."
             )
+        # This policy drives the reference sample_actions(), which advances the
+        # WBC gait clock itself -- tell the robot not to advance it too.
+        robot._external_gait_clock = True
         self._controller = G1Controller()
         self._controller.setup(
             task.env.current_model,

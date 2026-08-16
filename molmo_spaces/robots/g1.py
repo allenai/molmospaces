@@ -314,6 +314,9 @@ class G1Robot(Robot):
         self._parallel_kinematics = None
         # Native MoveGroup-based RobotView, built lazily (see `robot_view`).
         self._native_robot_view = None
+        # Set by a policy that advances the WBC gait clock itself (see
+        # compute_control).
+        self._external_gait_clock = False
         # Namespace/asset path are per-instance rather than the module-level
         # PREFIX/XML_PATH the reference stack hardcoded, matching how every
         # other molmo_spaces Robot takes these from its BaseRobotConfig
@@ -627,11 +630,47 @@ class G1Robot(Robot):
         policy -- exactly as in the reference stack; see
         G1Robot.advance_control_clock.
         """
+        # Advance the WBC gait clock unless the driving policy already does.
+        #
+        # LegsWaistController only re-runs its ONNX inference when
+        # step_counter % 4 == 0. The reference stack increments _step_counter
+        # inside its own sample_actions, so a policy derived from it owns the
+        # clock (G1PickPlannerPolicy sets _external_gait_clock). Native policies
+        # -- AStarPlannerPolicy, FetchManBasePlannerPolicy, anything driving
+        # nav_to -- know nothing about it, leaving it pinned at 0 so the gait
+        # network ran EVERY tick instead of every 4th. At 4x rate the gait
+        # desynchronizes and the robot falls over.
+        if not self._external_gait_clock:
+            self._low_level._step_counter += 1
         data = self.data
         step_counter = self._low_level._step_counter
         for controller in self._low_level._controllers:
+            # A controller with no target is stationary -- leave its actuators
+            # where they are. This matters because native policies address only
+            # the move groups they care about (nav sends legs_waist alone),
+            # whereas the reference stack's execute_action always set_targets
+            # every controller each tick, so an unset target never arose there.
+            # Computing anyway yields np.asarray(None) -- a 0-d array -- and
+            # set_ctrl then raises IndexError.
+            #
+            # legs_waist is deliberately exempt: it keeps its command on the
+            # owning G1Controller (set_target writes _cmd/_height_cmd/
+            # _waist_target there, not to self.target), so its own `target` is
+            # always None and skipping it would stop the robot balancing.
+            if controller.target is None and controller.move_group.name != "legs_waist":
+                # Hold the current joint positions rather than skipping. These
+                # are position actuators (the right arm at kp=2000), so leaving
+                # ctrl at whatever was written last drives the arm hard toward a
+                # stale target -- enough to throw the robot over during nav.
+                # Groups with no joint indices (right_gripper tracks a tendon)
+                # have nothing to hold, so leave their ctrl untouched.
+                jqpos = controller.move_group.jqpos
+                if len(jqpos) == 0:
+                    continue
+                controller.move_group.set_ctrl(data, controller.move_group.joint_pos(data))
+                continue
             values = controller.compute_ctrl_inputs(data, step_counter)
-            controller.move_group.set_ctrl(data, values)
+            controller.move_group.set_ctrl(data, np.atleast_1d(values))
 
     @classmethod
     def from_mj_data(cls, mj_data, exp_config) -> "G1Robot":
