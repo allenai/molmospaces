@@ -3,6 +3,7 @@ from __future__ import annotations
 import heapq
 import logging
 import sys
+from types import SimpleNamespace
 
 import mink
 import mujoco
@@ -19,8 +20,10 @@ from molmo_spaces.g1_molmo_port.components.controller_g1ms import (
     ACT_WAIST,
     ACTION_DIM,
 )
+from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy import PickPlannerPolicy
 from molmo_spaces.robots.g1 import JOINT_NAMES as _JOINTS
 from molmo_spaces.robots.g1 import PELVIS_FORWARD_OFFSET as _PELVIS_FWD
+from molmo_spaces.utils.grasps import get_pickup_grasps
 
 # molmo_spaces' own FetchmanPickPlannerPolicy (the target shape this file is
 # being reshaped towards) logs its G1_MOLMO_TRACE lines via `log.info(...)`
@@ -1679,3 +1682,177 @@ def get_config():
             grasp_retry_closer=True,
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# molmo_spaces-native wrapper
+#
+# G1Controller above is the reference stack's policy: it is constructed bare,
+# wired up through set_env/setup, driven by sample_actions() -> flat-15, and
+# reads its world through five attributes on the reference G1Env
+# (np_random/robot/scene/target/time). molmo_spaces' own policy contract is
+# different: policy_factory(config, task), reset(), get_action(obs) -> a
+# move-group dict, plus the PlannerPolicy phase accessors.
+#
+# The two adapters below bridge exactly that gap and nothing else -- the grasp
+# logic itself is untouched, so it stays the gold-verified behaviour. This
+# mirrors how FetchmanPickPlannerPolicy is structured (a PickPlannerPolicy
+# subclass composing an inner grasp planner), which is the shape this file is
+# converging on.
+# ---------------------------------------------------------------------------
+
+
+class _NativeTargetView:
+    """Presents a molmo_spaces `MlSpacesObject` through the three members the
+    reference policy uses on `env.task.target`: `body_id`, and `position()` /
+    `quat()` as *methods taking the live MjData*. molmo_spaces exposes those
+    two as plain properties, so the data argument is accepted and ignored --
+    the property already reads the same live MjData.
+    """
+
+    def __init__(self, obj):
+        self._obj = obj
+
+    @property
+    def body_id(self) -> int:
+        return self._obj.body_id
+
+    def position(self, data=None) -> np.ndarray:
+        return np.asarray(self._obj.position, dtype=np.float64)
+
+    def quat(self, data=None) -> np.ndarray:
+        return np.asarray(self._obj.quat, dtype=np.float64)
+
+
+class _NativeEnvView:
+    """Presents molmo_spaces' `CPUMujocoEnv` + task through the five attributes
+    the reference policy reads off its own `G1Env`.
+
+    Explicit named properties, not attribute forwarding: each one states which
+    molmo_spaces concept backs it, so a missing piece fails loudly at the right
+    place instead of silently resolving somewhere unexpected.
+    """
+
+    def __init__(self, task, target_obj, np_random):
+        self._task = task
+        self._target = _NativeTargetView(target_obj)
+        self.np_random = np_random
+        # `env.task.target` and `env.target` are both read by the reference.
+        self.task = SimpleNamespace(target=self._target, grasp_frame_pose=None)
+
+    @property
+    def robot(self):
+        return self._task.env.current_robot
+
+    @property
+    def scene(self):
+        return SimpleNamespace(model=self._task.env.current_model, data=self._task.env.current_data)
+
+    @property
+    def target(self):
+        return self._target
+
+    @property
+    def time(self) -> float:
+        return float(self._task.env.current_data.time)
+
+
+class G1PickPlannerPolicy(PickPlannerPolicy):
+    """molmo_spaces planner policy driving the reference G1 pick logic.
+
+    Owns a `G1Controller` (the reference nav + grasp state machine, unmodified)
+    and translates at the two boundaries molmo_spaces defines differently:
+    construction/reset, and the action shape (flat-15 -> move-group dict).
+
+    Requires G1Config's default WBC-walking mode and the reference G1Robot
+    (molmo_spaces/robots/g1.py), whose `_low_level` controller this policy
+    writes through -- see G1Controller._low_level.
+    """
+
+    def __init__(self, config, task) -> None:
+        super().__init__(config, task)
+        robot = task.env.current_robot
+        if not hasattr(robot, "_low_level"):
+            raise TypeError(
+                "G1PickPlannerPolicy requires molmo_spaces/robots/g1.py's G1Robot "
+                f"(the reference implementation), got {type(robot).__module__}."
+                f"{type(robot).__name__}. Point G1Config.robot_factory at "
+                "G1Robot.from_mj_data."
+            )
+        self._controller = G1Controller()
+        self._controller.setup(
+            task.env.current_model,
+            task.env.current_data,
+            prefix=self.config.robot_config.robot_namespace,
+        )
+
+    def _pickup_obj(self):
+        om = self.task.env.object_managers[self.task.env.current_batch_index]
+        return om.get_object_by_name(self.config.task_config.pickup_obj_name)
+
+    def _build_info(self) -> dict:
+        """Construct the reference policy's `info` dict from native state.
+
+        Two shape conversions matter here, and both are the divergences that
+        made the independent rewrite behave differently:
+          - `target_object_pose` is a 7-vector [pos, quat] (not a 4x4)
+          - `valid_grasps` are **object-local** transforms; the reference
+            composes them as `Tw @ go`. get_pickup_grasps returns world-frame
+            candidates, so they are mapped back into the object frame here.
+        """
+        obj = self._pickup_obj()
+        pose = np.asarray(obj.pose, dtype=np.float64)
+        world_grasps = get_pickup_grasps(
+            self.task.env, obj, grasp_libraries=self.policy_config.grasp_libraries
+        )
+        inv_pose = np.linalg.inv(pose)
+        local_grasps = [inv_pose @ np.asarray(g, dtype=np.float64) for g in world_grasps]
+
+        xy = self.robot_view.get_move_group("base").pose[:2, 3]
+        to_obj = np.asarray(obj.position, dtype=np.float64)[:2] - xy
+        return {
+            "target_object_pose": np.concatenate(
+                [np.asarray(obj.position, dtype=np.float64), np.asarray(obj.quat, dtype=np.float64)]
+            ),
+            "target_object_position": np.asarray(obj.position, dtype=np.float64),
+            "valid_grasps": np.asarray(local_grasps, dtype=np.float64),
+            # InteractiveShell drives navigation as its own `nav_to` command, so
+            # the pick skill starts already standing at the object: the goal is
+            # where the robot is, facing the target.
+            "goal_xy": np.asarray(xy, dtype=np.float64),
+            "goal_yaw": float(np.arctan2(to_obj[1], to_obj[0])),
+            "pregrasp_joints": None,
+        }
+
+    def reset(self, reset_retries: bool = True) -> None:
+        target_obj = self._pickup_obj()
+        seed = getattr(self.task, "episode_seed", 0) or 0
+        self._controller.set_env(_NativeEnvView(self.task, target_obj, np.random.default_rng(seed)))
+        info = self._build_info()
+        self._controller.reset(info)
+        self.target_poses["grasp"] = info["target_object_pose"]
+
+    def get_action(self, observation):
+        flat = self._controller.sample_actions(observation)
+        return self._flat_to_move_groups(flat)
+
+    def _flat_to_move_groups(self, flat) -> dict:
+        """Reference flat-15 -> molmo_spaces move-group dict (see
+        controller_g1ms.ACTION_DIM's layout)."""
+        flat = np.asarray(flat, dtype=np.float32)
+        action = self.robot_view.get_ctrl_dict()
+        action["legs_waist"] = np.concatenate(
+            [flat[ACT_CMD], [flat[ACT_HEIGHT]], flat[ACT_WAIST]]
+        ).astype(np.float32)
+        action["right_arm"] = flat[ACT_ARM].astype(np.float32)
+        gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[0]
+        action[gripper_mg_id] = np.array([flat[ACT_GRIP]], dtype=np.float32)
+        if self._controller.done:
+            action["done"] = True
+        return action
+
+    def get_phase(self) -> str:
+        return self._controller.get_phase()
+
+    def get_all_phases(self) -> dict:
+        return self._controller.get_all_phases()
