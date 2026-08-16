@@ -46,6 +46,12 @@ STANDING_HEIGHT = 0.75
 # Not from the reference stack, which emits base velocities directly; these are
 # native molmo_spaces/robots/g1.py's own empirically-validated values, kept in
 # sync so a navigation policy drives either implementation identically.
+# Width of the "legs_waist" move-group target native policies emit:
+# [vx, vy, yaw_rate, height, waist_yaw, waist_roll, waist_pitch]. Matches
+# molmo_spaces/controllers/g1_walk.py's NUM_TARGET_DIMS (the interface native
+# policies were written against) -- see G1Robot.update_control.
+NUM_LEGS_WAIST_TARGET_DIMS = 7
+
 MAX_LINEAR_VEL = 0.5
 MAX_YAW_RATE = 0.5
 MIN_LINEAR_VEL = 0.15
@@ -444,6 +450,60 @@ class G1Robot(Robot):
         if not controllers:
             return {}
         return {c.move_group.name: c for c in controllers}
+
+    def update_control(self, action_command_dict) -> None:
+        """molmo_spaces' Robot.update_control protocol -> this robot's control
+        stack.
+
+        Native policies emit a move-group-keyed dict whose "legs_waist" entry
+        is a flat 7-vector [vx, vy, yaw_rate, height, waist_yaw, waist_roll,
+        waist_pitch] (the interface G1WalkController.set_target defines). The
+        reference LegsWaistController instead takes `(cmd3, height, waist3)`
+        (components/controller_g1ms.py). Translating here keeps both sides
+        unchanged: native policies stay portable across robots, and the
+        reference control law keeps the exact signature its ported code uses.
+
+        `execute_action` (the flat-15 path the reference stack drives) is
+        untouched and remains the authority for that stack.
+        """
+        controllers = self.controllers
+        for mg_id, target in action_command_dict.items():
+            controller = controllers.get(mg_id)
+            if controller is None or target is None:
+                continue
+            target = np.asarray(target, dtype=np.float32)
+            if mg_id == "legs_waist":
+                if target.shape[0] != NUM_LEGS_WAIST_TARGET_DIMS:
+                    raise ValueError(
+                        f"legs_waist target must be {NUM_LEGS_WAIST_TARGET_DIMS} values "
+                        f"[vx, vy, yaw_rate, height, waist(3)], got {target.shape[0]}"
+                    )
+                controller.set_target((target[0:3], float(target[3]), target[4:7]))
+            else:
+                controller.set_target(target if target.size > 1 else float(target[0]))
+
+    @classmethod
+    def from_mj_data(cls, mj_data, exp_config) -> "G1Robot":
+        """Build from molmo_spaces' own `(mj_data, exp_config)` robot-factory
+        signature (see BaseRobotConfig.robot_factory, called by
+        TaskSampler at tasks/task_sampler.py).
+
+        This class's own `__init__` takes an explicit `(model, data)` pair
+        because that is how the reference stack constructs it. Rather than
+        overload `__init__` to guess which calling convention it was handed --
+        the two are indistinguishable positionally, since MjData carries its
+        own `.model` -- this is a separate, explicitly-named constructor.
+        Namespace and robot XML come from the config, like every other
+        molmo_spaces Robot.
+        """
+        robot_config = exp_config.robot_config
+        return cls(
+            mj_data.model,
+            mj_data,
+            namespace=robot_config.robot_namespace,
+            xml_path=str(robot_config.get_robot_xml_path()),
+            exp_config=exp_config,
+        )
 
     def set_env(self, env):
         """Wires the low-level controller to `env` (mj model opt overrides,
