@@ -312,6 +312,8 @@ class G1Robot(Robot):
         # Robot ABC solver properties, built lazily (see `kinematics`).
         self._kinematics = None
         self._parallel_kinematics = None
+        # Native MoveGroup-based RobotView, built lazily (see `robot_view`).
+        self._native_robot_view = None
         # Namespace/asset path are per-instance rather than the module-level
         # PREFIX/XML_PATH the reference stack hardcoded, matching how every
         # other molmo_spaces Robot takes these from its BaseRobotConfig
@@ -421,7 +423,7 @@ class G1Robot(Robot):
             for n in ("head_pov",)
             if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, f"{self._namespace}{n}") >= 0
         ]
-        self._robot_view = G1RobotView(
+        self._pose_view = G1RobotView(
             model,
             data,
             self._body_id,
@@ -436,7 +438,36 @@ class G1Robot(Robot):
 
     @property
     def robot_view(self):
-        return self._robot_view
+        """Robot ABC's RobotView.
+
+        Two different things are called "G1RobotView" here. The reference stack
+        wants the pose/contact/visibility helper defined in this module
+        (get_xy/set_pose/has_bad_contacts/...); molmo_spaces' own tasks and
+        policies want the MoveGroup container in
+        robots/robot_views/g1_view.py (get_move_group/get_ctrl_dict/...).
+        They share a name but no interface.
+
+        So: when this robot was constructed with an exp_config -- i.e. by
+        molmo_spaces' own robot factory -- expose the native MoveGroup view,
+        which is what the native task/policy stack calls into. The reference
+        stack constructs this robot without a config and reaches the helper
+        view either directly or through G1Robot's own pass-through methods
+        (get_xy/set_pose/...), which always use `self._pose_view` and are
+        therefore unaffected by which view is published here.
+        """
+        if self.exp_config is None:
+            return self._pose_view
+        if self._native_robot_view is None:
+            from molmo_spaces.robots.robot_views.g1_view import (
+                G1RobotView as _NativeG1RobotView,
+            )
+
+            self._native_robot_view = _NativeG1RobotView(
+                self.data,
+                self._namespace,
+                use_holo_base=getattr(self.exp_config.robot_config, "use_holo_base", False),
+            )
+        return self._native_robot_view
 
     @property
     def namespace(self):
@@ -450,6 +481,29 @@ class G1Robot(Robot):
         if not controllers:
             return {}
         return {c.move_group.name: c for c in controllers}
+
+    @staticmethod
+    def robot_model_root_name() -> str:
+        """Robot ABC hook used by the scene builder to find the robot's root
+        body in its MJCF. Same body as g1_old_reference -- both wrap the same
+        g1_dex.xml."""
+        return "pelvis"
+
+    def reset(self) -> None:
+        """Robot ABC reset.
+
+        Uses this robot's own `set_defaults()` (DEFAULT_QPOS, the reference
+        stack's gravity-settled standing pose) plus the WBC controller's
+        internal state reset, rather than g1_old_reference's
+        `set_joint_pos(robot_config.init_qpos)`. Those are two *different*
+        poses on purpose -- see DEFAULT_QPOS vs G1Config.init_qpos -- and the
+        reference grasp behaviour this class exists to preserve was validated
+        against DEFAULT_QPOS, so that is what reset restores here.
+        """
+        self.set_defaults()
+        reset_wbc = getattr(self._low_level, "_reset_wbc_state", None)
+        if reset_wbc is not None:
+            reset_wbc()
 
     def update_control(self, action_command_dict) -> None:
         """molmo_spaces' Robot.update_control protocol -> this robot's control
@@ -533,8 +587,8 @@ class G1Robot(Robot):
         molmo_spaces navigation policy drive this robot: the reference stack
         has no such bridge because its policy emits base velocities directly.
         """
-        xy = self._robot_view.get_xy()
-        yaw = self._robot_view.get_yaw()
+        xy = self._pose_view.get_xy()
+        yaw = self._pose_view.get_yaw()
 
         dx, dy = waypoint[0] - xy[0], waypoint[1] - xy[1]
         local_vx = np.cos(yaw) * dx + np.sin(yaw) * dy
@@ -1039,19 +1093,19 @@ class G1Robot(Robot):
             self.data.qpos[self.model.jnt_qposadr[j2]] = float(joints_dict["right_Joint1_1"])
 
     def set_pose(self, xy, yaw, z=STANDING_HEIGHT):
-        self._robot_view.set_pose(xy, yaw, z=z)
+        self._pose_view.set_pose(xy, yaw, z=z)
 
     def zero_velocities(self):
-        self._robot_view.zero_velocities()
+        self._pose_view.zero_velocities()
 
     def get_xy(self):
-        return self._robot_view.get_xy()
+        return self._pose_view.get_xy()
 
     def get_yaw(self):
-        return self._robot_view.get_yaw()
+        return self._pose_view.get_yaw()
 
     def pelvis_height(self):
-        return self._robot_view.pelvis_height()
+        return self._pose_view.pelvis_height()
 
     def place(self, xy, yaw):
         self.set_pose(np.asarray(xy, dtype=np.float64), float(yaw))
@@ -1060,17 +1114,17 @@ class G1Robot(Robot):
         mujoco.mj_forward(self.model, self.data)
 
     def has_bad_contacts(self):
-        return self._robot_view.has_bad_contacts()
+        return self._pose_view.has_bad_contacts()
 
     def check_object_visibility(self, body_id, threshold=0.00002):
-        return self._robot_view.check_object_visibility(body_id, threshold=threshold)
+        return self._pose_view.check_object_visibility(body_id, threshold=threshold)
 
     def close(self):
         """Free the lazily-created visibility renderer (and its GL/EGL context).
         Must be called before dropping the robot on scene reload — otherwise the
         renderer's framebuffer leaks on the render GPU because __del__-based EGL
         teardown is unreliable, so VRAM creeps to OOM across reloads."""
-        self._robot_view.close()
+        self._pose_view.close()
 
     def state_is_finite(self):
         d = self.data
