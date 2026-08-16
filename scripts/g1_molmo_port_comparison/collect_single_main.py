@@ -13,6 +13,7 @@ Usage:
 --env accepts a filesystem path to a config module exposing get_config()
 (ml_collections.ConfigDict), e.g. any file under molmo_spaces/g1_molmo_port/configs/.
 """
+
 import argparse
 import importlib.util
 import os
@@ -31,20 +32,46 @@ def _load_env_config(path):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="molmo_spaces.g1_molmo_port single-worker collector")
-    parser.add_argument("--gpu", type=int, default=-1, help="GPU device ID (-1 = no EGL/CUDA device select)")
+    parser = argparse.ArgumentParser(
+        description="molmo_spaces.g1_molmo_port single-worker collector"
+    )
+    parser.add_argument(
+        "--gpu", type=int, default=-1, help="GPU device ID (-1 = no EGL/CUDA device select)"
+    )
     parser.add_argument("--episodes", type=int, default=10, help="max episodes")
     parser.add_argument("--seed", type=int, default=0, help="random seed")
     parser.add_argument("--render", action="store_true", help="render to viewer")
-    parser.add_argument("--cv2", action="store_true", help="with --render, show camera feed in a cv2 window instead of the MuJoCo viewer")
-    parser.add_argument("--record", action="store_true", help="record successful episodes to a LeRobot dataset")
-    parser.add_argument("--save_failures", action="store_true", help="also save failed episodes (when --record)")
-    parser.add_argument("--realtime", action="store_true", help="throttle rollout so wall-clock time matches sim time")
-    parser.add_argument("--debug", action="store_true", help="overlay debug markers in the MuJoCo viewer")
-    parser.add_argument("--repo_id", type=str, default="local/g1_pick", help="LeRobot dataset repo_id")
-    parser.add_argument("--data_dir", type=str, default="data", help="local root for LeRobot dataset")
-    parser.add_argument("--fps", type=int, default=10, help="dataset logging fps (physics runs at 200)")
-    parser.add_argument("--env", type=str, required=True, help="path to a config module exposing get_config()")
+    parser.add_argument(
+        "--cv2",
+        action="store_true",
+        help="with --render, show camera feed in a cv2 window instead of the MuJoCo viewer",
+    )
+    parser.add_argument(
+        "--record", action="store_true", help="record successful episodes to a LeRobot dataset"
+    )
+    parser.add_argument(
+        "--save_failures", action="store_true", help="also save failed episodes (when --record)"
+    )
+    parser.add_argument(
+        "--realtime",
+        action="store_true",
+        help="throttle rollout so wall-clock time matches sim time",
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="overlay debug markers in the MuJoCo viewer"
+    )
+    parser.add_argument(
+        "--repo_id", type=str, default="local/g1_pick", help="LeRobot dataset repo_id"
+    )
+    parser.add_argument(
+        "--data_dir", type=str, default="data", help="local root for LeRobot dataset"
+    )
+    parser.add_argument(
+        "--fps", type=int, default=10, help="dataset logging fps (physics runs at 200)"
+    )
+    parser.add_argument(
+        "--env", type=str, required=True, help="path to a config module exposing get_config()"
+    )
     return parser.parse_args()
 
 
@@ -59,8 +86,8 @@ def main():
         os.environ["PYOPENGL_PLATFORM"] = "egl"
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 
-    from molmo_spaces.g1_molmo_port.agents.policy_g1ms import G1Controller
     from molmo_spaces.g1_molmo_port.env_g1ms import make_env
+    from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import G1Controller
 
     cfg = _load_env_config(args.env)
     cfg["seed"] = args.seed
@@ -164,7 +191,9 @@ def main():
                     settle_bad = True
                     break
             if settle_bad:
-                print(f"[main] rejecting reset after settle: xy={raw_env.robot.get_xy()}", flush=True)
+                print(
+                    f"[main] rejecting reset after settle: xy={raw_env.robot.get_xy()}", flush=True
+                )
                 continue
             agent.set_step_info(info)
 
@@ -206,7 +235,9 @@ def main():
 
             success = bool(info.get("success", False))
             results.append(success)
-            print(f"[main] episode {episode} result: success={success} sim_time={raw_env.time:.2f}s")
+            print(
+                f"[main] episode {episode} result: success={success} sim_time={raw_env.time:.2f}s"
+            )
 
             if recorder is not None:
                 if success or args.save_failures:
