@@ -1,4 +1,4 @@
-"""ABBMap -- an occupancy map built from the axis-aligned bounding boxes of a
+"""AABBMap -- an occupancy map built from the axis-aligned bounding boxes of a
 scene's floor geoms, rendered through MuJoCo's segmentation renderer.
 
 **Provenance: this comes from the FetchMan repo (`g1_molmo`), where it is
@@ -11,17 +11,25 @@ re-running scripts/g1_molmo_port_comparison/check_gold_parity.py.
 
 Relationship to `ProcTHORMap`/`iTHORMap` (utils/scene_maps.py): same query API
 (`is_free`, `dilated`, `label_at`, `same_free_component`, `any_free_in_annulus`,
-`sample_near`, `sample_robot_pose`, True = free), *different* grid. ABBMap
+`sample_near`, `sample_robot_pose`, True = free), *different* grid. AABBMap
 frames the map on the floor geoms' AABB and segments floor vs non-floor;
 ProcTHORMap renders an orthographic depth view of the whole scene. They
 disagree cell for cell, so they are selectable rather than interchangeable --
 see `utils/scene_maps.OCCUPANCY_MAP_IMPLS` and
 `CPUMujocoEnv.get_occupancy_map(impl=...)`. Only G1/FetchMan experiments
-should select "abb".
+should select "aabb".
 
-Kept in its own module rather than appended to scene_maps.py on purpose: the
-import below monkeypatches MuJoCo's segmentation renderer, and scene_maps is
-imported repo-wide.
+Kept in its own module rather than appended to scene_maps.py on purpose:
+importing it monkeypatches `mujoco.renderer.Renderer.render` (see below --
+MuJoCo's segmentation renderer sizes its segid table by `scene.ngeom`, which
+IndexErrors on dense scenes whose decorator/skybox segids exceed it). That
+patch is process-global. scene_maps is imported by env.py and therefore by
+essentially everything, so folding this in would silently apply the patch to
+every molmo_spaces process, including ones that never render an occupancy
+map. As its own module it is imported lazily, inside
+`CPUMujocoEnv.get_occupancy_map`, only when an experiment actually selects
+"aabb" -- the two implementations then share no state at all: separate
+modules, separate in-memory caches, separate on-disk cache files.
 """
 
 import json
@@ -192,7 +200,7 @@ def _fetchman_map_path(xml_path) -> Path:
     return xml_path.with_name(xml_path.stem + "_thormap.png")
 
 
-class ABBMap:
+class AABBMap:
     def __init__(self, occupancy, world_to_map, map_to_world, px_per_m, agent_radius=None):
         self.occupancy = occupancy
         self.world_to_map = world_to_map
@@ -354,7 +362,7 @@ class ABBMap:
     @classmethod
     def from_model_path(cls, xml_path, agent_radius=0.15, px_per_m=200):
         """Entry point for molmo_spaces' own envs (CPUMujocoEnv.get_occupancy_map
-        with impl="abb"), which -- unlike FetchMan -- ask for maps at whatever
+        with impl="aabb"), which -- unlike FetchMan -- ask for maps at whatever
         agent radius the task sampler configured.
 
         Caches per (radius, px_per_m) in its own file rather than sharing
@@ -365,7 +373,7 @@ class ABBMap:
         """
         xml_path = Path(xml_path)
         map_path = xml_path.with_name(
-            f"{xml_path.stem}_abbmap_r{float(agent_radius):g}_p{int(px_per_m)}.png"
+            f"{xml_path.stem}_aabbmap_r{float(agent_radius):g}_p{int(px_per_m)}.png"
         )
         if map_path.exists():
             cached = cls.load(str(map_path))

@@ -7,7 +7,7 @@ and several agent radii of each -- with neither disturbing the other.
 
 These exercise the selection/caching contract on a bare CPUMujocoEnv instance
 with the two builders stubbed; building real maps needs a scene and a
-renderer, and is covered by fetchman/scripts/.
+renderer, and is covered by scripts/g1_molmo_port_comparison/.
 """
 
 from collections import OrderedDict

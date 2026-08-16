@@ -154,6 +154,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
         # Cached occupancy map for robot placement (expensive to create)
         self._cached_thormap = None
         self._cached_thormap_key = None  # (model_path, agent_radius, px_per_m)
+        # Occupancy maps live here, keyed (impl, model_path, agent_radius,
+        # px_per_m) so a task can hold e.g. a "thor" map for placement and an
+        # "aabb" one for a FetchMan policy, at different radii, without either
+        # evicting the other. Bounded and ordered: oldest out first.
         self._occupancy_maps: OrderedDict = OrderedDict()
         self.occupancy_map_impl = exp_config.task_sampler_config.occupancy_map_impl
         self.occupancy_map_cache_size = exp_config.task_sampler_config.occupancy_map_cache_size
