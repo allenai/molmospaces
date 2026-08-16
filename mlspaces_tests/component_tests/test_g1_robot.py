@@ -1,8 +1,16 @@
 """Smoke test for the G1 humanoid robot (Phase 3: whole-body walking).
 
-Exercises G1WalkController (PD-torque + ONNX stand/walk policy) on the
-combined legs_waist move group, plus JointPosController for both arms and
+Exercises the whole-body controller (PD-torque + ONNX stand/walk policy) on
+the combined legs_waist move group, plus position control for both arms and
 the right gripper.
+
+Runs against `robots/g1.py` -- the reference-derived implementation, driven
+here through `from_mj_data` (molmo_spaces' own robot-factory signature) and
+`controllers/g1_wbc.py`. It used to run against the superseded independent
+rewrite `robots/g1_old_reference.py`, whose walking these same numbers were
+first measured on; that module is gone, and the assertions carry over
+unchanged because the reference robot matches them (2.22m vs 2.17m over the
+same 4.5s at vx=0.5).
 
 Requires the G1 MJCF/mesh assets and the groot_balance.onnx/groot_walk.onnx
 policy weights to be present locally under `get_robot_path("g1")` (not yet
@@ -16,7 +24,7 @@ import pytest
 
 from molmo_spaces.configs.robot_configs import ActionNoiseConfig, G1Config
 from molmo_spaces.molmo_spaces_constants import ROBOTS_DIR
-from molmo_spaces.robots.g1_old_reference import G1Robot
+from molmo_spaces.robots.g1 import G1Robot
 
 _G1_ASSETS_DIR = ROBOTS_DIR / "g1"
 _G1_POLICIES_DIR = _G1_ASSETS_DIR / "policies"
@@ -55,7 +63,7 @@ def _build_standing_scene(config: G1Config):
 def g1_robot():
     config = _g1_config()
     model, data = _build_standing_scene(config)
-    robot = G1Robot(data, _FakeExpConfig(config))
+    robot = G1Robot.from_mj_data(data, _FakeExpConfig(config))
     robot.reset()
     mujoco.mj_forward(model, data)
     return model, data, robot

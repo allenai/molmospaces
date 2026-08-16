@@ -4,9 +4,8 @@ The pick rollout (generate_ported_rollout.py) exercises this robot's grasp
 path. This exercises the *navigation* path instead: it drives the robot to a
 sequence of absolute [x, y, yaw] waypoints through
 `G1Robot.waypoint_to_velocity_target` -- the same waypoint -> base-velocity
-bridge molmo_spaces/robots/g1_old_reference.py uses, so a molmo_spaces
-navigation policy (e.g. AStarPlannerPolicy, which emits exactly these
-waypoints) can drive this robot unchanged.
+bridge a molmo_spaces navigation policy (e.g. AStarPlannerPolicy, which emits
+exactly these waypoints) drives this robot through, unchanged.
 
 Waypoints are picked relative to the robot's own spawn pose and checked
 against the scene occupancy map, so this works on whatever house the config
@@ -61,26 +60,49 @@ print(f"[nav] spawn xy={start_xy.tolist()} yaw={start_yaw:.3f}rad")
 
 
 def free(xy):
+    # occ_safe (the dilated map the planner itself uses) rather than occ: a
+    # cell that is technically free but flush against a wall is not somewhere
+    # a 0.15m-radius walking robot gets to.
     try:
-        return bool(raw_env.occ.is_free(np.asarray(xy, dtype=float)))
+        return bool(raw_env.occ_safe.is_free(np.asarray(xy, dtype=float)))
     except Exception:
         return True
 
 
+def corridor_free(origin, heading, length, step=0.25):
+    """Every cell along the segment free, not just its endpoint. The pick
+    config spawns the robot 0.2-0.5m from a target on a counter -- i.e.
+    facing furniture -- so an endpoint-only check happily picks a waypoint on
+    the far side of the counter and then measures the robot failing to walk
+    through it. That misreads as "the G1 cannot walk" (it is what §4 of
+    NEXT_STEPS.md used to report); from a clear corridor the same command
+    covers ~2.2m in 4.5s.
+    """
+    v = np.array([np.cos(heading), np.sin(heading)])
+    return all(free(origin + s * v) for s in np.arange(step, length + step, step))
+
+
 # Pick reachable waypoints: probe outward along several headings from spawn and
-# keep the ones the occupancy map says are free.
+# keep the ones whose whole path the occupancy map says is free.
 waypoints = []
-for dist in (0.6, 1.0):
-    for dtheta in (0.0, np.pi / 2, -np.pi / 2, np.pi):
+# 16 headings, not 4: at a grasp spawn the robot is wedged against a counter,
+# and the few directions that are actually open are rarely the cardinal ones.
+headings = np.arange(0.0, 2 * np.pi, np.pi / 8)
+for dist in (1.0, 0.6):
+    for dtheta in headings:
         th = start_yaw + dtheta
+        if not corridor_free(start_xy, th, dist):
+            continue
         cand = np.array([start_xy[0] + dist * np.cos(th), start_xy[1] + dist * np.sin(th)])
-        if free(cand):
-            waypoints.append(np.array([cand[0], cand[1], th], dtype=float))
+        waypoints.append(np.array([cand[0], cand[1], th], dtype=float))
     if waypoints:
         break
 
 if not waypoints:
-    raise SystemExit("[nav] FAIL: no free waypoint found near spawn")
+    raise SystemExit(
+        "[nav] SKIP: no clear corridor from spawn -- the robot is boxed in by furniture, "
+        "which measures nothing about walking. Re-run with a different --seed."
+    )
 waypoints = waypoints[:2]
 print(f"[nav] {len(waypoints)} reachable waypoint(s) selected\n")
 

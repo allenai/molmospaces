@@ -149,12 +149,14 @@ strict gate:
 | `fa1ef5e` | `G1PickPlannerPolicy` — native planner-policy wrapper |
 | `7bd04e3` | `robot_model_root_name`/`reset`, dual `robot_view`, Controller ABC members |
 | `ea4bb4c` | `check_gold_parity.py` + these notes |
+| (texture pack) | `check_texture_parity.py`; scene textures now match gold |
+| (this pass) | `controller_g1ms.py` → `controllers/g1_wbc.py`; both `*_old_reference` modules deleted |
 | `f627598` | **the flip: native pick switched to the reference stack, and now succeeds** |
 
-Key naming: **`robots/g1.py` is the reference-derived implementation**;
-**`robots/g1_old_reference.py` is the superseded independent rewrite**, which
-nothing constructs any more (see §3). They are NOT interchangeable —
-`(mj_data, exp_config)` vs `(model, data, ...)`.
+Key naming: **`robots/g1.py` is the reference-derived implementation** and is
+now the only one — the superseded independent rewrite
+(`robots/g1_old_reference.py`) is deleted. It takes `(model, data, ...)`
+directly, or `(mj_data, exp_config)` through `G1Robot.from_mj_data`.
 
 ---
 
@@ -197,42 +199,50 @@ Six gaps were closed, each from a real traceback:
   (`nav_to` is a separate command); for the batch datagen pipeline the info
   dict needs a real `goal_xy`/`goal_yaw` and a `nav_occupancy_map` so
   `_plan_path` can run.
-- **Retire the rewrite.** Nothing constructs `FetchmanPickPlannerPolicy` now;
-  rename it to `*_old_reference.py` alongside `robots/g1_old_reference.py`.
-  Then `robots/g1_old_reference.py` itself, once nothing imports it.
-- **Delete `g1_molmo_port/`** once its shims have no consumers.
+- **Retire the rewrite. DONE.** `robots/g1_old_reference.py` and
+  `policy/solvers/object_manipulation/fetchman_pick_planner_policy_old_reference.py`
+  are deleted. Their last consumer was `test_g1_robot.py`, now running
+  against `robots/g1.py` via `from_mj_data` (3 passed, same assertions).
+- **Delete `g1_molmo_port/`.** Production code no longer imports it at all:
+  the last module it needed, `components/controller_g1ms.py`, is now
+  `molmo_spaces/controllers/g1_wbc.py`. What is left (`env_g1ms.py`,
+  `tasks/pick_task_sampler_g1ms.py`, `components/scene.py`,
+  `components/occupancy_map.py`, `sensors_g1ms.py`, `configs/`) is reachable
+  only from `scripts/g1_molmo_port_comparison/` — but those scripts are the
+  gold parity gate itself. `env_g1ms.py` in particular IS required to run the
+  parity check: `generate_ported_rollout.py` and `check_texture_parity.py`
+  both build their env with its `make_env`. So the package can only go once
+  the gold comparison is retired, or the gate is repointed at the native
+  `CPUMujocoEnv`/`TaskSampler` classes.
 
 ---
 
 ## 4. Known open issues
 
-- **G1 walking does not translate — and it is now localized.** Commanding
-  `[0.5, 0, 0]` via `nav_demo.py` (reference robot + `controller_g1ms`) moves
-  the robot ~0.115 m in 4 s. It stays upright and the command reaches the walk
-  policy (`norm(cmd)=0.5 > 0.05`, so `_walk_sess` runs — verified).
+- **G1 walking: RESOLVED — it was a measurement artifact, not a bug.** The
+  old report (~0.115 m in 4 s via `nav_demo.py`) blamed the `g1_wbc` gait
+  clock. Re-measured after promoting the controller, on the same `vx=0.5`
+  command:
 
-  **But `mlspaces_tests/component_tests/test_g1_robot.py::
-  test_walks_forward_on_command` passes**, asserting ~2.3 m in 4.5 s at the
-  same `vx=0.5` — on `g1_old_reference` driven by the native
-  `controllers/g1_walk.py::G1WalkController`.
+  | setup | forward in 4.5 s |
+  | --- | --- |
+  | flat plane, `robots/g1.py` + `g1_wbc` | **2.219 m** |
+  | flat plane, `g1_old_reference` + `g1_walk` (the old passing test) | 2.167 m |
+  | flat plane, gait clock advanced twice per tick | 2.280 m |
+  | flat plane + `G1Controller.set_env`'s physics overrides | 2.219 m |
+  | house `val_0`, from the pick spawn | 0.114 m |
+  | house `val_0`, from a verified 2.5 m clear corridor | **2.215 m** |
 
-  Same ONNX weights, same PD gains, same 4-tick decimation, opposite outcome.
-  So the fault is in the **`controller_g1ms` path**, not the robot, the command
-  plumbing, or the policy. That is a much smaller search space than before.
-  Prime suspect: gait-clock ownership — native `G1WalkController` increments
-  `_step_counter` itself inside `compute_ctrl_inputs` (`g1_walk.py:232`),
-  whereas `controller_g1ms` takes it as an argument and relies on the *policy*
-  to advance it (`_step_counter += 1` in `sample_actions`). Anything driving the
-  reference controller outside `sample_actions` must call
-  `G1Robot.advance_control_clock()` at exactly the right cadence, and a
-  mismatch there would desynchronize the gait without breaking balance —
-  precisely the observed symptom.
+  So the robot, the controller, the gait clock (double-advancing it changes
+  nothing) and the physics overrides are all fine. The pick config spawns the
+  robot 0.2–0.5 m from a target on a counter — facing furniture — and
+  `nav_demo.py` only checked that the waypoint's *endpoint* cell was free, so
+  it was measuring the robot failing to walk through a counter.
 
-  Fastest next experiment: port `test_walks_forward_on_command` to the new
-  robot (it needs `G1Robot.from_mj_data`) and bisect the clock cadence.
+  `nav_demo.py` now requires the whole segment free (`occ_safe`, 16 headings)
+  and reports `SKIP` rather than `FAIL` when the spawn is boxed in. On seed 0
+  it selects one corridor and **PASSes** (`progress=+0.752 m`, arrived).
 
-- **`robots/g1_old_reference.py` / `fetchman_pick_planner_policy.py`** still
-  carry the three documented divergences (arm `actfrcrange`/`dof_damping`,
-  action noise on the IK command, and — fixed in `a248348` — the non-persisted
-  height smoothing). They are now dead code paths; retiring them is preferable
-  to fixing them further.
+- ~~`robots/g1_old_reference.py` / `fetchman_pick_planner_policy.py` carry
+  three documented divergences~~ — both modules are deleted (see §3); the
+  divergences went with them.

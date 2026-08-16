@@ -1,3 +1,16 @@
+"""G1's whole-body PD/ONNX low-level controller -- the reference stack's own
+`G1Controller`, promoted out of `g1_molmo_port/components/controller_g1ms.py`
+(it was the last module production code still imported from that package:
+`robots/g1.py` and `policy/solvers/object_manipulation/g1_pick_policy.py`).
+Behaviour is unchanged by the move; only the import path and the ASSETS_DIR
+source (now molmo_spaces' constants directly) differ.
+
+Note the `MoveGroup`/`Controller` classes below are this stack's own minimal
+stand-ins, deliberately NOT `robots/robot_views/abstract.py`'s MoveGroup or
+`controllers/abstract.py`'s Controller -- converging them is part of the
+still-open port merge (scripts/g1_molmo_port_comparison/NEXT_STEPS.md).
+"""
+
 from __future__ import annotations
 
 import collections
@@ -7,7 +20,7 @@ import mujoco
 import numpy as np
 import onnxruntime as ort
 
-from molmo_spaces.g1_molmo_port import ASSETS_DIR
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.robots.g1 import DEFAULT_QPOS as _ROBOT_DEFAULT_QPOS
 from molmo_spaces.robots.g1 import JOINT_NAMES as _JOINTS
 
