@@ -157,6 +157,26 @@ class Controller:
     def compute_ctrl_inputs(self, data, step_counter):
         raise NotImplementedError
 
+    # -- molmo_spaces/controllers/abstract.py's Controller surface --
+    #
+    # The reference stack never calls these: it drives every controller through
+    # G1Controller.execute_action, which set_targets each one every tick. They
+    # exist so molmo_spaces' own task/robot stack (Robot.reset,
+    # Robot.set_stationary) can drive this robot too. Clearing `target` is what
+    # "stationary" means for these controllers -- G1Controller.execute_action
+    # overwrites it on the very next tick regardless, so this cannot change the
+    # reference stack's behaviour.
+
+    @property
+    def stationary(self) -> bool:
+        return self.target is None
+
+    def set_to_stationary(self) -> None:
+        self.target = None
+
+    def reset(self) -> None:
+        self.target = None
+
 
 class LegsWaistController(Controller):
     """Combined 15-dof legs+waist PD law + ONNX WBC residual. Legs and waist
