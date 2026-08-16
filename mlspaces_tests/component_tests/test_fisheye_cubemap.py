@@ -13,9 +13,23 @@ import mujoco
 import numpy as np
 import pytest
 
-from molmo_spaces.utils.fisheye_warping_g1 import FisheyeRenderer
+from molmo_spaces.configs.camera_configs import (
+    G1_HEAD_FISHEYE_D,
+    G1_HEAD_FISHEYE_IMAGE_SIZE,
+    G1_HEAD_FISHEYE_K,
+)
+from molmo_spaces.utils.fisheye_cubemap import FisheyeRenderer
 
 TILE_CAM_NAMES = ("tile_center", "tile_up", "tile_down", "tile_left", "tile_right")
+
+# FisheyeRenderer has no built-in calibration any more -- config owns it (see
+# FisheyeMjcfCameraConfig), so every construction has to name a lens. These
+# tests only care that the renderer runs, so they borrow the G1 head lens.
+LENS = {
+    "K": G1_HEAD_FISHEYE_K,
+    "D": G1_HEAD_FISHEYE_D,
+    "image_size": G1_HEAD_FISHEYE_IMAGE_SIZE,
+}
 
 _TILE_EULERS = {
     "tile_center": "0 0 0",
@@ -59,7 +73,7 @@ def data(model):
 @pytest.fixture
 def renderer(model):
     return FisheyeRenderer(
-        model, tile_cam_names=TILE_CAM_NAMES, tile_size=64, output_h=48, output_w=48
+        model, tile_cam_names=TILE_CAM_NAMES, tile_size=64, output_h=48, output_w=48, **LENS
     )
 
 
@@ -75,11 +89,11 @@ def mj_renderer(model):
 class TestFisheyeRendererConstruction:
     def test_requires_exactly_five_cameras(self, model):
         with pytest.raises(ValueError, match="need exactly 5 tile cameras"):
-            FisheyeRenderer(model, tile_cam_names=TILE_CAM_NAMES[:4])
+            FisheyeRenderer(model, tile_cam_names=TILE_CAM_NAMES[:4], **LENS)
 
     def test_unknown_camera_name_raises(self, model):
         with pytest.raises(ValueError, match="not found in model"):
-            FisheyeRenderer(model, tile_cam_names=(*TILE_CAM_NAMES[:4], "does_not_exist"))
+            FisheyeRenderer(model, tile_cam_names=(*TILE_CAM_NAMES[:4], "does_not_exist"), **LENS)
 
     def test_rejects_narrow_fov(self, model):
         # tile_center etc all have fovy=100 in the fixture model; this only
@@ -87,7 +101,7 @@ class TestFisheyeRendererConstruction:
         narrow_xml = _MODEL_XML.replace('fovy="100"', 'fovy="60"')
         narrow_model = mujoco.MjModel.from_xml_string(narrow_xml)
         with pytest.raises(ValueError, match="too small"):
-            FisheyeRenderer(narrow_model, tile_cam_names=TILE_CAM_NAMES)
+            FisheyeRenderer(narrow_model, tile_cam_names=TILE_CAM_NAMES, **LENS)
 
 
 class TestFisheyeRendererRender:

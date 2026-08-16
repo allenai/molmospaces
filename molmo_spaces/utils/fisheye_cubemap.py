@@ -1,5 +1,9 @@
 """Cubemap-based fisheye renderer for MuJoCo (5 pinhole faces, equidistant warp).
 
+Used by the fetchman G1: this is the projection behind that robot's head camera,
+whose parameters are declared on `configs/camera_configs.py`'s
+FisheyeMjcfCameraConfig (G1CameraSystem.head_camera).
+
 Ported from the G1 humanoid research stack (g1_molmo/molmospaces/components/fisheye.py).
 Unlike fisheye_warping.py (an offline single-image/video distortion utility built around
 a fixed GoPro K/D), this module renders a live fisheye view directly from 5 named MuJoCo
@@ -47,24 +51,6 @@ _FACES = (
         np.array([-1, 0, 0], dtype=np.float32),
     ),
 )
-HEAD_FISHEYE_K = np.array(
-    [
-        [801.6382129934864, 0.0, 976.1246839545557],
-        [0.0, 802.1081824931498, 542.7122090223202],
-        [0.0, 0.0, 1.0],
-    ],
-    dtype=np.float64,
-)
-HEAD_FISHEYE_D = np.array(
-    [
-        -0.02559442829261663,
-        0.008371943913215045,
-        -0.006921566406199126,
-        0.0010132813066123071,
-    ],
-    dtype=np.float64,
-)
-HEAD_FISHEYE_IMAGE_SIZE = (1920, 1080)  # (W, H) of the calibration capture.
 
 
 class FisheyeRenderer:
@@ -72,18 +58,29 @@ class FisheyeRenderer:
         self,
         model,
         tile_cam_names,
+        K,
+        D,
+        image_size,
         tile_size=256,
         output_h=240,
         output_w=240,
         weight_power=4.0,
-        K=None,
-        D=None,
-        image_size=None,
+        tile_fovy=None,
     ):
-        """Pixel→ray uses the OpenCV fisheye model with the K/D constants at the top
-        of this module (real-lens calibration), so the simulated view matches the
-        real head camera. K, D, image_size can be passed in to override the
-        module-level defaults (used by calibration tooling)."""
+        """Pixel→ray uses the OpenCV fisheye model with the given K, D and
+        image_size -- the (W, H) the calibration was captured at, which the LUT
+        scales from to the output size. They are required: this module used to
+        carry the G1 head lens as module-level HEAD_FISHEYE_* defaults, but that
+        left the calibration in two places once the config declared it too, and
+        the module's copy won silently whenever a caller forgot to pass K/D.
+        See FisheyeMjcfCameraConfig (configs/camera_configs.py), whose
+        `cubemap_renderer_kwargs` supplies every argument below.
+
+        tile_fovy (degrees) is the vertical FOV the five tile cameras are assumed
+        to have. Default None reads it off the model, as the reference stack
+        does; pass it to drive the value from config instead (see
+        FisheyeMjcfCameraConfig.tile_fov), which also makes the assumption
+        explicit rather than implicit in the MJCF."""
         if len(tile_cam_names) != 5:
             raise ValueError(f"need exactly 5 tile cameras, got {len(tile_cam_names)}")
         self.model = model
@@ -97,13 +94,16 @@ class FisheyeRenderer:
         self.output_h = int(output_h)
         self.output_w = int(output_w)
         self.weight_power = float(weight_power)
-        tile_fovy = float(model.cam_fovy[self.tile_cam_ids[0]])
+        if tile_fovy is None:
+            tile_fovy = float(model.cam_fovy[self.tile_cam_ids[0]])
+        else:
+            tile_fovy = float(tile_fovy)
         if tile_fovy < 90.0:
             raise ValueError(f"tile fovy {tile_fovy} too small; need >=90 (recommend 100)")
         self.tile_fovy_rad = np.radians(tile_fovy)
-        self.K = (HEAD_FISHEYE_K if K is None else np.asarray(K, dtype=np.float64)).copy()
-        self.D = (HEAD_FISHEYE_D if D is None else np.asarray(D, dtype=np.float64)).copy()
-        self.image_size = tuple(HEAD_FISHEYE_IMAGE_SIZE if image_size is None else image_size)
+        self.K = np.asarray(K, dtype=np.float64).copy()
+        self.D = np.asarray(D, dtype=np.float64).copy()
+        self.image_size = tuple(image_size)
         self._build_lut()
 
     def set_intrinsics(self, K=None, D=None):

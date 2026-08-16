@@ -301,6 +301,7 @@ class CameraManager:
 
         # allow runtime errors to propagate here instead of catching them and logging
         for camera_spec in camera_system_config.cameras:
+            self._check_reset_cadence_supported(camera_spec)
             if isinstance(camera_spec, MjcfCameraConfig):
                 self._setup_mjcf_camera(env, camera_spec)
             elif isinstance(camera_spec, RobotMountedCameraConfig):
@@ -345,6 +346,11 @@ class CameraManager:
         Returns:
             Tuple of (noised_pos, noised_quat, noised_fov).
         """
+        if camera_config.noise_model == "body_frame_axis_angle":
+            return CameraManager._apply_body_frame_axis_angle_noise(
+                camera_pos, camera_quat, camera_fov, camera_config, rng
+            )
+
         if camera_config.fov_noise_degrees is not None:
             noise = rng.uniform(
                 camera_config.fov_noise_degrees[0], camera_config.fov_noise_degrees[1]
@@ -374,6 +380,84 @@ class CameraManager:
             camera_quat = noisy_rotation.as_quat(scalar_first=True)
             log.debug(
                 f"[CAMERA SETUP] Applied orientation noise to '{camera_config.name}': {noise_euler} degrees"
+            )
+
+        return camera_pos, camera_quat, camera_fov
+
+    @staticmethod
+    def _check_reset_cadence_supported(camera_config) -> None:
+        """Fail loudly on a reset_cadence this manager cannot honor.
+
+        Noise here is applied once, when the camera is registered, so "episode"
+        would silently behave as "setup" -- a camera distribution quietly
+        narrower than the config asks for, which is exactly the kind of thing
+        that is never noticed in a dataset.
+
+        The G1 is the exception, and the reason this is a check rather than a
+        hard rejection: g1_molmo_port's G1TaskSampler re-randomizes those two
+        cameras itself on every reset, so "episode" is already honored for them
+        -- just not by this class. They are identified by their noise_model,
+        which is the same "driven the g1_molmo way" marker.
+
+        TODO(max): switch to episode reset cadence per default -- teach this
+        manager to redraw on reset, point the G1 at it too, and then this
+        exemption and the "setup" default both go away.
+        """
+        # noise_model lives on MjcfCameraConfig only; the other camera types have
+        # no G1 counterpart, so for them "episode" is always unimplemented.
+        if (
+            camera_config.reset_cadence == "episode"
+            and getattr(camera_config, "noise_model", None) != "body_frame_axis_angle"
+        ):
+            raise NotImplementedError(
+                f"camera {camera_config.name!r} asks for reset_cadence='episode', which "
+                "CameraManager does not implement -- it applies noise once at setup. Use "
+                "'setup', or drive the per-reset randomization outside this class the way "
+                "g1_molmo_port's G1TaskSampler does for the G1 cameras."
+            )
+
+    @staticmethod
+    def _apply_body_frame_axis_angle_noise(
+        camera_pos: np.ndarray,
+        camera_quat: np.ndarray,
+        camera_fov: float,
+        camera_config: MjcfCameraConfig,
+        rng,
+    ) -> tuple[np.ndarray, np.ndarray, float]:
+        """Position offset in the parent body frame, rotation as a random
+        axis-angle composed parent-side.
+
+        A transcription of g1_molmo's `_perturb_camera`, and the reason this
+        model exists: the G1's cameras use it so their randomization matches
+        that stack's recordings (see G1CameraSystem).
+
+        Differs from "camera_local_euler" in four ways that all change the result,
+        so it is opt-in per camera (MjcfCameraConfig.noise_model):
+          - the position offset is added in the parent body frame, NOT rotated
+            into the camera frame first;
+          - the rotation is one uniformly-random axis by a uniform angle, not a
+            per-axis euler triple;
+          - that delta is composed on the LEFT (parent frame), not the right;
+          - the draw order is position -> axis -> angle -> FOV, which fixes how
+            the RNG stream advances and therefore every later draw too.
+        """
+        if camera_config.pos_noise_range is not None:
+            lo, hi = camera_config.pos_noise_range
+            camera_pos = camera_pos + rng.uniform(lo, hi, 3)
+
+        if camera_config.orientation_noise_degrees is not None:
+            axis = rng.uniform(-1, 1, 3)
+            axis = axis / max(float(np.linalg.norm(axis)), 1e-6)
+            limit = np.radians(camera_config.orientation_noise_degrees)
+            angle = float(rng.uniform(-limit, limit))
+            delta = R.from_rotvec(axis * angle)
+            camera_quat = (delta * R.from_quat(camera_quat, scalar_first=True)).as_quat(
+                scalar_first=True
+            )
+
+        if camera_config.fov_noise_degrees is not None:
+            camera_fov += float(
+                rng.uniform(camera_config.fov_noise_degrees[0], camera_config.fov_noise_degrees[1])
             )
 
         return camera_pos, camera_quat, camera_fov
@@ -411,8 +495,17 @@ class CameraManager:
             camera_config.fov if camera_config.fov is not None else camera_obj.fovy[0]
         )  # this will raise an error if the fov is not set - desired behavior
 
+        # "body_frame_axis_angle" additionally specifies WHICH stream it draws
+        # from -- the env's seeded one, so the cameras are reproducible from the
+        # episode seed the way g1_molmo's are. The default model keeps drawing
+        # from global np.random; changing that would reshuffle every other
+        # robot's cameras, which is a separate decision from this one.
+        noise_rng = np.random
+        if camera_config.noise_model == "body_frame_axis_angle":
+            noise_rng = getattr(env, "np_random", np.random)
+
         camera_pos, camera_quat, camera_fov = self.apply_mjcf_camera_noise(
-            camera_pos, camera_quat, camera_fov, camera_config
+            camera_pos, camera_quat, camera_fov, camera_config, rng=noise_rng
         )
 
         # Set up as robot-mounted camera (will track the body it's attached to)

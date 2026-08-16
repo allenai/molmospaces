@@ -93,7 +93,7 @@ class TargetPointInHeadSensor:
         if head_id < 0 or tgt is None:
             return None
         if env.camera_manager.fisheye is None:
-            env._ensure_fisheye("head_pov", *env.camera_manager.size, 512)
+            env._ensure_fisheye(*env.camera_manager.size)
         d = env.scene.data
         cam_pos = d.cam_xpos[head_id]
         cam_mat = d.cam_xmat[head_id].reshape(3, 3)

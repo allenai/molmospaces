@@ -10,6 +10,7 @@ import mujoco.viewer
 import numpy as np
 from gymnasium import spaces
 
+from molmo_spaces.configs.camera_configs import G1CameraSystem
 from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
@@ -109,6 +110,11 @@ class CameraManager:
         self.renderers: dict[tuple[int, int], mujoco.Renderer] = {}
         self.ids = {}
         self.fisheye = None
+        # Every parameter of the head fisheye -- tile camera names, tile size and
+        # FOV, blend exponent, lens calibration -- lives on this config rather
+        # than being restated at the FisheyeRenderer call sites. See
+        # configs/camera_configs.py::FisheyeMjcfCameraConfig.
+        self.fisheye_config = G1CameraSystem().get_camera_by_name("head_camera")
         self.wrist_cam_pos0 = None
         self.wrist_cam_quat0 = None
         self.wrist_cam_fovy0 = None
@@ -551,8 +557,8 @@ class G1Env(gym.Env, CPUMujocoEnv):
                 out[name] = r.render().copy()
         return out
 
-    def render_fisheye(self, base_cam_name="head_pov", output_h=224, output_w=224, tile_size=512):
-        self._ensure_fisheye(base_cam_name, output_h, output_w, tile_size)
+    def render_fisheye(self, output_h=224, output_w=224):
+        self._ensure_fisheye(output_h, output_w)
         r = self._ensure_renderer(
             self.camera_manager.fisheye.tile_size, self.camera_manager.fisheye.tile_size
         )
@@ -560,11 +566,9 @@ class G1Env(gym.Env, CPUMujocoEnv):
         opt.geomgroup[5] = 0
         return self.camera_manager.fisheye.render(self.scene.data, r, scene_option=opt)
 
-    def render_fisheye_robot_mask(
-        self, base_cam_name="head_pov", output_h=224, output_w=224, tile_size=512
-    ):
+    def render_fisheye_robot_mask(self, output_h=224, output_w=224):
         """Binary mask (uint8, 0/255) of the robot through the same fisheye projection."""
-        self._ensure_fisheye(base_cam_name, output_h, output_w, tile_size)
+        self._ensure_fisheye(output_h, output_w)
         m = self.scene.model
         robot_geom_ids = [
             gid
@@ -578,24 +582,21 @@ class G1Env(gym.Env, CPUMujocoEnv):
         )
         return self.camera_manager.fisheye.render_mask(self.scene.data, r, robot_geom_ids)
 
-    def _ensure_fisheye(self, base_cam_name, output_h, output_w, tile_size):
+    def _ensure_fisheye(self, output_h, output_w):
+        """(Re)build the head FisheyeRenderer at this output size. Which camera,
+        which tiles, and every lens parameter come from
+        camera_manager.fisheye_config -- output size is the only thing this
+        call decides."""
         if (
             self.camera_manager.fisheye is None
             or self.camera_manager.fisheye.output_h != output_h
             or self.camera_manager.fisheye.output_w != output_w
         ):
-            from molmo_spaces.utils.fisheye_warping_g1 import FisheyeRenderer
+            from molmo_spaces.utils.fisheye_cubemap import FisheyeRenderer
 
-            tile_names = [
-                f"{PREFIX}{base_cam_name}_tile_{face}"
-                for face in ("center", "up", "down", "left", "right")
-            ]
             self.camera_manager.fisheye = FisheyeRenderer(
                 self.scene.model,
-                tile_cam_names=tile_names,
-                tile_size=tile_size,
-                output_h=output_h,
-                output_w=output_w,
+                **self.camera_manager.fisheye_config.cubemap_renderer_kwargs(output_h, output_w),
             )
 
     def render_debug_panel(self, height=224, width=224):
