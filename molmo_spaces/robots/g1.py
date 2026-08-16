@@ -8,11 +8,14 @@ rollout. That provenance is why this, rather than the earlier independent
 rewrite, is the implementation the codebase uses: its grasp behaviour is
 verifiably the reference's, not a reimplementation of it.
 
-The superseded independent rewrite is kept alongside as
-`molmo_spaces/robots/g1_old_reference.py` -- it is what `G1Config` and the
-native pick/nav pipeline still construct, and the two are NOT drop-in
-interchangeable (different constructors: `(mj_data, exp_config)` there,
-`(model, data, ...)` here). See that module's docstring for the differences.
+This is now the only G1 implementation: the superseded independent rewrite
+(`robots/g1_old_reference.py`) has been deleted, along with the pick policy
+that went with it. `G1Config` and the native pick/nav pipeline construct this
+class, via `from_mj_data` for molmo_spaces' own `(mj_data, exp_config)`
+robot-factory signature.
+
+Its low-level whole-body controller lives in `molmo_spaces/controllers/
+g1_wbc.py` (the reference stack's `G1Controller`).
 
 Verification harnesses:
   scripts/g1_molmo_port_comparison/generate_ported_rollout.py  (grasp, vs gold)
@@ -337,7 +340,7 @@ class G1Robot(Robot):
             if physics_timestep is not None:
                 data.model.opt.timestep = physics_timestep
 
-        # The low-level WBC/PD controller (components/controller_g1ms.py) is
+        # The low-level WBC/PD controller (controllers/g1_wbc.py) is
         # owned here, not by whichever policy attaches via env.set_agent() --
         # matches molmo_spaces/robots/abstract.py's Robot owning its own
         # control stack. `low_level` lets env_g1ms.py's _load_scene carry an
@@ -348,12 +351,10 @@ class G1Robot(Robot):
         # qpos/qdof/actuator index arrays to this reload's model/data either
         # way, so a fresh instance and a reused one end up equivalent.
         if low_level is None:
-            # Deferred import -- controller_g1ms.py imports JOINT_NAMES/
+            # Deferred import -- controllers/g1_wbc.py imports JOINT_NAMES/
             # DEFAULT_QPOS from this module, so a module-level import here
             # would be circular.
-            from molmo_spaces.g1_molmo_port.components.controller_g1ms import (
-                G1Controller as _LowLevelController,
-            )
+            from molmo_spaces.controllers.g1_wbc import G1Controller as _LowLevelController
 
             low_level = _LowLevelController()
         self._low_level = low_level
@@ -518,7 +519,7 @@ class G1Robot(Robot):
     @staticmethod
     def robot_model_root_name() -> str:
         """Robot ABC hook used by the scene builder to find the robot's root
-        body in its MJCF. Same body as g1_old_reference -- both wrap the same
+        body in its MJCF. Same body the deleted g1_old_reference used -- both wrapped the same
         g1_dex.xml."""
         return "pelvis"
 
@@ -527,7 +528,7 @@ class G1Robot(Robot):
 
         Uses this robot's own `set_defaults()` (DEFAULT_QPOS, the reference
         stack's gravity-settled standing pose) plus the WBC controller's
-        internal state reset, rather than g1_old_reference's
+        internal state reset, rather than the old rewrite's
         `set_joint_pos(robot_config.init_qpos)`. Those are two *different*
         poses on purpose -- see DEFAULT_QPOS vs G1Config.init_qpos -- and the
         reference grasp behaviour this class exists to preserve was validated
@@ -554,7 +555,7 @@ class G1Robot(Robot):
         is a flat 7-vector [vx, vy, yaw_rate, height, waist_yaw, waist_roll,
         waist_pitch] (the interface G1WalkController.set_target defines). The
         reference LegsWaistController instead takes `(cmd3, height, waist3)`
-        (components/controller_g1ms.py). Translating here keeps both sides
+        (controllers/g1_wbc.py). Translating here keeps both sides
         unchanged: native policies stay portable across robots, and the
         reference control law keeps the exact signature its ported code uses.
 
@@ -566,7 +567,7 @@ class G1Robot(Robot):
         # world-frame [x, y, theta] waypoint under "base";
         # FetchManBasePlannerPolicy computes [vx, vy, yaw_rate] itself and sends
         # it under "base_velocity". Both become a legs_waist command here --
-        # same bridge g1_old_reference.update_control performs, without which
+        # same bridge the old rewrite's update_control performed, without which
         # nav_to silently does nothing (the keys match no controller and are
         # skipped).
         action_command_dict = dict(action_command_dict)
@@ -697,7 +698,7 @@ class G1Robot(Robot):
 
     def set_env(self, env):
         """Wires the low-level controller to `env` (mj model opt overrides,
-        n_substeps, floor friction -- see controller_g1ms.G1Controller.
+        n_substeps, floor friction -- see g1_wbc.G1Controller.
         set_env). Called by env_g1ms.py's _load_scene once `self` is
         assigned to `env.robot` (set_env reads env.robot.n_substeps, so it
         can't run from inside __init__, before that assignment exists)."""
@@ -758,7 +759,7 @@ class G1Robot(Robot):
     def nav_action(self, waypoint, height=None) -> np.ndarray:
         """A full flat-15 action that walks toward `waypoint` while holding the
         current arm/gripper pose -- the navigation counterpart to the grasp
-        policy's own action assembly (see controller_g1ms.ACTION_DIM's layout:
+        policy's own action assembly (see g1_wbc.ACTION_DIM's layout:
         [vx, vy, yaw_rate, height, waist(3), right_arm(7), gripper])."""
         action = np.zeros(15, dtype=np.float32)
         action[0:3] = self.waypoint_to_velocity_target(waypoint)

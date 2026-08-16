@@ -11,7 +11,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 
-from molmo_spaces.g1_molmo_port.components.controller_g1ms import (
+from molmo_spaces.controllers.g1_wbc import (
     ACT_ARM,
     ACT_CMD,
     ACT_GRIP,
@@ -786,7 +786,7 @@ class G1Controller:
 
     @property
     def _low_level(self):
-        """The shared WBC PD/ONNX controller (controller_g1ms.G1Controller)
+        """The shared WBC PD/ONNX controller (g1_wbc.G1Controller)
         now lives on env.robot, not on this policy -- G1Robot owns its own
         control stack the same way molmo_spaces' Robot does, rather than the
         attached policy holding it (see robots/g1.py's G1Robot.__init__). This
@@ -1733,10 +1733,14 @@ class _NativeEnvView:
     place instead of silently resolving somewhere unexpected.
     """
 
-    def __init__(self, task, target_obj, np_random):
+    def __init__(self, task, target_obj, np_random, grasp_spawn_radius_min: float = 0.25):
         self._task = task
         self._target = _NativeTargetView(target_obj)
         self.np_random = np_random
+        # Read by _install_closer_waypoint (the grasp retry): the closest standoff
+        # it may re-approach from. Same value the walk goal was sampled on, so a
+        # retry never steps inside a distance the goal sampler treats as invalid.
+        self._grasp_spawn_radius_min = float(grasp_spawn_radius_min)
         # `env.task.target` is read by the reference.
         #
         # Deliberately NO `grasp_frame_pose` attribute: the reference branches
@@ -1803,6 +1807,69 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         om = self.task.env.object_managers[self.task.env.current_batch_index]
         return om.get_object_by_name(self.config.task_config.pickup_obj_name)
 
+    def _nav_maps(self):
+        """(goal-sampling map, A*-planning map) -- g1_molmo's env.occ/env.occ_safe.
+
+        The agent radius is the task sampler's `robot_safety_radius`, not a value
+        of our own: `env.get_thormap`'s cache is a *single slot* keyed on
+        (scene, radius, px_per_m), so asking for a different radius silently
+        evicts the map the sampler/InteractiveShell already built and re-renders
+        the scene (10-30s, every reset). g1_molmo uses 0.15 here, which is also
+        ObjectCentricTaskSamplerConfig's default.
+
+        Both maps are cached on the policy: `dilated()` is a full-map cv2.erode,
+        and the pick's own A* additionally caches a coarsened copy keyed on
+        `occupancy.tobytes()`, so handing it a fresh object each reset would
+        rebuild both.
+        """
+        env = self.task.env
+        occ = env.get_occupancy_map(
+            agent_radius=self.config.task_sampler_config.robot_safety_radius, px_per_m=200
+        )
+        if getattr(self, "_nav_occ_for", None) is not occ:
+            self._nav_occ_for = occ
+            self._nav_occ = occ.dilated(self.policy_config.nav_map_extra_inflation)
+        return occ, self._nav_occ
+
+    def _sample_goal_pose(self, obj, occ, nav_occ):
+        """Sample a standoff pose to grasp the object from: a free cell on the
+        `goal_standoff_radius_range` annulus around it, facing it, reachable from
+        where the robot stands now.
+
+        Port of the reference task sampler's `_sample_goal_pose`
+        (g1_molmo_port/tasks/pick_task_sampler_g1ms.py) minus its
+        set_pose/mj_forward-per-candidate collision and camera-visibility checks:
+        those run at *sampling* time, when the sampler owns the sim state and can
+        freely scribble on qpos. Here we are inside `policy.reset()` on a task the
+        sampler has already placed and settled, so the candidate loop stays purely
+        geometric (occupancy + connectivity) rather than saving/restoring sim
+        state behind the task's back. A candidate the robot cannot actually stand
+        at surfaces as a grasp retry (`_install_closer_waypoint`), which is the
+        same recovery the reference relies on.
+
+        Returns (xy, yaw), or (None, None) if no candidate survives -- callers
+        fall back to standing put, which is what this policy did unconditionally
+        before nav existed.
+        """
+        tgt = np.asarray(obj.position, dtype=np.float64)[:2]
+        r_min, r_max = self.policy_config.goal_standoff_radius_range
+        if not occ.any_free_in_annulus(tgt, r_min, r_max):
+            return None, None
+        here = np.asarray(self._controller._xy(), dtype=np.float64)
+        rng = self._rng
+        for _ in range(self.policy_config.goal_sampling_attempts):
+            xy = occ.sample_near(tgt, radius_min=r_min, radius_max=r_max, np_random=rng)
+            if xy is None:
+                continue
+            xy = np.asarray(xy, dtype=np.float64)
+            # Reachability on the inflated map, matching the reference's
+            # occ_safe.same_free_component gate -- A* plans on nav_occ, so a goal
+            # in a different component there is one it cannot route to.
+            if not nav_occ.same_free_component(here, xy):
+                continue
+            return xy, float(np.arctan2(tgt[1] - xy[1], tgt[0] - xy[0]))
+        return None, None
+
     def _build_info(self) -> dict:
         """Construct the reference policy's `info` dict from native state.
 
@@ -1821,27 +1888,43 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         inv_pose = np.linalg.inv(pose)
         local_grasps = [inv_pose @ np.asarray(g, dtype=np.float64) for g in world_grasps]
 
-        # Use the controller's own _xy() (pelvis + PELVIS_FORWARD_OFFSET), not
-        # the raw base pose: reset() takes the "already at the goal" branch --
-        # skipping nav and starting the grasp immediately -- only when
-        # ||_xy() - goal_xy|| < NEAR_GOAL_DIST (0.05m). InteractiveShell drives
-        # navigation as its own `nav_to` command, so pick() must always take
-        # that branch; anything else falls through to _plan_path, which needs a
-        # nav_occupancy_map this info dict does not carry, leaving the policy
-        # stuck in the walking phase forever.
+        # Walk goal. Distances are measured from the controller's own _xy()
+        # (pelvis + PELVIS_FORWARD_OFFSET), not the raw base pose, because that
+        # is what reset() compares against goal_xy: within NEAR_GOAL_DIST
+        # (0.05m) it skips nav and starts the grasp immediately, otherwise it
+        # calls _plan_path.
+        #
+        # Already within grasping standoff -> goal is where we stand, facing the
+        # object, i.e. the at-goal branch. That is InteractiveShell's case
+        # (navigation is its own `nav_to` command, so pick() starts in place) and
+        # PickG1DataGenConfig's tight spawn radius, which mirrors g1_molmo's
+        # spawn_at_grasp=True profile -- neither should start walking.
+        #
+        # Further out -> sample a real standoff pose and let the controller walk
+        # to it. This is the batch datagen case: targets 2.5-6.8m away, which
+        # used to be reported as already-at-goal and so were rejected as out of
+        # arm's reach without a single nav step.
         xy = np.asarray(self._controller._xy(), dtype=np.float64)
-        to_obj = np.asarray(obj.position, dtype=np.float64)[:2] - xy
+        tgt_xy = np.asarray(obj.position, dtype=np.float64)[:2]
+        occ, nav_occ = self._nav_maps()
+        goal_xy = goal_yaw = None
+        if np.linalg.norm(tgt_xy - xy) > self.policy_config.goal_standoff_radius_range[1]:
+            goal_xy, goal_yaw = self._sample_goal_pose(obj, occ, nav_occ)
+        if goal_xy is None:
+            goal_xy, goal_yaw = xy, float(np.arctan2(tgt_xy[1] - xy[1], tgt_xy[0] - xy[0]))
         return {
             "target_object_pose": np.concatenate(
                 [np.asarray(obj.position, dtype=np.float64), np.asarray(obj.quat, dtype=np.float64)]
             ),
             "target_object_position": np.asarray(obj.position, dtype=np.float64),
             "valid_grasps": np.asarray(local_grasps, dtype=np.float64),
-            # InteractiveShell drives navigation as its own `nav_to` command, so
-            # the pick skill starts already standing at the object: the goal is
-            # where the robot is, facing the target.
-            "goal_xy": np.asarray(xy, dtype=np.float64),
-            "goal_yaw": float(np.arctan2(to_obj[1], to_obj[0])),
+            "goal_xy": np.asarray(goal_xy, dtype=np.float64),
+            "goal_yaw": float(goal_yaw),
+            # Live map object, not a copy: _plan_path calls occupancy/_world_to_px/
+            # map_to_world on it. Only the A* map is published -- the reference
+            # sampler also passes an un-inflated `occupancy_map`, but nothing in
+            # G1Controller reads that key.
+            "nav_occupancy_map": nav_occ,
             "pregrasp_joints": None,
         }
 
@@ -1858,9 +1941,29 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
     def reset(self, reset_retries: bool = True) -> None:
         target_obj = self._pickup_obj()
         seed = getattr(self.task, "episode_seed", 0) or 0
-        self._controller.set_env(_NativeEnvView(self.task, target_obj, np.random.default_rng(seed)))
+        self._rng = np.random.default_rng(seed)
+        self._controller.set_env(
+            _NativeEnvView(
+                self.task,
+                target_obj,
+                self._rng,
+                grasp_spawn_radius_min=self.policy_config.goal_standoff_radius_range[0],
+            )
+        )
         info = self._build_info()
         self._controller.reset(info)
+        if not self._controller.has_path:
+            # A* found no route to the sampled standoff pose. Not fatal: the
+            # controller's walk timeout (20s sim time) ends the episode in
+            # PHASE_DONE, but silently standing still for 20s looks identical to
+            # a walking bug, so say which one it is.
+            log.warning(
+                "G1 pick: no walk path from %s to goal %s (target %s) -- "
+                "the pick will time out in the walking phase.",
+                np.round(self._controller._xy(), 3),
+                np.round(info["goal_xy"], 3),
+                np.round(info["target_object_position"][:2], 3),
+            )
         # GraspPoseSensor reads target_poses["grasp"] every tick and requires a
         # 4x4 (utils/pose.py's pose_mat_to_7d asserts the shape) -- info's
         # target_object_pose is the reference's 7-vector, so publish the matrix.
@@ -1889,7 +1992,7 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
 
     def _flat_to_move_groups(self, flat) -> dict:
         """Reference flat-15 -> molmo_spaces move-group dict (see
-        controller_g1ms.ACTION_DIM's layout)."""
+        g1_wbc.ACTION_DIM's layout)."""
         flat = np.asarray(flat, dtype=np.float32)
         action = self.robot_view.get_ctrl_dict()
         action["legs_waist"] = np.concatenate(
