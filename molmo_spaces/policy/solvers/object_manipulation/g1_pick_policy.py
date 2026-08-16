@@ -1737,8 +1737,14 @@ class _NativeEnvView:
         self._task = task
         self._target = _NativeTargetView(target_obj)
         self.np_random = np_random
-        # `env.task.target` and `env.target` are both read by the reference.
-        self.task = SimpleNamespace(target=self._target, grasp_frame_pose=None)
+        # `env.task.target` is read by the reference.
+        #
+        # Deliberately NO `grasp_frame_pose` attribute: the reference branches
+        # on `hasattr(task, "grasp_frame_pose")` and, when present, calls it and
+        # unpacks (pos, quat). That is the Open task's sub-body grasp frame
+        # (drawer face, door panel). A pick task has none, so the attribute must
+        # be *absent* -- that is what selects the target-object pose path.
+        self.task = SimpleNamespace(target=self._target)
 
     @property
     def robot(self):
@@ -1808,7 +1814,15 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         inv_pose = np.linalg.inv(pose)
         local_grasps = [inv_pose @ np.asarray(g, dtype=np.float64) for g in world_grasps]
 
-        xy = self.robot_view.get_move_group("base").pose[:2, 3]
+        # Use the controller's own _xy() (pelvis + PELVIS_FORWARD_OFFSET), not
+        # the raw base pose: reset() takes the "already at the goal" branch --
+        # skipping nav and starting the grasp immediately -- only when
+        # ||_xy() - goal_xy|| < NEAR_GOAL_DIST (0.05m). InteractiveShell drives
+        # navigation as its own `nav_to` command, so pick() must always take
+        # that branch; anything else falls through to _plan_path, which needs a
+        # nav_occupancy_map this info dict does not carry, leaving the policy
+        # stuck in the walking phase forever.
+        xy = np.asarray(self._controller._xy(), dtype=np.float64)
         to_obj = np.asarray(obj.position, dtype=np.float64)[:2] - xy
         return {
             "target_object_pose": np.concatenate(
@@ -1830,10 +1844,30 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         self._controller.set_env(_NativeEnvView(self.task, target_obj, np.random.default_rng(seed)))
         info = self._build_info()
         self._controller.reset(info)
-        self.target_poses["grasp"] = info["target_object_pose"]
+        # GraspPoseSensor reads target_poses["grasp"] every tick and requires a
+        # 4x4 (utils/pose.py's pose_mat_to_7d asserts the shape) -- info's
+        # target_object_pose is the reference's 7-vector, so publish the matrix.
+        self._publish_grasp_pose()
+
+    def _publish_grasp_pose(self) -> None:
+        """Keep target_poses["grasp"] a live 4x4 for GraspPoseSensor.
+
+        Before the grasp is planned there is no grasp pose yet, so the target
+        object's own pose stands in; once the planner has chosen one, publish
+        that instead."""
+        pos = getattr(self._controller, "_grasp_pos", None)
+        rot = getattr(self._controller, "_grasp_rot", None)
+        if pos is not None and rot is not None:
+            grasp = np.eye(4)
+            grasp[:3, :3] = rot
+            grasp[:3, 3] = pos
+            self.target_poses["grasp"] = grasp
+        else:
+            self.target_poses["grasp"] = np.asarray(self._pickup_obj().pose, dtype=np.float64)
 
     def get_action(self, observation):
         flat = self._controller.sample_actions(observation)
+        self._publish_grasp_pose()
         return self._flat_to_move_groups(flat)
 
     def _flat_to_move_groups(self, flat) -> dict:

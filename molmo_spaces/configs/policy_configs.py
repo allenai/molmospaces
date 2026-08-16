@@ -331,12 +331,12 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
         # to PickPlannerPolicy) and go straight to its own parent.
         super(PickPlannerPolicyConfig, self).model_post_init(__context)
         if self.policy_cls is None:
-            from molmo_spaces.policy.solvers.object_manipulation.fetchman_pick_planner_policy import (
-                FetchmanPickPlannerPolicy,
+            from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
+                G1PickPlannerPolicy,
             )
 
-            self.policy_cls = FetchmanPickPlannerPolicy
-            self.policy_factory = FetchmanPickPlannerPolicy
+            self.policy_cls = G1PickPlannerPolicy
+            self.policy_factory = G1PickPlannerPolicy
 
 
 class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
