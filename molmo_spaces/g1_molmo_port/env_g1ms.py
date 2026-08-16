@@ -521,12 +521,12 @@ class G1Env(gym.Env, CPUMujocoEnv):
 
     # This env is FetchMan's own, so it always serves FetchMan's own map (see
     # utils/scene_maps.OCCUPANCY_MAP_IMPLS); the native envs default to "thor".
-    occupancy_map_impl = "abb"
+    occupancy_map_impl = "aabb"
 
     def get_occupancy_map(self, agent_radius: float = 0.15):
         """Same name/shape as CPUMujocoEnv.get_occupancy_map -- callers written
         against either env don't need to know which one they have. Goes through
-        Scene.occupancy_map (utils/abb_map.ABBMap, via ABBMap.from_scene's own
+        Scene.occupancy_map (utils/aabb_map.AABBMap, via AABBMap.from_scene's own
         cache semantics), not CPUMujocoEnv.get_thormap's ProcTHORMap/
         from_mj_model_path pipeline, which assumes the real batched renderer
         this class deliberately skips (see the class docstring)."""

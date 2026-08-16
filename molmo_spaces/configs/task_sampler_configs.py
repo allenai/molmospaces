@@ -50,7 +50,7 @@ class BaseMujocoTaskSamplerConfig(Config):
 
     # Which occupancy-map implementation this experiment's env should serve
     # from get_occupancy_map(): "thor" (ProcTHORMap/iTHORMap, molmo_spaces' own)
-    # or "abb" (utils/abb_map.ABBMap, from the FetchMan repo). Leave it at the
+    # or "aabb" (utils/aabb_map.AABBMap, from the FetchMan repo). Leave it at the
     # default for everything except G1/FetchMan experiments -- the two grids
     # disagree cell for cell, so switching silently changes which cells a robot
     # considers standable. See utils/scene_maps.OCCUPANCY_MAP_IMPLS.

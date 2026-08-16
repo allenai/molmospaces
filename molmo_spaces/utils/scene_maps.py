@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 #
 #   "thor"  ProcTHORMap / iTHORMap below -- molmo_spaces' own, the default for
 #           every task and robot.
-#   "abb"   utils/abb_map.ABBMap -- from the FetchMan (g1_molmo) repo. Only
+#   "aabb"  utils/aabb_map.AABBMap -- from the FetchMan (g1_molmo) repo. Only
 #           G1/FetchMan experiments should select this: their goal/spawn
 #           sampling is verified bit-exact against FetchMan's own rollouts and
 #           reads that specific grid. Selecting it elsewhere silently changes
@@ -39,8 +39,15 @@ log = logging.getLogger(__name__)
 # Set per experiment via BaseMujocoTaskSamplerConfig.occupancy_map_impl, which
 # the task sampler applies to the env; or per call via
 # CPUMujocoEnv.get_occupancy_map(impl=...).
-OCCUPANCY_MAP_IMPLS = ("thor", "abb")
+OCCUPANCY_MAP_IMPLS = ("thor", "aabb")
 DEFAULT_OCCUPANCY_MAP_IMPL = "thor"
+
+# How many (impl, scene, agent_radius, px_per_m) maps one env keeps in memory.
+# Both implementations coexist in that cache, so a task/task sampler can hold
+# one of each -- and several radii -- without them evicting one another; four
+# is enough for the usual "placement map + policy nav map, per impl" pattern
+# while bounding a ~8MB-per-map footprint.
+OCCUPANCY_MAP_CACHE_SIZE = 4
 
 
 def _get_renderer(

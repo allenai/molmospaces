@@ -210,7 +210,7 @@ Six gaps were closed, each from a real traceback:
   | was | is now |
   | --- | --- |
   | `components/controller_g1ms.py` | `controllers/g1_wbc.py` |
-  | `components/occupancy_map.py::OccupancyMap` | `utils/abb_map.py::ABBMap` |
+  | `components/occupancy_map.py::OccupancyMap` | `utils/aabb_map.py::AABBMap` |
   | `components/object.py::Object` | `env/data_views.py::SceneObject` |
   | `components/constants.py` grasp helpers | `utils/grasps.py::fetchman_*` |
   | `components/constants.py` texture categories | `env/arena/randomization/texture.py` |
@@ -229,15 +229,15 @@ Six gaps were closed, each from a real traceback:
   `CPUMujocoEnv`/`TaskSampler` classes.
 
 - **Two occupancy maps now co-exist, and the choice is explicit.**
-  `utils/scene_maps.OCCUPANCY_MAP_IMPLS` = `("thor", "abb")`;
+  `utils/scene_maps.OCCUPANCY_MAP_IMPLS` = `("thor", "aabb")`;
   `BaseMujocoTaskSamplerConfig.occupancy_map_impl` (default `"thor"`) selects
   per experiment and the env serves it from `get_occupancy_map(impl=...)`.
-  Only the G1/FetchMan configs set `"abb"` — `PickG1DataGenConfig`,
+  Only the G1/FetchMan configs set `"aabb"` — `PickG1DataGenConfig`,
   `InteractiveShellG1DataGenConfig`, `InteractiveShellG1HoloDataGenConfig`,
   and `G1Env` itself. The grids disagree cell for cell, so this is a real
   behavioural switch, not an implementation detail: FetchMan's goal/spawn
-  sampling is verified bit-exact on `ABBMap`'s grid. `ABBMap.from_scene`
-  (FetchMan's path) and `ABBMap.from_model_path` (molmo_spaces' path) cache to
+  sampling is verified bit-exact on `AABBMap`'s grid. `AABBMap.from_scene`
+  (FetchMan's path) and `AABBMap.from_model_path` (molmo_spaces' path) cache to
   different files on purpose — the latter is radius-keyed, so a task sampler
   asking for a 0.2m agent cannot overwrite the 0.15m map the gold rollout
   reads back unchecked.
