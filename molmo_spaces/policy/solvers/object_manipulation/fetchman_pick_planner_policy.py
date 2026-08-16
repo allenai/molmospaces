@@ -942,7 +942,20 @@ class FetchmanPickPlannerPolicy(PickPlannerPolicy):
                 self._ik_cache = (arm_joints, waist_joints, ik_h)
             else:
                 arm_joints, waist_joints, ik_h = self._ik_cache
-            height_cmd = self._height_cmd + 0.1 * (ik_h - self._height_cmd)
+            # Exponential smoothing toward the IK's solved pelvis height. This
+            # only converges if the smoothed value is carried forward. The
+            # reference stack gets that for free because its `_height_cmd`
+            # lives on the shared low-level controller, which writes it back
+            # every tick from the action it just executed (see
+            # g1_molmo_port/components/controller_g1ms.py's
+            # `o._height_cmd = float(height_cmd)`). Here `_height_cmd` is this
+            # policy's own attribute and was otherwise written only in
+            # __init__/reset, so every tick recomputed 0.74 + 0.1*(ik_h - 0.74)
+            # from the same frozen 0.74: the pelvis stopped 10% of the way down
+            # and never crouched to the object. The arm then tried to make up
+            # the remaining reach on its own, saturating the waist envelope.
+            self._height_cmd = self._height_cmd + 0.1 * (ik_h - self._height_cmd)
+            height_cmd = self._height_cmd
             last_arm = getattr(self, "_last_arm_joints", None)
             if last_arm is not None and self._quick_approach and self._grasp_step < 30:
                 alpha = float(np.clip(self._grasp_step / 30.0, 0.0, 1.0))
