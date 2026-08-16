@@ -1,3 +1,20 @@
+"""SUPERSEDED -- the independent rewrite of the G1 pick policy.
+
+Nothing constructs this any more. `FetchmanPickPlannerPolicyConfig` (and so
+`InteractiveShell.pick()`) now builds
+`policy/solvers/object_manipulation/g1_pick_policy.py`'s G1PickPlannerPolicy,
+the reference-derived implementation whose grasp behaviour is verified against
+the gold rollout -- and which actually completes the pick
+(`fingers_in_contact=True`, `lift_height=0.120` on house 0, where this one
+reached 0.0).
+
+Kept for reference only; see scripts/g1_molmo_port_comparison/NEXT_STEPS.md.
+Known divergences from the reference that made it fail: arm joints keep the
+MJCF's actuatorfrcrange with zero dof_damping; action noise perturbs the
+IK-solved arm command; and (fixed in a248348) the pelvis height smoothing was
+not carried forward.
+"""
+
 from __future__ import annotations
 
 import logging

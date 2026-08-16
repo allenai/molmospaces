@@ -176,14 +176,30 @@ Six gaps were closed, each from a real traceback:
 
 ## 4. Known open issues
 
-- **G1 walking does not translate.** Commanding `[0.5, 0, 0]` moves the robot
-  ~0.115 m in 4 s; it stays upright and the command reaches the walk policy
-  (`norm(cmd)=0.5 > 0.05`, so `_walk_sess` runs — verified). Reproduce with
-  `nav_demo.py`. **Pre-existing** — `controller_g1ms.py`'s control law is
-  untouched by this merge, and the pick rollout never exercises walking because
-  `place_robot_near` spawns the robot 0.2–0.5 m from the target. This is what
-  blocks the navigation item above. Next diagnostic: command pure yaw; if it
-  turns but won't translate, forward locomotion specifically is broken.
+- **G1 walking does not translate — and it is now localized.** Commanding
+  `[0.5, 0, 0]` via `nav_demo.py` (reference robot + `controller_g1ms`) moves
+  the robot ~0.115 m in 4 s. It stays upright and the command reaches the walk
+  policy (`norm(cmd)=0.5 > 0.05`, so `_walk_sess` runs — verified).
+
+  **But `mlspaces_tests/component_tests/test_g1_robot.py::
+  test_walks_forward_on_command` passes**, asserting ~2.3 m in 4.5 s at the
+  same `vx=0.5` — on `g1_old_reference` driven by the native
+  `controllers/g1_walk.py::G1WalkController`.
+
+  Same ONNX weights, same PD gains, same 4-tick decimation, opposite outcome.
+  So the fault is in the **`controller_g1ms` path**, not the robot, the command
+  plumbing, or the policy. That is a much smaller search space than before.
+  Prime suspect: gait-clock ownership — native `G1WalkController` increments
+  `_step_counter` itself inside `compute_ctrl_inputs` (`g1_walk.py:232`),
+  whereas `controller_g1ms` takes it as an argument and relies on the *policy*
+  to advance it (`_step_counter += 1` in `sample_actions`). Anything driving the
+  reference controller outside `sample_actions` must call
+  `G1Robot.advance_control_clock()` at exactly the right cadence, and a
+  mismatch there would desynchronize the gait without breaking balance —
+  precisely the observed symptom.
+
+  Fastest next experiment: port `test_walks_forward_on_command` to the new
+  robot (it needs `G1Robot.from_mj_data`) and bisect the clock cadence.
 
 - **`robots/g1_old_reference.py` / `fetchman_pick_planner_policy.py`** still
   carry the three documented divergences (arm `actfrcrange`/`dof_damping`,
