@@ -14,7 +14,7 @@ from molmo_spaces.env.object_manager import ObjectManager
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.components import Scene
 from molmo_spaces.g1_molmo_port.components.constants import ROBOT_PREFIX
-from molmo_spaces.g1_molmo_port.components.robot_g1ms import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
+from molmo_spaces.robots.g1_ported import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
 from molmo_spaces.g1_molmo_port.tasks.open import OpenTask
 from molmo_spaces.g1_molmo_port.tasks.open import get_config as get_open_task_config
 from molmo_spaces.g1_molmo_port.tasks.pick_g1ms import PickTask
