@@ -321,7 +321,7 @@ class GraspPolicy:
         return self._data.qpos.copy()
 
     def _solve_ik(self, pos, rot=None, hand=None):
-        """Delegates to G1Robot.kinematics (components/robot_g1ms.py) -- a
+        """Delegates to G1Robot.kinematics (robots/g1.py) -- a
         verbatim relocation of this method's own former body onto the robot
         object GraspPolicy.setup() was handed the same live scene model/data
         as (self._model/self._data ARE self._env.robot.model/data, not
@@ -789,7 +789,7 @@ class G1Controller:
         """The shared WBC PD/ONNX controller (controller_g1ms.G1Controller)
         now lives on env.robot, not on this policy -- G1Robot owns its own
         control stack the same way molmo_spaces' Robot does, rather than the
-        attached policy holding it (see robot_g1ms.G1Robot.__init__). This
+        attached policy holding it (see robots/g1.py's G1Robot.__init__). This
         policy still reads/writes `_cmd`/`_height_cmd`/`_data`/etc. through
         `self._low_level` exactly as before; only where that object lives
         changed, not how this class uses it.
@@ -821,7 +821,7 @@ class G1Controller:
 
     def setup(self, model, data, prefix="robot_0/"):
         # env.robot already owns and set up the low-level controller (see
-        # robot_g1ms.G1Robot.__init__) -- nothing to delegate here anymore.
+        # robots/g1.py's G1Robot.__init__) -- nothing to delegate here anymore.
         self._sites = {
             h: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, f"{prefix}{c['site']}")
             for h, c in _HANDS.items()
@@ -829,7 +829,7 @@ class G1Controller:
         r_grip_jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"{prefix}right_Joint1_1")
         self._right_grip_qa = model.jnt_qposadr[r_grip_jid] if r_grip_jid >= 0 else None
         # _solve_ik_wbc's own mink/standalone-model setup now lives on
-        # G1Robot (components/robot_g1ms.py's kinematics_wbc, lazily built
+        # G1Robot (robots/g1.py's kinematics_wbc, lazily built
         # there). Only arm_joints survives here -- read by __call__ outside
         # _solve_ik_wbc (PHASE_REALIGN's pregrasp-joint lookup) and cheap
         # enough that duplicating it beats depending on G1Robot's lazy
@@ -1043,7 +1043,7 @@ class G1Controller:
         return err
 
     def _solve_ik_wbc(self, target_pos, target_rot=None, avoid_self_collision=False):
-        """Delegates to G1Robot.kinematics_wbc (components/robot_g1ms.py) --
+        """Delegates to G1Robot.kinematics_wbc (robots/g1.py) --
         a verbatim relocation of this method's own former body, onto the
         robot object this controller was set up against. `precision` (the
         tighter max_iters/conv_thresh during PHASE_DESCEND/CLOSE/
@@ -1787,6 +1787,10 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             )
         # This policy drives the reference sample_actions(), which advances the
         # WBC gait clock itself -- tell the robot not to advance it too.
+        # Released again in close(): the flag lives on the robot, which
+        # outlives this policy whenever several drive it in turn.
+        self._robot = robot
+        self._prev_external_gait_clock = robot._external_gait_clock
         robot._external_gait_clock = True
         self._controller = G1Controller()
         self._controller.setup(
@@ -1840,6 +1844,16 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             "goal_yaw": float(np.arctan2(to_obj[1], to_obj[0])),
             "pregrasp_joints": None,
         }
+
+    def close(self) -> None:
+        """Hand the WBC gait clock back to whoever drives the robot next.
+
+        Left set, it pins `_step_counter`, so the gait network re-runs every
+        tick instead of every 4th and the robot falls over -- see
+        G1Robot.compute_control. Only reachable when the robot outlives the
+        policy, i.e. InteractiveShellTask's one-policy-per-skill loop.
+        """
+        self._robot._external_gait_clock = self._prev_external_gait_clock
 
     def reset(self, reset_retries: bool = True) -> None:
         target_obj = self._pickup_obj()

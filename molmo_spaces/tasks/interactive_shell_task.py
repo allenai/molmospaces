@@ -824,6 +824,10 @@ class InteractiveShellTask(BaseMujocoTask):
             end_on_success=True,
         )
         print(f"{'done - ' if success else 'FAILED - '}{sub_task.get_task_description()}")
+        # Every skill builds a fresh policy against the one long-lived robot, so
+        # anything a policy switched on for its own control loop has to come
+        # back off before the next skill runs (see BasePolicy.close).
+        policy.close()
         sub_task.close()
         self._warn_new_collisions(rebaseline=True)
         return success
@@ -1062,6 +1066,23 @@ class InteractiveShellTask(BaseMujocoTask):
         pick_config = copy.deepcopy(self.config)
         pick_config.task_type = "pick"
         pick_config.policy_config = planner_policy_config_cls()
+        if planner_policy_config_cls is FetchmanPickPlannerPolicyConfig:
+            # G1PickPlannerPolicy owns the WBC gait clock (it sets
+            # G1Robot._external_gait_clock), advancing it once per get_action.
+            # BaseMujocoTask.step runs compute_control policy_dt_ms/ctrl_dt_ms
+            # times per action, so at the shell's own 70ms policy rate the clock
+            # -- and with it the balance network, which only re-infers every 4th
+            # tick -- runs 14x too slowly and the robot falls over instead of
+            # picking. Every other skill leaves the flag clear and the robot
+            # clocks itself per control tick, so this applies to pick alone.
+            # PickG1DataGenConfig, where this policy already works, runs at
+            # exactly this rate for the same reason.
+            pick_config.policy_dt_ms = pick_config.ctrl_dt_ms
+            # ... which makes each step 14x shorter, so keep the same simulated
+            # time budget rather than cutting it to a fraction of a pick.
+            pick_config.task_horizon = int(
+                self.config.task_horizon * self.config.policy_dt_ms / pick_config.policy_dt_ms
+            )
         pick_config.task_config = PickTaskConfig(
             task_cls=PickTask,
             pickup_obj_name=object,
