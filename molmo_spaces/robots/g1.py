@@ -493,6 +493,25 @@ class G1Robot(Robot):
             return {}
         return {c.move_group.name: c for c in controllers}
 
+    @classmethod
+    def apply_control_overrides(cls, spec, robot_config):
+        """Actuator/gain configuration is done at runtime by
+        G1Controller.setup() on the compiled MjModel, so this only carries the
+        spec-time fix that cannot be done later: the MJCF puts the head/mount/
+        logo visual geoms on group 5, which no renderer in this codebase
+        enables, so the G1 renders headless. Move them to group 2 like the rest
+        of the robot."""
+        super().apply_control_overrides(spec, robot_config)
+        namespace = robot_config.robot_namespace
+        head_mesh_suffixes = ("head_link", "head_mount", "logo_link")
+        for body_name in ("torso_link", "head_camera_mount"):
+            body = spec.body(f"{namespace}{body_name}")
+            if body is None:
+                continue
+            for geom in body.geoms:
+                if geom.group == 5 and geom.meshname.endswith(head_mesh_suffixes):
+                    geom.group = 2
+
     @staticmethod
     def robot_model_root_name() -> str:
         """Robot ABC hook used by the scene builder to find the robot's root
@@ -516,6 +535,14 @@ class G1Robot(Robot):
         if reset_wbc is not None:
             reset_wbc()
 
+    def _legs_waist_target(self, cmd3) -> np.ndarray:
+        """[vx, vy, yaw_rate] -> the full legs_waist 7-vector, holding the
+        current commanded pelvis height and a level torso."""
+        out = np.zeros(NUM_LEGS_WAIST_TARGET_DIMS, dtype=np.float32)
+        out[0:3] = np.asarray(cmd3, dtype=np.float32)
+        out[3] = float(self._low_level._height_cmd)
+        return out
+
     def update_control(self, action_command_dict) -> None:
         """molmo_spaces' Robot.update_control protocol -> this robot's control
         stack.
@@ -531,6 +558,42 @@ class G1Robot(Robot):
         `execute_action` (the flat-15 path the reference stack drives) is
         untouched and remains the authority for that stack.
         """
+        # Nav policies address the base, which G1 has no controller for (the
+        # pelvis has no actuators). AStarPlannerPolicy sends an absolute
+        # world-frame [x, y, theta] waypoint under "base";
+        # FetchManBasePlannerPolicy computes [vx, vy, yaw_rate] itself and sends
+        # it under "base_velocity". Both become a legs_waist command here --
+        # same bridge g1_old_reference.update_control performs, without which
+        # nav_to silently does nothing (the keys match no controller and are
+        # skipped).
+        action_command_dict = dict(action_command_dict)
+        waypoint = action_command_dict.pop("base", None)
+        base_velocity = action_command_dict.pop("base_velocity", None)
+        if waypoint is not None and len(waypoint) == 3:
+            action_command_dict["legs_waist"] = self._legs_waist_target(
+                self.waypoint_to_velocity_target(waypoint)
+            )
+        elif base_velocity is not None and len(base_velocity) >= 3:
+            bv = np.asarray(base_velocity, dtype=np.float32)
+            # Same floored clip the waypoint path applies: a nav policy's
+            # smoothstep brake otherwise spends real time in
+            # [VELOCITY_DEADBAND, MIN_LINEAR_VEL), the regime the WBC's
+            # stand/walk switch gets stuck in.
+            action_command_dict["legs_waist"] = self._legs_waist_target(
+                np.array(
+                    [
+                        self._floored_clip(
+                            bv[0], MIN_LINEAR_VEL, MAX_LINEAR_VEL, VELOCITY_DEADBAND
+                        ),
+                        self._floored_clip(
+                            bv[1], MIN_LINEAR_VEL, MAX_LINEAR_VEL, VELOCITY_DEADBAND
+                        ),
+                        self._floored_clip(bv[2], MIN_YAW_RATE, MAX_YAW_RATE, VELOCITY_DEADBAND),
+                    ],
+                    dtype=np.float32,
+                )
+            )
+
         controllers = self.controllers
         for mg_id, target in action_command_dict.items():
             controller = controllers.get(mg_id)
