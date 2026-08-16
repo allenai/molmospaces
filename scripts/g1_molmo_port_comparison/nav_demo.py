@@ -20,9 +20,9 @@ import argparse
 
 import numpy as np
 
-from molmo_spaces.g1_molmo_port.agents.policy_g1ms import G1Controller
 from molmo_spaces.g1_molmo_port.configs.bowl_mixed_grasponly import get_config
 from molmo_spaces.g1_molmo_port.env_g1ms import make_env
+from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import G1Controller
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=0)

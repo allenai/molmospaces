@@ -19,17 +19,27 @@ Requires a g1_molmo checkout with procthor-10k-val scenes already downloaded
 which defaults to ~/code/g1_molmo/molmospaces/assets -- override with the
 G1_MOLMO_ASSETS_DIR env var if yours is elsewhere).
 """
+
 import argparse
 
 import numpy as np
 
-from molmo_spaces.g1_molmo_port.env_g1ms import make_env
-from molmo_spaces.g1_molmo_port.agents.policy_g1ms import G1Controller
 from molmo_spaces.g1_molmo_port.configs.bowl_mixed_grasponly import get_config
+from molmo_spaces.g1_molmo_port.env_g1ms import make_env
+from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import G1Controller
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--viewer", action="store_true", help="Launch MuJoCo's passive viewer (requires mjpython on macOS).")
-parser.add_argument("--seed", type=int, default=0, help="Env seed (default 0, matching generate_gold_rollout.py's own default).")
+parser.add_argument(
+    "--viewer",
+    action="store_true",
+    help="Launch MuJoCo's passive viewer (requires mjpython on macOS).",
+)
+parser.add_argument(
+    "--seed",
+    type=int,
+    default=0,
+    help="Env seed (default 0, matching generate_gold_rollout.py's own default).",
+)
 args = parser.parse_args()
 
 SCENE = "scenes/procthor-10k-val/val_0.xml"

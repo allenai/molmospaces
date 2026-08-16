@@ -17,8 +17,12 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
+from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
-from molmo_spaces.g1_molmo_port.agents.policy_g1ms import (
+from molmo_spaces.g1_molmo_port.components.robot_g1ms import PREFIX
+from molmo_spaces.g1_molmo_port.env_g1ms import BASE_MOVE_GROUP, NOISE_MOVE_GROUP, G1Env
+from molmo_spaces.g1_molmo_port.sensors_g1ms import OBS_SENSORS, TARGET_POINT_IN_HEAD_SENSOR
+from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
     PHASE_APPROACH,
     PHASE_CLOSE,
     PHASE_DESCEND,
@@ -28,10 +32,6 @@ from molmo_spaces.g1_molmo_port.agents.policy_g1ms import (
     PHASE_POST_CLOSE,
     PHASE_REALIGN,
 )
-from molmo_spaces.g1_molmo_port.components.robot_g1ms import PREFIX
-from molmo_spaces.g1_molmo_port.env_g1ms import BASE_MOVE_GROUP, NOISE_MOVE_GROUP, G1Env
-from molmo_spaces.env.abstract_sensors import SensorSuite
-from molmo_spaces.g1_molmo_port.sensors_g1ms import OBS_SENSORS, TARGET_POINT_IN_HEAD_SENSOR
 
 _SENSOR_SUITE = SensorSuite(OBS_SENSORS)
 
@@ -251,7 +251,9 @@ class G1TaskSampler:
         self._env = G1Env(**config)
 
         d = self._TASK_SAMPLER_DEFAULTS
-        get = lambda name: config.get(name, d[name])
+
+        def get(name):
+            return config.get(name, d[name])
 
         self._action_noise_offset = np.zeros(10, dtype=np.float64)
         self._action_noise_std = float(get("action_noise_std"))
@@ -818,9 +820,7 @@ class G1TaskSampler:
         mujoco.mj_forward(self.env.scene.model, self.env.scene.data)
         if self._robot_has_scene_collision():
             return False
-        if visibility and not self.env.robot.check_object_visibility(obj.body_id):
-            return False
-        return True
+        return not (visibility and not self.env.robot.check_object_visibility(obj.body_id))
 
     def _compute_pregrasp_upper(self, goal_xy, goal_yaw):
         """Run the grasp planner at (goal_xy, goal_yaw) and convert the resulting
