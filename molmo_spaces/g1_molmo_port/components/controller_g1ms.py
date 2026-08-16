@@ -8,8 +8,8 @@ import numpy as np
 import onnxruntime as ort
 
 from molmo_spaces.g1_molmo_port import ASSETS_DIR
-from molmo_spaces.g1_molmo_port.components.robot_g1ms import DEFAULT_QPOS as _ROBOT_DEFAULT_QPOS
-from molmo_spaces.g1_molmo_port.components.robot_g1ms import JOINT_NAMES as _JOINTS
+from molmo_spaces.robots.g1 import DEFAULT_QPOS as _ROBOT_DEFAULT_QPOS
+from molmo_spaces.robots.g1 import JOINT_NAMES as _JOINTS
 
 # Named slices of the flat 15-element action array execute_action() parses --
 # molmo_spaces' own FetchmanPickPlannerPolicy builds a move-group-keyed dict
