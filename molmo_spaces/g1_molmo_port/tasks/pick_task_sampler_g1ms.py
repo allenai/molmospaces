@@ -1157,12 +1157,7 @@ class G1TaskSampler:
                 m.light_castshadow[:] = st["light_castshadow"]
         if "fisheye_K" in st:
             if self.env.camera_manager.fisheye is None:
-                self.env._ensure_fisheye(
-                    "head_pov",
-                    self.env.camera_manager.size[0],
-                    self.env.camera_manager.size[1],
-                    512,
-                )
+                self.env._ensure_fisheye(*self.env.camera_manager.size)
             self.env.camera_manager.fisheye.set_intrinsics(
                 np.asarray(st["fisheye_K"]), np.asarray(st["fisheye_D"])
             )
@@ -1350,10 +1345,12 @@ class G1TaskSampler:
                 w1 * z0 + x1 * y0 - y1 * x0 + z1 * w0,
             ]
         if (fn > 0 or dn > 0) and self.env.camera_manager.fisheye is not None:
-            from molmo_spaces.utils.fisheye_warping_g1 import HEAD_FISHEYE_D, HEAD_FISHEYE_K
-
-            K = HEAD_FISHEYE_K.copy()
-            D = HEAD_FISHEYE_D.copy()
+            # Perturb around the *calibrated* lens from config, not around the
+            # renderer's current K/D -- those already carry the previous
+            # episode's noise, which would random-walk across resets.
+            cfg = self.env.camera_manager.fisheye_config
+            K = np.asarray(cfg.fisheye_K, dtype=float)
+            D = np.asarray(cfg.fisheye_D, dtype=float)
             if fn > 0:
                 # fovy noise (degrees) → focal-length scale around the calibrated f.
                 scale = 1.0 + float(rng.uniform(-fn, fn)) / 90.0

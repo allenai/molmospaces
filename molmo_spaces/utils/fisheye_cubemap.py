@@ -1,8 +1,14 @@
-"""Cubemap fisheye renderer for MuJoCo: five pinhole tile cameras sharing an
-optical centre, composited through an OpenCV fisheye model. The projection
-behind the G1 head camera (FisheyeMjcfCameraConfig), from g1_molmo. The
-renderer to use for any warped camera; fisheye_warping.py is deprecated (see
-FisheyeImpl). Requires the five tile cameras in the MJCF.
+"""Cubemap-based fisheye renderer for MuJoCo (5 pinhole faces, equidistant warp).
+
+Used by the fetchman G1: this is the projection behind that robot's head camera,
+whose parameters are declared on `configs/camera_configs.py`'s
+FisheyeMjcfCameraConfig (G1CameraSystem.head_camera).
+
+Ported from the G1 humanoid research stack (g1_molmo/molmospaces/components/fisheye.py).
+Unlike fisheye_warping.py (an offline single-image/video distortion utility built around
+a fixed GoPro K/D), this module renders a live fisheye view directly from 5 named MuJoCo
+"tile" cameras sharing an optical center, compositing them into one warped image per call.
+Kept as a parallel module rather than merged with fisheye_warping.py.
 """
 
 from __future__ import annotations
@@ -61,10 +67,20 @@ class FisheyeRenderer:
         weight_power=4.0,
         tile_fovy=None,
     ):
-        """Pixel->ray through the OpenCV fisheye model with K, D and the
-        calibration's image_size (W, H), scaled to the output size. All are
-        required; FisheyeMjcfCameraConfig.cubemap_renderer_kwargs supplies them.
-        `tile_fovy` (degrees) defaults to the model's tile camera fovy."""
+        """Pixel→ray uses the OpenCV fisheye model with the given K, D and
+        image_size -- the (W, H) the calibration was captured at, which the LUT
+        scales from to the output size. They are required: this module used to
+        carry the G1 head lens as module-level HEAD_FISHEYE_* defaults, but that
+        left the calibration in two places once the config declared it too, and
+        the module's copy won silently whenever a caller forgot to pass K/D.
+        See FisheyeMjcfCameraConfig (configs/camera_configs.py), whose
+        `cubemap_renderer_kwargs` supplies every argument below.
+
+        tile_fovy (degrees) is the vertical FOV the five tile cameras are assumed
+        to have. Default None reads it off the model, as the reference stack
+        does; pass it to drive the value from config instead (see
+        FisheyeMjcfCameraConfig.tile_fov), which also makes the assumption
+        explicit rather than implicit in the MJCF."""
         if len(tile_cam_names) != 5:
             raise ValueError(f"need exactly 5 tile cameras, got {len(tile_cam_names)}")
         self.model = model
