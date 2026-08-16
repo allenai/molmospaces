@@ -5,6 +5,10 @@ run the **reference** grasp logic — the one verified equivalent to
 `~/code/g1_molmo`'s own stack — instead of the independent rewrite that
 diverged from it and never contacts the object.
 
+**Status: done for the grasp.** `run_house_sweep.py 0` now reports
+`fingers_in_contact=True`, `lift_height=0.120`, `pick success=True`. What
+remains is navigation (§3) and the walking gap (§4).
+
 ---
 
 ## 1. How to check gold vs ported
@@ -88,7 +92,9 @@ conda run -n mlspaces python run_house_sweep.py 0 1 2 5
 ```
 
 Look for `lift_height` and `fingers_in_contact` per house. Current status:
-converging but **not** grasping (`fingers_in_contact=False`).
+**house 0 succeeds** (`lift_height=0.120`, `fingers_in_contact=True`); houses
+1/2/5 end in `PHASE_DONE` because their targets are out of reach without
+navigation — see §3.
 
 > This script wraps task sampling in `try/except` and prints only the exception
 > message, swallowing the traceback. When you hit an error, re-run the failing
@@ -112,92 +118,75 @@ strict gate:
 | `902abc7` | robot: `from_mj_data()` + `update_control()` |
 | `fa1ef5e` | `G1PickPlannerPolicy` — native planner-policy wrapper |
 | `7bd04e3` | `robot_model_root_name`/`reset`, dual `robot_view`, Controller ABC members |
+| `ea4bb4c` | `check_gold_parity.py` + these notes |
+| `f627598` | **the flip: native pick switched to the reference stack, and now succeeds** |
 
 Key naming: **`robots/g1.py` is the reference-derived implementation**;
 **`robots/g1_old_reference.py` is the superseded independent rewrite**, which
-is still what `G1Config` constructs. They are NOT interchangeable —
+nothing constructs any more (see §3). They are NOT interchangeable —
 `(mj_data, exp_config)` vs `(model, data, ...)`.
 
 ---
 
-## 3. The next step: finish the flip
+## 3. The flip: DONE — the native pick works
 
-The flip is two lines, both currently reverted:
+`G1Config` and `FetchmanPickPlannerPolicyConfig` now build the
+reference-derived `robots/g1.py` + `G1PickPlannerPolicy` (commit `f627598`).
+`InteractiveShell.pick()` picks these up automatically.
 
-```python
-# molmo_spaces/configs/robot_configs.py  — G1Config
-from molmo_spaces.robots.g1 import G1Robot          # was: g1_old_reference
-robot_factory: ... = G1Robot.from_mj_data           # was: G1Robot
-
-# molmo_spaces/configs/policy_configs.py — FetchmanPickPlannerPolicyConfig
-from ...g1_pick_policy import G1PickPlannerPolicy   # was: FetchmanPickPlannerPolicy
-self.policy_cls = self.policy_factory = G1PickPlannerPolicy
+```
+run_house_sweep.py 0
+  start_z=0.760  final_z=0.880  lift_height=0.120
+  fingers_in_contact=True  ->  pick success=True
+  approach 0.226 -> descend 0.185 -> open_hold 0.149 -> close 0.140
+  -> post_close 0.123 -> lift 0.122 m
 ```
 
-Four blockers have been cleared already; each attempt got further:
+Six gaps were closed, each from a real traceback:
 
-1. ~~`NotImplementedError` — scene wouldn't compile~~ → added
-   `robot_model_root_name`/`reset`
-2. ~~`'G1RobotView' has no attribute 'get_move_group'`~~ → dual `robot_view`
-3. ~~`'LeftArmController' has no attribute 'reset'`~~ → Controller ABC members
-4. **CURRENT:** `ValueError: too many values to unpack (expected 3)` during
-   task sampling
+1. `LegsWaistController.set_target` accepts both the flat 7-vector and the
+   reference's `(cmd3, height, waist3)`. **This corrects the guess an earlier
+   version of this file recorded**: the culprit was NOT `init_qpos`, it was
+   `PickTaskSampler._randomize_robot_standing_height` calling the controller
+   *directly*, bypassing `Robot.update_control`.
+2. `G1Robot` applies `robot_config.physics_timestep` in `__init__` (the
+   reference sets it in `set_env`, which the native env never calls).
+3. `G1Robot.compute_control` mirrors `execute_action`'s dispatch — controller
+   order is load-bearing.
+4. `target_poses["grasp"]` published as a live 4x4 for `GraspPoseSensor`.
+5. `goal_xy` from the controller's own `_xy()`, so `reset()` takes the
+   already-at-goal branch instead of stalling in the walking phase.
+6. The env view must **not** expose `grasp_frame_pose` — the reference
+   branches on `hasattr`, and its absence is what selects the pick path.
 
-### Diagnosing blocker 4
+### Remaining work
 
-`LegsWaistController.set_target` (`g1_molmo_port/components/controller_g1ms.py`)
-unpacks `cmd, height_cmd, waist = target` — a 3-tuple. Something is handing it
-a longer sequence. `G1Robot.update_control` is **not** the culprit; it builds a
-correct 3-tuple from the native 7-vector.
-
-Prime suspect: **`G1Config.init_qpos["legs_waist"]` is a 15-element joint-position
-array**, while the WBC's `legs_waist` target is a 7-element *command*
-`[vx, vy, yaw_rate, height, waist(3)]`. The same move-group name means two
-different things to the two stacks, and reset/init paths push `init_qpos`
-through it.
-
-That is a semantic decision, not a patch: decide whether
-
-- (a) the reference robot's `reset()`/init path should bypass `init_qpos`
-  entirely (it already uses `DEFAULT_QPOS` via `set_defaults()`), and whatever
-  still forwards `init_qpos` into `set_target` should be taught not to; or
-- (b) `LegsWaistController.set_target` should accept both arities explicitly.
-
-(a) is cleaner — `init_qpos` is a *pose*, and a velocity-commanded move group
-has no meaningful "initial joint position". Get the traceback first (see the
-note in §1) to confirm which call site is doing it.
-
-### After the flip works
-
-Run **both** checks — the strict ported gate (must stay byte-identical) **and**
-`run_house_sweep.py 0 1 2 5`. Then:
-
-- `InteractiveShell.pick()` needs no change: it already defaults to
-  `FetchmanPickPlannerPolicyConfig` for G1 in WBC mode, which the flip
-  repoints at the reference policy.
-- Retire the rewrite: rename `fetchman_pick_planner_policy.py` →
-  `*_old_reference.py` once nothing imports it (only `policy_configs.py` does).
-- Delete `g1_molmo_port/` once its shims have no consumers.
+- **Navigation for pick.** Houses 1/2/5 end in `PHASE_DONE`: their targets are
+  2.5–6.8 m away and `_build_info` always reports already-at-goal, so the
+  planner correctly rejects them as out of reach. In the shell that is fine
+  (`nav_to` is a separate command); for the batch datagen pipeline the info
+  dict needs a real `goal_xy`/`goal_yaw` and a `nav_occupancy_map` so
+  `_plan_path` can run.
+- **Retire the rewrite.** Nothing constructs `FetchmanPickPlannerPolicy` now;
+  rename it to `*_old_reference.py` alongside `robots/g1_old_reference.py`.
+  Then `robots/g1_old_reference.py` itself, once nothing imports it.
+- **Delete `g1_molmo_port/`** once its shims have no consumers.
 
 ---
 
-## 4. Known open issues (not blockers for the above)
+## 4. Known open issues
 
 - **G1 walking does not translate.** Commanding `[0.5, 0, 0]` moves the robot
-  ~0.115 m in 4 s of sim; it stays upright and the command reaches the walk
-  policy (`norm(cmd)=0.5 > 0.05`, so `_walk_sess` runs — verified). Reproduce
-  with `nav_demo.py`. **Pre-existing** — `controller_g1ms.py` is untouched by
-  this whole merge, and the pick rollout never exercises walking because
-  `place_robot_near` spawns the robot 0.2–0.5 m from the target. Next
-  diagnostic: command pure yaw; if it turns but won't translate, the policy is
-  live and forward locomotion specifically is broken.
+  ~0.115 m in 4 s; it stays upright and the command reaches the walk policy
+  (`norm(cmd)=0.5 > 0.05`, so `_walk_sess` runs — verified). Reproduce with
+  `nav_demo.py`. **Pre-existing** — `controller_g1ms.py`'s control law is
+  untouched by this merge, and the pick rollout never exercises walking because
+  `place_robot_near` spawns the robot 0.2–0.5 m from the target. This is what
+  blocks the navigation item above. Next diagnostic: command pure yaw; if it
+  turns but won't translate, forward locomotion specifically is broken.
 
-- **The rewrite's grasp still misses**, even after `a248348`. TCP now converges
-  (descend 0.647→0.161 m, close 0.569→0.097 m, vs gold 0.131 m) and the bowl is
-  no longer knocked aside, but `fingers_in_contact=False`. The TCP settles ~5 cm
-  above the object centre where the reference settles ~1.6 cm. Remaining known
-  divergence: this file composes **world-frame** grasps and doubles them via
-  `flip_grasps`, where the reference uses **object-local** transforms composed
-  as `Tw @ go` (`G1PickPlannerPolicy._build_info` already does it the reference
-  way). If the flip lands, this becomes moot — the reference policy replaces
-  this code path entirely.
+- **`robots/g1_old_reference.py` / `fetchman_pick_planner_policy.py`** still
+  carry the three documented divergences (arm `actfrcrange`/`dof_damping`,
+  action noise on the IK command, and — fixed in `a248348` — the non-persisted
+  height smoothing). They are now dead code paths; retiring them is preferable
+  to fixing them further.
