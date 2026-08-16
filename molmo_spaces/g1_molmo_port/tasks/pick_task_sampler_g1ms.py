@@ -9,6 +9,7 @@ task_sampler.py's role, in its own file matching molmo_spaces' layout
 tasks/pick_g1_task_sampler.py).
 """
 
+import json as _json
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -45,13 +46,14 @@ def build_thor_texture_pools():
     prevented moving np_random itself in this pass). Relocated from G1Env's
     old @staticmethod _build_thor_texture_pools.
 
-    Gold picks its repo-local assets/textures/<Category>/ pack first and only
-    reconstructs pools from THOR's material-database.json if that's absent.
-    Here the pack is mandatory (it lives in the ResourceManager cache under
-    textures/fetchman/), and its absence is an error rather than a silent
-    fall-through: the db-derived pools are different (larger, differently
-    categorized) sets, so falling back renders the same scenes with different
-    textures than gold -- exactly the divergence this pack exists to close.
+    Same precedence as gold: the curated per-category pack first, THOR's
+    material-database.json only if the pack is absent. The pack is gold's own
+    repo-local assets/textures/<Category>/ set, living here in the
+    ResourceManager cache under textures/fetchman/. The db fallback is kept
+    (it is what gold does) but is NOT equivalent -- it yields different,
+    larger, differently categorized pools, so the same house renders with
+    different walls/floors/counters than gold. That is worth knowing about
+    rather than discovering in a pixel diff, hence the loud warning.
     """
     from molmo_spaces.g1_molmo_port.components.constants import SCENE_TEXTURE_CATEGORIES
 
@@ -63,17 +65,72 @@ def build_thor_texture_pools():
             files = sorted(str(p) for p in (local_root / cat).glob("*.png"))
             if files:
                 local_pools[cat] = files
-    if not local_pools:
+    if local_pools:
+        return local_pools
+
+    print(
+        f"[env] JORDI-TODO: the fetchman scene-texture pack is missing from {local_root}, "
+        f"falling back to pools derived from THOR's material-database.json. Renders will "
+        f"NOT match gold (different, larger, differently categorized pools) -- any "
+        f"gold-vs-ported pixel comparison run in this state is invalid. Install the pack "
+        f"with the asset manager (molmospaces_resources) into "
+        f"{ASSETS_DIR}/textures/fetchman/<Category>/*.png; it is not yet a registered "
+        f"source in DATA_TYPE_TO_SOURCE_TO_VERSION, so until it is, unzip the "
+        f"textures.zip pack into {ASSETS_DIR}."
+    )
+
+    db_path = ASSETS_DIR / "objects" / "thor" / "material-database.json"
+    mt_path = ASSETS_DIR / "objects" / "thor" / "material_to_textures.json"
+    if not db_path.exists() or not mt_path.exists():
         raise FileNotFoundError(
-            f"JORDI-TODO: the fetchman scene-texture pack is missing from {local_root}. "
-            f"Texture randomization for the G1/fetchman port needs the curated per-category "
-            f"pools ({', '.join(sorted(canonical))}) that gold ships in its repo-local "
-            f"assets/textures/. Install it with the asset manager (molmospaces_resources) "
-            f"into {ASSETS_DIR}/textures/fetchman/<Category>/*.png -- it is not yet a "
-            f"registered source in DATA_TYPE_TO_SOURCE_TO_VERSION, so until it is, unzip "
-            f"the textures.zip pack into {ASSETS_DIR}."
+            f"JORDI-TODO: no scene textures at all -- the fetchman pack is missing from "
+            f"{local_root} (see the warning above for how to install it) and so is THOR's "
+            f"{db_path.name}/{mt_path.name} fallback pair under {db_path.parent}. Install "
+            f"the objects/thor source with the asset manager, or turn off "
+            f"randomize_textures."
         )
-    return local_pools
+    with open(db_path) as f:
+        cat_db = _json.load(f)
+    with open(mt_path) as f:
+        mat_tex = _json.load(f)
+    canon_by_lc = {c.lower(): c for c in canonical}
+
+    pools: dict[str, set[str]] = {c: set() for c in canonical}
+    for db_cat, mats in cat_db.items():
+        target = canon_by_lc.get(db_cat.lower())
+        if target is None:
+            continue
+        for m in mats:
+            rec = mat_tex.get(m) or {}
+            tex = rec.get("_MainTex")
+            if not tex:
+                continue
+            rel = tex.split("Assets/ThorAssets/Textures/", 1)[-1]
+            rel = rel.split("Textures/", 1)[-1]
+            abs_path = ASSETS_DIR / "objects" / "thor" / "Textures" / rel
+            if not abs_path.exists():
+                continue
+            # MuJoCo's loader only accepts PNG; fall back to sibling .png.
+            if abs_path.suffix.lower() != ".png":
+                png_alt = abs_path.with_suffix(".png")
+                if png_alt.exists():
+                    abs_path = png_alt
+                else:
+                    continue
+            pools[target].add(str(abs_path))
+    db_pools = {c: sorted(v) for c, v in pools.items() if v}
+    if not db_pools:
+        raise FileNotFoundError(
+            f"JORDI-TODO: no scene textures at all -- the fetchman pack is missing from "
+            f"{local_root} (see the warning above for how to install it) and THOR's "
+            f"material database under {db_path.parent} yielded no usable PNGs for any of "
+            f"{', '.join(sorted(canonical))}."
+        )
+    print(
+        "[env] THOR-db texture pools: "
+        + ", ".join(f"{c}={len(v)}" for c, v in sorted(db_pools.items()))
+    )
+    return db_pools
 
 
 def resolve_texture_pools(randomize_textures, scene_textures_glob):
@@ -82,8 +139,9 @@ def resolve_texture_pools(randomize_textures, scene_textures_glob):
 
     scene_textures_glob is kept for signature parity with gold (callers still
     pass it) but is no longer consulted: it fed gold's legacy flat-glob
-    fallback, which only ran when no per-category pool existed -- a state
-    build_thor_texture_pools now raises on instead.
+    fallback, which only ran when neither the per-category pack nor the THOR
+    material database yielded a pool -- a state build_thor_texture_pools
+    raises on instead.
     """
     if not randomize_textures:
         return {}, False
