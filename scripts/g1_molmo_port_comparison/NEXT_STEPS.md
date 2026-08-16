@@ -107,9 +107,12 @@ Neither gate above looks at pixels, and the two stacks used to sample
 *different* textures (gold: its repo-local `assets/textures/<Category>/`
 pack; ported: pools reconstructed from THOR's `material-database.json`).
 The pack now lives in the ResourceManager cache as
-`$ASSETS_DIR/textures/fetchman/<Category>/*.png` and is mandatory —
-`build_thor_texture_pools()` raises a `JORDI-TODO` error if it is missing,
-rather than silently falling back. It is not yet a registered
+`$ASSETS_DIR/textures/fetchman/<Category>/*.png`. If it is missing,
+`build_thor_texture_pools()` keeps gold's THOR-db fallback but prints a
+`JORDI-TODO` warning first — pools built that way are different, larger and
+differently categorized, so **a pixel comparison run in that state is
+meaningless**; check the log before believing a render diff. With neither
+source available it raises. The pack is not yet a registered
 `molmospaces_resources` source; until it is, unzip `textures.zip` into
 `$ASSETS_DIR`.
 
