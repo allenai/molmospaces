@@ -9,13 +9,20 @@ molmo_spaces/robots/robot_views/g1_view.py's G1RobotView.
 
 import contextlib
 import re
+from typing import TYPE_CHECKING
 
 import mink
 import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation as _R
 
+from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
+from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyParallelKinematics
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.robots.abstract import Robot
+
+if TYPE_CHECKING:
+    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 
 XML_PATH = str(ASSETS_DIR / "robots/g1/g1_dex.xml")
 PREFIX = "robot_0/"
@@ -253,7 +260,7 @@ HAND_ARM_JOINTS = {side: _hand_joints(side) for side in ("left", "right")}
 HAND_SITE = {side: f"{side}_grasp" for side in ("left", "right")}
 
 
-class G1Robot:
+class G1Robot(Robot):
     def __init__(
         self,
         model,
@@ -262,10 +269,19 @@ class G1Robot:
         low_level=None,
         namespace: str = PREFIX,
         xml_path: str = XML_PATH,
+        exp_config: "MlSpacesExpConfig | None" = None,
     ):
+        # Robot.__init__ wants (mj_data, exp_config) and only stores them; this
+        # class is constructed with an explicit (model, data) pair by the
+        # reference stack, so pass `data` through and keep self.model/self.data
+        # as the names the ported code already reads.
+        super().__init__(data, exp_config)
         self.model = model
         self.data = data
         self._env = env
+        # Robot ABC solver properties, built lazily (see `kinematics`).
+        self._kinematics = None
+        self._parallel_kinematics = None
         # Namespace/asset path are per-instance rather than the module-level
         # PREFIX/XML_PATH the reference stack hardcoded, matching how every
         # other molmo_spaces Robot takes these from its BaseRobotConfig
@@ -420,10 +436,16 @@ class G1Robot:
     def _set_groot_defaults(self):
         return self._low_level._set_groot_defaults()
 
-    def kinematics(
+    def solve_scene_ik(
         self, pos, rot=None, hand="right", ik_joints=None, col_limit=None, use_height=True
     ):
-        """Exact relocation of agents/policy_g1ms.py's GraspPolicy._solve_ik
+        """Full-scene mink IK. Named `solve_scene_ik` rather than `kinematics`
+        because molmo_spaces/robots/abstract.py's Robot reserves `kinematics`
+        for a *property* returning the robot's kinematics solver
+        (MlSpacesKinematics); this is a method that performs a solve. Only
+        caller is agents/policy_g1ms.py's GraspPolicy._solve_ik.
+
+        Exact relocation of agents/policy_g1ms.py's GraspPolicy._solve_ik
         onto G1Robot -- same statements, same order, same every early-break,
         just reading self.model/self.data (the SAME live scene MjModel/
         MjData GraspPolicy.setup() was separately handed -- not a
@@ -741,10 +763,35 @@ class G1Robot:
         return arm, waist, ik_h, err
 
     @property
+    def kinematics(self):
+        """Robot ABC's kinematics solver. Built lazily: the reference stack
+        constructs this robot with no exp_config at all (it drives the arm
+        through solve_scene_ik/kinematics_wbc, never through
+        MlSpacesKinematics), so requiring one up front would break that path.
+        Native callers that do pass an exp_config get the same solver every
+        other molmo_spaces Robot exposes."""
+        if self._kinematics is None:
+            self._kinematics = MlSpacesKinematics(self._require_exp_config("kinematics"))
+        return self._kinematics
+
+    @property
     def parallel_kinematics(self):
-        raise NotImplementedError(
-            "G1Robot.parallel_kinematics: not yet ported, see kinematics' docstring."
-        )
+        """Robot ABC's parallel kinematics. DummyParallelKinematics matches
+        what native G1Robot uses -- G1 has no batched-IK backend."""
+        if self._parallel_kinematics is None:
+            self._parallel_kinematics = DummyParallelKinematics(
+                self._require_exp_config("parallel_kinematics"), self.kinematics
+            )
+        return self._parallel_kinematics
+
+    def _require_exp_config(self, what: str):
+        if self.exp_config is None:
+            raise RuntimeError(
+                f"G1Robot.{what} needs an exp_config, but this robot was constructed "
+                "without one (the g1_molmo_port stack builds it straight from "
+                "model/data). Construct it with exp_config= to use this."
+            )
+        return self.exp_config.robot_config
 
     def _apply_solver_overrides(self):
         m = self.model
