@@ -23,7 +23,13 @@ from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
-from molmo_spaces.utils.scene_maps import ProcTHORMap, iTHORMap, sample_around_point
+from molmo_spaces.utils.scene_maps import (
+    DEFAULT_OCCUPANCY_MAP_IMPL,
+    OCCUPANCY_MAP_IMPLS,
+    ProcTHORMap,
+    iTHORMap,
+    sample_around_point,
+)
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 
 if TYPE_CHECKING:
@@ -37,6 +43,12 @@ HAS_FILAMENT: bool = getattr(mujoco, "mjRENDERER", "classic") == "filament"
 
 class BaseMujocoEnv(ABC):
     object_managers: list["ObjectManager"]
+
+    # Which occupancy-map implementation get_occupancy_map() returns; see
+    # utils/scene_maps.OCCUPANCY_MAP_IMPLS. Task samplers set it from
+    # BaseMujocoTaskSamplerConfig.occupancy_map_impl, and only G1/FetchMan
+    # experiments set it to anything but the default.
+    occupancy_map_impl: str = DEFAULT_OCCUPANCY_MAP_IMPL
 
     def __init__(self, exp_config: "MlSpacesExpConfig", mj_model: MjModel = None) -> None:
         self._mj_model = mj_model
@@ -173,6 +185,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
         # Cached occupancy map for robot placement (expensive to create)
         self._cached_thormap = None
         self._cached_thormap_key = None  # (model_path, agent_radius, px_per_m)
+        self._cached_abb_map = None
+        self._cached_abb_map_key = None  # (model_path, agent_radius, px_per_m)
+        self.occupancy_map_impl = exp_config.task_sampler_config.occupancy_map_impl
 
         self._initialize_with_model(mj_model, mj_base_scene_path)
 
@@ -183,9 +198,11 @@ class CPUMujocoEnv(BaseMujocoEnv):
             self._renderer.close()
             self._renderer = None
 
-        # Invalidate cached thormap when scene changes
+        # Invalidate cached occupancy maps when scene changes
         self._cached_thormap = None
         self._cached_thormap_key = None
+        self._cached_abb_map = None
+        self._cached_abb_map_key = None
 
         # scenes
         self._mj_model = mj_model
@@ -759,16 +776,38 @@ class CPUMujocoEnv(BaseMujocoEnv):
         return thormap
 
     def get_occupancy_map(
-        self, agent_radius: float = 0.35, px_per_m: int = 200
-    ) -> "ProcTHORMap | iTHORMap":
-        """Blessed entry point for a scene's occupancy map, aliasing get_thormap.
+        self, agent_radius: float = 0.35, px_per_m: int = 200, impl: str | None = None
+    ):
+        """Blessed entry point for a scene's occupancy map.
 
         Same name/shape as G1Env.get_occupancy_map so callers written against
         either env don't need to know which one they have. ProcTHORMap/iTHORMap
-        now also carry OccupancyMap-shaped query methods (is_free, dilated,
-        any_free_in_annulus, same_free_component, sample_near, sample_robot_pose)
-        with matching True=free semantics.
+        and ABBMap all carry the same query methods (is_free, dilated,
+        any_free_in_annulus, same_free_component, sample_near,
+        sample_robot_pose) with matching True=free semantics.
+
+        `impl` selects between them (see utils/scene_maps.OCCUPANCY_MAP_IMPLS);
+        it defaults to this env's `occupancy_map_impl`, which the task sampler
+        sets from its config and which is "thor" for everything except
+        G1/FetchMan experiments. The two grids are NOT cell-for-cell equal --
+        picking "abb" outside those experiments silently changes which cells a
+        robot considers standable.
         """
+        impl = impl or self.occupancy_map_impl
+        if impl not in OCCUPANCY_MAP_IMPLS:
+            raise ValueError(f"unknown occupancy map impl {impl!r}, expected {OCCUPANCY_MAP_IMPLS}")
+        if impl == "abb":
+            # Imported here, not at module scope: abb_map monkeypatches MuJoCo's
+            # segmentation renderer on import, and only these experiments opt in.
+            from molmo_spaces.utils.abb_map import ABBMap
+
+            key = (str(self.current_model_path), float(agent_radius), int(px_per_m))
+            if getattr(self, "_cached_abb_map_key", None) != key:
+                self._cached_abb_map = ABBMap.from_model_path(
+                    self.current_model_path, agent_radius=agent_radius, px_per_m=px_per_m
+                )
+                self._cached_abb_map_key = key
+            return self._cached_abb_map
         return self.get_thormap(agent_radius=agent_radius, px_per_m=px_per_m)
 
     def place_robot_near(

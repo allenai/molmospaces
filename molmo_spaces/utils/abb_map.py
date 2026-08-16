@@ -1,3 +1,29 @@
+"""ABBMap -- an occupancy map built from the axis-aligned bounding boxes of a
+scene's floor geoms, rendered through MuJoCo's segmentation renderer.
+
+**Provenance: this comes from the FetchMan repo (`g1_molmo`), where it is
+`molmospaces/components/occupancy_map.py`'s `OccupancyMap`.** It was relocated
+here (and renamed) while dissolving `molmo_spaces/g1_molmo_port/`. The
+FetchMan pick/nav stack's goal and spawn sampling is verified bit-exact
+against that repo's own rollouts, and those samples read *this* grid -- so the
+cell-for-cell output is load-bearing and should not be "improved" without
+re-running scripts/g1_molmo_port_comparison/check_gold_parity.py.
+
+Relationship to `ProcTHORMap`/`iTHORMap` (utils/scene_maps.py): same query API
+(`is_free`, `dilated`, `label_at`, `same_free_component`, `any_free_in_annulus`,
+`sample_near`, `sample_robot_pose`, True = free), *different* grid. ABBMap
+frames the map on the floor geoms' AABB and segments floor vs non-floor;
+ProcTHORMap renders an orthographic depth view of the whole scene. They
+disagree cell for cell, so they are selectable rather than interchangeable --
+see `utils/scene_maps.OCCUPANCY_MAP_IMPLS` and
+`CPUMujocoEnv.get_occupancy_map(impl=...)`. Only G1/FetchMan experiments
+should select "abb".
+
+Kept in its own module rather than appended to scene_maps.py on purpose: the
+import below monkeypatches MuJoCo's segmentation renderer, and scene_maps is
+imported repo-wide.
+"""
+
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -158,17 +184,29 @@ def _circular_kernel(radius):
     return kernel
 
 
-class OccupancyMap:
-    def __init__(self, occupancy, world_to_map, map_to_world, px_per_m):
+def _fetchman_map_path(xml_path) -> Path:
+    """FetchMan's own cache filename for a scene's map, kept exactly as it was
+    in g1_molmo (`<scene>_thormap.png`) so existing caches stay valid. Note the
+    name predates ProcTHORMap and has nothing to do with it."""
+    xml_path = Path(xml_path)
+    return xml_path.with_name(xml_path.stem + "_thormap.png")
+
+
+class ABBMap:
+    def __init__(self, occupancy, world_to_map, map_to_world, px_per_m, agent_radius=None):
         self.occupancy = occupancy
         self.world_to_map = world_to_map
         self.map_to_world = map_to_world
         self.px_per_m = px_per_m
+        # Radius the obstacles were already inflated by when this grid was
+        # rendered, or None for a map cached before that was recorded. Read by
+        # from_model_path to decide whether the cache is reusable.
+        self.agent_radius = agent_radius
 
     @staticmethod
-    def generate(xml_path, agent_radius=0.15, px_per_m=200, force=False):
+    def generate(xml_path, agent_radius=0.15, px_per_m=200, force=False, out_path=None) -> Path:
         xml_path = Path(xml_path)
-        out_path = xml_path.with_name(xml_path.stem + "_thormap.png")
+        out_path = Path(out_path) if out_path is not None else _fetchman_map_path(xml_path)
         if out_path.exists() and not force:
             return out_path
         tmp_xml = _strip_bodies(xml_path, ["ceiling", "light"])
@@ -191,7 +229,7 @@ class OccupancyMap:
 
         door_body_ids = []
         doorway_body_ids = []
-        for root_body_id, children in parent_to_child.items():
+        for _root_body_id, children in parent_to_child.items():
             for child_id in children:
                 jntadr = model.body(child_id).jntadr.item()
                 if (
@@ -297,14 +335,51 @@ class OccupancyMap:
         metadata.add_text("world_to_map", json.dumps(world_to_map.tolist()))
         metadata.add_text("map_to_world", json.dumps(map_to_world.tolist()))
         metadata.add_text("px_per_m", json.dumps(float(effective_px)))
+        metadata.add_text("agent_radius", json.dumps(float(agent_radius or 0.0)))
         img.save(str(out_path), pnginfo=metadata)
         return out_path
 
     @classmethod
     def from_scene(cls, scene, agent_radius=0.15):
-        map_path = scene.xml_path.with_name(scene.xml_path.stem + "_thormap.png")
+        """FetchMan's own entry point, unchanged: its own `<scene>_thormap.png`
+        cache file, and an existing one wins outright. Deliberately does NOT
+        re-check the cached map's agent radius the way from_model_path below
+        does -- this is the call the bit-exact gold rollout goes through, so it
+        keeps gold's exact cache semantics."""
+        map_path = _fetchman_map_path(scene.xml_path)
         if not map_path.exists():
             cls.generate(scene.xml_path, agent_radius=agent_radius, force=True)
+        return cls.load(str(map_path))
+
+    @classmethod
+    def from_model_path(cls, xml_path, agent_radius=0.15, px_per_m=200):
+        """Entry point for molmo_spaces' own envs (CPUMujocoEnv.get_occupancy_map
+        with impl="abb"), which -- unlike FetchMan -- ask for maps at whatever
+        agent radius the task sampler configured.
+
+        Caches per (radius, px_per_m) in its own file rather than sharing
+        FetchMan's single `<scene>_thormap.png`: that file is inflated for
+        FetchMan's own 0.15m agent and is read back by from_scene without a
+        radius check, so writing a differently-inflated grid there would
+        silently change the bit-exact gold rollout's spawn sampling.
+        """
+        xml_path = Path(xml_path)
+        map_path = xml_path.with_name(
+            f"{xml_path.stem}_abbmap_r{float(agent_radius):g}_p{int(px_per_m)}.png"
+        )
+        if map_path.exists():
+            cached = cls.load(str(map_path))
+            if cached.agent_radius is not None and np.isclose(
+                cached.agent_radius, float(agent_radius)
+            ):
+                return cached
+        cls.generate(
+            xml_path,
+            agent_radius=agent_radius,
+            px_per_m=px_per_m,
+            force=True,
+            out_path=map_path,
+        )
         return cls.load(str(map_path))
 
     @classmethod
@@ -319,7 +394,9 @@ class OccupancyMap:
         world_to_map = np.array(json.loads(img.info["world_to_map"]))
         map_to_world = np.array(json.loads(img.info["map_to_world"]))
         px_per_m = float(json.loads(img.info["px_per_m"]))
-        return cls(occupancy, world_to_map, map_to_world, px_per_m)
+        radius_meta = img.info.get("agent_radius")
+        agent_radius = float(json.loads(radius_meta)) if radius_meta is not None else None
+        return cls(occupancy, world_to_map, map_to_world, px_per_m, agent_radius=agent_radius)
 
     def _world_to_px(self, xy):
         pos = np.array([xy[0], xy[1], 0.0, 1.0])
@@ -343,7 +420,13 @@ class OccupancyMap:
         free = self.occupancy.astype(np.uint8)
         free_eroded = cv2.erode(free, kernel).astype(bool)
         return type(self)(
-            free_eroded, self.world_to_map.copy(), self.map_to_world.copy(), self.px_per_m
+            free_eroded,
+            self.world_to_map.copy(),
+            self.map_to_world.copy(),
+            self.px_per_m,
+            agent_radius=(
+                None if self.agent_radius is None else self.agent_radius + extra_radius_m
+            ),
         )
 
     def _free_labels(self):

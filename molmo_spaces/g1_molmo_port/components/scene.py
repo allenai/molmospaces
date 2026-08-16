@@ -6,10 +6,11 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from molmo_spaces.g1_molmo_port import ASSETS_DIR
-from molmo_spaces.g1_molmo_port.components.constants import ROBOT_PREFIX, is_pickup_type
-from molmo_spaces.g1_molmo_port.components.object import Object
-from molmo_spaces.g1_molmo_port.components.occupancy_map import OccupancyMap
+from molmo_spaces.env.data_views import SceneObject
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.robots.g1 import PREFIX as ROBOT_PREFIX
+from molmo_spaces.utils.abb_map import ABBMap
+from molmo_spaces.utils.constants.object_constants import is_pickup_type
 
 
 def _strip_skybox(xml_path: Path) -> Path:
@@ -135,7 +136,7 @@ class Scene:
         self.scene_geom_ids: dict[str, list[int]] = {}
         self._init_geom_matid = self.model.geom_matid.copy()
         if self._scene_texture_paths:
-            from molmo_spaces.g1_molmo_port.components.constants import classify_scene_geom
+            from molmo_spaces.env.arena.randomization.texture import classify_scene_geom
 
             self.floor_gid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
             for cat, paths in self._scene_texture_paths.items():
@@ -185,14 +186,14 @@ class Scene:
         self.object_manager = None
         self._object_cache: dict[str, Object] = {}
 
-    def _make_object(self, name: str) -> Object:
+    def _make_object(self, name: str) -> SceneObject:
         if name not in self._object_cache:
             om = self.object_manager
             has_fj = om.has_free_joint(name)
             jxml_names, jids, jthor_names, jbody_ids = om.get_articulation_joints(name)
             meta = om.object_metadata(name)
             thor_name = (meta.get("name_map") or {}).get("bodies", {}).get(name, "")
-            self._object_cache[name] = Object(
+            self._object_cache[name] = SceneObject(
                 body_id=om.get_object_body_id(name),
                 name=name,
                 category=om.get_annotation_category(name),
@@ -309,7 +310,7 @@ class Scene:
         return in_contact
 
     def occupancy_map(self, agent_radius=0.35):
-        return OccupancyMap.from_scene(self, agent_radius)
+        return ABBMap.from_scene(self, agent_radius)
 
     def _optimize(self, spec, metadata, mobile_regex, articulated_regex=None):
         """Strip joints + collisions from non-candidate bodies so they become inert static geometry.

@@ -1,5 +1,6 @@
 import warnings
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from functools import cached_property
 from typing import NoReturn
 
@@ -801,3 +802,46 @@ class Door(MlSpacesArticulationObject):
         # Check if point is within circle
         dist_from_center = np.linalg.norm(point_2d - center[:2])
         return (dist_from_center <= radius).item()
+
+
+@dataclass
+class SceneObject:
+    """Static metadata record for one object in a loaded scene: identity,
+    category, and (for articulated objects) its joint indices.
+
+    From the FetchMan (g1_molmo) repo, relocated here out of
+    g1_molmo_port/components/object.py while dissolving that package.
+
+    Deliberately not merged into MlSpacesObject above, which is a different
+    thing: a live view that resolves position/quat as properties off an
+    MjData. This is an immutable record produced once at scene-load time,
+    carrying the metadata (category, asset_id, THOR joint names) MlSpacesObject
+    does not, and exposing position()/quat() as functions of an explicitly
+    passed `data` -- the contract FetchMan's task/sampler code is written
+    against and verified bit-exact on.
+    """
+
+    body_id: int
+    name: str
+    category: str
+    asset_id: str
+    is_static: bool
+    has_freejoint: bool
+    # Articulation metadata (set by the scene loader for objects with
+    # hinge/slide joints that survive optimization). Empty dicts/lists for
+    # non-articulated objects so the pick task is unaffected.
+    thor_name: str = ""  # e.g. "Dresser_220_1"
+    joint_xml_names: list = field(default_factory=list)  # XML joint names (children)
+    joint_ids: list = field(default_factory=list)  # mj joint ids (same order)
+    joint_thor_names: list = field(default_factory=list)  # THOR names (same order)
+    joint_body_ids: list = field(default_factory=list)  # moving body for each joint
+
+    @property
+    def is_articulated(self) -> bool:
+        return len(self.joint_ids) > 0
+
+    def position(self, data):
+        return data.xpos[self.body_id].copy()
+
+    def quat(self, data):
+        return data.xquat[self.body_id].copy()

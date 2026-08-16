@@ -13,14 +13,15 @@ from gymnasium import spaces
 from molmo_spaces.configs.camera_configs import G1CameraSystem
 from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
-from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.components import Scene
-from molmo_spaces.g1_molmo_port.components.constants import ROBOT_PREFIX
 from molmo_spaces.g1_molmo_port.tasks.open import OpenTask
 from molmo_spaces.g1_molmo_port.tasks.open import get_config as get_open_task_config
 from molmo_spaces.g1_molmo_port.tasks.pick_g1ms import PickTask
 from molmo_spaces.g1_molmo_port.tasks.pick_g1ms import get_config as get_task_config
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.robots.g1 import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
+
+ROBOT_PREFIX = PREFIX
 
 
 def _resolve_scene_paths(pattern):
@@ -518,13 +519,17 @@ class G1Env(gym.Env, CPUMujocoEnv):
     def robots(self):
         return (self.robot,)
 
+    # This env is FetchMan's own, so it always serves FetchMan's own map (see
+    # utils/scene_maps.OCCUPANCY_MAP_IMPLS); the native envs default to "thor".
+    occupancy_map_impl = "abb"
+
     def get_occupancy_map(self, agent_radius: float = 0.15):
         """Same name/shape as CPUMujocoEnv.get_occupancy_map -- callers written
         against either env don't need to know which one they have. Goes through
-        Scene.occupancy_map (g1_molmo_port's own OccupancyMap), not
-        CPUMujocoEnv.get_thormap's ProcTHORMap/from_mj_model_path pipeline,
-        which assumes the real batched renderer this class deliberately skips
-        (see the class docstring)."""
+        Scene.occupancy_map (utils/abb_map.ABBMap, via ABBMap.from_scene's own
+        cache semantics), not CPUMujocoEnv.get_thormap's ProcTHORMap/
+        from_mj_model_path pipeline, which assumes the real batched renderer
+        this class deliberately skips (see the class docstring)."""
         return self.scene.occupancy_map(agent_radius=agent_radius)
 
     def _ensure_renderer(self, h, w):

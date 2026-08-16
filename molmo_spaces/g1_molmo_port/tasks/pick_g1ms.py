@@ -3,8 +3,12 @@ import re
 import ml_collections
 import numpy as np
 
-from molmo_spaces.g1_molmo_port import grasp_source_dir
-from molmo_spaces.g1_molmo_port.components.constants import has_valid_grasp
+from molmo_spaces.utils.grasps import (
+    fetchman_grasp_source_dir as grasp_source_dir,
+)
+from molmo_spaces.utils.grasps import (
+    fetchman_has_valid_grasp as has_valid_grasp,
+)
 from molmo_spaces.utils.prompt_sampler import PromptSamplerSimple, get_object_name
 from molmo_spaces.utils.prompt_sampler import get_config as get_prompt_config
 

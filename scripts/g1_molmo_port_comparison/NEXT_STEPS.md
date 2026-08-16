@@ -203,17 +203,44 @@ Six gaps were closed, each from a real traceback:
   `policy/solvers/object_manipulation/fetchman_pick_planner_policy_old_reference.py`
   are deleted. Their last consumer was `test_g1_robot.py`, now running
   against `robots/g1.py` via `from_mj_data` (3 passed, same assertions).
-- **Delete `g1_molmo_port/`.** Production code no longer imports it at all:
-  the last module it needed, `components/controller_g1ms.py`, is now
-  `molmo_spaces/controllers/g1_wbc.py`. What is left (`env_g1ms.py`,
-  `tasks/pick_task_sampler_g1ms.py`, `components/scene.py`,
-  `components/occupancy_map.py`, `sensors_g1ms.py`, `configs/`) is reachable
-  only from `scripts/g1_molmo_port_comparison/` — but those scripts are the
-  gold parity gate itself. `env_g1ms.py` in particular IS required to run the
-  parity check: `generate_ported_rollout.py` and `check_texture_parity.py`
-  both build their env with its `make_env`. So the package can only go once
-  the gold comparison is retired, or the gate is repointed at the native
+- **Delete `g1_molmo_port/`** — 5,694 → 4,269 lines so far. Production code
+  no longer imports it at all, and everything it had that molmo_spaces also
+  has (or should own) has moved out:
+
+  | was | is now |
+  | --- | --- |
+  | `components/controller_g1ms.py` | `controllers/g1_wbc.py` |
+  | `components/occupancy_map.py::OccupancyMap` | `utils/abb_map.py::ABBMap` |
+  | `components/object.py::Object` | `env/data_views.py::SceneObject` |
+  | `components/constants.py` grasp helpers | `utils/grasps.py::fetchman_*` |
+  | `components/constants.py` texture categories | `env/arena/randomization/texture.py` |
+  | `components/constants.py::is_pickup_type` | `utils/constants/object_constants.py` |
+  | `dataset/lerobot_recorder.py` | `scripts/g1_molmo_port_comparison/` |
+  | package `__init__`'s ASSETS_DIR/GRASPS_DIR shim | molmo_spaces' own constants |
+
+  What is left (`env_g1ms.py`, `tasks/pick_task_sampler_g1ms.py`,
+  `components/scene.py`, `sensors_g1ms.py`, `tasks/open.py`,
+  `tasks/pick_g1ms.py`, `configs/`) is reachable only from
+  `scripts/g1_molmo_port_comparison/` — but those scripts are the gold parity
+  gate itself. `env_g1ms.py` in particular IS required to run the parity
+  check: `generate_ported_rollout.py` and `check_texture_parity.py` both build
+  their env with its `make_env`. So the rest can only go once the gold
+  comparison is retired, or the gate is repointed at the native
   `CPUMujocoEnv`/`TaskSampler` classes.
+
+- **Two occupancy maps now co-exist, and the choice is explicit.**
+  `utils/scene_maps.OCCUPANCY_MAP_IMPLS` = `("thor", "abb")`;
+  `BaseMujocoTaskSamplerConfig.occupancy_map_impl` (default `"thor"`) selects
+  per experiment and the env serves it from `get_occupancy_map(impl=...)`.
+  Only the G1/FetchMan configs set `"abb"` — `PickG1DataGenConfig`,
+  `InteractiveShellG1DataGenConfig`, `InteractiveShellG1HoloDataGenConfig`,
+  and `G1Env` itself. The grids disagree cell for cell, so this is a real
+  behavioural switch, not an implementation detail: FetchMan's goal/spawn
+  sampling is verified bit-exact on `ABBMap`'s grid. `ABBMap.from_scene`
+  (FetchMan's path) and `ABBMap.from_model_path` (molmo_spaces' path) cache to
+  different files on purpose — the latter is radius-keyed, so a task sampler
+  asking for a 0.2m agent cannot overwrite the 0.15m map the gold rollout
+  reads back unchecked.
 
 ---
 

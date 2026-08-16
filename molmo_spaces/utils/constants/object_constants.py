@@ -250,6 +250,24 @@ THOR_PICKUP_OBJECTS_LOWERCASE = [
 ]
 THOR_PICKUP_OBJECTS_LOWERCASE = [x.replace("_", "") for x in THOR_PICKUP_OBJECTS_LOWERCASE]
 
+# Categories excluded from THOR_PICKUP_OBJECTS_LOWERCASE by is_pickup_type --
+# too soft / large / deformable to grasp well. From the FetchMan (g1_molmo)
+# repo, relocated here out of g1_molmo_port/components/constants.py while
+# dissolving that package.
+THOR_PICKUP_BLACKLIST = [
+    "pillow",
+]
+
+
+def is_pickup_type(category: str) -> bool:
+    """Prefix-match a scene object's category against the THOR pickup list.
+    Matches in either direction ("cup" matches "coffeecup" and vice versa),
+    which is what FetchMan's scene indexing relies on."""
+    cat = category.lower().replace("_", "")
+    if any(cat.startswith(t) or t.startswith(cat) for t in THOR_PICKUP_BLACKLIST):
+        return False
+    return any(cat.startswith(t) or t.startswith(cat) for t in THOR_PICKUP_OBJECTS_LOWERCASE)
+
 
 BOOLSET_OBJECT_TYPES = {
     "AlarmClock",

@@ -4,6 +4,7 @@ import math
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.utils.constants.object_constants import RECEPTACLE_TYPES_THOR
+from molmo_spaces.utils.scene_maps import DEFAULT_OCCUPANCY_MAP_IMPL
 
 
 class BaseMujocoTaskSamplerConfig(Config):
@@ -46,6 +47,14 @@ class BaseMujocoTaskSamplerConfig(Config):
     robot_placement_exclusion_threshold: float = 0.15
 
     robot_placement_rotation_range_rad: float = math.radians(45)
+
+    # Which occupancy-map implementation this experiment's env should serve
+    # from get_occupancy_map(): "thor" (ProcTHORMap/iTHORMap, molmo_spaces' own)
+    # or "abb" (utils/abb_map.ABBMap, from the FetchMan repo). Leave it at the
+    # default for everything except G1/FetchMan experiments -- the two grids
+    # disagree cell for cell, so switching silently changes which cells a robot
+    # considers standable. See utils/scene_maps.OCCUPANCY_MAP_IMPLS.
+    occupancy_map_impl: str = DEFAULT_OCCUPANCY_MAP_IMPL
 
     # Scene configuration
     enable_texture_randomization: bool = False

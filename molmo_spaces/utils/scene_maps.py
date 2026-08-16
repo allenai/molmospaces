@@ -22,6 +22,26 @@ from molmo_spaces.utils.mj_model_and_data_utils import geom_aabb
 
 log = logging.getLogger(__name__)
 
+# Which occupancy-map implementation an env hands back from
+# get_occupancy_map(). They answer the same queries (is_free, dilated,
+# label_at, same_free_component, any_free_in_annulus, sample_near,
+# sample_robot_pose; True = free) over *different* grids, so they are
+# selectable, not interchangeable:
+#
+#   "thor"  ProcTHORMap / iTHORMap below -- molmo_spaces' own, the default for
+#           every task and robot.
+#   "abb"   utils/abb_map.ABBMap -- from the FetchMan (g1_molmo) repo. Only
+#           G1/FetchMan experiments should select this: their goal/spawn
+#           sampling is verified bit-exact against FetchMan's own rollouts and
+#           reads that specific grid. Selecting it elsewhere silently changes
+#           which cells a robot considers standable.
+#
+# Set per experiment via BaseMujocoTaskSamplerConfig.occupancy_map_impl, which
+# the task sampler applies to the env; or per call via
+# CPUMujocoEnv.get_occupancy_map(impl=...).
+OCCUPANCY_MAP_IMPLS = ("thor", "abb")
+DEFAULT_OCCUPANCY_MAP_IMPL = "thor"
+
 
 def _get_renderer(
     model: MjModel, width: int, height: int, device_id: int, use_filament: bool = False
@@ -364,6 +384,13 @@ class ProcTHORMap(THORMap):
         is misleading: `occupancy` is already True=free here), given the
         g1_molmo_port OccupancyMap-shaped name callers expect from get_occupancy_map."""
         return bool(self.check_collision(np.array([float(xy[0]), float(xy[1]), 0.0])))
+
+    def _world_to_px(self, xy) -> np.ndarray:
+        """World xy -> integer [row, col], the g1_molmo_port OccupancyMap-shaped
+        name (see is_free's comment). Same computation as pos_m_to_px, which
+        takes a 3D point; kept because the ported A* planners index
+        `occupancy` with the pair this returns."""
+        return self.pos_m_to_px(np.array([float(xy[0]), float(xy[1]), 0.0]))[:2]
 
     def dilated(self, extra_radius_m: float) -> "ProcTHORMap":
         """Return a copy with obstacles inflated by extra_radius_m. Shallow copy

@@ -189,6 +189,11 @@ class PickG1DataGenConfig(PickBaseConfig):
         # isn't even plausibly IK-reachable, instead of committing to a
         # guaranteed-fail episode discovered only during execution.
         reset_precheck_grasp=True,
+        # FetchMan's own occupancy grid (utils/abb_map.ABBMap), not
+        # ProcTHORMap: this experiment runs FetchMan's G1 pick/nav stack, whose
+        # goal and spawn sampling is verified against FetchMan's own rollouts
+        # on that grid. See utils/scene_maps.OCCUPANCY_MAP_IMPLS.
+        occupancy_map_impl="abb",
     )
     policy_config: FetchmanPickPlannerPolicyConfig = FetchmanPickPlannerPolicyConfig()
     # g1_molmo's own components/controller.py set_env() runs its policy
@@ -1059,6 +1064,11 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
         robot_object_z_offset=0,
         base_pose_sampling_radius_range=(0, 0.8),
         robot_safety_radius=0.2,
+        # FetchMan's own occupancy grid (utils/abb_map.ABBMap), not
+        # ProcTHORMap: this experiment runs FetchMan's G1 pick/nav stack, whose
+        # goal and spawn sampling is verified against FetchMan's own rollouts
+        # on that grid. See utils/scene_maps.OCCUPANCY_MAP_IMPLS.
+        occupancy_map_impl="abb",
     )
 
     @property

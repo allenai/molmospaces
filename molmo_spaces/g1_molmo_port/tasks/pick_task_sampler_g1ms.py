@@ -17,9 +17,9 @@ import mujoco
 import numpy as np
 
 from molmo_spaces.env.abstract_sensors import SensorSuite
-from molmo_spaces.g1_molmo_port import ASSETS_DIR
 from molmo_spaces.g1_molmo_port.env_g1ms import BASE_MOVE_GROUP, NOISE_MOVE_GROUP, G1Env
 from molmo_spaces.g1_molmo_port.sensors_g1ms import OBS_SENSORS, TARGET_POINT_IN_HEAD_SENSOR
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
     PHASE_APPROACH,
     PHASE_CLOSE,
@@ -55,7 +55,7 @@ def build_thor_texture_pools():
     different walls/floors/counters than gold. That is worth knowing about
     rather than discovering in a pixel diff, hence the loud warning.
     """
-    from molmo_spaces.g1_molmo_port.components.constants import SCENE_TEXTURE_CATEGORIES
+    from molmo_spaces.env.arena.randomization.texture import SCENE_TEXTURE_CATEGORIES
 
     canonical = set(SCENE_TEXTURE_CATEGORIES.values())
     local_root = ASSETS_DIR / "textures" / "fetchman"

@@ -18,7 +18,7 @@ import ml_collections
 import mujoco
 import numpy as np
 
-from molmo_spaces.g1_molmo_port.components.constants import joint_grasp_path
+from molmo_spaces.utils.grasps import fetchman_joint_grasp_path as joint_grasp_path
 from molmo_spaces.utils.prompt_sampler import (
     PromptSamplerSimple,
     get_object_name,

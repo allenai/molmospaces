@@ -3,9 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-
-from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from lerobot.datasets import video_utils as _lr_video_utils
+from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
 # Lerobot hardcodes crf=30 when constructing the StreamingVideoEncoder
 # (lerobot_dataset.py:1711). That CRF was tuned for libsvtav1; for h264 CRF=30
@@ -14,11 +13,13 @@ from lerobot.datasets import video_utils as _lr_video_utils
 _H264_CRF = 23
 _orig_sve_init = _lr_video_utils.StreamingVideoEncoder.__init__
 
+
 def _patched_sve_init(self, *args, **kwargs):
     vcodec = kwargs.get("vcodec", args[1] if len(args) > 1 else "libsvtav1")
     if "h264" in vcodec and kwargs.get("crf", 30) == 30:
         kwargs["crf"] = _H264_CRF
     return _orig_sve_init(self, *args, **kwargs)
+
 
 _lr_video_utils.StreamingVideoEncoder.__init__ = _patched_sve_init
 
@@ -32,8 +33,9 @@ _lr_video_utils.StreamingVideoEncoder.__init__ = _patched_sve_init
 def _concat_video_files_fixed(input_video_paths, output_video_path, overwrite=True):
     import shutil
     import tempfile as _tf
-    import av as _av
     from pathlib import Path as _Path
+
+    import av as _av
 
     output_video_path = _Path(output_video_path)
     if output_video_path.exists() and not overwrite:
@@ -89,9 +91,11 @@ def _concat_video_files_fixed(input_video_paths, output_video_path, overwrite=Tr
             _Path(tmp_out).unlink()
         raise
 
+
 # Patch both module-level and the lerobot_dataset.py import.
 _lr_video_utils.concatenate_video_files = _concat_video_files_fixed
 import lerobot.datasets.lerobot_dataset as _lr_dataset_mod
+
 _lr_dataset_mod.concatenate_video_files = _concat_video_files_fixed
 
 
@@ -104,8 +108,18 @@ class LeRobotRecorder:
     ``close`` at shutdown.
     """
 
-    def __init__(self, repo_id, env, action_dim, root=None, fps=10, physics_fps=200, robot_type="g1",
-                 data_files_size_in_mb=0, video_files_size_in_mb=0):
+    def __init__(
+        self,
+        repo_id,
+        env,
+        action_dim,
+        root=None,
+        fps=10,
+        physics_fps=200,
+        robot_type="g1",
+        data_files_size_in_mb=0,
+        video_files_size_in_mb=0,
+    ):
         self._env = env
         # `physics_fps` here means the rate at which `add_step` is called by the
         # caller (typically the env.step rate, NOT the underlying mj_step rate).
@@ -169,12 +183,15 @@ class LeRobotRecorder:
             # bounded (default 1000 files per chunk-XXX dir).
             self._dataset.meta.info["data_files_size_in_mb"] = int(data_files_size_in_mb)
             self._dataset.meta.info["video_files_size_in_mb"] = int(video_files_size_in_mb)
-            self._dataset.meta.info["chunks_size"] = int(self._dataset.meta.info.get("chunks_size", 1000) or 1000)
+            self._dataset.meta.info["chunks_size"] = int(
+                self._dataset.meta.info.get("chunks_size", 1000) or 1000
+            )
             # Flush episode metadata every episode (default buffers 10). Otherwise
             # a sudden death loses the metadata for up to the last 10 episodes even
             # though their per-episode data/video files are intact on disk.
             self._dataset.meta.metadata_buffer_size = 1
             from lerobot.datasets.utils import write_info
+
             write_info(self._dataset.meta.info, self._dataset.meta.root)
 
     def _validate_existing_dataset(self, features, fps):
@@ -184,14 +201,18 @@ class LeRobotRecorder:
             )
         existing = self._dataset.meta.features
         missing = sorted(set(features) - set(existing))
-        extra = sorted(set(existing) - set(features) - {"index", "episode_index", "task_index", "timestamp", "frame_index"})
+        extra = sorted(
+            set(existing)
+            - set(features)
+            - {"index", "episode_index", "task_index", "timestamp", "frame_index"}
+        )
         if missing or extra:
-            raise ValueError(
-                f"Existing dataset schema mismatch. missing={missing}, extra={extra}"
-            )
+            raise ValueError(f"Existing dataset schema mismatch. missing={missing}, extra={extra}")
         for key, spec in features.items():
             es = existing[key]
-            if es.get("dtype") != spec["dtype"] or tuple(es.get("shape", ())) != tuple(spec["shape"]):
+            if es.get("dtype") != spec["dtype"] or tuple(es.get("shape", ())) != tuple(
+                spec["shape"]
+            ):
                 raise ValueError(
                     f"Existing dataset feature {key!r} mismatch: existing={es}, requested={spec}"
                 )
@@ -201,7 +222,12 @@ class LeRobotRecorder:
         self._task = info.get("prompt") or info.get("task") or ""
         scene = info.get("scene") or str(getattr(self._env, "_current_scene_path", "") or "")
         tgt = getattr(getattr(self._env, "task", None), "target", None)
-        obj = info.get("object_name") or getattr(tgt, "category", None) or getattr(tgt, "asset_id", "") or ""
+        obj = (
+            info.get("object_name")
+            or getattr(tgt, "category", None)
+            or getattr(tgt, "asset_id", "")
+            or ""
+        )
         self._object_name = str(obj)
         # Unique asset identity (objaverse UID / THOR asset id) so two different
         # meshes of the same category are distinguishable; "" if unavailable.
