@@ -216,10 +216,11 @@ Six gaps were closed, each from a real traceback:
   | `components/constants.py` texture categories | `env/arena/randomization/texture.py` |
   | `components/constants.py::is_pickup_type` | `utils/constants/object_constants.py` |
   | `dataset/lerobot_recorder.py` | `scripts/g1_molmo_port_comparison/` |
+  | `sensors_g1ms.py` | `env/g1_sensors.py` |
   | package `__init__`'s ASSETS_DIR/GRASPS_DIR shim | molmo_spaces' own constants |
 
   What is left (`env_g1ms.py`, `tasks/pick_task_sampler_g1ms.py`,
-  `components/scene.py`, `sensors_g1ms.py`, `tasks/open.py`,
+  `components/scene.py`, `tasks/open.py`,
   `tasks/pick_g1ms.py`, `configs/`) is reachable only from
   `scripts/g1_molmo_port_comparison/` — but those scripts are the gold parity
   gate itself. `env_g1ms.py` in particular IS required to run the parity

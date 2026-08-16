@@ -46,6 +46,21 @@ SCENE = "scenes/procthor-10k-val/val_0.xml"
 MAX_EPISODES = 15
 TIME_LIMIT = 60.0
 
+# Trace every obs key this often (in policy steps), plus once after settle and
+# once at episode end. Without this the rollout only ever *reads* two of the 14
+# OBS_SENSORS values (base_height, joint_pos, for hold_action) -- the other
+# twelve never reach the trace, so the strict ported-vs-ported gate in
+# NEXT_STEPS.md would pass even if they broke outright. Fixed step cadence, so
+# the dump points are deterministic and comparable across runs.
+OBS_DUMP_EVERY = 500
+
+
+def _dump_obs(episode, step_count, obs):
+    for k in sorted(obs):
+        v = np.asarray(obs[k], dtype=np.float64).ravel()
+        print(f"    [ported obs ep{episode} step{step_count}] {k}={np.round(v, 6).tolist()}")
+
+
 cfg = get_config().copy_and_resolve_references()
 cfg["scene"] = SCENE
 cfg["randomize_scene"] = False
@@ -90,6 +105,7 @@ for episode in range(MAX_EPISODES):
         print(f"[ported] episode {episode}: rejected after settle, retrying")
         continue
     agent.set_step_info(info)
+    _dump_obs(episode, 0, obs)
 
     step_count = 0
     last_phase = None
@@ -112,9 +128,12 @@ for episode in range(MAX_EPISODES):
         obs, r, terminated, truncated, info = env.step(action)
         agent.set_step_info(info)
         step_count += 1
+        if step_count % OBS_DUMP_EVERY == 0:
+            _dump_obs(episode, step_count, obs)
         if terminated or truncated or agent.done:
             break
 
+    _dump_obs(episode, step_count, obs)
     success = bool(info.get("success"))
     print(
         f"[ported] episode {episode} result: steps={step_count} "
