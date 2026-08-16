@@ -12,6 +12,46 @@ get_resource_manager()
 # load json file that describes materials used
 TEXTURE_FOLDER_PATH = ASSETS_DIR / "objects" / "thor" / "Textures"
 
+# Maps a substring of a body/geom name to a THOR material category. Used by the
+# scene texture randomizer to pick category-appropriate textures (walls get wall
+# textures, floors get floor textures, etc.). The right-hand sides must match
+# keys in objects/thor/material-database.json, and the directory names of the
+# curated fetchman pack under $ASSETS_DIR/textures/fetchman/.
+#
+# From the FetchMan (g1_molmo) repo, relocated here out of
+# g1_molmo_port/components/constants.py while dissolving that package.
+SCENE_TEXTURE_CATEGORIES = {
+    "wall": "Wall",
+    "backsplash": "Wall",
+    "ceiling": "Wall",
+    "floor": "Floor",
+    "room": "Floor",  # ProcTHOR floor body name
+    "counter": "CounterTop",
+    "countertop": "CounterTop",
+    "island": "Table",  # upstream convention
+    "table": "Table",
+    "desk": "Table",
+    "shelf": "Table",
+    "shelving": "Table",
+    "doorway": "Doorway",
+    "door": "Doorway",
+    "drawer": "Doorway",
+    "cabinet": "Doorway",
+    "handle": "Doorway",
+}
+
+
+def classify_scene_geom(body_name: str, geom_name: str) -> str | None:
+    """Return the THOR category for a scene geom based on substring matches in
+    its body name or geom name, or None if it doesn't match any architectural
+    keyword. Body name takes precedence (procthor names are more reliable)."""
+    b = (body_name or "").lower()
+    g = (geom_name or "").lower()
+    for kw, cat in SCENE_TEXTURE_CATEGORIES.items():
+        if kw in b or kw in g:
+            return cat
+    return None
+
 
 def create_placeholder_texture_file(texture_size: int, log) -> str | None:
     """Create a temporary placeholder texture file for MuJoCo 2D textures."""

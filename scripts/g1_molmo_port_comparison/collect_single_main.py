@@ -113,7 +113,10 @@ def main():
 
     recorder = None
     if args.record:
-        from molmo_spaces.g1_molmo_port.dataset.lerobot_recorder import LeRobotRecorder
+        # Sits next to this script rather than in molmo_spaces: it is FetchMan's
+        # own LeRobot writer, with no molmo_spaces counterpart and no consumer
+        # outside this collection script.
+        from lerobot_recorder import LeRobotRecorder
 
         physics_fps = int(round(1.0 / raw_env.scene.model.opt.timestep))
         recorder = LeRobotRecorder(

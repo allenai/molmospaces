@@ -17,7 +17,7 @@ class OccupancyMapImpl(StrEnum):
           (room_ids_to_name, get_free_points_by_room, room-scoped label_at).
     AABB  utils/scene_maps_aabb.AABBMap -- from the FetchMan (g1_molmo) repo.
           Mostly 99% similar to THORMap, slighlty more permissive in floor labeling
-          and slighly faster.
+          and slighlty faster.
     """
 
     THOR = "thor"

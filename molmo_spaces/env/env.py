@@ -25,7 +25,11 @@ from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
-from molmo_spaces.utils.scene_maps import ProcTHORMap, iTHORMap, sample_around_point
+from molmo_spaces.utils.scene_maps import (
+    ProcTHORMap,
+    iTHORMap,
+    sample_around_point,
+)
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 
 if TYPE_CHECKING:
@@ -164,8 +168,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
             self._renderer.close()
             self._renderer = None
 
+        # Invalidate cached occupancy maps when scene changes
         self._cached_thormap = None
         self._cached_thormap_key = None
+        self._occupancy_maps = OrderedDict()
 
         # scenes
         self._mj_model = mj_model
