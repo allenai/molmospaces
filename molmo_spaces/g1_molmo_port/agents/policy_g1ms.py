@@ -329,7 +329,7 @@ class GraspPolicy:
         hcfg = _HANDS[hand]
         ik_joints = set(hcfg["arm"] + _WAIST)
         env = getattr(self, "_env", None)
-        return env.robot.kinematics(
+        return env.robot.solve_scene_ik(
             pos,
             rot=rot,
             hand=hand,
@@ -339,7 +339,6 @@ class GraspPolicy:
         )
 
     def _path_is_clear(self, dc, grasp_T, hand):
-        sid = self._sites[hand]
         grasp_pos = grasp_T[:3, 3]
         env = getattr(self, "_env", None)
         rng = env.np_random if env is not None else np.random
@@ -1250,7 +1249,7 @@ class G1Controller:
 
     def _grasp_phase_goal(self):
         p = self._grasp_phase
-        if p == PHASE_APPROACH or p == PHASE_REALIGN:
+        if p in (PHASE_APPROACH, PHASE_REALIGN):
             return self._pregrasp, self._grasp_rot
         if p in (PHASE_DESCEND, PHASE_OPEN_HOLD, PHASE_CLOSE, PHASE_POST_CLOSE):
             return self._grasp_pos, self._grasp_rot
