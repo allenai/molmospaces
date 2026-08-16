@@ -322,6 +322,17 @@ class G1Robot(Robot):
         self._namespace = namespace
         self._xml_path = xml_path
         self._root_body = f"{namespace}pelvis"
+        # The reference stack sets the physics rate in G1Controller.set_env
+        # (m.opt.timestep = 0.005), which molmo_spaces' own env never calls --
+        # it constructs robots through the factory and drives them through the
+        # task. Apply the configured rate here so a natively-constructed G1
+        # gets the 5ms step its WBC was trained at, instead of inheriting the
+        # scene default (2ms) and failing BaseMujocoTask's
+        # control-dt-divisible-by-sim-dt check.
+        if exp_config is not None:
+            physics_timestep = getattr(exp_config.robot_config, "physics_timestep", None)
+            if physics_timestep is not None:
+                data.model.opt.timestep = physics_timestep
 
         # The low-level WBC/PD controller (components/controller_g1ms.py) is
         # owned here, not by whichever policy attaches via env.set_agent() --
@@ -535,6 +546,29 @@ class G1Robot(Robot):
                 controller.set_target((target[0:3], float(target[3]), target[4:7]))
             else:
                 controller.set_target(target if target.size > 1 else float(target[0]))
+
+    def compute_control(self) -> None:
+        """Robot.compute_control for this robot's control stack.
+
+        The base implementation calls `controller.compute_ctrl_inputs()` with
+        no arguments and assigns through `controller.robot_move_group.ctrl`.
+        The reference controllers instead take `(data, step_counter)` and write
+        through `move_group.set_ctrl(data, values)` -- the exact dispatch
+        G1Controller.execute_action performs, in the same controller order,
+        which is load-bearing (legs_waist torque is computed from the previous
+        tick's _target_lower before the WBC updates it). Mirrored here rather
+        than reshaped, so the native path runs the same sequence the reference
+        path does.
+
+        The WBC gait clock is advanced by whoever owns the control loop -- the
+        policy -- exactly as in the reference stack; see
+        G1Robot.advance_control_clock.
+        """
+        data = self.data
+        step_counter = self._low_level._step_counter
+        for controller in self._low_level._controllers:
+            values = controller.compute_ctrl_inputs(data, step_counter)
+            controller.move_group.set_ctrl(data, values)
 
     @classmethod
     def from_mj_data(cls, mj_data, exp_config) -> "G1Robot":
