@@ -1,17 +1,24 @@
-"""Sensor classes for the `_g1ms` port -- relocated out of env_g1ms.py to its
-own module, matching molmo_spaces' own layout (molmo_spaces/env/sensors.py,
-abstract_sensors.py, sensors_cameras.py, rby1_sensors.py all live separately
-from env.py). Only consumer is G1TaskSampler (tasks/pick_task_sampler_g1ms.py,
-via OBS_SENSORS/TARGET_POINT_IN_HEAD_SENSOR).
+"""G1 obs-dict sensors, alongside molmo_spaces' own sensors.py /
+abstract_sensors.py / sensors_cameras.py / rby1_sensors.py. Originally the
+inline `_build_obs` of the g1_molmo port's env_g1ms.py; relocated here out of
+g1_molmo_port/sensors_g1ms.py once the classes were on molmo_spaces' own
+Sensor ABC and had no port-local imports left. Only consumer today is
+G1TaskSampler (g1_molmo_port/tasks/pick_task_sampler_g1ms.py, via
+OBS_SENSORS/TARGET_POINT_IN_HEAD_SENSOR).
 
-Merge step (see molmo_spaces/g1_molmo_port/__init__.py's own docstring on
-the "wholesale port, then iteratively merge" plan): the 14 real obs-dict
-sensors below now subclass molmo_spaces' own Sensor ABC (molmo_spaces/env/
-abstract_sensors.py) and are collected into a real SensorSuite, instead of
-g1_molmo's own ad hoc `uuid` + `get_observation(env)` shape. Every sensor's
-own math is untouched (relocated verbatim from the original inline
-_build_obs, same as before this merge step) -- only the wrapping changed, so
-results stay bit-identical to gold.
+The 14 real obs-dict sensors below subclass molmo_spaces' own Sensor ABC and
+are collected into a real SensorSuite, instead of g1_molmo's own ad hoc
+`uuid` + `get_observation(env)` shape. Every sensor's own math is untouched
+(relocated verbatim from the original inline _build_obs) -- only the wrapping
+changed, so results stay bit-identical to gold.
+
+Still G1-port-shaped in one respect: these read `env.scene.data` plus ids the
+G1 env caches as `_obs_pelvis_bid` / `_obs_fj_dadr` / `_obs_qpos_ids` /
+`_obs_r_sid` / `_obs_r_grip_qa`, and ignore `batch_index`, where the rest of
+molmo_spaces goes through `env.mj_datas[batch_index]` and
+`env.robots[batch_index].robot_view`. Re-expressing them that way is a
+follow-up that can change numbers -- run the strict ported-vs-ported gate in
+scripts/g1_molmo_port_comparison/NEXT_STEPS.md around it.
 
 PelvisFrameSensor and TargetPointInHeadSensor are NOT part of OBS_SENSORS/
 the SensorSuite -- they return a closure and a raw (u, v)-or-None tuple
@@ -106,7 +113,9 @@ TARGET_POINT_IN_HEAD_SENSOR = TargetPointInHeadSensor()
 
 class BasePositionSensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="base_position", observation_space=spaces.Box(-np.inf, np.inf, shape=(2,)))
+        super().__init__(
+            uuid="base_position", observation_space=spaces.Box(-np.inf, np.inf, shape=(2,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         return env.robot.get_xy().astype(np.float32)
@@ -138,7 +147,9 @@ class BaseRPSensor(Sensor):
 
 class LastBaseVelCmdSensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="last_base_vel_cmd", observation_space=spaces.Box(-np.inf, np.inf, shape=(3,)))
+        super().__init__(
+            uuid="last_base_vel_cmd", observation_space=spaces.Box(-np.inf, np.inf, shape=(3,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         return env._last_base_vel_cmd.copy()
@@ -146,7 +157,9 @@ class LastBaseVelCmdSensor(Sensor):
 
 class BaseHeightSensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="base_height", observation_space=spaces.Box(-np.inf, np.inf, shape=(1,)))
+        super().__init__(
+            uuid="base_height", observation_space=spaces.Box(-np.inf, np.inf, shape=(1,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         return np.array([env.robot.pelvis_height()], dtype=np.float32)
@@ -154,7 +167,9 @@ class BaseHeightSensor(Sensor):
 
 class BaseVelocitySensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="base_velocity", observation_space=spaces.Box(-np.inf, np.inf, shape=(3,)))
+        super().__init__(
+            uuid="base_velocity", observation_space=spaces.Box(-np.inf, np.inf, shape=(3,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         d = env.scene.data
@@ -163,7 +178,9 @@ class BaseVelocitySensor(Sensor):
 
 class BaseAngularVelocitySensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="base_angular_velocity", observation_space=spaces.Box(-np.inf, np.inf, shape=(3,)))
+        super().__init__(
+            uuid="base_angular_velocity", observation_space=spaces.Box(-np.inf, np.inf, shape=(3,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         d = env.scene.data
@@ -172,7 +189,9 @@ class BaseAngularVelocitySensor(Sensor):
 
 class JointPosSensor(Sensor):
     def __init__(self, n_joints):
-        super().__init__(uuid="joint_pos", observation_space=spaces.Box(-np.inf, np.inf, shape=(n_joints,)))
+        super().__init__(
+            uuid="joint_pos", observation_space=spaces.Box(-np.inf, np.inf, shape=(n_joints,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         return env.scene.data.qpos[env._obs_qpos_ids].astype(np.float32)
@@ -181,7 +200,8 @@ class JointPosSensor(Sensor):
 class UpperJointPosSensor(Sensor):
     def __init__(self, n_upper_joints):
         super().__init__(
-            uuid="upper_joint_pos", observation_space=spaces.Box(-np.inf, np.inf, shape=(n_upper_joints,))
+            uuid="upper_joint_pos",
+            observation_space=spaces.Box(-np.inf, np.inf, shape=(n_upper_joints,)),
         )
 
     def get_observation(self, env, task=None, *args, **kwargs):
@@ -191,7 +211,9 @@ class UpperJointPosSensor(Sensor):
 
 class RightHandPoseSensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="right_hand_pose", observation_space=spaces.Box(-np.inf, np.inf, shape=(7,)))
+        super().__init__(
+            uuid="right_hand_pose", observation_space=spaces.Box(-np.inf, np.inf, shape=(7,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         d = env.scene.data
@@ -202,7 +224,9 @@ class RightHandPoseSensor(Sensor):
 
 class RightGripperPosSensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="right_gripper_pos", observation_space=spaces.Box(-0.0222, 0.0245, shape=(1,)))
+        super().__init__(
+            uuid="right_gripper_pos", observation_space=spaces.Box(-0.0222, 0.0245, shape=(1,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         return np.array([env.scene.data.qpos[env._obs_r_grip_qa]], dtype=np.float32)
@@ -210,7 +234,9 @@ class RightGripperPosSensor(Sensor):
 
 class TargetObjectPoseSensor(Sensor):
     def __init__(self):
-        super().__init__(uuid="target_object_pose", observation_space=spaces.Box(-np.inf, np.inf, shape=(7,)))
+        super().__init__(
+            uuid="target_object_pose", observation_space=spaces.Box(-np.inf, np.inf, shape=(7,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         d = env.scene.data
@@ -225,7 +251,9 @@ class TargetPointSensor(Sensor):
     unavailable. See TargetPointInHeadSensor above."""
 
     def __init__(self):
-        super().__init__(uuid="target_point", observation_space=spaces.Box(-np.inf, np.inf, shape=(2,)))
+        super().__init__(
+            uuid="target_point", observation_space=spaces.Box(-np.inf, np.inf, shape=(2,))
+        )
 
     def get_observation(self, env, task=None, *args, **kwargs):
         pt = TARGET_POINT_IN_HEAD_SENSOR.get_observation(env)

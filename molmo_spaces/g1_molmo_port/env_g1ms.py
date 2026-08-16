@@ -756,10 +756,10 @@ def get_config():
 def make_env(config):
     # Local import: pick_task_sampler_g1ms.py imports BASE_MOVE_GROUP/
     # NOISE_MOVE_GROUP from this module (OBS_SENSORS/sensor classes now live
-    # in sensors_g1ms.py instead), so importing it back at module level here
-    # would be circular. By the time make_env() actually runs, this module
-    # has finished loading (those names already exist), so a deferred import
-    # inside the function resolves cleanly.
+    # in molmo_spaces/env/g1_sensors.py instead), so importing it back at
+    # module level here would be circular. By the time make_env() actually
+    # runs, this module has finished loading (those names already exist), so a
+    # deferred import inside the function resolves cleanly.
     from molmo_spaces.g1_molmo_port.tasks.pick_task_sampler_g1ms import G1TaskSampler
 
     # G1TaskSampler now constructs its own G1Env internally (see its

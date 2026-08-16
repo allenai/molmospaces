@@ -55,6 +55,7 @@ def normalize(path):
                 continue
             line = re.sub(r"\[(gold|ported|ours)\]", "[X]", line)
             line = re.sub(r"\[(gold|ported|ours) phase", "[X phase", line)
+            line = re.sub(r"\[(gold|ported|ours) obs", "[X obs", line)
             out.append(line)
     return out
 

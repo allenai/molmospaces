@@ -17,8 +17,8 @@ import mujoco
 import numpy as np
 
 from molmo_spaces.env.abstract_sensors import SensorSuite
+from molmo_spaces.env.g1_sensors import OBS_SENSORS, TARGET_POINT_IN_HEAD_SENSOR
 from molmo_spaces.g1_molmo_port.env_g1ms import BASE_MOVE_GROUP, NOISE_MOVE_GROUP, G1Env
-from molmo_spaces.g1_molmo_port.sensors_g1ms import OBS_SENSORS, TARGET_POINT_IN_HEAD_SENSOR
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
     PHASE_APPROACH,
@@ -160,9 +160,9 @@ class G1TaskSampler:
     (env_g1ms.py) now looks like CPUMujocoEnv: scene/robot/data/rendering/
     occupancy-map substrate only. Everything else (reset/step orchestration,
     target selection, goal/spawn sampling, randomization, obs building)
-    lives here. `Sensor` classes and their `OBS_SENSORS` instances live in
-    their own `sensors_g1ms.py` module (imported below), matching
-    molmo_spaces' own `env/sensors.py`; `MoveGroup` and its
+    lives here. `Sensor` classes and their `OBS_SENSORS` instances have left
+    the port entirely for `molmo_spaces/env/g1_sensors.py` (imported below),
+    alongside molmo_spaces' own `env/sensors.py`; `MoveGroup` and its
     `BASE_MOVE_GROUP`/`NOISE_MOVE_GROUP` instances stay defined in
     env_g1ms.py (also imported below), matching molmo_spaces' own
     `robots/robot_views/*.py` -- both are env-side, separate from
