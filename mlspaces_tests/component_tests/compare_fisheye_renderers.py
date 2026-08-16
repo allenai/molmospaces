@@ -39,20 +39,6 @@ below both, rather than at the g1's native FOV.
 
 The scene is a room whose six walls carry a regular checker grid.
 
-Result (macOS CPU, 20 reps, 2026-09-05) -- the cubemap wins outright, which is
-why configs/camera_configs.py's FisheyeImpl.WARPING is now deprecated:
-
-    render time      warp 6.24 +/- 0.36 ms   cubemap 5.90 +/- 0.36 ms  (0.94x)
-    sharpness (VoL)  warp 1069.9             cubemap 5475.6            (5.12x)
-    centre -> edge   warp 631/560/989/1406   cubemap 2183/3463/5538/6960
-    mean abs diff    20.7/255 over the common region (81.7% of frame)
-
-So the cubemap is ~5x sharper at every radius while being marginally *faster* at
-matched pixel budget -- there is no quality/speed tradeoff to trade off. On top
-of that the warp path tops out at a 68.26 deg half-angle for the reason in the
-note above, below the g1 head lens's own 72.8 deg, so it cannot render that
-camera at any resolution. Re-run this script if either implementation changes.
-
 Run:
     python mlspaces_tests/component_tests/compare_fisheye_renderers.py [--out PATH]
 """
