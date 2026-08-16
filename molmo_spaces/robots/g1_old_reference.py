@@ -76,7 +76,7 @@ _YAW_GATE_THRESHOLD = np.radians(30)
 
 # kinematics_wbc() constants -- exact port of g1_molmo's own GraspPolicy/
 # G1Controller mink whole-body IK setup (see molmo_spaces.g1_molmo_port.
-# components.robot_g1ms.G1Robot.kinematics_wbc, which prototypes this same
+# robots.g1.G1Robot.kinematics_wbc, which prototypes this same
 # split onto a standalone G1Robot before this move). Torso-tilt safety
 # envelope kept in sync with g1_server deploy clips.
 _WBC_HEIGHT_MIN, _WBC_HEIGHT_MAX = 0.35, 0.793
