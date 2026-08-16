@@ -20,6 +20,7 @@ from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyParallelKinematics
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.robots.abstract import Robot
+from molmo_spaces.utils.linalg_utils import normalize_ang_error
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -28,6 +29,17 @@ XML_PATH = str(ASSETS_DIR / "robots/g1/g1_dex.xml")
 PREFIX = "robot_0/"
 ROOT_BODY = f"{PREFIX}pelvis"
 STANDING_HEIGHT = 0.75
+
+# Waypoint -> base-velocity bridge (see G1Robot.waypoint_to_velocity_target).
+# Not from the reference stack, which emits base velocities directly; these are
+# native molmo_spaces/robots/g1.py's own empirically-validated values, kept in
+# sync so a navigation policy drives either implementation identically.
+MAX_LINEAR_VEL = 0.5
+MAX_YAW_RATE = 0.5
+MIN_LINEAR_VEL = 0.15
+MIN_YAW_RATE = 0.15
+VELOCITY_DEADBAND = 0.08
+YAW_GATE_THRESHOLD = np.radians(30)
 
 # Body-frame +x offset (m) shifting reported "robot xy" forward of the pelvis to better
 # match the footprint center. Applied by get_xy()/set_pose() and the controller's _xy().
@@ -432,6 +444,69 @@ class G1Robot(Robot):
 
     def execute_action(self, action):
         return self._low_level.execute_action(action)
+
+    @staticmethod
+    def _floored_clip(value: float, min_mag: float, max_mag: float, deadband: float) -> float:
+        """Proportional clip, but floor the magnitude at `min_mag` once |value|
+        exceeds `deadband` -- a pure proportional-to-zero law stalls the WBC's
+        stand/walk switch (norm(cmd) < 0.05) just short of convergence."""
+        if abs(value) <= deadband:
+            return 0.0
+        return float(np.sign(value)) * float(np.clip(abs(value), min_mag, max_mag))
+
+    def waypoint_to_velocity_target(self, waypoint) -> np.ndarray:
+        """Absolute [x, y, yaw] waypoint -> the WBC's [vx, vy, yaw_rate] base
+        command, in the robot's own body frame. Same bridge (and same
+        constants) as native molmo_spaces/robots/g1.py, which is what lets a
+        molmo_spaces navigation policy drive this robot: the reference stack
+        has no such bridge because its policy emits base velocities directly.
+        """
+        xy = self._robot_view.get_xy()
+        yaw = self._robot_view.get_yaw()
+
+        dx, dy = waypoint[0] - xy[0], waypoint[1] - xy[1]
+        local_vx = np.cos(yaw) * dx + np.sin(yaw) * dy
+        local_vy = -np.sin(yaw) * dx + np.cos(yaw) * dy
+        yaw_error = normalize_ang_error(waypoint[2] - yaw)
+
+        yaw_rate = self._floored_clip(yaw_error, MIN_YAW_RATE, MAX_YAW_RATE, VELOCITY_DEADBAND)
+        if abs(yaw_error) > YAW_GATE_THRESHOLD:
+            # Turn-then-drive: while heading is substantially off, correcting it
+            # and translating at once fights itself (the gait's own turning drift
+            # keeps re-triggering a position correction that never converges).
+            vx = vy = 0.0
+        else:
+            vx = self._floored_clip(local_vx, MIN_LINEAR_VEL, MAX_LINEAR_VEL, VELOCITY_DEADBAND)
+            vy = self._floored_clip(local_vy, MIN_LINEAR_VEL, MAX_LINEAR_VEL, VELOCITY_DEADBAND)
+        return np.array([vx, vy, yaw_rate], dtype=np.float32)
+
+    def advance_control_clock(self) -> None:
+        """Advance the WBC's decimation clock by one tick.
+
+        The walking policy only re-runs its ONNX inference every 4th tick, off
+        `G1Controller._step_counter`. The reference stack increments that from
+        its *policy* (agents/policy_g1ms.py), not from execute_action, because
+        the policy is what owns the control loop -- so anything else driving
+        this robot (a navigation policy, a scripted waypoint loop) has to
+        advance it too, or the gait clock never ticks. Exposed as a real method
+        rather than having callers poke `_low_level._step_counter`.
+        """
+        self._low_level._step_counter += 1
+
+    def nav_action(self, waypoint, height=None) -> np.ndarray:
+        """A full flat-15 action that walks toward `waypoint` while holding the
+        current arm/gripper pose -- the navigation counterpart to the grasp
+        policy's own action assembly (see controller_g1ms.ACTION_DIM's layout:
+        [vx, vy, yaw_rate, height, waist(3), right_arm(7), gripper])."""
+        action = np.zeros(15, dtype=np.float32)
+        action[0:3] = self.waypoint_to_velocity_target(waypoint)
+        action[3] = float(self._low_level._height_cmd if height is None else height)
+        # waist stays 0 (level torso); arm/gripper hold their live pose so
+        # navigating never disturbs whatever the arm was doing.
+        q = self.data.qpos
+        action[7:14] = q[self._qpos_ids[22:29]]
+        action[14] = q[self._qpos_ids[29]]
+        return action
 
     def _set_groot_defaults(self):
         return self._low_level._set_groot_defaults()
