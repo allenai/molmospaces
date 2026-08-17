@@ -24,9 +24,8 @@ log = logging.getLogger(__name__)
 # ProcTHORMap / iTHORMap below are one of the two occupancy-map
 # implementations an env can serve from get_occupancy_map(); the other is
 # utils/scene_maps_aabb.AABBMap. Which one an experiment gets, and how many
-# maps an env caches, are configuration:
-# configs/task_sampler_configs.py's OccupancyMapImpl and
-# OCCUPANCY_MAP_CACHE_SIZE.
+# maps an env caches, are configuration -- see BaseMujocoTaskSamplerConfig's
+# occupancy_map_impl and occupancy_map_cache_size.
 
 
 def _get_renderer(
