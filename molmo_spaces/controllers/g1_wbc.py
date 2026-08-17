@@ -8,7 +8,7 @@ source (now molmo_spaces' constants directly) differ.
 Note the `MoveGroup`/`Controller` classes below are this stack's own minimal
 stand-ins, deliberately NOT `robots/robot_views/abstract.py`'s MoveGroup or
 `controllers/abstract.py`'s Controller -- converging them is part of the
-still-open port merge (scripts/g1_molmo_port_comparison/NEXT_STEPS.md).
+still-open port merge (scripts/g1_molmo_port_comparison/check_gold_parity.py).
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ def _gravity_orientation(quat):
 
 
 # Resolved through molmo_spaces' own asset manager (same location the real
-# G1Robot/G1WalkController -- robots/g1.py's
+# G1Robot/LegsWaistController -- robots/g1.py's
 # `robot_config.get_robot_dir() / "policies"` -- already loads these same
 # ONNX weights from) rather than a locally-copied agents/models/ dir, so
 # this port carries no binary weight files of its own at all.

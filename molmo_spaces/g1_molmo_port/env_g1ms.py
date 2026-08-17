@@ -11,6 +11,7 @@ import numpy as np
 from gymnasium import spaces
 
 from molmo_spaces.configs.camera_configs import G1CameraSystem
+from molmo_spaces.configs.task_sampler_configs import OccupancyMapImpl
 from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
 from molmo_spaces.g1_molmo_port.components import Scene
@@ -520,13 +521,13 @@ class G1Env(gym.Env, CPUMujocoEnv):
         return (self.robot,)
 
     # This env is FetchMan's own, so it always serves FetchMan's own map (see
-    # utils/scene_maps.OCCUPANCY_MAP_IMPLS); the native envs default to "thor".
-    occupancy_map_impl = "aabb"
+    # configs/task_sampler_configs.OccupancyMapImpl); the native envs default to "thor".
+    occupancy_map_impl = OccupancyMapImpl.AABB
 
     def get_occupancy_map(self, agent_radius: float = 0.15):
         """Same name/shape as CPUMujocoEnv.get_occupancy_map -- callers written
         against either env don't need to know which one they have. Goes through
-        Scene.occupancy_map (utils/aabb_map.AABBMap, via AABBMap.from_scene's own
+        Scene.occupancy_map (utils/scene_maps_aabb.AABBMap, via AABBMap.from_scene's own
         cache semantics), not CPUMujocoEnv.get_thormap's ProcTHORMap/
         from_mj_model_path pipeline, which assumes the real batched renderer
         this class deliberately skips (see the class docstring)."""

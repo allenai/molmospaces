@@ -10,14 +10,18 @@ from molmo_spaces.utils.license_policy import LicensePolicy
 
 class OccupancyMapImpl(StrEnum):
     """Which occupancy-map implementation an env hands back from
-    get_occupancy_map().
+    get_occupancy_map(). Both answer the same queries (is_free, dilated,
+    label_at, same_free_component, any_free_in_annulus, sample_near,
+    sample_robot_pose; True = free) over *different* grids, so they are
+    selectable, not interchangeable.
 
     THOR  utils/scene_maps.ProcTHORMap / iTHORMap -- molmo_spaces' own, the
-          default for every task and robot. has a room map
-          (room_ids_to_name, get_free_points_by_room, room-scoped label_at).
+          default for every task and robot.
     AABB  utils/scene_maps_aabb.AABBMap -- from the FetchMan (g1_molmo) repo.
-          Mostly 99% similar to THORMap, slighlty more permissive in floor labeling
-          and slighlty faster.
+          Only G1/FetchMan experiments should select this: their goal/spawn
+          sampling is verified bit-exact against FetchMan's own rollouts and
+          reads that specific grid. Selecting it elsewhere silently changes
+          which cells a robot considers standable.
     """
 
     THOR = "thor"
@@ -45,19 +49,6 @@ class BaseMujocoTaskSamplerConfig(Config):
     randomize_robot_textures: bool = False  # Whether to randomize the textures of the robot
     randomize_dynamics: bool = False  # Whether to randomize the dynamics of the scene
 
-    # Which occupancy-map implementation this experiment's env should serve
-    # from get_occupancy_map(). Leave it at the default for everything except
-    # G1/FetchMan experiments -- the two grids disagree cell for cell, so
-    # switching silently changes which cells a robot considers standable.
-    occupancy_map_impl: OccupancyMapImpl = OccupancyMapImpl.THOR
-
-    # How many (impl, scene, agent_radius, px_per_m) maps one env keeps in
-    # memory. Both impls coexist in that cache, so a task/task sampler can hold
-    # one of each -- and several radii -- without evicting one another. Four
-    # covers the usual "placement map + policy nav map, per impl" pattern while
-    # bounding a ~8MB-per-map footprint.
-    occupancy_map_cache_size: int = 4
-
     # Failure recovery parameters (used by ParallelRolloutRunner)
     max_allowed_sequential_task_sampler_failures: int = 10
     max_allowed_sequential_rollout_failures: int = 10
@@ -77,6 +68,19 @@ class BaseMujocoTaskSamplerConfig(Config):
     robot_placement_exclusion_threshold: float = 0.15
 
     robot_placement_rotation_range_rad: float = math.radians(45)
+
+    # Which occupancy-map implementation this experiment's env should serve
+    # from get_occupancy_map(). Leave it at the default for everything except
+    # G1/FetchMan experiments -- the two grids disagree cell for cell, so
+    # switching silently changes which cells a robot considers standable.
+    occupancy_map_impl: OccupancyMapImpl = OccupancyMapImpl.THOR
+
+    # How many (impl, scene, agent_radius, px_per_m) maps one env keeps in
+    # memory. Both impls coexist in that cache, so a task/task sampler can hold
+    # one of each -- and several radii -- without evicting one another. Four
+    # covers the usual "placement map + policy nav map, per impl" pattern while
+    # bounding a ~8MB-per-map footprint.
+    occupancy_map_cache_size: int = 4
 
     # Scene configuration
     enable_texture_randomization: bool = False
@@ -134,11 +138,11 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over
-    samples_per_house: int | None = 2  # number of tasks to sample per house before advancing
+    samples_per_house: int = 2  # number of tasks to sample per house before advancing
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
     # Receptacle selection
-    receptacle_types: list[str] = RECEPTACLE_TYPES_THOR
+    receptacle_types: list[str] = tuple(RECEPTACLE_TYPES_THOR)
     # Resolved at runtime
     receptacle_name: str | None = None
     placement_volume_name: str | None = None
@@ -349,9 +353,7 @@ class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
 class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     """Configuration for RBY1 door opening task sampler."""
 
-    task_sampler_class: type | None = (
-        None  # Will be set by importing module to avoid circular imports
-    )
+    task_sampler_class: type = None  # Will be set by importing module to avoid circular imports
     sim_settle_timesteps: int = 500
     verbose: bool = False  # Whether to print verbose debug info
     fixed_door_name: str | None = None  # e.g., "door|2|8_Doorway_Double_7_doorway_door_7"
@@ -365,7 +367,7 @@ class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
         range(0, 22)
     )  # List of thor house indices to iterate through (first 20 for demo)
     scene_xml_paths: list[str] | None = None
-    samples_per_house: int | None = 1  # Number of tasks per house
+    samples_per_house: int = 1  # Number of tasks per house
     task_batch_size: int = 1
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
@@ -417,7 +419,7 @@ class NavToObjTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     house_inds: (
         list[int] | None
     ) = []  # list(range(0, 20))  # List of thor house indices to iterate through (first 20 for demo)
-    samples_per_house: int | None = 1  # Number of tasks per house
+    samples_per_house: int = 1  # Number of tasks per house
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
     robot_safety_radius: float = 0.3  # Radius around robot to avoid collisions

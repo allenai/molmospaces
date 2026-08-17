@@ -30,7 +30,7 @@ def _cmd_joint_pos(robot: Robot):
         return unnoised_cmd_jp
 
     # robot.update_control() hasn't been called yet, recover the command from the controllers.
-    # Non-position controllers (e.g. G1WalkController, whose target is a velocity/height/waist
+    # Non-position controllers (e.g. LegsWaistController, whose target is a velocity/height/waist
     # command, not a joint position) have no sane "position" to report here, so they're omitted
     # rather than raising -- this path only runs before the first update_control() call.
     cmd_jp: dict[str, np.ndarray] = {}

@@ -577,7 +577,7 @@ class G1CameraSystem(CameraSystemConfig):
     Matched against g1_molmo's own camera setup for this robot (its
     `configs/bowl_mixed_grasponly.py` plus the base FOVs in `g1_dex.xml`), so
     frames rendered here are comparable to the ones its LeRobotRecorder writes.
-    See `scripts/g1_molmo_port_comparison/NEXT_STEPS.md`.
+    See `scripts/g1_molmo_port_comparison/check_gold_parity.py`.
 
     `head_camera` owns every parameter of the G1 head fisheye (see
     FisheyeMjcfCameraConfig): tile cameras, tile size and FOV, blend exponent,

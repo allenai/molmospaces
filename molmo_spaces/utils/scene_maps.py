@@ -21,32 +21,12 @@ from molmo_spaces.utils.mj_model_and_data_utils import geom_aabb
 
 log = logging.getLogger(__name__)
 
-# Which occupancy-map implementation an env hands back from
-# get_occupancy_map(). They answer the same queries (is_free, dilated,
-# label_at, same_free_component, any_free_in_annulus, sample_near,
-# sample_robot_pose; True = free) over *different* grids, so they are
-# selectable, not interchangeable:
-#
-#   "thor"  ProcTHORMap / iTHORMap below -- molmo_spaces' own, the default for
-#           every task and robot.
-#   "aabb"  utils/aabb_map.AABBMap -- from the FetchMan (g1_molmo) repo. Only
-#           G1/FetchMan experiments should select this: their goal/spawn
-#           sampling is verified bit-exact against FetchMan's own rollouts and
-#           reads that specific grid. Selecting it elsewhere silently changes
-#           which cells a robot considers standable.
-#
-# Set per experiment via BaseMujocoTaskSamplerConfig.occupancy_map_impl, which
-# the task sampler applies to the env; or per call via
-# CPUMujocoEnv.get_occupancy_map(impl=...).
-OCCUPANCY_MAP_IMPLS = ("thor", "aabb")
-DEFAULT_OCCUPANCY_MAP_IMPL = "thor"
-
-# How many (impl, scene, agent_radius, px_per_m) maps one env keeps in memory.
-# Both implementations coexist in that cache, so a task/task sampler can hold
-# one of each -- and several radii -- without them evicting one another; four
-# is enough for the usual "placement map + policy nav map, per impl" pattern
-# while bounding a ~8MB-per-map footprint.
-OCCUPANCY_MAP_CACHE_SIZE = 4
+# ProcTHORMap / iTHORMap below are one of the two occupancy-map
+# implementations an env can serve from get_occupancy_map(); the other is
+# utils/scene_maps_aabb.AABBMap. Which one an experiment gets, and how many
+# maps an env caches, are configuration:
+# configs/task_sampler_configs.py's OccupancyMapImpl and
+# OCCUPANCY_MAP_CACHE_SIZE.
 
 
 def _get_renderer(

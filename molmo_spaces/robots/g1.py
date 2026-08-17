@@ -553,8 +553,8 @@ class G1Robot(Robot):
 
         Native policies emit a move-group-keyed dict whose "legs_waist" entry
         is a flat 7-vector [vx, vy, yaw_rate, height, waist_yaw, waist_roll,
-        waist_pitch] (the interface G1WalkController.set_target defines). The
-        reference LegsWaistController instead takes `(cmd3, height, waist3)`
+        waist_pitch] (the interface LegsWaistController.set_target defines). The
+        reference low-level G1Controller instead takes `(cmd3, height, waist3)`
         (controllers/g1_wbc.py). Translating here keeps both sides
         unchanged: native policies stay portable across robots, and the
         reference control law keeps the exact signature its ported code uses.

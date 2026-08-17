@@ -392,12 +392,10 @@ class CameraManager:
 
     @staticmethod
     def _check_reset_cadence_supported(camera_config) -> None:
-        """Fail loudly on a reset_cadence this manager cannot honor.
-
-        Noise is applied once at registration, so "episode" would silently
-        behave as "setup" -- a narrower camera distribution than configured,
-        and not the kind of thing anyone notices in a dataset. The G1 is
-        exempt because G1TaskSampler redraws its cameras itself every reset.
+        """Fail loudly on a reset_cadence this manager cannot honor: noise is
+        applied once at registration, so "episode" would silently narrow the
+        camera distribution to "setup". The G1 is exempt -- G1TaskSampler
+        redraws its cameras itself every reset.
 
         TODO(max): make "episode" the default -- redraw on reset here, point
         the G1 at it, and both the exemption and the "setup" default go away.

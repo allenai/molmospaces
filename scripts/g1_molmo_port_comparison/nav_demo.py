@@ -75,7 +75,7 @@ def corridor_free(origin, heading, length, step=0.25):
     facing furniture -- so an endpoint-only check happily picks a waypoint on
     the far side of the counter and then measures the robot failing to walk
     through it. That misreads as "the G1 cannot walk" (it is what §4 of
-    NEXT_STEPS.md used to report); from a clear corridor the same command
+    check_gold_parity.py used to report); from a clear corridor the same command
     covers ~2.2m in 4.5s.
     """
     v = np.array([np.cos(heading), np.sin(heading)])

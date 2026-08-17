@@ -482,7 +482,7 @@ class NavToObjTaskSampler(BaseMujocoTaskSampler):
             )
             robot_safety_radius = self.config.task_sampler_config.robot_safety_radius
             # Robots whose base height is held constant by their own controller
-            # regardless of placement (e.g. G1WalkController's WBC) can't actually
+            # regardless of placement (e.g. LegsWaistController's WBC) can't actually
             # spawn at an offset-derived height -- see BaseRobotConfig.fixed_base_height
             # and the identical fix in PickTaskSampler._sample_and_place_robot.
             # Without this, G1 was being placed with its pelvis at

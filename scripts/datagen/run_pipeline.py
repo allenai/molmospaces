@@ -247,7 +247,7 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         if isinstance(datagen_cfg.policy_config, AStarNavToObjPolicyConfig):
             if datagen_cfg.robot_config.use_holo_base:
                 # AStar's rotate-then-drive waypoint schedule works with the holo
-                # base's direct [x,y,theta] mocap-weld target, but G1WalkController
+                # base's direct [x,y,theta] mocap-weld target, but LegsWaistController
                 # converges markedly slower (see G1RobotView.is_close_to's higher
                 # default threshold, for the same reason): widen waypoint
                 # spacing/retries so segments are long enough to actually cruise

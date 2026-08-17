@@ -4,7 +4,7 @@ Implementation of the Unitree G1 robot model.
 The G1 (as configured here) is a bipedal humanoid with:
 - A free-floating pelvis (real 6-DOF dynamics, not a kinematic/wheeled base)
 - 12 leg joints + a 3-DOF waist/torso, combined into one 15-DOF move group
-  driven by a whole-body walking controller (see `G1WalkController`)
+  driven by a whole-body walking controller (see `LegsWaistController`)
 - Two 7-DOF arms (left arm has no gripper and is commanded to its natural
   hanging pose; right arm has a dexterous gripper)
 - A single right-hand gripper, tendon-actuated, with two mechanically coupled
@@ -278,7 +278,7 @@ class G1GripperGroup(MJCFFrameMixin, GripperGroup):
 
 
 class G1RobotView(RobotView):
-    """Implementation of the complete G1 robot (whole-body walking, see G1WalkController).
+    """Implementation of the complete G1 robot (whole-body walking, see LegsWaistController).
 
     No `head` move group (head/cameras are rigidly mounted to the torso) and
     no `left_gripper` move group (no hardware exists for it).
@@ -337,7 +337,7 @@ class G1RobotView(RobotView):
         the work. 100x means a given error-reducing pelvis displacement is
         only used if moving the arm alone would need >100x more motion to
         achieve the same reduction, keeping solutions close to the robot's
-        actual standing position (still driven by the WBC's own G1WalkController,
+        actual standing position (still driven by the WBC's own LegsWaistController,
         which knows nothing about this IK solve -- see G1Robot.update_control).
         """
         return {"base": 100.0}
@@ -349,7 +349,7 @@ class G1RobotView(RobotView):
 
         AStarPlannerPolicy.current_waypoint() calls this with no explicit threshold,
         so this default is what actually governs "waypoint reached" for G1 nav. 0.1
-        (looser than FloatingRUMRobotView's 0.05) because G1WalkController's velocity
+        (looser than FloatingRUMRobotView's 0.05) because LegsWaistController's velocity
         tracking has an empirically observed residual steady-state error around
         0.07 combined (x, y, theta) units near a target -- confirmed via the
         interactive shell's rotate()/nav_to() debug traces, where distance plateaus

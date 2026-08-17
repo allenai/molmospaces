@@ -1,53 +1,35 @@
 """AABBMap -- an occupancy map built from the axis-aligned bounding boxes of a
 scene's floor geoms, rendered through MuJoCo's segmentation renderer.
 
-From the FetchMan repo (`g1_molmo`, `components/occupancy_map.py::OccupancyMap`),
-relocated here while dissolving `fetchman/`. FetchMan goal/spawn sampling is
-verified bit-exact against that repo and reads *this* grid, so cell-for-cell
-output is load-bearing: re-run fetchman/scripts/check_gold_parity.py
-before changing it.
+**Provenance: this comes from the FetchMan repo (`g1_molmo`), where it is
+`molmospaces/components/occupancy_map.py`'s `OccupancyMap`.** It was relocated
+here (and renamed) while dissolving `molmo_spaces/g1_molmo_port/`. The
+FetchMan pick/nav stack's goal and spawn sampling is verified bit-exact
+against that repo's own rollouts, and those samples read *this* grid -- so the
+cell-for-cell output is load-bearing and should not be "improved" without
+re-running scripts/g1_molmo_port_comparison/check_gold_parity.py.
 
-Same query API as `ProcTHORMap`/`iTHORMap` (utils/scene_maps.py, True = free) but a
-*different* grid -- AABBMap frames on floor-geom AABBs and segments floor vs
-non-floor; ProcTHORMap renders orthographic depth of the whole scene. They disagree
-cell for cell, so they are selectable, not interchangeable (see
-`OccupancyMapImpl` / `CPUMujocoEnv.get_occupancy_map(impl=...)`); "thor" is the
-default implementation everywhere, and only G1/FetchMan should select "aabb".
+Relationship to `ProcTHORMap`/`iTHORMap` (utils/scene_maps.py): same query API
+(`is_free`, `dilated`, `label_at`, `same_free_component`, `any_free_in_annulus`,
+`sample_near`, `sample_robot_pose`, True = free), *different* grid. AABBMap
+frames the map on the floor geoms' AABB and segments floor vs non-floor;
+ProcTHORMap renders an orthographic depth view of the whole scene. They
+disagree cell for cell, so they are selectable rather than interchangeable --
+see `configs/task_sampler_configs.OccupancyMapImpl` and
+`CPUMujocoEnv.get_occupancy_map(impl=...)`. Only G1/FetchMan experiments
+should select "aabb".
 
-How different, concretely: on procthor val_0 and val_1 the two agree on 98.6-99.6%
-of free space (IoU), differing in a boundary sliver around obstacles and the odd
-blob where the depth threshold in ProcTHORMap's `_get_occupancy_from_orthoview`
-and this file's floor segmentation disagree. Neither is more correct. What always
-differs is the framing -- `generate` below frames on the floor AABB + 2m of
-padding, ProcTHORMap on the whole rendered scene -- so the same world point lands
-on different (row, col) in each, and pixel indices from one are meaningless in the
-other.
-
-Two things this implementation does have over ProcTHORMap, neither of them a
-reason to switch a non-FetchMan experiment on its own:
-
-  * It finds floors more permissively. `_floor_geom_ids` takes "room|"/"room_"
-    prefixes, plus any geom whose name contains "floor" with contype == 0, plus a
-    fallback pass for a geom named exactly "floor". ProcTHORMap accepts only the
-    "room|"/"room_" prefixes and asserts if it finds none -- it needs those names
-    to build its room map. So on a scene outside that naming convention this may
-    be the only one of the two that builds.
-  * It is slightly faster, and its cache outlives the process. ~0.3s vs ~0.4s to
-    build a 100px/m map of a procthor val scene (ProcTHORMap's first call in a
-    process is ~2.1s, paying GL init), and `generate` writes the grid to a PNG
-    next to the scene XML, so a later process reloads it for free where
-    ProcTHORMap re-renders. `CPUMujocoEnv` memory-caches either one per scene, so
-    in a single run this is worth a fraction of a second.
-
-What you give up by selecting it: the room map. ProcTHORMap carries
-`room_ids_to_name`, `get_free_points_by_room` and room-scoped `label_at`; the
-labels here are plain connected components of free space.
-
-Its own module because importing it monkeypatches `mujoco.renderer.Renderer.render`
-process-globally (MuJoCo sizes its segid table by `scene.ngeom`, which IndexErrors
-on dense scenes). scene_maps.py is imported by env.py and thus by everything, so
-folding this in would apply that patch everywhere; here it is imported lazily
-inside `get_occupancy_map`, only when "aabb" is selected.
+Kept in its own module rather than appended to scene_maps.py on purpose:
+importing it monkeypatches `mujoco.renderer.Renderer.render` (see below --
+MuJoCo's segmentation renderer sizes its segid table by `scene.ngeom`, which
+IndexErrors on dense scenes whose decorator/skybox segids exceed it). That
+patch is process-global. scene_maps is imported by env.py and therefore by
+essentially everything, so folding this in would silently apply the patch to
+every molmo_spaces process, including ones that never render an occupancy
+map. As its own module it is imported lazily, inside
+`CPUMujocoEnv.get_occupancy_map`, only when an experiment actually selects
+"aabb" -- the two implementations then share no state at all: separate
+modules, separate in-memory caches, separate on-disk cache files.
 """
 
 import json
@@ -61,9 +43,16 @@ from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 from scipy.spatial.transform import Rotation as R
 
-# Patch MuJoCo's segmentation renderer to size segid2output by the actual max
-# segid, not scene.ngeom (decorator/skybox ids exceed it on dense scenes and
-# IndexError). Guarded: newer mujoco builds move or drop the class.
+# Patch MuJoCo's segmentation renderer: size segid2output to the actual max segid,
+# not scene.ngeom (decorator/skybox IDs can exceed it on dense scenes, → IndexError).
+# This package only ever runs under molmospaces' own mlspaces conda env
+# (never g1_molmo's), whose mujoco build (3.5.0) exposes this class flat at
+# mujoco.renderer.Renderer -- unlike g1_molmo's own mujoco build (3.11.0),
+# which nests it at mujoco.rendering.classic.renderer.Renderer post-restructure.
+# Guarded rather than a bare import so a future mujoco upgrade in this env
+# that removes/renames the class skips the patch instead of hard-failing
+# the whole import (the underlying IndexError this guards against may
+# simply not exist in a different mujoco build's segmentation renderer).
 try:
     import mujoco.renderer as _mj_cls_renderer
 except ImportError:
@@ -372,9 +361,16 @@ class AABBMap:
 
     @classmethod
     def from_model_path(cls, xml_path, agent_radius=0.15, px_per_m=200):
-        """molmo_spaces' entry point (get_occupancy_map with impl="aabb"), at
-        any agent radius. Caches per (radius, px_per_m) in its own file, not in
-        FetchMan's radius-less `<scene>_thormap.png`, which the gold rollout reads."""
+        """Entry point for molmo_spaces' own envs (CPUMujocoEnv.get_occupancy_map
+        with impl="aabb"), which -- unlike FetchMan -- ask for maps at whatever
+        agent radius the task sampler configured.
+
+        Caches per (radius, px_per_m) in its own file rather than sharing
+        FetchMan's single `<scene>_thormap.png`: that file is inflated for
+        FetchMan's own 0.15m agent and is read back by from_scene without a
+        radius check, so writing a differently-inflated grid there would
+        silently change the bit-exact gold rollout's spawn sampling.
+        """
         xml_path = Path(xml_path)
         map_path = xml_path.with_name(
             f"{xml_path.stem}_aabbmap_r{float(agent_radius):g}_p{int(px_per_m)}.png"
@@ -476,11 +472,7 @@ class AABBMap:
         return 0
 
     def same_free_component(self, xy_a, xy_b):
-        """True if the free cells nearest xy_a and xy_b share a connected
-        component. Both endpoints snap: on a dilated planning map the robot
-        itself often stands on an "occupied" cell, and the A* snaps its start
-        the same way."""
-        la = self.nearest_free_label(xy_a)
+        la = self.label_at(xy_a)
         if la == 0:
             return False
         return la == self.nearest_free_label(xy_b)

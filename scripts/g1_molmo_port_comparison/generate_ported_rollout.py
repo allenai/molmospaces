@@ -50,7 +50,7 @@ TIME_LIMIT = 60.0
 # once at episode end. Without this the rollout only ever *reads* two of the 14
 # OBS_SENSORS values (base_height, joint_pos, for hold_action) -- the other
 # twelve never reach the trace, so the strict ported-vs-ported gate in
-# NEXT_STEPS.md would pass even if they broke outright. Fixed step cadence, so
+# check_gold_parity.py would pass even if they broke outright. Fixed step cadence, so
 # the dump points are deterministic and comparable across runs.
 OBS_DUMP_EVERY = 500
 

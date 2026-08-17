@@ -9,8 +9,8 @@ import numpy as np
 from molmo_spaces.env.data_views import SceneObject
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.robots.g1 import PREFIX as ROBOT_PREFIX
-from molmo_spaces.utils.aabb_map import AABBMap
 from molmo_spaces.utils.constants.object_constants import is_pickup_type
+from molmo_spaces.utils.scene_maps_aabb import AABBMap
 
 
 def _strip_skybox(xml_path: Path) -> Path:

@@ -15,10 +15,50 @@ Two modes, because only one of them is achievable across the two conda envs:
 
   --strict  Require every trace line byte-identical. Only meaningful when both
             files come from the SAME environment -- e.g. ported-vs-ported
-            across a refactor, which is the real regression gate (see
-            NEXT_STEPS.md). Gold-vs-ported can never pass --strict: the envs
-            ship different MuJoCo versions (3.11.0 vs 3.5.0), which diverges
-            continuous state at ~1e-3 over a couple thousand steps.
+            across a refactor, which is the real regression gate. Gold-vs-ported
+            can never pass --strict: the envs ship different MuJoCo versions
+            (3.11.0 vs 3.5.0), which diverges continuous state at ~1e-3 over a
+            couple thousand steps. That is not a port defect; the only lever is
+            aligning the MuJoCo versions, a real dependency decision
+            (molmo-spaces pins mujoco~=3.5.0).
+
+Gold vs ported -- does the port still behave like the reference stack:
+
+    cd ~/code/g1_molmo && conda run -n g1_molmo python \\
+        molmospaces/scripts/g1_molmo_comparison/generate_gold_rollout.py \\
+        --seed 0 > /tmp/gold.txt 2>&1
+    cd ~/code/molmospaces && conda run -n mlspaces python \\
+        scripts/g1_molmo_port_comparison/generate_ported_rollout.py \\
+        --seed 0 > /tmp/ported.txt 2>&1
+    conda run -n mlspaces python \\
+        scripts/g1_molmo_port_comparison/check_gold_parity.py \\
+        /tmp/gold.txt /tmp/ported.txt
+
+Expect `PASS: 9/9 discrete invariants identical`, ending in `SUCCESS on
+episode 4` (steps=2338 sim_time=12.04s), with the intermediate failures at 750
+and 288 steps matching too. Continuous-state drift is reported, not failed.
+
+Ported vs ported -- the regression gate to run around EVERY refactor step.
+Record a baseline before touching anything, then compare:
+
+    conda run -n mlspaces python \\
+        scripts/g1_molmo_port_comparison/generate_ported_rollout.py \\
+        --seed 0 > /tmp/baseline.txt 2>&1
+    # ... make a change ...
+    conda run -n mlspaces python \\
+        scripts/g1_molmo_port_comparison/generate_ported_rollout.py \\
+        --seed 0 > /tmp/after.txt 2>&1
+    conda run -n mlspaces python \\
+        scripts/g1_molmo_port_comparison/check_gold_parity.py \\
+        /tmp/baseline.txt /tmp/after.txt --strict
+
+Expect `PASS (strict): 212 trace lines byte-identical`. If it fails, stop and
+fix before continuing.
+
+Neither gate looks at pixels -- check_texture_parity.py in this directory does
+that, and is only meaningful when the fetchman texture pack is present (watch
+for build_thor_texture_pools()'s JORDI-TODO fallback warning in the log first).
+Neither covers the native pick pipeline either; that is run_house_sweep.py.
 
 Exit code 0 = pass, 1 = fail.
 """

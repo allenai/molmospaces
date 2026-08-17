@@ -886,7 +886,7 @@ class InteractiveShellTask(BaseMujocoTask):
         if planner == "fetchman":
             nav_config.policy_config = FetchManBasePlannerPolicyConfig()
         elif self.config.robot_config.name == "g1":
-            # G1WalkController converges markedly slower than FloatingRUM's mocap-weld
+            # LegsWaistController converges markedly slower than FloatingRUM's mocap-weld
             # base (see G1RobotView.is_close_to's higher default threshold for the
             # same reason). AStarPlannerPolicy's default plan_fail_after_waypoint_steps
             # (10) triggers a "failure to progress" replan before G1 has had time to

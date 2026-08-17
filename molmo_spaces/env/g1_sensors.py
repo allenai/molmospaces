@@ -18,7 +18,7 @@ G1 env caches as `_obs_pelvis_bid` / `_obs_fj_dadr` / `_obs_qpos_ids` /
 molmo_spaces goes through `env.mj_datas[batch_index]` and
 `env.robots[batch_index].robot_view`. Re-expressing them that way is a
 follow-up that can change numbers -- run the strict ported-vs-ported gate in
-scripts/g1_molmo_port_comparison/NEXT_STEPS.md around it.
+scripts/g1_molmo_port_comparison/check_gold_parity.py around it.
 
 PelvisFrameSensor and TargetPointInHeadSensor are NOT part of OBS_SENSORS/
 the SensorSuite -- they return a closure and a raw (u, v)-or-None tuple

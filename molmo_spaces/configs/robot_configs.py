@@ -122,7 +122,7 @@ class BaseRobotConfig(Config):
     # target-relative placement assumes an adjustable base height (RBY1's torso
     # lift, FloatingRUM's freely-positioned floating base) and produces an
     # unnatural spawn height for a robot whose base height is fixed by its own
-    # controller (e.g. G1WalkController's WBC holds a constant standing height
+    # controller (e.g. LegsWaistController's WBC holds a constant standing height
     # regardless of where the robot is placed) -- planning code that reads the
     # robot's pose at task reset (before physics has run) would then see a
     # spawn height physics is about to correct away, silently invalidating any
@@ -390,7 +390,7 @@ class G1Config(BaseRobotConfig):
     robot_xml_path: Path = Path("g1_dex.xml")
     # Default standing pose, taken from the source G1 stack's validated
     # gravity-settled/nominal joint values. Note this is the *reset* pose, a
-    # different (more upright) pose than G1WalkController's own internal
+    # different (more upright) pose than LegsWaistController's own internal
     # `_DEFAULT_POSE` action-space reference offset -- both exist in the
     # source stack too, for the same reason (env reset vs. policy reference).
     init_qpos: dict[str, np.ndarray] = {
@@ -433,7 +433,7 @@ class G1Config(BaseRobotConfig):
     physics_timestep: float = 0.005
 
     # Toggle between the two base control modes:
-    #   False (default): whole-body walking via G1WalkController -- legs_waist
+    #   False (default): whole-body walking via LegsWaistController -- legs_waist
     #     actively balances/walks, base is a passive free-floating pelvis.
     #   True: legs_waist holds a static pose (plain JointPosController, no active
     #     balance) and the base is instead moved directly, mocap-weld driven like

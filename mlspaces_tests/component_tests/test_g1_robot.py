@@ -87,7 +87,7 @@ class TestG1Config:
 
 class TestG1WholeBodyControl:
     def test_stands_indefinitely(self, g1_robot):
-        """With G1WalkController active, an empty action (-> stationary, cmd=0)
+        """With LegsWaistController active, an empty action (-> stationary, cmd=0)
         engages the ONNX standing policy every tick rather than holding an
         open-loop pose. Measured empirically: unlike Phase 2's plain PD (which
         tipped over by t=2s), the WBC holds pelvis height ~0.74-0.75m and

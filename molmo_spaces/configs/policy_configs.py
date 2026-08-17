@@ -196,7 +196,7 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     grasp_candidates_to_try: int = 5
 
     # Low-pass filter coefficient for the height/waist *command* sent to
-    # G1WalkController each tick, applied in FetchmanPickPlannerPolicy.
+    # LegsWaistController each tick, applied in FetchmanPickPlannerPolicy.
     # _tcp_to_jp_fn: new = old + alpha * (fresh_ik_solution - old). Matches
     # g1_molmo's own execution loop exactly (see _advance_grasp: height_cmd =
     # self._height_cmd + 0.1 * (ik_h - self._height_cmd)): both sides now run
@@ -213,7 +213,7 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     # approach (safe/quick since not near the object yet) and speed_slow for
     # grasp/lift. That assumes near-instantaneous joint tracking, true for the
     # arm's JointPosController but not for G1's waist/height, which move via
-    # G1WalkController's torque-PD-tracked WBC (a trained ONNX policy
+    # LegsWaistController's torque-PD-tracked WBC (a trained ONNX policy
     # converging over real simulated dynamics). Slowing the pregrasp approach
     # to match speed_slow reduces (but doesn't eliminate) the lag.
     speed_fast: float = 0.08
@@ -282,7 +282,7 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     face_turn: float = 1.2
     # See FetchManBasePlannerPolicyConfig's face_tol/face_wp_tol comment: both
     # loosened from g1_molmo's original 0.1/0.25 rad, which sit at/below
-    # G1Robot's G1WalkController's own documented ~15deg yaw-tracking ceiling
+    # G1Robot's LegsWaistController's own documented ~15deg yaw-tracking ceiling
     # and cause a turn/drive hunting oscillation that never converges.
     face_tol: float = 0.35
     face_wp_tol: float = 0.524
@@ -653,8 +653,8 @@ class FetchManBasePlannerPolicyConfig(NavToObjPlannerPolicyConfig):
     max_turn: float = 1.0  # Max yaw rate (rad/s) while driving
     face_turn: float = 1.2  # Max yaw rate (rad/s) during the terminal face-the-target turn
     # g1_molmo's own values here (0.1/0.25 rad) sit at or below G1Robot's
-    # G1WalkController's own documented yaw-tracking ceiling (~15deg -- see
-    # g1.py's _YAW_GATE_THRESHOLD comment: "G1WalkController's yaw tracking
+    # LegsWaistController's own documented yaw-tracking ceiling (~15deg -- see
+    # g1.py's _YAW_GATE_THRESHOLD comment: "LegsWaistController's yaw tracking
     # has its own residual convergence ceiling around 15deg"). At those tight
     # values the heading error can never settle inside tolerance, so the
     # turn/drive branches hunt back and forth indefinitely instead of
@@ -675,8 +675,8 @@ class FetchManBasePlannerPolicyConfig(NavToObjPlannerPolicyConfig):
     # distinct from max_turn/face_turn, which are for pure in-place turning
     # with zero forward command. Confirmed empirically (reproduces identically
     # via the pre-existing, unmodified FetchManBasePlannerPolicy, so this is a
-    # genuine G1WalkController characteristic, not specific to this port):
-    # G1WalkController's real gait effectively stalls forward progress to a
+    # genuine LegsWaistController characteristic, not specific to this port):
+    # LegsWaistController's real gait effectively stalls forward progress to a
     # crawl when commanded a forward speed together with a yaw_rate anywhere
     # close to max_turn (e.g. vx=0.2 + yaw_rate=0.5-0.6 measured near-zero net
     # displacement over 30+ seconds), even though either alone works fine.
