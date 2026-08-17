@@ -1,3 +1,19 @@
+"""How a task instruction gets phrased. Three options exist; two live here.
+
+1. ``PromptSamplerSimple`` (here) -- g1_molmo's own sampler, ported exactly.
+   Random verb/phrasing variety, object name looked up from asset_id.
+2. ``PromptSamplerLearnedPolicy`` (here) -- the production sampler for
+   learned/VLM policies. Cyclic templates, ObjectMeta-backed, distractor
+   disambiguation. Currently uncalled.
+3. ``ObjectMeta.get_short_description()``/``clean_object_name()``
+   (utils/object_metadata.py) -- same objathor data via a different backend
+   (lmdb, not this module's gzip JSON). Not reconciled with the two above.
+
+Orthogonal to all three: ``PickTask.get_task_description()`` phrases a single
+fixed template around a name ``ObjectManager.sample_expression()`` already
+resolved -- disambiguating *which object*, not *how the instruction reads*.
+"""
+
 import gzip
 import json
 import logging
@@ -64,41 +80,15 @@ def get_object_name(asset_id, num_words=1):
 
 
 class PromptSamplerSimple:
-    """Exact port of g1_molmo's own `PromptSampler` (~/code/g1_molmo/
-    molmospaces/components/prompt_sampler.py) -- verb/phrasing template
-    variety ("pick up"/"grab"/"lift"/"take"/"get" the X) plus an optional
-    word-count-truncated object name, driven purely by `asset_id` via a
-    local objathor-metadata lookup (`get_object_name`).
+    """Exact port of g1_molmo's `PromptSampler` (molmospaces/components/
+    prompt_sampler.py): verb variety ("pick up"/"grab"/"lift" the X) over an
+    object name looked up from `asset_id` via `get_object_name`.
 
-    Named "Simple" to contrast with molmo_spaces' own, more sophisticated
-    task-description mechanism (`PickTask.get_task_description()` in
-    molmo_spaces/tasks/pick_task.py): that formats a *single* fixed
-    template, `f"Pick up the {pickup_obj_name}"`, around a name that's
-    already been resolved by `ObjectManager.sample_expression()` -- a
-    softmax-sampled *disambiguating* referral expression (e.g.
-    distinguishing "the bowl on the table" from another bowl already in
-    view via scene-context similarity scores), not a category name pulled
-    from asset-id metadata. This class's template variety and
-    molmo_spaces' referral-expression disambiguation are orthogonal
-    features solving different problems (how the *instruction* is phrased
-    vs. how the *object* is uniquely identified) -- merging them would mean
-    teaching this class to format a pre-resolved name instead of doing its
-    own asset_id lookup, plus reconciling gold's lowercase+period style
-    ("pick up the bowl.") against molmo_spaces' capitalized, no-period
-    style ("Pick up the bowl") via an explicit case/punctuation flag. Kept
-    separate for now since wiring template-randomized phrasing into
-    production `PickTask` would be a real behavior change, not merely a
-    refactor -- this class stays the gold-exact reference
-    `g1_molmo_port/tasks/open.py`/`pick_g1ms.py` need for bit-exact
-    comparison against gold.
-
-    Also NOT yet reconciled with `ObjectMeta.get_short_description()`/
-    `clean_object_name()` (molmo_spaces/utils/object_metadata.py), whose own
-    TODO comments ("ported from PromptSampler late at night, might need
-    clean-up") indicate they already derive from this same source but via a
-    different metadata backend (lmdb `get_db()` vs. this module's direct
-    gzip JSON read) -- worth a closer look before assuming they're
-    interchangeable, not addressed by this move.
+    Kept gold-exact rather than merged into `PickTask.get_task_description()`
+    -- the port's bit-exact comparison depends on it, and folding template
+    variety into production PickTask is a behavior change, not a refactor.
+    That merge would also have to reconcile gold's "pick up the bowl."
+    against molmo_spaces' "Pick up the bowl".
     """
 
     def __init__(self, config=None):
@@ -125,36 +115,19 @@ def get_config():
 
 
 class PromptSamplerLearnedPolicy:
-    """Real molmo_spaces prompt sampler for learned/VLM policies. Moved here
-    verbatim (same statements, same behavior) from
-    molmo_spaces/policy/learned_policy/utils.py, where it was previously
-    named `PromptSampler` -- renamed to sit next to `PromptSamplerSimple`
-    without the two colliding, and to name what actually distinguishes it:
+    """The production prompt sampler for learned/VLM policies. Differs from
+    `PromptSamplerSimple` in four ways:
 
-    - **Cyclic, not random, template selection**: `next()` advances
-      `current_index` by one (mod template count) and invalidates the
-      cache; nothing here samples an rng index the way
-      `PromptSamplerSimple.sample()` does. `get_state()`/`set_state()`
-      exist so that index (and the cached prompt string) survive episode
-      checkpoint/resume.
-    - **Backed by `ObjectMeta`** (lmdb `get_db()`), not this module's own
-      gzip-JSON `_load_metadata()`/`get_object_name()` -- same underlying
-      objathor short-description data, different loader; not yet verified
-      to agree number-for-number with `get_object_name()`.
-    - **Per-task-type template sets** (`pick`/`open`/`pick_and_place`/
-      `packing`/`close`) baked in as `DEFAULT_TEMPLATES_BY_TASK`, each a
-      single fixed phrasing (no verb variety within a task type, unlike
-      `PromptSamplerSimple`'s 4-6 synonym templates per mode).
-    - **Real features `PromptSamplerSimple` has none of**: custom-object-
-      name override (`eval_params.custom_object_name`), distractor
-      disambiguation by relative position ("the bowl on the left"/"in
-      front"/"above", gated by `disambiguate_distractors_by_pos`), and
-      `pick_and_place`'s two-slot template (object + receptacle name).
+    - `next()` rotates templates cyclically, not by rng; `get_state()`/
+      `set_state()` carry that index across checkpoint/resume.
+    - Object names come from `ObjectMeta` (lmdb), not this module's gzip
+      JSON. Same objathor data, unverified whether they agree exactly.
+    - One fixed phrasing per task type (`DEFAULT_TEMPLATES_BY_TASK`), no
+      verb variety.
+    - Has features Simple lacks: custom-name override, distractor
+      disambiguation by position, and pick_and_place's two-slot template.
 
-    As of this move, still uncalled anywhere in the codebase (no
-    `PromptSampler(`/`PromptSamplerLearnedPolicy(` construction site found
-    outside this class's own definition) -- moved and renamed in place
-    without wiring it to a caller, since that wasn't part of this ask.
+    Currently uncalled anywhere in the codebase.
     """
 
     DEFAULT_TEMPLATES_BY_TASK = {

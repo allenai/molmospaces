@@ -51,7 +51,7 @@ STANDING_HEIGHT = 0.75
 # sync so a navigation policy drives either implementation identically.
 # Width of the "legs_waist" move-group target native policies emit:
 # [vx, vy, yaw_rate, height, waist_yaw, waist_roll, waist_pitch]. Matches
-# molmo_spaces/controllers/g1_walk.py's NUM_TARGET_DIMS (the interface native
+# molmo_spaces/controllers/g1_wbc.py's NUM_LEGS_WAIST_TARGET_DIMS (the interface native
 # policies were written against) -- see G1Robot.update_control.
 NUM_LEGS_WAIST_TARGET_DIMS = 7
 

@@ -369,8 +369,8 @@ class G1Config(BaseRobotConfig):
 
     Two base control modes (see `use_holo_base`):
     - Whole-body walking (default): the combined `legs_waist` move group is
-      driven by `G1WalkController` (a PD-torque law plus an ONNX walking
-      policy -- see `molmo_spaces.controllers.g1_walk`), commanded via
+      driven by the WBC (a PD-torque law plus an ONNX walking policy --
+      see `molmo_spaces.controllers.g1_wbc`), commanded via
       `set_target([vx, vy, yaw_rate, height, waist_yaw, waist_roll,
       waist_pitch])`. The base has no actuators (free-floating pelvis
       integrated directly by MuJoCo's physics).
@@ -425,14 +425,11 @@ class G1Config(BaseRobotConfig):
     }
     gravcomp: bool = False
 
-    # Matches g1_molmo's own components/controller.py set_env(), which does
-    # `m.opt.timestep = 0.005` unconditionally for G1 -- G1WalkController's
-    # ONNX walking policy (controllers/g1_walk.py) was trained/tuned assuming
-    # this exact physics rate, not our scene default (0.002s, see
-    # molmo_spaces/resources/base_scene.xml). Applied in G1Robot.__init__; see
-    # BaseRobotConfig.physics_timestep's own docstring. g1_walk.py's
-    # _CONTROL_DECIMATION is set to match this value (4, not a rescaled
-    # workaround) -- both must be changed together if this value ever changes.
+    # Matches g1_molmo's components/controller.py set_env(), which sets
+    # `m.opt.timestep = 0.005` unconditionally for G1: the WBC's ONNX policy
+    # (controllers/g1_wbc.py) was trained at that rate, not our scene default
+    # of 0.002s. Applied in G1Robot.__init__. g1_wbc.py's _WBC_CONTROL_DEC (4)
+    # is set to match -- change both together or the WBC leaves its ~50Hz.
     physics_timestep: float = 0.005
 
     # Toggle between the two base control modes:
@@ -445,22 +442,16 @@ class G1Config(BaseRobotConfig):
     #     holonomic joint actuators rather than a weld target).
     use_holo_base: bool = False
 
-    # G1's pelvis height is held constant by G1WalkController's WBC (or, in
-    # holo-base mode, by G1HoloBaseGroup's mocap weld) regardless of where the
-    # robot is placed -- unlike RBY1 (torso lift) or FloatingRUM (freely
-    # positioned floating base), it has no way to actually stand at a
-    # target-object-relative height. See BaseRobotConfig.fixed_base_height.
+    # The WBC (or, in holo-base mode, G1HoloBaseGroup's mocap weld) holds the
+    # pelvis at a constant height wherever the robot is placed, so unlike RBY1
+    # or FloatingRUM the G1 cannot stand at a target-relative height. See
+    # BaseRobotConfig.fixed_base_height.
     #
-    # 0.793m, not G1WalkController's own _DEFAULT_HEIGHT_CMD (0.74) -- that's a
-    # *different* reference pose (the WBC's internal crouched action-space
-    # offset), not the height this class's own init_qpos leg configuration
-    # (the "gravity-settled/nominal" pose, see init_qpos above) actually stands
-    # at pre-physics. Using 0.74 here left the ankles penetrating the floor at
-    # every sampled placement (init_qpos's leg angles don't clear the ground at
-    # that height), failing 10/10 placement attempts. 0.793 is the pelvis
-    # height measured with this exact init_qpos right after reset()/mj_forward,
-    # before the WBC has taken over -- confirmed stable (no penetration, no
-    # tipping) for 3s+ in the standing smoke test.
+    # 0.793m is the pelvis height measured with this init_qpos right after
+    # reset()/mj_forward, before the WBC takes over -- NOT the WBC's own
+    # _WBC_HEIGHT_CMD (0.74), which is a crouched action-space reference. At
+    # 0.74 these leg angles put the ankles through the floor, failing 10/10
+    # placements. Confirmed stable for 3s+ in the standing smoke test.
     fixed_base_height: float | None = 0.793
 
 

@@ -9,8 +9,8 @@ from molmo_spaces.utils.grasps import (
 from molmo_spaces.utils.grasps import (
     fetchman_has_valid_grasp as has_valid_grasp,
 )
-from molmo_spaces.utils.prompt_sampler import PromptSamplerSimple, get_object_name
-from molmo_spaces.utils.prompt_sampler import get_config as get_prompt_config
+from molmo_spaces.utils.prompt_samplers import PromptSamplerSimple, get_object_name
+from molmo_spaces.utils.prompt_samplers import get_config as get_prompt_config
 
 
 class PickTask:

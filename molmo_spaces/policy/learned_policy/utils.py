@@ -3,11 +3,6 @@ import hashlib
 import numpy as np
 from PIL import Image
 
-# PromptSampler moved to molmo_spaces.utils.prompt_sampler.PromptSamplerLearnedPolicy
-# (renamed to sit next to PromptSamplerSimple, gold's own template-based
-# sampler, without the two names colliding -- see that module for what
-# distinguishes this one).
-
 
 def resize_with_pad(images, height, width):
     if images.shape[-3:-1] == (height, width):

@@ -357,15 +357,13 @@ def get_joint_grasps(
 # ---------------------------------------------------------------------------
 # FetchMan (g1_molmo) grasp-file lookups
 #
-# Relocated verbatim from g1_molmo_port/components/constants.py + its package
-# __init__, as part of dissolving that package. These are deliberately NOT
-# folded into get_joint_grasp_path/has_valid_pickup_grasps above: those resolve
-# through the registered grasp *libraries* (OBJECT_LIBRARY_TO_GRASP_LIBRARIES,
-# USER_GRASP_LIBRARIES), whereas FetchMan addresses grasp files by raw
-# on-disk layout, accepts the flat grasps/<uid>/ layout the library resolver
-# does not, and defaults an absent joint name to "<obj>_joint". Its pick
-# rollout is verified bit-exact against gold, so the lookup semantics are
-# load-bearing; the two live side by side until that gate is retired.
+# Relocated verbatim from g1_molmo_port/components/constants.py while
+# dissolving that package. Deliberately NOT folded into
+# get_joint_grasp_path/has_valid_pickup_grasps above: those resolve through the
+# registered grasp libraries, whereas FetchMan addresses files by raw on-disk
+# layout, accepts the flat grasps/<uid>/ form, and defaults a missing joint
+# name to "<obj>_joint". Its pick rollout is verified bit-exact against gold,
+# so these semantics are load-bearing until that gate is retired.
 # ---------------------------------------------------------------------------
 
 _fetchman_grasps_env = os.environ.get("MOLMOSPACES_GRASPS_DIR", "")

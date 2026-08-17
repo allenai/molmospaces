@@ -31,8 +31,8 @@ from molmo_spaces.robots.g1 import JOINT_NAMES as _JOINTS
 # move-group boundaries symbolic names instead of magic-number slices, so
 # execute_action() and agents/policy_g1ms.py's sample_actions() (the two
 # ends of this array contract) stay in sync by construction.
-# Flat legs_waist target width molmo_spaces policies emit; mirrors
-# controllers/g1_walk.py NUM_TARGET_DIMS. See LegsWaistController.set_target.
+# Flat legs_waist target width molmo_spaces policies emit.
+# See LegsWaistController.set_target.
 NUM_LEGS_WAIST_TARGET_DIMS = 7
 
 ACTION_DIM = 15  # cmd(3) + height(1) + waist(3) + right_arm(7) + right_grip(1)
@@ -232,20 +232,16 @@ class LegsWaistController(Controller):
             o._obs_history.append(np.zeros(_WBC_OBS_DIM, dtype=np.float32))
 
     def set_target(self, target):
-        # Two calling conventions, distinguished by shape (not by guessing):
+        # Two calling conventions, told apart by length (a 3-tuple of
+        # (array3, scalar, array3) and a flat 7-vector cannot be confused):
         #
-        #   (cmd3, height, waist3)                 -- the reference stack's, via
-        #                                             G1Controller.execute_action
-        #   [vx, vy, yaw_rate, height, waist(3)]   -- molmo_spaces', the flat
-        #                                             7-vector G1WalkController.
-        #                                             set_target defines
+        #   (cmd3, height, waist3)                -- reference stack, via
+        #                                            G1Controller.execute_action
+        #   [vx, vy, yaw_rate, height, waist(3)]  -- molmo_spaces' flat form
         #
-        # Native callers reach this controller directly, not only through
-        # Robot.update_control -- e.g. PickTaskSampler._randomize_robot_standing_
-        # height -- so accepting the native form here is what makes this
-        # controller drop-in for molmo_spaces' own task/policy stack. A 3-tuple
-        # of (array3, scalar, array3) and a flat 7-vector are unambiguously
-        # different lengths, so this dispatch cannot misfire.
+        # Native callers reach this controller directly rather than through
+        # Robot.update_control (e.g. PickTaskSampler._randomize_robot_standing_
+        # height), so accepting the flat form is what makes it drop-in here.
         if len(target) == NUM_LEGS_WAIST_TARGET_DIMS:
             target = np.asarray(target, dtype=np.float32)
             cmd, height_cmd, waist = target[0:3], float(target[3]), target[4:7]

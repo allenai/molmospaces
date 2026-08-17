@@ -62,7 +62,7 @@ _WAIST_JOINT_SUFFIXES = ("waist_yaw_joint", "waist_roll_joint", "waist_pitch_joi
 
 # The `legs_waist` MoveGroup's joints, in order -- used by G1Robot.apply_control_overrides
 # to reconfigure the corresponding "walk_*" actuators for the whole-body walking
-# controller (see molmo_spaces.controllers.g1_walk.G1WalkController).
+# controller (see molmo_spaces.controllers.g1_wbc.LegsWaistController).
 LEGS_WAIST_JOINT_SUFFIXES = _LEG_JOINT_SUFFIXES + _WAIST_JOINT_SUFFIXES
 _ARM_JOINT_SUFFIXES = (
     "shoulder_pitch_joint",
@@ -153,7 +153,7 @@ class G1LegsWaistGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
 
     Legs and waist are combined into a single MoveGroup (rather than kept separate,
     as Phase 2 did) because the Phase 3 whole-body walking controller (see
-    `molmo_spaces.controllers.g1_walk.G1WalkController`) computes one coupled
+    `molmo_spaces.controllers.g1_wbc.LegsWaistController`) computes one coupled
     15-DOF PD-torque law across both -- the waist's control law folds in gravity
     compensation terms that reference the legs' state, and the ONNX walking
     policy's action space treats legs+waist as a single block (matching the

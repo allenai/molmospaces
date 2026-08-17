@@ -1690,18 +1690,15 @@ def get_config():
 # ---------------------------------------------------------------------------
 # molmo_spaces-native wrapper
 #
-# G1Controller above is the reference stack's policy: it is constructed bare,
-# wired up through set_env/setup, driven by sample_actions() -> flat-15, and
-# reads its world through five attributes on the reference G1Env
-# (np_random/robot/scene/target/time). molmo_spaces' own policy contract is
-# different: policy_factory(config, task), reset(), get_action(obs) -> a
-# move-group dict, plus the PlannerPolicy phase accessors.
+# G1Controller above follows the reference stack's contract: constructed bare,
+# wired through set_env/setup, driven by sample_actions() -> flat-15, reading
+# the world off five G1Env attributes. molmo_spaces expects instead
+# policy_factory(config, task), reset(), get_action(obs) -> move-group dict,
+# plus the PlannerPolicy phase accessors.
 #
-# The two adapters below bridge exactly that gap and nothing else -- the grasp
-# logic itself is untouched, so it stays the gold-verified behaviour. This
-# mirrors how FetchmanPickPlannerPolicy is structured (a PickPlannerPolicy
-# subclass composing an inner grasp planner), which is the shape this file is
-# converging on.
+# The adapters below bridge that gap and nothing else -- the grasp logic is
+# untouched, so it stays gold-verified. Same shape as
+# FetchmanPickPlannerPolicy: a PickPlannerPolicy composing an inner planner.
 # ---------------------------------------------------------------------------
 
 
@@ -1891,22 +1888,18 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         inv_pose = np.linalg.inv(pose)
         local_grasps = [inv_pose @ np.asarray(g, dtype=np.float64) for g in world_grasps]
 
-        # Walk goal. Distances are measured from the controller's own _xy()
-        # (pelvis + PELVIS_FORWARD_OFFSET), not the raw base pose, because that
-        # is what reset() compares against goal_xy: within NEAR_GOAL_DIST
-        # (0.05m) it skips nav and starts the grasp immediately, otherwise it
-        # calls _plan_path.
+        # Walk goal. Distances come from the controller's _xy() (pelvis +
+        # PELVIS_FORWARD_OFFSET), not the raw base pose, since that is what
+        # reset() compares against goal_xy -- within NEAR_GOAL_DIST (0.05m) it
+        # skips nav and grasps immediately, otherwise it calls _plan_path.
         #
-        # Already within grasping standoff -> goal is where we stand, facing the
-        # object, i.e. the at-goal branch. That is InteractiveShell's case
-        # (navigation is its own `nav_to` command, so pick() starts in place) and
-        # PickG1DataGenConfig's tight spawn radius, which mirrors g1_molmo's
-        # spawn_at_grasp=True profile -- neither should start walking.
+        # Already within standoff -> goal is where we stand, facing the object.
+        # That covers InteractiveShell (nav is its own command, so pick() starts
+        # in place) and PickG1DataGenConfig's tight spawn radius; neither walks.
         #
-        # Further out -> sample a real standoff pose and let the controller walk
-        # to it. This is the batch datagen case: targets 2.5-6.8m away, which
-        # used to be reported as already-at-goal and so were rejected as out of
-        # arm's reach without a single nav step.
+        # Further out -> sample a real standoff pose and walk to it. The batch
+        # datagen case: 2.5-6.8m targets, previously reported as already-at-goal
+        # and rejected as out of reach without a single nav step.
         xy = np.asarray(self._controller._xy(), dtype=np.float64)
         tgt_xy = np.asarray(obj.position, dtype=np.float64)[:2]
         occ, nav_occ = self._nav_maps()
@@ -1993,32 +1986,21 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         self._publish_grasp_pose()
         return self._flat_to_move_groups(flat)
 
-    # Defer rendering during the grasp phase. molmo_spaces' own per-tick
-    # observation genuinely renders camera sensor images (PickG1DataGenConfig's
-    # G1CameraSystem), unlike g1_molmo's env.step, whose _build_obs is pure
-    # analytic math -- so there is real per-tick cost here that the reference
-    # stack never had to pay. Without this, BaseMujocoTask.step_chunk polls
-    # sensors (and ParallelRolloutRunner syncs the viewer) once per physics
-    # tick.
+    # Defer rendering during the grasp phase: step_chunk polls the full sensor
+    # suite once per tick otherwise, a cost g1_molmo's analytic _build_obs never
+    # paid. FetchmanPickPlannerPolicy's RENDER_DECIM, restored after that policy
+    # was retired.
     #
-    # This is FetchmanPickPlannerPolicy's RENDER_DECIM, restored: that policy
-    # carried this optimization until it was retired for the reference stack,
-    # and the value came with it. What matters is *how* the ticks are driven --
-    # an earlier version precomputed all RENDER_DECIM actions from one frozen
-    # observation, which starved the IK of fresh state (identical solutions
-    # repeated for several consecutive solves, then jumping discontinuously,
-    # with ~4x gold's position error). The correct form is below: drive
-    # RENDER_DECIM-1 real physics ticks here, one at a time via
-    # task._apply_action -- the same primitive step_chunk itself uses, ctrl +
-    # mj_step with no sensor polling -- so every sample_actions() call still
-    # sees fresh robot_view/mj_data. Only the final tick goes back in the chunk
-    # for the driver to apply and render, once.
+    # How the ticks are driven is what matters. An earlier version precomputed
+    # all 20 actions from one frozen observation and starved the IK (repeated
+    # solutions, then discontinuous jumps, ~4x gold's position error). Correct
+    # form below: drive RENDER_DECIM-1 real ticks here via task._apply_action
+    # (ctrl + mj_step, no sensor polling) so each sample_actions() sees fresh
+    # mj_data; only the final tick goes back in the chunk to be rendered.
     #
-    # The gait clock stays correct by construction: sample_actions advances
-    # _low_level._step_counter itself (this policy sets _external_gait_clock so
-    # the robot doesn't also advance it), and every get_action here is paired
-    # with exactly one _apply_action -- the same 1:1 ratio as the unchunked
-    # path. Re-check this if either side of that pairing changes.
+    # The gait clock stays correct by construction -- sample_actions advances
+    # _step_counter itself and every get_action here is paired with exactly one
+    # _apply_action, the same 1:1 ratio as the unchunked path.
     RENDER_DECIM = 20
 
     def get_action_chunk(self, observation):

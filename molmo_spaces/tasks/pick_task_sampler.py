@@ -717,20 +717,15 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             self._randomize_robot_standing_height(env)
             mujoco.mj_forward(env.current_model, env.current_data)
 
-            # Re-capture pickup_obj_start_pose here, AFTER height
-            # randomization -- _sample_and_place_robot (above) already set it
-            # once, but against the object's pre-randomization pose. Left
-            # uncorrected, every downstream lift_height computation
-            # (PickTask.get_reward/get_info, PickG1Task) measures against a
-            # stale reference: since randomize_height_favored skews the
-            # random draw toward the object's own (higher) natural height,
-            # the pre-randomization pose is typically well above the actual
-            # post-randomization starting height, so lift_height reads
-            # spuriously negative even when the object never moved at all
-            # after being placed. Matches g1_molmo's own ordering exactly:
-            # its env randomizes support height, *then* calls
-            # task.init_target_tracking (which sets _target_z0) --
-            # never the other way around.
+            # Re-capture pickup_obj_start_pose AFTER height randomization:
+            # _sample_and_place_robot already set it against the object's
+            # pre-randomization pose. Left stale, every lift_height computation
+            # (PickTask.get_reward/get_info, PickG1Task) measures from a
+            # reference typically above the real start height -- since
+            # randomize_height_favored skews toward the object's own natural
+            # height -- so lift_height reads negative for an object that never
+            # moved. g1_molmo orders it the same way: randomize support height,
+            # then init_target_tracking.
             pickup_obj_for_start_pose = om.get_object_by_name(pickup_obj_name)
             self.config.task_config.pickup_obj_start_pose = pose_mat_to_7d(
                 pickup_obj_for_start_pose.pose

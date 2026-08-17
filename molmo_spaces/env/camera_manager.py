@@ -14,6 +14,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation as R
 
+from molmo_spaces.configs.camera_configs import CameraNoiseModel, CameraResetCadence
 from molmo_spaces.env.data_views import MlSpacesBody
 
 if TYPE_CHECKING:
@@ -351,7 +352,7 @@ class CameraManager:
         Returns:
             Tuple of (noised_pos, noised_quat, noised_fov).
         """
-        if camera_config.noise_model == "body_frame_axis_angle":
+        if camera_config.noise_model == CameraNoiseModel.BODY_FRAME_AXIS_ANGLE:
             return CameraManager._apply_body_frame_axis_angle_noise(
                 camera_pos, camera_quat, camera_fov, camera_config, rng
             )
@@ -393,31 +394,25 @@ class CameraManager:
     def _check_reset_cadence_supported(camera_config) -> None:
         """Fail loudly on a reset_cadence this manager cannot honor.
 
-        Noise here is applied once, when the camera is registered, so "episode"
-        would silently behave as "setup" -- a camera distribution quietly
-        narrower than the config asks for, which is exactly the kind of thing
-        that is never noticed in a dataset.
+        Noise is applied once at registration, so "episode" would silently
+        behave as "setup" -- a narrower camera distribution than configured,
+        and not the kind of thing anyone notices in a dataset. The G1 is
+        exempt because G1TaskSampler redraws its cameras itself every reset.
 
-        The G1 is the exception, and the reason this is a check rather than a
-        hard rejection: g1_molmo_port's G1TaskSampler re-randomizes those two
-        cameras itself on every reset, so "episode" is already honored for them
-        -- just not by this class. They are identified by their noise_model,
-        which is the same "driven the g1_molmo way" marker.
-
-        TODO(max): switch to episode reset cadence per default -- teach this
-        manager to redraw on reset, point the G1 at it too, and then this
-        exemption and the "setup" default both go away.
+        TODO(max): make "episode" the default -- redraw on reset here, point
+        the G1 at it, and both the exemption and the "setup" default go away.
         """
         # noise_model lives on MjcfCameraConfig only; the other camera types have
-        # no G1 counterpart, so for them "episode" is always unimplemented.
+        # no G1 counterpart, so for them EPISODE is always unimplemented.
         if (
-            camera_config.reset_cadence == "episode"
-            and getattr(camera_config, "noise_model", None) != "body_frame_axis_angle"
+            camera_config.reset_cadence == CameraResetCadence.EPISODE
+            and getattr(camera_config, "noise_model", None)
+            != CameraNoiseModel.BODY_FRAME_AXIS_ANGLE
         ):
             raise NotImplementedError(
-                f"camera {camera_config.name!r} asks for reset_cadence='episode', which "
+                f"camera {camera_config.name!r} asks for reset_cadence=EPISODE, which "
                 "CameraManager does not implement -- it applies noise once at setup. Use "
-                "'setup', or drive the per-reset randomization outside this class the way "
+                "SETUP, or drive the per-reset randomization outside this class the way "
                 "g1_molmo_port's G1TaskSampler does for the G1 cameras."
             )
 
@@ -500,13 +495,12 @@ class CameraManager:
             camera_config.fov if camera_config.fov is not None else camera_obj.fovy[0]
         )  # this will raise an error if the fov is not set - desired behavior
 
-        # "body_frame_axis_angle" additionally specifies WHICH stream it draws
-        # from -- the env's seeded one, so the cameras are reproducible from the
-        # episode seed the way g1_molmo's are. The default model keeps drawing
-        # from global np.random; changing that would reshuffle every other
-        # robot's cameras, which is a separate decision from this one.
+        # BODY_FRAME_AXIS_ANGLE also specifies WHICH stream it draws from -- the
+        # env's seeded one, so cameras reproduce from the episode seed as
+        # g1_molmo's do. The default model still draws from global np.random;
+        # changing that would reshuffle every other robot's cameras.
         noise_rng = np.random
-        if camera_config.noise_model == "body_frame_axis_angle":
+        if camera_config.noise_model == CameraNoiseModel.BODY_FRAME_AXIS_ANGLE:
             noise_rng = getattr(env, "np_random", np.random)
 
         camera_pos, camera_quat, camera_fov = self.apply_mjcf_camera_noise(

@@ -164,22 +164,14 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
 
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
 
-    # g1_molmo has no mid-trajectory grip-quality abort at all: it never
-    # checks (or retries a plan over) how tightly the gripper closed --
-    # success is judged purely at the end, by the task's own reward/contact
-    # check (see PickG1Task). Our own TCPMoveSequence.check_failure's
-    # gripper_empty_threshold-based abort (base default 0.002) fires the
-    # instant the "lift" phase starts if the gripper closed too near its own
-    # fully-closed joint limit -- for a thin-rimmed object like a bowl, a
-    # perfectly good grip can land right in that rejection zone (confirmed
-    # empirically: real failures landed just 0.00003-0.0018m past threshold,
-    # firing before the lift motion had even begun), aborting a pick before
-    # it ever gets a chance to succeed. -inf disables the comparison
-    # entirely (inter_finger_dist can never be less than -inf) rather than
-    # just loosening the margin, matching g1_molmo's real "never abort for
-    # this reason" behavior. Safe to disable: PickG1Task's own success check
-    # independently requires real lift height AND real finger-object
-    # contact, so a genuinely-dropped object still can't report success.
+    # g1_molmo never aborts a pick on grip quality -- success is judged at the
+    # end by contact/reward (PickG1Task). Our TCPMoveSequence.check_failure
+    # aborts the instant "lift" starts if the gripper closed near its joint
+    # limit, which a thin-rimmed bowl does on a perfectly good grip (observed
+    # failures missed by 0.00003-0.0018m, before the lift had begun). -inf
+    # disables the comparison outright rather than loosening the margin,
+    # matching g1_molmo. Safe: PickG1Task still requires real lift height AND
+    # finger-object contact, so a dropped object cannot report success.
     gripper_empty_threshold: float = float("-inf")
 
     # g1_molmo's GraspPolicy.LIFT -- how far above the grasp pose the lift
@@ -305,24 +297,14 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     # needs to land within arm's reach, same requirement either policy has.
     walk_goal_distance_threshold: float = 0.5
 
-    # g1_molmo's GRASP_PROFILE (spawn_at_grasp=True, which PickG1DataGenConfig's
-    # short base_pose_sampling_radius_range=(0.2, 0.5) mirrors) never invokes A*
-    # walk-planning at all -- the env spawns the robot directly at the intended
-    # standoff pose, so start==goal by construction and there's nothing to walk.
-    # Our own task sampler places the robot within a similarly short radius of
-    # the object, but independently, via its own occupancy-based validity check
-    # -- not the same computation NavGoalSampler/A* use to pick and route to a
-    # standoff point, so the two don't always agree on what's "reachable" even
-    # when the robot is already sitting almost exactly there. Confirmed
-    # empirically: a real, deterministic case (procthor-10k-val house 0's bowl)
-    # where the robot spawns ~0.85m from a valid NavGoalSampler standoff point
-    # (comfortably within arm's reach, no meaningful walk needed) but A*'s
-    # coarse costmap reports no path at all -- almost certainly the robot's own
-    # spawn cell (right next to the same counter the bowl sits on) falling
-    # inside the wall-clearance inflation buffer that keeps the coarse grid
-    # simple. If the sampled standoff goal is already within this distance,
-    # skip A* and treat the robot as arrived on the spot, matching what
-    # g1_molmo's short-radius spawn effectively guarantees.
+    # g1_molmo's GRASP_PROFILE spawns the robot directly at the standoff pose,
+    # so start==goal and A* never runs. Our task sampler spawns within a similar
+    # radius but validates placement independently of NavGoalSampler/A*, so the
+    # two can disagree about reachability even when the robot is already there:
+    # in procthor-10k-val house 0, the robot spawns ~0.85m from a valid standoff
+    # point and A* still reports no path -- its spawn cell falls inside the
+    # coarse costmap's wall-clearance inflation. Within this distance, skip A*
+    # and treat the robot as arrived, which is what g1_molmo's spawn guarantees.
     direct_arrival_max_dist: float = 1.2
 
     # Walk goal for G1PickPlannerPolicy (the reference stack), which does its own

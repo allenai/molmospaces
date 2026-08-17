@@ -6,7 +6,7 @@ then uses ObjectMeta.short_descriptions (1/2/3 word name) to set the
 task_description using the appropriate template based on task_cls.
 
 This matches the runtime behavior of PromptSamplerLearnedPolicy
-(molmo_spaces.utils.prompt_sampler).
+(molmo_spaces.utils.prompt_samplers).
 """
 
 import argparse

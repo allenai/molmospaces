@@ -4,6 +4,7 @@ from enum import StrEnum
 
 import logging
 from abc import ABC
+from enum import StrEnum
 from typing import ClassVar, TypeAlias, TypeVar
 
 import numpy as np
@@ -15,37 +16,29 @@ from molmo_spaces.configs.abstract_config import Config
 T = TypeVar("T")
 Triple: TypeAlias = tuple[T, T, T]
 
-# Ways of rendering a fisheye camera; see CameraConfig.fisheye_backend for what
-# each one does and when to pick it.
-FISHEYE_BACKENDS = ("cubemap", "warping")
 
-# How a camera's pos/orientation/FOV noise is drawn and applied; see
-# MjcfCameraConfig.noise_model. Named for the convention each one uses, since
-# that -- not which robot happens to want it -- is what makes them differ.
-CAMERA_NOISE_MODELS = ("camera_local_euler", "body_frame_axis_angle")
+class FisheyeImpl(StrEnum):
+    """How a fisheye camera is rendered; see CameraConfig.fisheye_impl."""
 
-# How long a camera's sampled noise lasts; see MjcfCameraConfig.reset_cadence.
-CAMERA_RESET_CADENCES = ("setup", "episode")
+    CUBEMAP = "cubemap"
+    WARPING = "warping"
 
-# OpenCV fisheye calibration of the G1's real head lens, plus the capture size
-# (W, H) it was calibrated at. These are the values g1_molmo renders with.
-# They lived in utils/fisheye_cubemap.py as module-level HEAD_FISHEYE_*
-# defaults; a renderer that carries its own lens leaves two sources of truth the
-# moment a config declares one too, and the renderer's copy silently wins for
-# any caller that forgets to pass K/D. Config owns them now -- the renderer
-# requires them and has no fallback.
-G1_HEAD_FISHEYE_K = [
-    [801.6382129934864, 0.0, 976.1246839545557],
-    [0.0, 802.1081824931498, 542.7122090223202],
-    [0.0, 0.0, 1.0],
-]
-G1_HEAD_FISHEYE_D = [
-    -0.02559442829261663,
-    0.008371943913215045,
-    -0.006921566406199126,
-    0.0010132813066123071,
-]
-G1_HEAD_FISHEYE_IMAGE_SIZE = (1920, 1080)
+
+class CameraNoiseModel(StrEnum):
+    """How camera pos/orientation/FOV noise is drawn and applied; see
+    MjcfCameraConfig.noise_model. Named for the convention each one uses,
+    since that -- not which robot wants it -- is what makes them differ."""
+
+    CAMERA_LOCAL_EULER = "camera_local_euler"
+    BODY_FRAME_AXIS_ANGLE = "body_frame_axis_angle"
+
+
+class CameraResetCadence(StrEnum):
+    """How long a camera's sampled noise lasts; see
+    MjcfCameraConfig.reset_cadence."""
+
+    SETUP = "setup"
+    EPISODE = "episode"
 
 
 class CameraConfig(Config, ABC):
@@ -63,60 +56,39 @@ class CameraConfig(Config, ABC):
         False  # Skip erosion for object point sampling (useful for wide FOV cameras)
     )
 
-    # Which implementation produces the image when `is_warped` -- ignored
-    # otherwise, so it is safe to leave at the default on a pinhole camera.
-    #   "warping"  utils/fisheye_warping.py. Post-distorts a single pinhole
-    #              render with a radial k1..k4 model. One render, cheap, and
-    #              the right fit for a mild lens (the GoPro-style cameras every
-    #              non-G1 system here uses). It can only redistribute detail
-    #              the pinhole already captured, so beyond that field of view
-    #              the periphery is missing rather than curved.
-    #   "cubemap"  utils/fisheye_cubemap.py. Renders five wide tile cameras
-    #              sharing an optical center and composites them through an
-    #              OpenCV fisheye model calibrated on the real lens. Costs five
-    #              renders per frame, and needs the tile cameras to exist in
-    #              the MJCF -- so it is opt-in, for a true fisheye wide enough
-    #              that a single pinhole cannot cover it. The G1 head is the
-    #              only such camera today; see FisheyeMjcfCameraConfig.
-    fisheye_backend: str = "warping"
+    # Which implementation renders the image when `is_warped`; ignored otherwise.
+    #   WARPING  utils/fisheye_warping.py. Post-distorts one pinhole render with
+    #            a radial k1..k4 model. Cheap, and the right fit for the mild
+    #            GoPro-style lenses every non-G1 system here uses -- but it can
+    #            only redistribute detail the pinhole already captured, so the
+    #            periphery beyond that FOV is missing rather than curved.
+    #   CUBEMAP  utils/fisheye_cubemap.py. Composites five wide tile cameras
+    #            through an OpenCV fisheye model calibrated on the real lens.
+    #            Five renders per frame and needs the tile cameras in the MJCF,
+    #            so it is opt-in for a true fisheye too wide for one pinhole.
+    #            The G1 head is the only one today; see FisheyeMjcfCameraConfig.
+    fisheye_impl: FisheyeImpl = FisheyeImpl.WARPING
 
-    # How often this camera's position/orientation/FOV noise is redrawn. Every
-    # camera type here carries noise fields, so the choice lives on the base.
-    #   "setup"    Drawn once, when the camera is registered, and kept for the
-    #              camera's lifetime -- every episode in a run sees the same
-    #              mounting error, a fixed miscalibration rather than a varying
-    #              one. This repo's behavior and the default.
-    #   "episode"  Redrawn on every episode reset, around the un-noised pose
-    #              each time (not around the previous episode's, which would
-    #              random-walk). What g1_molmo does, and so what reproducing its
-    #              camera *distribution* takes -- matching the per-draw formula
-    #              alone is not enough. Both G1 cameras select it.
+    # How often this camera's pos/orientation/FOV noise is redrawn. Every camera
+    # type carries noise fields, so the choice lives on the base.
+    #   SETUP    Drawn once at registration and kept -- a fixed miscalibration
+    #            shared by every episode in a run. This repo's behavior.
+    #   EPISODE  Redrawn each episode reset around the un-noised pose (not the
+    #            previous episode's, which would random-walk). What g1_molmo
+    #            does, and what reproducing its camera *distribution* takes --
+    #            matching the per-draw formula alone is not enough.
     #
-    # Only honored where something actually redraws: env/camera_manager.py
-    # raises NotImplementedError on "episode" rather than silently treating it
-    # as "setup" (the G1 cameras are exempt -- g1_molmo_port's G1TaskSampler
-    # redraws those itself).
+    # Only honored where something actually redraws: camera_manager raises on
+    # EPISODE rather than silently downgrading it (the G1 cameras are exempt,
+    # G1TaskSampler redraws those itself).
     # TODO(max): switch to episode reset cadence per default.
-    reset_cadence: str = "setup"
+    reset_cadence: CameraResetCadence = CameraResetCadence.SETUP
 
     # Visibility constraints for robot placement validation (optional)
     # Maps body names to minimum visibility thresholds (0.0 to 1.0)
     # Can use special keys like "__gripper__" or "__task_objects__" (resolved at placement time)
     # If specified, these constraints will be checked during robot placement when enabled
     visibility_constraints: dict[str, float] | None = None
-
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
-        if self.fisheye_backend not in FISHEYE_BACKENDS:
-            raise ValueError(
-                f"unknown fisheye_backend {self.fisheye_backend!r} on camera "
-                f"{self.name!r}; expected one of {FISHEYE_BACKENDS}"
-            )
-        if self.reset_cadence not in CAMERA_RESET_CADENCES:
-            raise ValueError(
-                f"unknown reset_cadence {self.reset_cadence!r} on camera {self.name!r}; "
-                f"expected one of {CAMERA_RESET_CADENCES}"
-            )
 
 
 class FisheyeImpl(StrEnum):
@@ -165,46 +137,50 @@ class MjcfCameraConfig(CameraConfig):
 
     # How the three noise fields above are drawn and applied. Same magnitudes,
     # different conventions -- they do NOT produce the same cameras.
-    #   "camera_local_euler"     The offset is rotated into the camera frame
-    #                            before being added, the rotation is a per-axis
-    #                            xyz euler triple composed on the right
-    #                            (camera-local), and FOV is drawn first. This
-    #                            repo's own convention and the default.
-    #   "body_frame_axis_angle"  The offset is added in the parent body frame
-    #                            unrotated, the rotation is a single uniformly-
-    #                            random axis turned by a uniform angle and
-    #                            composed on the left (parent frame), and the
-    #                            draw order is position -> axis -> angle -> FOV.
-    #                            Also draws from the env's seeded RNG rather
-    #                            than global np.random, so the cameras are
-    #                            reproducible from the episode seed.
+    #   CAMERA_LOCAL_EULER     Offset rotated into the camera frame before being
+    #                          added; rotation is an xyz euler triple composed on
+    #                          the right; FOV drawn first. This repo's convention.
+    #   BODY_FRAME_AXIS_ANGLE  Offset added unrotated in the parent body frame;
+    #                          rotation is one uniform random axis turned by a
+    #                          uniform angle, composed on the left; draw order is
+    #                          position -> axis -> angle -> FOV. Draws from the
+    #                          env's seeded RNG, not global np.random, so the
+    #                          cameras reproduce from the episode seed.
     #
-    # Used by the G1: both its cameras select "body_frame_axis_angle" because it
-    # is g1_molmo's own `_perturb_camera` convention, and the G1 camera system
-    # exists to reproduce that stack's recordings (see G1CameraSystem).
-    # Everything else should stay on the default.
-    noise_model: str = "camera_local_euler"
+    # Both G1 cameras select BODY_FRAME_AXIS_ANGLE: it is g1_molmo's own
+    # `_perturb_camera` convention, and G1CameraSystem exists to reproduce that
+    # stack's recordings. Everything else stays on the default.
+    noise_model: CameraNoiseModel = CameraNoiseModel.CAMERA_LOCAL_EULER
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
-        if self.noise_model not in CAMERA_NOISE_MODELS:
-            raise ValueError(
-                f"unknown noise_model {self.noise_model!r} on camera {self.name!r}; "
-                f"expected one of {CAMERA_NOISE_MODELS}"
-            )
+
+# OpenCV fisheye calibration of the G1's real head lens and the (W, H) it was
+# calibrated at -- the values g1_molmo renders with. These used to be
+# HEAD_FISHEYE_* defaults inside utils/fisheye_cubemap.py, where the renderer's
+# copy silently won for any caller that forgot to pass K/D. Config owns them
+# now; the renderer requires them and has no fallback.
+G1_HEAD_FISHEYE_K = [
+    [801.6382129934864, 0.0, 976.1246839545557],
+    [0.0, 802.1081824931498, 542.7122090223202],
+    [0.0, 0.0, 1.0],
+]
+G1_HEAD_FISHEYE_D = [
+    -0.02559442829261663,
+    0.008371943913215045,
+    -0.006921566406199126,
+    0.0010132813066123071,
+]
+G1_HEAD_FISHEYE_IMAGE_SIZE = (1920, 1080)
 
 
 class FisheyeMjcfCameraConfig(MjcfCameraConfig):
-    """MJCF camera carrying the parameters the "cubemap" backend needs.
+    """MJCF camera carrying the parameters FisheyeImpl.CUBEMAP needs.
 
-    Only worth using when a camera sets `fisheye_backend="cubemap"` -- the
-    "warping" default takes none of these fields, so a plain MjcfCameraConfig
-    is enough for it. The G1 head is the one camera here wide enough to need
-    the cubemap path; see G1CameraSystem.
+    Only worth using with `fisheye_impl=CUBEMAP` -- the WARPING default reads
+    none of these fields. The G1 head is the one camera wide enough to need it;
+    see G1CameraSystem.
 
-    `fov` stays the pinhole camera's own field of view and `tile_fov` the tile
-    cameras', so both render paths take their field of view from this config
-    and neither can drift from it silently.
+    `fov` stays the pinhole camera's FOV and `tile_fov` the tile cameras', so
+    both render paths take their FOV from this config and neither drifts.
     """
 
     # (cubemap) Suffixes appended to mjcf_name to find the tile cameras. Order is
@@ -218,10 +194,8 @@ class FisheyeMjcfCameraConfig(MjcfCameraConfig):
     tile_size: int = 512
     # (cubemap) Cosine-falloff exponent blending overlapping tiles; FisheyeRenderer default.
     weight_power: float = 4.0
-    # (cubemap) OpenCV fisheye intrinsics/distortion and the (W, H) capture size
-    # they were calibrated at. Default to the G1 head lens, the only one this
-    # backend renders today; a different lens must say so here, because
-    # utils/fisheye_cubemap.py no longer keeps a calibration of its own.
+    # (cubemap) Lens calibration, defaulting to the G1 head above -- the only
+    # lens this impl renders today. A different lens must say so here.
     fisheye_K: list[list[float]] = G1_HEAD_FISHEYE_K
     fisheye_D: list[float] = G1_HEAD_FISHEYE_D
     fisheye_image_size: tuple[int, int] = G1_HEAD_FISHEYE_IMAGE_SIZE
@@ -636,36 +610,27 @@ class G1CameraSystem(CameraSystemConfig):
             fov=None,
             # The real head camera is a fisheye.
             is_warped=True,
-            # g1_molmo renders this head as a cubemap composite, so "warping"
+            # g1_molmo renders this head as a cubemap composite, so WARPING
             # would not reproduce its recordings however well it is tuned.
-            fisheye_backend="cubemap",
+            fisheye_impl=FisheyeImpl.CUBEMAP,
             # g1_molmo's render_fisheye(tile_size=512) over the five fovy=100
-            # head_pov_tile_* cameras. The lens is the G1_HEAD_FISHEYE_* default
-            # of fisheye_K/D/image_size -- the same calibration g1_molmo warps
-            # with, now declared at the top of this module.
+            # head_pov_tile_* cameras, on the G1_HEAD_FISHEYE_* default lens.
             tile_fov=100.0,
             tile_size=512,
-            # head_camera_pos_noise=0.01, head_camera_rot_noise=0.0349 rad,
-            # drawn and applied g1_molmo's way rather than this repo's default,
-            # and redrawn every episode as g1_molmo does -- which is already
-            # what g1_molmo_port's G1TaskSampler does for this camera. NOTE:
-            # molmo_spaces' own camera_manager still applies noise once at setup
-            # and does not yet honor reset_cadence, so on that path this
-            # currently describes the intent rather than driving it.
-            noise_model="body_frame_axis_angle",
-            reset_cadence="episode",
+            # head_camera_pos_noise=0.01, head_camera_rot_noise=0.0349 rad.
+            # G1TaskSampler already redraws these per episode; camera_manager
+            # does not, so on that path EPISODE states intent, not behavior.
+            noise_model=CameraNoiseModel.BODY_FRAME_AXIS_ANGLE,
+            reset_cadence=CameraResetCadence.EPISODE,
             orientation_noise_degrees=2.0,
             pos_noise_range=(-0.01, 0.01),
             # head_camera_distortion_noise=0.2, and the /90 focal scaling that
             # g1_molmo's fovy noise uses on a fisheye.
             distortion_noise=0.2,
             fov_noise_focal_divisor=90.0,
-            # head_camera_fovy_noise=2.0. g1_molmo applies this to the fisheye
-            # by scaling K's focal lengths by 1 + u/90 rather than by moving
-            # cam_fovy, and additionally jitters D by
-            # head_camera_distortion_noise=0.2; G1TaskSampler does the same,
-            # perturbing around fisheye_K/fisheye_D above. On molmo_spaces' own
-            # pinhole render path this perturbs the FOV instead.
+            # head_camera_fovy_noise=2.0. On the fisheye g1_molmo applies this by
+            # scaling K's focal lengths by 1 + u/90 rather than moving cam_fovy;
+            # on molmo_spaces' pinhole path it perturbs the FOV instead.
             fov_noise_degrees=(-2.0, 2.0),
         ),
         MjcfCameraConfig(
@@ -676,15 +641,10 @@ class G1CameraSystem(CameraSystemConfig):
             # g1_molmo records RGB video only -- its LeRobotRecorder builds one
             # "video" feature per camera and no depth feature at all.
             record_depth=False,
-            # wrist_camera_pos_noise=0.01, wrist_camera_rot_noise=0.0349 rad,
-            # drawn and applied g1_molmo's way rather than this repo's default,
-            # and redrawn every episode as g1_molmo does -- which is already
-            # what g1_molmo_port's G1TaskSampler does for this camera. NOTE:
-            # molmo_spaces' own camera_manager still applies noise once at setup
-            # and does not yet honor reset_cadence, so on that path this
-            # currently describes the intent rather than driving it.
-            noise_model="body_frame_axis_angle",
-            reset_cadence="episode",
+            # wrist_camera_pos_noise=0.01, wrist_camera_rot_noise=0.0349 rad;
+            # same caveat as head_camera above.
+            noise_model=CameraNoiseModel.BODY_FRAME_AXIS_ANGLE,
+            reset_cadence=CameraResetCadence.EPISODE,
             orientation_noise_degrees=2.0,
             pos_noise_range=(-0.01, 0.01),
             # wrist_camera_fovy_noise=2.0
