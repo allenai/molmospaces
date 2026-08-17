@@ -1637,10 +1637,13 @@ class G1Controller:
 
     def get_action_chunk(self, observation):
         """BasePolicy.get_action_chunk's calling convention -- see
-        get_action's docstring. Always a single-action chunk (no
-        FetchmanPickPlannerPolicy-style RENDER_DECIM batching), so callers
-        written against either policy's `get_action_chunk(obs) or
-        [get_action(obs)]` fallback pattern work here too."""
+        get_action's docstring. Always a single-action chunk, so callers
+        written against the `get_action_chunk(obs) or [get_action(obs)]`
+        fallback pattern work here too.
+
+        Render decimation lives in G1PickPlannerPolicy.get_action_chunk, not
+        here: this class's caller is env_g1ms, whose _build_obs renders
+        nothing, so there is no per-tick cost to defer on this path."""
         return [self.sample_actions(observation)]
 
     # molmo_spaces' PlannerPolicy interface (molmo_spaces/policy/base_policy.py)
@@ -1989,6 +1992,54 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         flat = self._controller.sample_actions(observation)
         self._publish_grasp_pose()
         return self._flat_to_move_groups(flat)
+
+    # Defer rendering during the grasp phase. molmo_spaces' own per-tick
+    # observation genuinely renders camera sensor images (PickG1DataGenConfig's
+    # G1CameraSystem), unlike g1_molmo's env.step, whose _build_obs is pure
+    # analytic math -- so there is real per-tick cost here that the reference
+    # stack never had to pay. Without this, BaseMujocoTask.step_chunk polls
+    # sensors (and ParallelRolloutRunner syncs the viewer) once per physics
+    # tick.
+    #
+    # This is FetchmanPickPlannerPolicy's RENDER_DECIM, restored: that policy
+    # carried this optimization until it was retired for the reference stack,
+    # and the value came with it. What matters is *how* the ticks are driven --
+    # an earlier version precomputed all RENDER_DECIM actions from one frozen
+    # observation, which starved the IK of fresh state (identical solutions
+    # repeated for several consecutive solves, then jumping discontinuously,
+    # with ~4x gold's position error). The correct form is below: drive
+    # RENDER_DECIM-1 real physics ticks here, one at a time via
+    # task._apply_action -- the same primitive step_chunk itself uses, ctrl +
+    # mj_step with no sensor polling -- so every sample_actions() call still
+    # sees fresh robot_view/mj_data. Only the final tick goes back in the chunk
+    # for the driver to apply and render, once.
+    #
+    # The gait clock stays correct by construction: sample_actions advances
+    # _low_level._step_counter itself (this policy sets _external_gait_clock so
+    # the robot doesn't also advance it), and every get_action here is paired
+    # with exactly one _apply_action -- the same 1:1 ratio as the unchunked
+    # path. Re-check this if either side of that pairing changes.
+    RENDER_DECIM = 20
+
+    def get_action_chunk(self, observation):
+        """Drive RENDER_DECIM-1 ticks of physics here, returning a one-action
+        chunk for the caller's normal step_chunk to apply and render.
+
+        Restricted to the grasp phase (`_arrived`). The walk phase steers off
+        per-tick position feedback in _update_nav_command and stays unchunked.
+        """
+        if not self._controller._arrived:
+            return None
+        for _ in range(self.RENDER_DECIM - 1):
+            action = self.get_action(observation)
+            # step_chunk pops "done" and records it; hand the terminal action
+            # back rather than consuming it here.
+            if action.get("done"):
+                return [action]
+            self.task._apply_action(action)
+            if np.all(self.task.is_done()):
+                break
+        return [self.get_action(observation)]
 
     def _flat_to_move_groups(self, flat) -> dict:
         """Reference flat-15 -> molmo_spaces move-group dict (see
