@@ -45,12 +45,12 @@ from typing import TYPE_CHECKING, Any
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.robot_configs import ActionNoiseConfig
 from molmo_spaces.data_generation.config_registry import get_config_class
-from molmo_spaces.evaluation.robot_eval_overrides import OverrideFn
 from molmo_spaces.evaluation.benchmark_schema import (
     EpisodeSpec,
     load_all_episodes,
 )
 from molmo_spaces.evaluation.json_eval_runner import JsonEvalRunner
+from molmo_spaces.evaluation.robot_eval_overrides import OverrideFn
 from molmo_spaces.molmo_spaces_constants import DATA_TYPE_TO_SOURCE_TO_VERSION
 from molmo_spaces.utils.eval_utils import (
     EpisodeResult,
@@ -207,6 +207,15 @@ def get_args():
         help="Output directory for evaluation results. Defaults to eval_output/<config>/<timestamp>.",
     )
     parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Resume a previously terminated run from the given folder. Outputs are written "
+        "directly into this folder (no timestamp/config nesting), and any house whose "
+        "trajectories*.h5 already exists there is skipped. Overrides --output_dir. "
+        "If the folder is empty or doesn't exist, it is used as the output dir for a fresh run.",
+    )
+    parser.add_argument(
         "--num_workers",
         type=int,
         default=1,
@@ -270,6 +279,53 @@ def get_args():
         default=None,
         help="The natural language name for the custom object (e.g., 'lemon', 'cup'). "
         "If not provided, will attempt to extract from the object path but could be incorrect.",
+    )
+    parser.add_argument(
+        "--viewer",
+        action="store_true",
+        help="Launch MuJoCo passive viewer (run with mjpython).",
+    )
+    parser.add_argument(
+        "--end_on_success",
+        action="store_true",
+        help="Terminate episodes early when task success is detected in step info.",
+    )
+    parser.add_argument(
+        "--house_inds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Only evaluate episodes from these house indices. Mutually exclusive with --house_inds_range.",
+    )
+    parser.add_argument(
+        "--house_inds_range",
+        type=int,
+        nargs=2,
+        metavar=("LO", "HI"),
+        default=None,
+        help="Only evaluate episodes whose house_index falls in the half-open range [LO, HI). "
+        "Useful for sharding a benchmark across multiple jobs. Mutually exclusive with --house_inds.",
+    )
+    parser.add_argument(
+        "--policy_host",
+        type=str,
+        default=None,
+        help="Override the policy remote_config host (e.g., for PI policy server).",
+    )
+    parser.add_argument(
+        "--policy_port",
+        type=int,
+        default=None,
+        help="Override the policy remote_config port (e.g., for PI policy server).",
+    )
+    parser.add_argument(
+        "--prompt_level",
+        type=int,
+        choices=[1, 2, 3],
+        default=None,
+        help="Override policy_config.prompt_level (semantic_grasp_pick ablation). "
+        "1=basic 'pick up the {object}.', 2=existing semantic prompts, "
+        "3='pick up the {object} by the {part}.'. If unset, uses the value from the eval config.",
     )
     return parser.parse_args()
 
@@ -461,6 +517,14 @@ def run_evaluation(
     add_custom_object: bool = False,
     custom_object_path: str | Path | None = None,
     custom_object_name: str | None = None,
+    viewer: bool = False,
+    end_on_success: bool = False,
+    house_inds: list[int] | None = None,
+    house_inds_range: tuple[int, int] | None = None,
+    policy_host: str | None = None,
+    policy_port: int | None = None,
+    prompt_level: int | None = None,
+    resume: str | Path | None = None,
 ) -> EvaluationResults:
     """Run evaluation on a JSON benchmark programmatically.
 
@@ -490,6 +554,9 @@ def run_evaluation(
         custom_object_path: Path to the custom object XML file. Required if add_custom_object is True.
         custom_object_name: Natural language name for the custom object (e.g., 'lemon', 'cup').
             If not provided, will attempt to extract from the object path.
+        resume: If set, resume a previous run by writing outputs directly into this folder
+            (no timestamp/config nesting). Houses whose trajectories*.h5 already exists are
+            skipped by the pipeline. Overrides output_dir.
 
     Returns:
         EvaluationResults containing success counts, output paths, and per-episode details.
@@ -559,6 +626,18 @@ def run_evaluation(
         else:
             log.info(f"Using provided custom object name: {custom_object_name}")
 
+    if house_inds is not None and house_inds_range is not None:
+        raise ValueError("house_inds and house_inds_range are mutually exclusive")
+    if house_inds_range is not None:
+        lo, hi = house_inds_range
+        if lo >= hi:
+            raise ValueError(f"house_inds_range LO ({lo}) must be strictly less than HI ({hi})")
+        house_inds = sorted({ep.house_index for ep in episodes if lo <= ep.house_index < hi})
+        log.info(f"Resolved --house_inds_range [{lo}, {hi}) to {len(house_inds)} house indices.")
+    if house_inds is not None:
+        house_inds_set = set(house_inds)
+        episodes = [ep for ep in episodes if ep.house_index in house_inds_set]
+        log.info(f"Filtered to {len(episodes)} episodes for house_inds={house_inds}")
     if max_episodes is not None and len(episodes) > max_episodes:
         log.info(f"Evaluating the first {max_episodes} episodes of {len(episodes)} total episodes")
         episodes = episodes[:max_episodes]
@@ -585,11 +664,37 @@ def run_evaluation(
     else:
         config_name = eval_config_cls.__name__
 
-    if output_dir is not None:
+    if resume is not None:
+        resolved_output_dir = Path(resume)
+        if output_dir is not None:
+            log.warning(
+                "--resume overrides --output_dir; using resume folder %s for outputs",
+                resolved_output_dir,
+            )
+    elif output_dir is not None:
         resolved_output_dir = Path(output_dir) / config_name / timestamp
     else:
         resolved_output_dir = Path("eval_output") / config_name / timestamp
     os.makedirs(resolved_output_dir, exist_ok=True)
+
+    if resume is not None:
+        resumed_houses = sorted(
+            int(p.parent.name.removeprefix("house_"))
+            for p in resolved_output_dir.glob("house_*/trajectories*.h5")
+            if p.parent.name.startswith("house_") and p.parent.name.removeprefix("house_").isdigit()
+        )
+        if resumed_houses:
+            log.info(
+                "Resume: %d house(s) already have trajectories in %s and will be skipped: %s",
+                len(resumed_houses),
+                resolved_output_dir,
+                resumed_houses,
+            )
+        else:
+            log.info(
+                "Resume: no existing trajectories found in %s; starting fresh in this folder.",
+                resolved_output_dir,
+            )
 
     # Determine task horizon
     assert not (task_horizon_steps is not None and task_horizon_sec is not None), (
@@ -620,7 +725,35 @@ def run_evaluation(
         camera_config_override=camera_config_override,
     )
 
-    # Custom filament settings to overwrite by the user
+    # CLI can force early termination on success; otherwise the eval config's
+    # end_on_success default applies.
+    if end_on_success:
+        exp_config.end_on_success = True
+
+    # Override policy remote_config host/port if provided
+    if policy_host is not None or policy_port is not None:
+        remote_config = getattr(exp_config.policy_config, "remote_config", None)
+        if remote_config is None:
+            remote_config = {}
+            exp_config.policy_config.remote_config = remote_config
+        if policy_host is not None:
+            remote_config["host"] = policy_host
+        if policy_port is not None:
+            remote_config["port"] = policy_port
+
+    # Override prompt_level if provided (semantic_grasp_pick ablation switch).
+    if prompt_level is not None:
+        if not hasattr(exp_config.policy_config, "prompt_level"):
+            raise ValueError(
+                f"--prompt_level was set but {type(exp_config.policy_config).__name__} "
+                f"has no prompt_level field."
+            )
+        exp_config.policy_config.prompt_level = prompt_level
+
+    # Viewer
+    if viewer:
+        exp_config.use_passive_viewer = True
+
     exp_config.environment_light_intensity = (
         environment_light_intensity or exp_config.environment_light_intensity
     )
@@ -678,7 +811,7 @@ def run_evaluation(
     # Run evaluation
     # Only pass preloaded policy for single-worker mode. With multiple workers,
     # each worker must create its own connection (WebSocket/msgpack can't be pickled).
-    runner = JsonEvalRunner(exp_config, benchmark_dir)
+    runner = JsonEvalRunner(exp_config, benchmark_dir, house_inds=house_inds)
     success_count, total_count = runner.run(preloaded_policy=preloaded_policy)
 
     # Collect per-episode results
@@ -753,6 +886,14 @@ def main() -> None:
         add_custom_object=args.add_custom_object,
         custom_object_path=args.custom_object_path,
         custom_object_name=args.custom_object_name,
+        viewer=args.viewer,
+        end_on_success=args.end_on_success,
+        house_inds=args.house_inds,
+        house_inds_range=tuple(args.house_inds_range) if args.house_inds_range else None,
+        policy_host=args.policy_host,
+        policy_port=args.policy_port,
+        prompt_level=args.prompt_level,
+        resume=args.resume,
     )
 
     log.info(f"Evaluation complete: {results.success_count}/{results.total_count} successful")
