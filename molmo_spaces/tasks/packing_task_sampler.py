@@ -23,6 +23,8 @@ DEFAULT_BOX_UIDS = [f"Box_{i}" for i in range(1, 31)]
 
 
 class PackingTaskSampler(PickAndPlaceTaskSampler):
+    task_cls = PackingTask
+
     def __init__(self, config: "PackingDataGenConfig") -> None:
         assert config.task_type == "packing"
         super().__init__(config)
@@ -121,10 +123,10 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
 
         mujoco.mj_forward(model, data)
 
-    def _sample_task(self, env: CPUMujocoEnv) -> PackingTask:
+    def _configure_episode(self, env: CPUMujocoEnv) -> None:
         """Sample a packing task — open box flaps, then delegate placement to parent."""
         # First let parent handle all placement (box, robot, cameras)
-        _ = super()._sample_task(env)
+        super()._configure_episode(env)
 
         # Open flaps AFTER placement so nothing can overwrite the qpos values
         self._open_box_flaps(env)
@@ -136,5 +138,3 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
             jnt_name = model.joint(i).name
             if namespace in jnt_name and "flap" in jnt_name:
                 log.info(f"VERIFY '{jnt_name}': qpos={data.qpos[model.jnt_qposadr[i]]:.3f}")
-
-        return PackingTask(env, self.config)

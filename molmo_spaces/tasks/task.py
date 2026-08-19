@@ -86,8 +86,18 @@ class BaseMujocoTask(ABC):
         # Optional profiler for granular timing (set via set_datagen_profiler)
         self._datagen_profiler = None
 
+        self._on_episode_configured()
+
         # Please don't call self.reset() here. reset should return the first observation, if we do it in
         # __init__ it will end up in the cache, but not being returned to the user.
+
+    def _on_episode_configured(self) -> None:  # noqa: B027 - optional hook, not abstract
+        """Derive per-episode state from ``self.config`` and the current scene.
+
+        Anything a task caches from its config or the scene belongs here rather
+        than in ``__init__``, so it can be recomputed when the same task object is
+        pointed at a freshly sampled episode.
+        """
 
     @property
     def sensor_suite(self) -> SensorSuite | None:

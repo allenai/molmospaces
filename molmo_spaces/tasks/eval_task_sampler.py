@@ -13,7 +13,6 @@ from molmo_spaces.env.data_views import (
 )
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
-from molmo_spaces.tasks.pick_task import PickTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 from molmo_spaces.utils.constants.object_constants import (
     THOR_PICKUP_OBJECTS_LOWERCASE,
@@ -202,8 +201,12 @@ class EvalTaskSampler(PickTaskSampler):
 
         log.info("Scene setup completed.\n")
 
-    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
-        """Sample a pick-and-place task configuration and create the task."""
+    @property
+    def task_class(self):
+        return self.config.task_config.task_cls
+
+    def _configure_episode(self, env: CPUMujocoEnv) -> None:
+        """Sample a pick-and-place task configuration."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
         assert env.current_batch_index == 0
@@ -228,9 +231,6 @@ class EvalTaskSampler(PickTaskSampler):
         # Setup cameras after pickup object and robot placement
         # This allows cameras to use task-specific info (pickup object, workspace center)
         self.setup_cameras(env)
-
-        task = self.config.task_config.task_cls(env, self.config)
-        return task
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         """Sample a pickup object and receptacle, place robot using occupancy map, and return sampled params.
@@ -290,8 +290,12 @@ class DefaulEvalTaskSampler(BaseMujocoTaskSampler):
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
         return
 
-    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
-        """Sample a pick-and-place task configuration and create the task."""
+    @property
+    def task_class(self):
+        return self.config.task_config.task_cls
+
+    def _configure_episode(self, env: CPUMujocoEnv) -> None:
+        """Sample a pick-and-place task configuration."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
         assert env.current_batch_index == 0
@@ -310,9 +314,6 @@ class DefaulEvalTaskSampler(BaseMujocoTaskSampler):
         # Setup cameras after pickup object and robot placement
         # This allows cameras to use task-specific info (pickup object, workspace center)
         self.setup_cameras(env)
-
-        task = self.config.task_config.task_cls(env, self.config)
-        return task
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         task_cfg = self.config.task_config
