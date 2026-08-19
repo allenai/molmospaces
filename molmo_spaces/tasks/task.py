@@ -40,15 +40,7 @@ class BaseMujocoTask(ABC):
         env: BaseMujocoEnv,
         exp_config: "MlSpacesExpConfig",
     ) -> None:
-        self._env = env
-        self._ctrl_dt_ms = exp_config.ctrl_dt_ms
-        sim_dt_ms = round(self._env.mj_model.opt.timestep * 1000)
-        if self._ctrl_dt_ms % sim_dt_ms != 0:
-            raise ValueError(
-                f"Control dt {self._ctrl_dt_ms}ms is not divisible by sim dt {sim_dt_ms}ms"
-            )
-        self._n_sim_steps_per_ctrl = int(self._ctrl_dt_ms // sim_dt_ms)
-        self._n_ctrl_steps_per_policy = int(exp_config.policy_dt_ms // self._ctrl_dt_ms)
+        self._bind_env(env, exp_config)
         self._task_horizon = (
             exp_config.task_horizon if exp_config.task_horizon is not None else np.inf
         )
@@ -90,6 +82,25 @@ class BaseMujocoTask(ABC):
 
         # Please don't call self.reset() here. reset should return the first observation, if we do it in
         # __init__ it will end up in the cache, but not being returned to the user.
+
+    def _bind_env(self, env: BaseMujocoEnv, exp_config: "MlSpacesExpConfig") -> None:
+        """Point this task at ``env`` and derive the step ratios from its model.
+
+        Loading a scene builds a *new* ``CPUMujocoEnv`` around the newly compiled
+        model (see ``BaseMujocoTaskSampler.update_scene``), so a task that outlives
+        a scene change has to re-bind rather than keep its original env: the sim
+        timestep, and hence the number of sim steps per control step, comes from
+        ``env.mj_model``.
+        """
+        self._env = env
+        self._ctrl_dt_ms = exp_config.ctrl_dt_ms
+        sim_dt_ms = round(env.mj_model.opt.timestep * 1000)
+        if self._ctrl_dt_ms % sim_dt_ms != 0:
+            raise ValueError(
+                f"Control dt {self._ctrl_dt_ms}ms is not divisible by sim dt {sim_dt_ms}ms"
+            )
+        self._n_sim_steps_per_ctrl = int(self._ctrl_dt_ms // sim_dt_ms)
+        self._n_ctrl_steps_per_policy = int(exp_config.policy_dt_ms // self._ctrl_dt_ms)
 
     def _on_episode_configured(self) -> None:  # noqa: B027 - optional hook, not abstract
         """Derive per-episode state from ``self.config`` and the current scene.
