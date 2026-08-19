@@ -17,6 +17,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+import gymnasium as gym
 import numpy as np
 from numpy.typing import NDArray
 
@@ -24,22 +25,55 @@ from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.data_views import MlSpacesObjectAbstract
 from molmo_spaces.env.env import BaseMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
+from molmo_spaces.tasks.task_sampler_errors import EpisodesExhausted
 
 if TYPE_CHECKING:
     from molmo_spaces.configs import BaseMujocoTaskConfig
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.policy.base_policy import BasePolicy
+    from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 
 
 log = logging.getLogger(__name__)
 
 
-class BaseMujocoTask(ABC):
+class BaseMujocoTask(gym.Env, ABC):
+    """A task, and the gymnasium env for that task.
+
+    Two ways to build one:
+
+    * ``Task(sim_env, exp_config)`` -- the sampler has already configured the
+      episode in ``sim_env``; this is what ``BaseMujocoTaskSampler._sample_task``
+      does and what data generation uses.
+    * ``Task(exp_config=cfg, configure=True)`` -- the task creates its own
+      sampler, has it prepare a scene and sample an episode, and binds to the
+      resulting sim env. This is the gymnasium entry point.
+
+    See ``docs/gym_compatibility.md`` for which parts of the gymnasium contract
+    hold; notably there is no ``action_space`` and only ``n_batch == 1`` is
+    supported.
+    """
+
     def __init__(
         self,
-        env: BaseMujocoEnv,
-        exp_config: "MlSpacesExpConfig",
+        env: BaseMujocoEnv | None = None,
+        exp_config: "MlSpacesExpConfig | None" = None,
+        *,
+        task_sampler: "BaseMujocoTaskSampler | None" = None,
+        configure: bool = False,
+        episode_options: dict[str, Any] | None = None,
     ) -> None:
+        if exp_config is None:
+            raise ValueError("exp_config is required")
+
+        self._sampler = task_sampler
+        self._owns_sampler = False
+
+        if configure:
+            env = self._configure_own_episode(exp_config, episode_options)
+        elif env is None:
+            raise ValueError("env is required unless configure=True")
+
         self._bind_env(env, exp_config)
         self._task_horizon = (
             exp_config.task_horizon if exp_config.task_horizon is not None else np.inf
@@ -80,8 +114,54 @@ class BaseMujocoTask(ABC):
 
         self._on_episode_configured()
 
+        if configure:
+            self._finalize_own_episode()
+
         # Please don't call self.reset() here. reset should return the first observation, if we do it in
         # __init__ it will end up in the cache, but not being returned to the user.
+
+    def _configure_own_episode(
+        self,
+        exp_config: "MlSpacesExpConfig",
+        episode_options: dict[str, Any] | None = None,
+    ) -> BaseMujocoEnv:
+        """Have this task's sampler prepare a scene and sample an episode into it.
+
+        Runs the same sampler steps, in the same order, as
+        ``BaseMujocoTaskSampler._sample_task`` -- the difference being that the
+        task already exists, so there is nothing to construct.
+
+        Returns:
+            The sim env the episode was sampled into. Note this is read from the
+            sampler *after* preparing the scene, because loading a scene replaces
+            the sim env.
+        """
+        if self._sampler is None:
+            self._sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
+            self._owns_sampler = True
+
+        if not self._sampler.prepare_episode(**(episode_options or {})):
+            raise EpisodesExhausted(
+                f"{type(self._sampler).__name__} is out of tasks (max_tasks reached); "
+                f"call task_sampler.reset() to start over."
+            )
+
+        sim_env = self._sampler.env
+        if sim_env.n_batch != 1:
+            raise ValueError(
+                f"The gymnasium interface is single-environment only, got "
+                f"n_batch={sim_env.n_batch}. Use the task sampler directly for batches."
+            )
+
+        self._sampler._configure_episode(sim_env)
+        return sim_env
+
+    def _finalize_own_episode(self) -> None:
+        """Run the sampler's post-construction steps against this task."""
+        if self._sampler is None:
+            return
+        self._sampler._post_construct(self)
+        self._sampler.finalize_episode(self)
 
     def _bind_env(self, env: BaseMujocoEnv, exp_config: "MlSpacesExpConfig") -> None:
         """Point this task at ``env`` and derive the step ratios from its model.

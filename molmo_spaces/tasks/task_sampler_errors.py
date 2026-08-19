@@ -45,3 +45,11 @@ class HouseInvalidForTask(Exception):
             message = "House invalid for tasks due to physics constraints"
 
         super().__init__(message)
+
+
+class EpisodesExhausted(Exception):
+    """A task sampler bounded by ``max_tasks`` has no episodes left.
+
+    The sampler-driven path signals this by returning ``None`` from
+    ``sample_task()``; the gymnasium path has no equivalent, so it raises.
+    """
