@@ -1,4 +1,5 @@
 import logging
+import threading
 from collections.abc import Collection
 from typing import TYPE_CHECKING
 
@@ -25,19 +26,21 @@ from molmo_spaces.tasks.task_sampler_errors import (
 )
 from molmo_spaces.utils.asset_names import get_thor_name
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
+from molmo_spaces.utils.grasp_sample import (
+    get_grasp_collision_body_name,
+    get_noncolliding_grasp_mask,
+)
 from molmo_spaces.utils.grasps import (
     get_pickup_grasps,
     has_pickup_grasp_path,
     has_valid_pickup_grasps,
 )
-from molmo_spaces.utils.grasp_sample import (
-    get_noncolliding_grasp_mask,
-)
 from molmo_spaces.utils.lazy_loading_utils import install_uid
 from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
 from molmo_spaces.utils.mujoco_scene_utils import get_supporting_geom, place_object_near
 from molmo_spaces.utils.object_metadata import ObjectMeta
-from molmo_spaces.utils.pose import pos_quat_to_pose_mat, pose_mat_to_7d
+from molmo_spaces.utils.pose import pose_mat_to_7d
+from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 from molmo_spaces.utils.task_relevant_objects_and_workspace_utils import (
     compute_workspace_center,
     get_task_relevant_objects,
@@ -45,6 +48,8 @@ from molmo_spaces.utils.task_relevant_objects_and_workspace_utils import (
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.base_pick_config import PickBaseConfig
+
+INTERSECTION_THRESHOLD = -0.005
 
 
 log = logging.getLogger(__name__)
@@ -134,6 +139,24 @@ def _get_cached_valid_pickupables(
     return _VALID_PICKUPABLE_CACHE
 
 
+class SameClassClutterMetadataAdder:
+    """Helper class to add metadata for dynamically added clutter objects."""
+
+    def __init__(self, name_to_meta: dict) -> None:
+        self.pending = True
+        self.lock = threading.Lock()
+        self.name_to_meta = name_to_meta
+
+    def add_meta(self, metadata):
+        if self.pending:
+            with self.lock:
+                if self.pending:
+                    for name, meta in self.name_to_meta.items():
+                        if name not in metadata["objects"]:
+                            metadata["objects"][name] = meta
+                    self.pending = False
+
+
 class PickTaskSampler(BaseMujocoTaskSampler):
     """
     Default task sampler for pick tasks with house iteration control.
@@ -162,6 +185,16 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         self._added_pickup_staging_poses: dict = {}
         self.added_objects: dict = {}
         self._valid_candidate_uids: list[str] | None = None
+        # Same-class clutter object tracking
+        # Maps asset_id -> list of clutter object names that were pre-added
+        self._same_class_clutter_objects: dict[str, list[str]] = {}
+        self._same_class_clutter_metadata_adder: SameClassClutterMetadataAdder | None = None
+        # Store the current scene path for use in add_auxiliary_objects
+        self._current_scene_path: str | None = None
+        # Computed robot qpos to be applied after cluttering
+        self._init_robot_qpos: dict[str, np.ndarray] = {}
+        # Names of clutter objects (plus the pickup object) placed for the current task
+        self._placed_clutter_object_names: list[str] = []
 
     def _remove_candidate_object(self, obj_name: str) -> None:
         """Remove an object from candidate_objects list."""
@@ -186,11 +219,189 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             self._remove_candidate_object(obj_name)
             log.info(f"Removed {obj_name} after {count} grasp failures (threshold: {max_failures})")
 
+    def update_scene(self, scene_path: str | None = None, variant: str = "base") -> None:
+        """Override to store scene path for use in add_auxiliary_objects."""
+        if scene_path is None:
+            scene_path = self._current_house_scene_path(variant=variant)
+        # Store for use in add_auxiliary_objects
+        self._current_scene_path = scene_path
+        # Reset clutter tracking for new scene
+        self._same_class_clutter_objects = {}
+        self._same_class_clutter_metadata_adder = None
+        super().update_scene(scene_path=scene_path, variant=variant)
+
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
         """Use this function to put task specific assets into the scene."""
         self.config.policy_config.policy_cls.add_auxiliary_objects(self.config, spec)
         if self.config.task_sampler_config.added_pickup_objects is not None:
             self._add_pickupables_to_scene(spec)
+
+        # Add same-class clutter objects if enabled
+        if self.config.task_sampler_config.clutter_with_same_class_objects:
+            self._add_same_class_clutter_objects(spec)
+
+    def _add_same_class_clutter_objects(self, spec: MjSpec) -> None:
+        """Pre-add clutter objects for same-class cluttering.
+
+        For each unique asset in the scene that matches pickup_types,
+        we add num_clutter_objects instances that will be positioned later.
+        """
+        if self._current_scene_path is None:
+            log.warning(
+                "[SAME CLASS CLUTTER] No scene path available, skipping clutter object setup"
+            )
+            return
+
+        # Load scene metadata to get all objects and their asset_ids
+        scene_metadata = get_scene_metadata(self._current_scene_path)
+        if scene_metadata is None:
+            log.warning(
+                f"[SAME CLASS CLUTTER] Could not load scene metadata from {self._current_scene_path}"
+            )
+            return
+
+        objects_meta = scene_metadata.get("objects", {})
+        if not objects_meta:
+            log.warning("[SAME CLASS CLUTTER] No objects in scene metadata")
+            return
+
+        pickup_types = self.config.task_sampler_config.pickup_types or []
+        num_clutter = self.config.task_sampler_config.num_clutter_objects
+
+        # Collect unique asset_ids that match pickup types
+        # asset_id -> (category, boundingBox, first_object_name for reference)
+        asset_id_to_info: dict[str, dict] = {}
+
+        for obj_name, obj_meta in objects_meta.items():
+            asset_id = obj_meta.get("asset_id")
+            if not asset_id:
+                continue
+
+            # Check if this object type is in pickup_types
+            category = obj_meta.get("category", "").lower()
+            object_enum = obj_meta.get("object_enum", "").lower()
+
+            # If pickup_types is empty, all objects are candidates
+            # Otherwise, check if category or object_enum matches
+            if pickup_types:
+                type_match = any(
+                    pt.lower() in category or pt.lower() in object_enum or category in pt.lower()
+                    for pt in pickup_types
+                )
+                if not type_match:
+                    continue
+
+            # Check if we have grasp data for this asset
+            if not has_pickup_grasp_path(
+                asset_id,
+                grasp_libraries=self.config.task_sampler_config.grasp_libraries,
+            ):
+                continue
+
+            if asset_id not in asset_id_to_info:
+                asset_id_to_info[asset_id] = {
+                    "category": obj_meta.get("category", "unknown"),
+                    "boundingBox": obj_meta.get("boundingBox", {"x": 0.1, "y": 0.1, "z": 0.1}),
+                    "reference_name": obj_name,
+                }
+
+        if not asset_id_to_info:
+            log.info("[SAME CLASS CLUTTER] No matching assets found for clutter")
+            return
+
+        log.info(
+            f"[SAME CLASS CLUTTER] Found {len(asset_id_to_info)} unique assets to add clutter for"
+        )
+
+        # Add a staging floor for clutter objects (similar to PickAndPlaceTaskSampler)
+        total_clutter_objects = len(asset_id_to_info) * num_clutter
+        staging_floor_center_x = 20 + (total_clutter_objects - 1) * 0.5
+        spec.worldbody.add_geom(
+            name="clutter_staging_floor",
+            type=mujoco.mjtGeom.mjGEOM_BOX,
+            pos=[staging_floor_center_x, 20, -2],
+            size=[total_clutter_objects + 2, 2, 0.1],
+            contype=8,
+            conaffinity=15,
+            group=4,
+        )
+
+        name_to_meta = {}
+        clutter_idx = 0
+
+        for asset_id, info in asset_id_to_info.items():
+            try:
+                clutter_xml = install_uid(asset_id)
+            except ValueError as e:
+                log.debug(f"[SAME CLASS CLUTTER] Could not install asset {asset_id}: {e}")
+                continue
+
+            clutter_names = []
+
+            for i in range(num_clutter):
+                try:
+                    clutter_spec = MjSpec.from_file(str(clutter_xml))
+                except Exception as e:
+                    log.debug(f"[SAME CLASS CLUTTER] Could not load spec for {asset_id}: {e}")
+                    break
+
+                if len(clutter_spec.worldbody.bodies) != 1:
+                    log.debug(
+                        f"[SAME CLASS CLUTTER] {clutter_xml} has {len(clutter_spec.worldbody.bodies)} bodies, expected 1"
+                    )
+                    if len(clutter_spec.worldbody.bodies) == 0:
+                        break
+
+                clutter_obj: mujoco.MjsBody = clutter_spec.worldbody.bodies[0]
+
+                # Add freejoint if not present
+                if not clutter_obj.first_joint():
+                    clutter_obj.add_joint(
+                        name=f"clutter_{asset_id[:8]}_{i}_jntfree",
+                        type=mujoco.mjtJoint.mjJNT_FREE,
+                        damping=OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING,
+                    )
+
+                # Position off-screen initially
+                attach_frame = spec.worldbody.add_frame(
+                    pos=[20 + clutter_idx * 1.0, 20, 5],
+                    quat=R.from_euler("x", 90, degrees=True).as_quat(scalar_first=True),
+                )
+
+                namespace = f"clutter_{asset_id[:16]}_{i}/"
+                attach_frame.attach_body(clutter_obj, namespace, "")
+
+                clutter_body_name = clutter_obj.name
+                clutter_names.append(clutter_body_name)
+
+                # Track metadata for the added object
+                name_to_meta[clutter_body_name] = {
+                    "asset_id": asset_id,
+                    "category": info["category"],
+                    "object_enum": "clutter_object",
+                    "is_static": False,
+                    "boundingBox": info["boundingBox"],
+                }
+
+                # Save added object path for scene recreation
+                xml_path_rel = clutter_xml.relative_to(ASSETS_DIR)
+                self.config.task_config.added_objects[clutter_body_name] = xml_path_rel
+
+                clutter_idx += 1
+
+            if clutter_names:
+                self._same_class_clutter_objects[asset_id] = clutter_names
+                log.debug(
+                    f"[SAME CLASS CLUTTER] Added {len(clutter_names)} clutter objects for asset {asset_id}"
+                )
+
+        if name_to_meta:
+            self._same_class_clutter_metadata_adder = SameClassClutterMetadataAdder(name_to_meta)
+
+        log.info(
+            f"[SAME CLASS CLUTTER] Pre-added clutter for {len(self._same_class_clutter_objects)} assets, "
+            f"total {sum(len(v) for v in self._same_class_clutter_objects.values())} objects"
+        )
 
     def init_scene(self, env) -> None:
         # initialize randomizers here
@@ -213,6 +424,11 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         candidate_objects = self.balance_sample_names(candidate_objects)
         np.random.shuffle(candidate_objects)
         self.candidate_objects = candidate_objects
+        # The below list is optionally used in the cluttering scripts if we want to put
+        # taller objects around the pick object
+        self.candidate_objects_height_sorted = sorted(
+            self.candidate_objects, key=lambda obj: -obj.aabb_size[2]
+        )
 
     def randomize_scene(self, env: CPUMujocoEnv, robot_view) -> None:
         """Setup scene state: robot joints, texture randomization, cameras."""
@@ -224,7 +440,13 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         mujoco.mj_resetData(model, data)
         mujoco.mj_forward(model, data)
 
-        # Set robot joints
+        # Compute robot joint positions. When cluttering is enabled, application is
+        # deferred to _sample_task: clutter is placed and settled with the arm at the
+        # model's default qpos0 (out of the sampling region), and settling would drift
+        # the arm anyway; the stored qpos is applied after cluttering. Without
+        # cluttering there is no settling, so apply immediately — placement collision
+        # and camera-visibility checks then run with the arm in its true start pose.
+        self._init_robot_qpos = {}
         for group_name, qpos in self.config.robot_config.init_qpos.items():
             qpos = np.array(qpos)
             if (
@@ -235,7 +457,11 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 perturb = np.random.uniform(-noise_mag, noise_mag)
             else:
                 perturb = np.zeros_like(qpos)
-            robot_view.get_move_group(group_name).joint_pos = qpos + perturb
+            self._init_robot_qpos[group_name] = qpos + perturb
+
+        if not self.config.task_sampler_config.clutter_scene_around_target_object:
+            for group_name, joint_pos in self._init_robot_qpos.items():
+                robot_view.get_move_group(group_name).joint_pos = joint_pos
 
         # Reset controllers and sync head ctrl with qpos.
         # mj_resetData zeros all ctrl values. For move groups with controllers, reset() re-syncs
@@ -675,7 +901,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
             mujoco.mj_forward(env.current_model, env.current_data)
 
-            # Check grasp feasibility
+            # Check grasp feasibility before proceeding
+            # Only run collision check if grasp_collision bodies were added to the scene
+            # (they are added by the policy's add_auxiliary_objects when filter_colliding_grasps is True)
+            has_grasp_collision_bodies = (
+                get_grasp_collision_body_name(0) in env.current_model.names.decode()
+            )
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_check_grasps")
 
@@ -689,7 +920,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                         include_flipped=False,
                         grasp_libraries=self.config.task_sampler_config.grasp_libraries,
                     )
-                    if len(grasp_poses_world) > 0:
+                    if has_grasp_collision_bodies and len(grasp_poses_world) > 0:
                         noncolliding_mask = get_noncolliding_grasp_mask(
                             env.current_model, env.current_data, grasp_poses_world, 64
                         )
@@ -815,6 +1046,28 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             expression_priority
         )
 
+        # Clutter scene with additional objects if enabled
+        self._clutter_scene_around_pickup_object(env)
+
+        if self.config.task_sampler_config.clutter_scene_around_target_object:
+            # Apply the deferred robot qpos now that cluttering is done (see
+            # randomize_scene): clutter was placed and settled with the arm at qpos0.
+            robot_view = env.current_robot.robot_view
+            for group_name, joint_pos in self._init_robot_qpos.items():
+                robot_view.get_move_group(group_name).joint_pos = joint_pos
+
+            # Controllers were reset while the arm was still at qpos0; re-sync their
+            # ctrl targets so the first steps don't pull the arm back toward qpos0.
+            for robot in env.robots:
+                for controller in robot.controllers.values():
+                    controller.reset()
+
+            # The home pose just applied may intersect clutter in the arm's swept
+            # volume. Banish any clutter penetrating the robot so the episode doesn't
+            # start with contact penetration that the constraint solver will violently
+            # resolve.
+            self._resolve_robot_clutter_penetrations(env)
+
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_context_expressions")
 
@@ -859,7 +1112,6 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                     f"  - #{b:02d} {name} (types={possible_types}) pos=({pos[0]:.3f}, {pos[1]:.3f}, {pos[2]:.3f})"
                 )
 
-            # log.info(f"[TASK SAMPLING] Scene objects (no candidates): {[obj.name for obj in all_objects]}")
             raise HouseInvalidForTask("No pickup candidates found in the scene")
 
         model = self._env.current_model
@@ -880,6 +1132,9 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             parts = pickup_obj.name.split("/")
             if len(parts) == 3 and len(parts[1].split("_")) == 2:
                 log.info(f"Skipping possibly added object {pickup_obj.name}")
+                continue
+            # Skip pre-added clutter objects (they have "clutter_" prefix in their namespace)
+            if "clutter_" in pickup_obj.name:
                 continue
 
             # Check if grasp files exist for this object
@@ -1117,6 +1372,444 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             log.debug(
                 f"[TARGET POSITIONING] Target on receptacle '{support_name}' at height {target_z:.3f}m"
             )
+
+    def _sort_objects_by_semantic_similarity(
+        self, objects: list[MlSpacesObject], reference_obj_name: str, om
+    ) -> list[MlSpacesObject]:
+        """Sort objects by CLIP semantic similarity to a reference object.
+        Args:
+            objects: List of objects to sort
+            reference_obj_name: Name of reference object to compare against
+            om: Object manager for getting metadata
+        Returns:
+            Sorted list with most similar objects first
+        """
+        reference_meta = om.object_metadata(reference_obj_name)
+        reference_asset_id = reference_meta.get("asset_id")
+
+        if not reference_asset_id or reference_asset_id not in ObjectMeta.annotation():
+            log.warning(
+                f"[SEMANTIC SORTING] No asset_id for '{reference_obj_name}', returning unsorted"
+            )
+            return objects
+
+        # Get CLIP text features for reference object (semantic descriptions)
+        reference_text_features = ObjectMeta.description_text_features(reference_asset_id)
+        reference_norm = reference_text_features / np.linalg.norm(
+            reference_text_features, axis=-1, keepdims=True
+        )
+
+        # Compute similarity for each object
+        similarities = []
+        for obj in objects:
+            other_meta = om.object_metadata(obj.name)
+            other_asset_id = other_meta.get("asset_id")
+
+            if other_asset_id and other_asset_id in ObjectMeta.annotation():
+                other_text_features = ObjectMeta.description_text_features(other_asset_id)
+                other_norm = other_text_features / np.linalg.norm(
+                    other_text_features, axis=-1, keepdims=True
+                )
+
+                # Compute cosine similarity between text descriptions
+                similarity = np.dot(reference_norm.reshape((-1,)), other_norm.reshape((-1,)))
+                similarities.append((obj, similarity))
+            else:
+                # No asset_id, put at end with low similarity
+                similarities.append((obj, -1.0))
+
+        # Sort by similarity (highest first)
+        sorted_objects = [obj for obj, sim in sorted(similarities, key=lambda x: -x[1])]
+        log.info(
+            f"[SEMANTIC SORTING] Sorted {len(sorted_objects)} objects by similarity to '{reference_obj_name}'"
+        )
+        return sorted_objects
+
+    def _clutter_scene_around_pickup_object(self, env: CPUMujocoEnv) -> None:
+        """Reposition `num_clutter_objects` graspable objects near the pickup object.
+
+        Positions are rejection-sampled within a radius of the pickup object (growing
+        every 20 failed attempts), each placement is settled, and any objects left
+        interpenetrating after settling are banished from the scene.
+
+        Args:
+            env: The MuJoCo environment
+        """
+        if not self.config.task_sampler_config.clutter_scene_around_target_object:
+            log.debug("[SCENE CLUTTERING] Cluttering disabled, skipping")
+            pickup_obj_name = self.config.task_config.pickup_obj_name
+            self._placed_clutter_object_names = [pickup_obj_name]
+            return
+
+        # Get the pickup object
+        pickup_obj_name = self.config.task_config.pickup_obj_name
+        om = env.object_managers[env.current_batch_index]
+        pickup_obj = om.get_object_by_name(pickup_obj_name)
+        pickup_pos = pickup_obj.position
+
+        log.info(
+            f"[SCENE CLUTTERING] Cluttering scene around '{pickup_obj_name}' at position ({pickup_pos[0]:.3f}, {pickup_pos[1]:.3f}, {pickup_pos[2]:.3f})"
+        )
+
+        # Get all candidate objects excluding the pickup object
+        if self.config.task_sampler_config.clutter_with_taller_objects:
+            # In this case, we can only sample clutter objects from those taller than the current pickup object
+            other_objects = []
+            for other_obj in self.candidate_objects_height_sorted:
+                if other_obj.name == pickup_obj.name:
+                    break
+                other_objects.append(other_obj)
+            log.debug(
+                f"[SCENE CLUTTERING] Pickup object {pickup_obj.name}, "
+                f"taller candidates: {[o.name for o in other_objects]}"
+            )
+        else:
+            other_objects = [obj for obj in self.candidate_objects if obj.name != pickup_obj_name]
+
+        # Helper to extract class from object name (e.g., "plate_ad540817fe2632d8b49916da70118c0a_1_0_0" -> "plate")
+        def get_object_class(obj_name: str) -> str:
+            return obj_name.split("_")[0]
+
+        pickup_class = get_object_class(pickup_obj_name)
+
+        # Filter/sort by semantic similarity or same class
+        if self.config.task_sampler_config.clutter_with_same_class_objects:
+            # Try to use pre-added clutter objects of the same asset
+            pickup_asset_id = self._get_pickup_asset_id(env, pickup_obj_name)
+            if pickup_asset_id and pickup_asset_id in self._same_class_clutter_objects:
+                # Add metadata for clutter objects if needed
+                if self._same_class_clutter_metadata_adder is not None:
+                    self._same_class_clutter_metadata_adder.add_meta(env.current_scene_metadata)
+
+                # Convert pre-added clutter object names to MlSpacesObject instances
+                clutter_names = self._same_class_clutter_objects[pickup_asset_id]
+                other_objects = []
+                for clutter_name in clutter_names:
+                    try:
+                        clutter_obj = MlSpacesObject(clutter_name, env.current_data)
+                        other_objects.append(clutter_obj)
+                    except KeyError:
+                        log.warning(
+                            f"[SCENE CLUTTERING] Pre-added clutter object {clutter_name} not found"
+                        )
+                log.info(
+                    f"[SCENE CLUTTERING] Using {len(other_objects)} pre-added clutter objects "
+                    f"for asset {pickup_asset_id}"
+                )
+            else:
+                # Fall back to existing scene objects of the same class
+                log.info(
+                    f"[SCENE CLUTTERING] No pre-added clutter for asset {pickup_asset_id}, "
+                    f"falling back to scene objects of same class '{pickup_class}'"
+                )
+                other_objects = [
+                    obj for obj in other_objects if get_object_class(obj.name) == pickup_class
+                ]
+                log.info(
+                    f"[SCENE CLUTTERING] Found {len(other_objects)} same-class objects in scene"
+                )
+        elif self.config.task_sampler_config.clutter_with_semantically_similar_objects:
+            # Sort by similarity, then filter OUT objects with the same class
+            other_objects = self._sort_objects_by_semantic_similarity(
+                other_objects, pickup_obj_name, om
+            )
+            log.info(
+                f"[SCENE CLUTTERING] Pickup class '{pickup_class}', semantically similar (excluding same class): {[o.name for o in other_objects[:10]]}"
+            )
+
+        num_clutter_objects = self.config.task_sampler_config.num_clutter_objects
+        if len(other_objects) < num_clutter_objects:
+            log.warning(
+                f"[SCENE CLUTTERING] Only {len(other_objects)} objects available for cluttering (need {num_clutter_objects}), using all available"
+            )
+            num_clutter_objects = len(other_objects)
+
+        # Randomly select objects to clutter
+        clutter_objects = np.random.choice(other_objects, size=num_clutter_objects, replace=False)
+
+        # Clutter radius in meters (10cm)
+        clutter_radius = 0.1
+        min_radius = 0.05
+
+        def get_ancestors(body_id):
+            """Get all bodies in the parent chain up to (but not including) world."""
+            ancestors = []
+            current = body_id
+            while current != 0:  # Stop at world body
+                ancestors.append(current)
+                current = env.current_model.body_parentid[current]
+            return ancestors
+
+        # Reposition each clutter object
+        for i, clutter_obj in enumerate(clutter_objects):
+            # Try multiple times to find a collision-free position
+            max_placement_attempts = 200
+            collision_free_position = None
+
+            curr_clutter_radius = clutter_radius
+            for attempt in range(max_placement_attempts):
+                # Sample random position within clutter_radius of pickup object
+                # Use spherical coordinates for uniform sampling
+                theta = np.random.uniform(0, 2 * np.pi)  # Azimuthal angle (full circle)
+
+                # Polar angle sampling depends on covering vs occlusion mode
+                if self.config.task_sampler_config.covering:
+                    # Covering: sample from above (0 to pi/4 = 0 to 45 degrees from vertical)
+                    phi = np.random.uniform(0, np.pi / 4)
+                else:
+                    # Occlusion: sample from around the sides (2*pi/5 to pi/2 = ~72 to 90 degrees)
+                    phi = np.random.uniform(2 * np.pi / 5, np.pi / 2)
+
+                r = np.random.uniform(min_radius, curr_clutter_radius)  # Radial distance
+
+                # Convert to Cartesian offset
+                offset_x = r * np.sin(phi) * np.cos(theta)
+                offset_y = r * np.sin(phi) * np.sin(theta)
+                offset_z = r * np.cos(phi)
+
+                # Calculate new position
+                new_pos = pickup_pos + np.array([offset_x, offset_y, offset_z])
+
+                # Temporarily set the object's position to check for collisions
+                old_qpos = None
+                body_jntadr = env.current_model.body_jntadr[clutter_obj.object_id]
+                body_jntnum = env.current_model.body_jntnum[clutter_obj.object_id]
+
+                if body_jntnum > 0:
+                    jnt_id = body_jntadr
+                    jnt_type = env.current_model.jnt_type[jnt_id]
+                    if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                        qposadr = env.current_model.jnt_qposadr[jnt_id]
+                        old_qpos = env.current_data.qpos[qposadr : qposadr + 3].copy()
+                        env.current_data.qpos[qposadr : qposadr + 3] = new_pos
+
+                # Forward kinematics to update body positions
+                mujoco.mj_forward(env.current_model, env.current_data)
+
+                # Reject ANY contact involving the clutter object - we want no
+                # penetration at placement time
+                has_collision = False
+                for contact_idx in range(env.current_data.ncon):
+                    contact = env.current_data.contact[contact_idx]
+                    body1 = env.current_model.geom_bodyid[contact.geom1]
+                    body2 = env.current_model.geom_bodyid[contact.geom2]
+                    if clutter_obj.object_id in get_ancestors(body1) or (
+                        clutter_obj.object_id in get_ancestors(body2)
+                    ):
+                        has_collision = True
+                        break
+
+                # Restore old position if collision detected
+                if has_collision:
+                    if old_qpos is not None:
+                        env.current_data.qpos[qposadr : qposadr + 3] = old_qpos
+                        mujoco.mj_forward(env.current_model, env.current_data)
+                    # Every 20 failed iterations, we increase the radius by 5cm
+                    if attempt % 20 == 19:
+                        curr_clutter_radius += 0.05
+                    continue
+                else:
+                    # No collision - use this position
+                    collision_free_position = new_pos
+                    log.debug(
+                        f"[SCENE CLUTTERING]     Found collision-free position on attempt {attempt + 1} for clutter object {clutter_obj.name}"
+                    )
+                    break
+
+            # Use the collision-free position, or fall back to last attempt if none found
+            if collision_free_position is None:
+                log.info(
+                    f"[SCENE CLUTTERING]   Object {i + 1}/{num_clutter_objects}: Could not find collision-free position for clutter object {clutter_obj.name} after {max_placement_attempts} attempts, using last attempt"
+                )
+            else:
+                new_pos = collision_free_position
+
+            # Set the object's new position
+            old_pos = clutter_obj.position.copy()
+
+            # Check if object has a freejoint (most movable objects do)
+            body_jntadr = env.current_model.body_jntadr[clutter_obj.object_id]
+            body_jntnum = env.current_model.body_jntnum[clutter_obj.object_id]
+
+            if body_jntnum > 0:
+                # Object has joints - modify qpos (joint positions)
+                jnt_id = body_jntadr
+                jnt_type = env.current_model.jnt_type[jnt_id]
+
+                if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                    # Freejoint: qpos has 7 values (3 pos + 4 quat)
+                    qposadr = env.current_model.jnt_qposadr[jnt_id]
+                    env.current_data.qpos[qposadr : qposadr + 3] = new_pos
+                    # Keep existing quaternion (rotation)
+                else:
+                    # Other joint types - try modifying xpos (less reliable)
+                    env.current_data.xpos[clutter_obj.object_id] = new_pos
+            else:
+                # No joints - modify xpos directly
+                env.current_data.xpos[clutter_obj.object_id] = new_pos
+
+            distance = np.linalg.norm(new_pos - pickup_pos)
+            log.debug(
+                f"[SCENE CLUTTERING]   Object {i + 1}/{num_clutter_objects}: '{clutter_obj.name}' "
+                f"moved from ({old_pos[0]:.3f}, {old_pos[1]:.3f}, {old_pos[2]:.3f}) "
+                f"to ({new_pos[0]:.3f}, {new_pos[1]:.3f}, {new_pos[2]:.3f}), "
+                f"distance={distance * 100:.2f}cm"
+            )
+
+            # Settle after each placement so subsequent objects check against settled positions
+            mujoco.mj_forward(env.current_model, env.current_data)
+            mujoco.mj_step(env.current_model, env.current_data, nstep=300)
+        # Remove any free-body objects that are interpenetrating after settling
+        # Only remove objects that are in our pick/clutter set, not scene furniture
+        clutter_and_pickup_names = {obj.name for obj in clutter_objects} | {pickup_obj_name}
+        obj_ids_to_delete = set()
+        for i_con in range(env.current_data.ncon):
+            contact = env.current_data.contact[i_con]
+            geom_id_1, geom_id_2 = contact.geom[0], contact.geom[1]
+            body_id_1, body_id_2 = env.current_model.geom_bodyid[[geom_id_1, geom_id_2]]
+            root_id_1, root_id_2 = env.current_model.body_rootid[[body_id_1, body_id_2]]
+
+            is_root_1_free = env.current_model.body_dofnum[root_id_1].item() == 6
+            is_root_2_free = env.current_model.body_dofnum[root_id_2].item() == 6
+
+            body_name_1 = env.current_model.body(root_id_1).name
+            body_name_2 = env.current_model.body(root_id_2).name
+
+            if body_name_1 != "" and body_name_2 != "":
+                if is_root_1_free and is_root_2_free:
+                    if contact.dist < INTERSECTION_THRESHOLD:
+                        if body_name_1 in clutter_and_pickup_names:
+                            obj_ids_to_delete.add(root_id_1)
+                        elif body_name_2 in clutter_and_pickup_names:
+                            obj_ids_to_delete.add(root_id_2)
+
+        # Move interpenetrating bodies far away to effectively remove them
+        away_pos = np.array([10.0, 10.0, 10.0])
+        for body_id in obj_ids_to_delete:
+            body_jntadr = env.current_model.body_jntadr[body_id]
+            body_jntnum = env.current_model.body_jntnum[body_id]
+
+            if body_jntnum > 0:
+                jnt_id = body_jntadr
+                jnt_type = env.current_model.jnt_type[jnt_id]
+
+                if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                    qposadr = env.current_model.jnt_qposadr[jnt_id]
+                    env.current_data.qpos[qposadr : qposadr + 3] = away_pos
+
+        log.info(
+            f"[SCENE CLUTTERING] Positioned {num_clutter_objects} clutter objects within {clutter_radius * 100}cm of pickup object"
+        )
+
+        # Build list of clutter object names that survived (not moved to away_pos)
+        survived_names = []
+        for clutter_obj in reversed(clutter_objects):
+            body_id = clutter_obj.object_id
+            body_jntadr = env.current_model.body_jntadr[body_id]
+            body_jntnum = env.current_model.body_jntnum[body_id]
+            if body_jntnum > 0:
+                jnt_id = body_jntadr
+                jnt_type = env.current_model.jnt_type[jnt_id]
+                if jnt_type == mujoco.mjtJoint.mjJNT_FREE:
+                    qposadr = env.current_model.jnt_qposadr[jnt_id]
+                    pos = env.current_data.qpos[qposadr : qposadr + 3]
+                    if np.allclose(pos, away_pos):
+                        continue
+            survived_names.append(clutter_obj.name)
+
+        # Append the pickup object at the end (pack clutter first, then the original target)
+        survived_names.append(pickup_obj_name)
+        self._placed_clutter_object_names = survived_names
+        log.info(f"[SCENE CLUTTERING] Packing order: {self._placed_clutter_object_names}")
+
+    def _resolve_robot_clutter_penetrations(self, env: CPUMujocoEnv) -> None:
+        """Banish clutter objects penetrating the robot after final qpos is applied."""
+        if not self._placed_clutter_object_names:
+            return
+
+        pickup_obj_name = self.config.task_config.pickup_obj_name
+        om = env.object_managers[env.current_batch_index]
+
+        clutter_body_ids: set[int] = set()
+        for name in self._placed_clutter_object_names:
+            if name == pickup_obj_name:
+                continue
+            try:
+                clutter_body_ids.add(om.get_object_by_name(name).object_id)
+            except KeyError:
+                continue
+
+        pickup_body_id: int | None = None
+        if pickup_obj_name:
+            try:
+                pickup_body_id = om.get_object_by_name(pickup_obj_name).object_id
+            except KeyError:
+                pickup_body_id = None
+
+        if not clutter_body_ids and pickup_body_id is None:
+            return
+
+        robot_root_id = env.current_robot.robot_view.base.root_body_id
+        model = env.current_model
+        data = env.current_data
+
+        mujoco.mj_forward(model, data)
+
+        penetrating_body_ids: set[int] = set()
+        pickup_penetrating = False
+        for i_con in range(data.ncon):
+            contact = data.contact[i_con]
+            root1 = model.body_rootid[model.geom_bodyid[contact.geom1]]
+            root2 = model.body_rootid[model.geom_bodyid[contact.geom2]]
+            in_robot_1 = root1 == robot_root_id
+            in_robot_2 = root2 == robot_root_id
+            if in_robot_1 == in_robot_2:
+                continue
+            other_root = root2 if in_robot_1 else root1
+            if other_root in clutter_body_ids:
+                penetrating_body_ids.add(other_root)
+            elif pickup_body_id is not None and other_root == pickup_body_id:
+                pickup_penetrating = True
+
+        if pickup_penetrating:
+            log.warning(
+                f"[ROBOT-CLUTTER CLEANUP] Robot home pose penetrates pickup object "
+                f"'{pickup_obj_name}' - episode may start in unphysical state"
+            )
+
+        if not penetrating_body_ids:
+            return
+
+        away_pos = np.array([10.0, 10.0, 10.0])
+        banished_names: list[str] = []
+        for body_id in penetrating_body_ids:
+            body_jntadr = model.body_jntadr[body_id]
+            body_jntnum = model.body_jntnum[body_id]
+            if body_jntnum > 0:
+                jnt_id = body_jntadr
+                if model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_FREE:
+                    qposadr = model.jnt_qposadr[jnt_id]
+                    data.qpos[qposadr : qposadr + 3] = away_pos
+                    banished_names.append(model.body(body_id).name)
+
+        mujoco.mj_forward(model, data)
+
+        if banished_names:
+            banished_set = set(banished_names)
+            self._placed_clutter_object_names = [
+                name for name in self._placed_clutter_object_names if name not in banished_set
+            ]
+            log.info(
+                f"[ROBOT-CLUTTER CLEANUP] Banished {len(banished_names)} clutter objects "
+                f"penetrating robot at home pose: {banished_names}"
+            )
+
+    def _get_pickup_asset_id(self, env: CPUMujocoEnv, pickup_obj_name: str) -> str | None:
+        """Get the asset_id for a pickup object from scene metadata."""
+        scene_metadata = env.current_scene_metadata
+        if scene_metadata is None:
+            return None
+        return scene_metadata.get("objects", {}).get(pickup_obj_name, {}).get("asset_id", None)
 
     @staticmethod
     def add_placement_target(

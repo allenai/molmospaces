@@ -173,6 +173,26 @@ class FrankaRobotConfig(BaseRobotConfig):
             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
 
 
+class CommonSenseFrankaRobotConfig(FrankaRobotConfig):
+    """Franka config for CommonSense benchmark datagen.
+
+    Uses a raised-elbow home pose (clears tall clutter and open box flaps) and
+    disables initial-pose noise so every episode starts from the exact same arm
+    configuration. Kept as an override so the shared FrankaRobotConfig defaults
+    stay unchanged for other users.
+    """
+
+    init_qpos: dict[str, list[float]] = {
+        "arm": [0, -1 / 5 * np.pi, 0, -4 / 5 * np.pi, 0, 3 / 5 * np.pi, 0.0],
+        "gripper": [0.00296, 0.00296],
+    }
+    init_qpos_noise_range: dict[str, list[float]] | None = {
+        # Arm noise disabled (was [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175] rad,
+        # Jacobian-weighted to keep TCP displacement <=10cm).
+        "arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    }
+
+
 class MobileFrankaRobotConfig(BaseRobotConfig):
     robot_cls: type[MobileFrankaRobot] | None = MobileFrankaRobot
     robot_factory: Callable[[MjData, Any], Robot] | None = MobileFrankaRobot

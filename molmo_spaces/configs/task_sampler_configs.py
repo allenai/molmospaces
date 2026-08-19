@@ -74,6 +74,14 @@ class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     # grasp libraries to use for filtering, if None all available libraries will be used
     grasp_libraries: list[str] | None = None
 
+    # Optional eval parameter, if we're running eval with a created benchmark but want
+    # to omit the object position changes in that benchmark (e.g. if we're running a control
+    # experiment for a cluttering benchmark and want to get results in the same scenes but
+    # without the cluttering). Set this to True if you want to turn off object pos changes.
+    # Default behavior with false is that object position updates saved in the benchmark get
+    # picked up.
+    eval_without_obj_pos_changes: bool = False
+
 
 class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     """Configuration for Franka move-to-pose task sampler."""
@@ -89,6 +97,27 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     # Distance constraints
     max_robot_to_target_dist: float = 0.6
     max_robot_to_obj_dist: float = 0.6
+
+    # Cluttering configuration
+    clutter_scene_around_target_object: bool = (
+        False  # set True to clutter the scene around the pickup object (occlusion/covering
+        # benchmarks); run_pipeline.py exposes this as --clutter
+    )
+    covering: bool = (
+        False  # If you want objects sampled on top of pickup object as opposed to around
+    )
+    clutter_with_taller_objects: bool = False  # If you want the surrounding clutter to be taller.
+    # Typically set this if you want occlusion rather than covering.
+    clutter_with_semantically_similar_objects: bool = (
+        False  # If you want the surrounding clutter to be
+        # similar objects, e.g. put forks neby if the pickup object is a spoon. Useful for eval of adversarial
+        # cases for VLAs.
+    )
+    clutter_with_same_class_objects: bool = (
+        False  # If you want the surrounding clutter to be the same object
+    )
+
+    num_clutter_objects: int = 3  # Number of clutter objects to place around the target object
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over
@@ -230,6 +259,11 @@ class PickAndPlaceColorTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
 
 
 class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
+    base_pose_sampling_radius_range: tuple[float, float] = (0.0, 0.7)
+    min_object_to_receptacle_dist: float = 0.30  # 15cm further than default (0.15)
+    robot_object_z_offset: float = -0.58
+    robot_object_z_offset_random_min: float = -0.1
+    robot_object_z_offset_random_max: float = 0.1
     box_uids: list[str] | None = None  # If None, uses Box_1..Box_30
 
 

@@ -156,28 +156,37 @@ class EvalTaskSampler(PickTaskSampler):
         config_poses = self.config.task_config.object_poses
         bodies_in_config = config_poses.keys()
 
-        for body_id in range(model.nbody):
-            sim_name = model.body(body_id).name
-            if sim_name not in bodies_in_config:
-                continue
+        if not self.config.task_sampler_config.eval_without_obj_pos_changes:
+            for body_id in range(model.nbody):
+                sim_name = model.body(body_id).name
+                if sim_name not in bodies_in_config:
+                    continue
 
-            sim_body = create_mlspaces_body(data, sim_name)
-            pos_close = np.allclose(sim_body.position, config_poses[sim_name][0:3], atol=1e-3)
-            orn_diff = R.from_quat(sim_body.quat).inv() * R.from_quat(config_poses[sim_name][3:7])
-            orn_close = orn_diff.magnitude() < 1e-2
-            if not pos_close or not orn_close:
-                log.info(f"Re-setting body: {sim_name}")
-            if not pos_close:
-                log.info(f"Position difference: {sim_body.position - config_poses[sim_name][0:3]}")
-            if not orn_close:
-                log.info(f"Orientation difference: {orn_diff.magnitude()}")
+                sim_body = create_mlspaces_body(data, sim_name)
+                pos_close = np.allclose(sim_body.position, config_poses[sim_name][0:3], atol=1e-3)
+                orn_diff = R.from_quat(sim_body.quat).inv() * R.from_quat(
+                    config_poses[sim_name][3:7]
+                )
+                orn_close = orn_diff.magnitude() < 1e-2
+                if not pos_close or not orn_close:
+                    log.info(f"Re-setting body: {sim_name}")
+                if not pos_close:
+                    log.info(
+                        f"Position difference: {sim_body.position - config_poses[sim_name][0:3]}"
+                    )
+                if not orn_close:
+                    log.info(f"Orientation difference: {orn_diff.magnitude()}")
 
-            sim_body.position, sim_body.quat = (
-                config_poses[sim_name][0:3],
-                config_poses[sim_name][3:7],
+                sim_body.position, sim_body.quat = (
+                    config_poses[sim_name][0:3],
+                    config_poses[sim_name][3:7],
+                )
+            # Now that we have done this, set object poses to None
+            self.config.task_config.object_poses = None
+        else:
+            log.info(
+                "[EVAL] Skipping object position restoration (eval_without_obj_pos_changes=True)"
             )
-        # Now that we have done this, set object poses to None
-        self.config.task_config.object_poses = None
 
         # this only sets the joint position for the pickup object for now
         self.set_joint_values(env)
