@@ -15,6 +15,7 @@ Action Noise:
 import contextlib
 import logging
 from abc import ABC, abstractmethod
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 import gymnasium as gym
@@ -37,17 +38,32 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class EpisodeSource(StrEnum):
+    """Where a task's episodes come from, and so what ``reset()`` does."""
+
+    SAMPLER = "sampler"
+    """A task sampler configured this episode and built the task for it. reset()
+    clears task state and leaves the scene alone; a new episode means another
+    ``sample_task()``. This is the data generation and evaluation path."""
+
+    SELF = "self"
+    """The task holds a sampler and advances its own episodes. reset() samples a
+    new one. This is the gymnasium path."""
+
+
 class BaseMujocoTask(gym.Env, ABC):
     """A task, and the gymnasium env for that task.
 
     Two ways to build one:
 
-    * ``Task(sim_env, exp_config)`` -- the sampler has already configured the
-      episode in ``sim_env``; this is what ``BaseMujocoTaskSampler._sample_task``
-      does and what data generation uses.
-    * ``Task(exp_config=cfg, configure=True)`` -- the task creates its own
-      sampler, has it prepare a scene and sample an episode, and binds to the
-      resulting sim env. This is the gymnasium entry point.
+    * ``Task(sim_env, exp_config)`` -- ``EpisodeSource.SAMPLER``: the sampler
+      has already configured the episode in ``sim_env``; this is what
+      ``BaseMujocoTaskSampler._sample_task`` does and what data generation uses.
+    * ``Task(exp_config=cfg, episode_source="self")`` -- ``EpisodeSource.SELF``:
+      the task creates its own sampler (or uses ``task_sampler``), has it prepare
+      a scene and sample an episode, and binds to the resulting sim env. This is
+      the gymnasium entry point, and the only mode whose ``reset()`` advances to
+      a new episode.
 
     See ``docs/gym_compatibility.md`` for which parts of the gymnasium contract
     hold. Notably neither ``action_space`` nor ``observation_space`` is declared,
@@ -68,7 +84,7 @@ class BaseMujocoTask(gym.Env, ABC):
         exp_config: "MlSpacesExpConfig | None" = None,
         *,
         task_sampler: "BaseMujocoTaskSampler | None" = None,
-        configure: bool = False,
+        episode_source: "EpisodeSource | str" = EpisodeSource.SAMPLER,
         episode_options: dict[str, Any] | None = None,
         render_mode: str | None = None,
         render_camera: str | None = None,
@@ -79,17 +95,30 @@ class BaseMujocoTask(gym.Env, ABC):
         self.render_mode = render_mode
         self.render_camera = render_camera
 
+        self.episode_source = EpisodeSource(episode_source)
         self._sampler = task_sampler
         self._owns_sampler = False
-        # Whether this task samples its own episodes, and so whether reset()
-        # advances to a new one.
-        self._self_configured = configure
-        self._episode_is_fresh = configure
 
-        if configure:
+        if self.episode_source is EpisodeSource.SELF:
+            if env is not None:
+                raise ValueError(
+                    "episode_source='self' means the task samples its own episode, "
+                    "so it binds the sampler's env; do not pass one."
+                )
+            self._episode_is_fresh = True
             env = self._configure_own_episode(exp_config, episode_options)
-        elif env is None:
-            raise ValueError("env is required unless configure=True")
+        else:
+            if env is None:
+                raise ValueError("env is required for episode_source='sampler'")
+            if task_sampler is not None:
+                raise ValueError(
+                    "episode_source='sampler' means a sampler built this episode "
+                    "already; pass episode_source='self' to let the task advance "
+                    "episodes with the given sampler."
+                )
+            if episode_options:
+                raise ValueError("episode_options only applies to episode_source='self'")
+            self._episode_is_fresh = False
 
         self._bind_env(env, exp_config)
         self._task_horizon = (
@@ -131,7 +160,7 @@ class BaseMujocoTask(gym.Env, ABC):
 
         self._on_episode_configured()
 
-        if configure:
+        if self.episode_source is EpisodeSource.SELF:
             self._finalize_own_episode()
 
         # Please don't call self.reset() here. reset should return the first observation, if we do it in
@@ -408,12 +437,12 @@ class BaseMujocoTask(gym.Env, ABC):
     ):
         """Reset the task and record initial observations.
 
-        For a self-configured task (``configure=True``) this samples a *new*
-        episode, except on the first call, which uses the episode built during
-        construction -- passing ``seed`` forces a re-sample so the seed takes
-        effect. For a sampler-built task there is no sampler to re-sample with,
-        so the scene is left alone and only task state is cleared; a new episode
-        means a new ``sample_task()``.
+        With ``EpisodeSource.SELF`` this samples a *new* episode, except on the
+        first call, which uses the episode built during construction -- passing
+        ``seed`` forces a re-sample so the seed takes effect. With
+        ``EpisodeSource.SAMPLER`` there is no sampler to re-sample with, so the
+        scene is left alone and only task state is cleared; a new episode means a
+        new ``sample_task()``.
 
         Args:
             seed: Seeds episode sampling. NOTE this is process-global (see
@@ -424,7 +453,7 @@ class BaseMujocoTask(gym.Env, ABC):
         """
         super().reset(seed=seed)
 
-        if self._self_configured:
+        if self.episode_source is EpisodeSource.SELF:
             self._resample_episode(seed=seed, options=options)
 
         self.episode_step_count = 0

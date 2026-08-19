@@ -12,7 +12,7 @@ import pytest
 
 from mlspaces_tests.data_generation.config import FrankaPickAndPlaceDroidTestConfig
 from molmo_spaces.tasks import gym_registration
-from molmo_spaces.tasks.task import BaseMujocoTask
+from molmo_spaces.tasks.task import BaseMujocoTask, EpisodeSource
 from molmo_spaces.tasks.task_sampler_errors import EpisodesExhausted
 
 
@@ -28,7 +28,7 @@ def gym_config():
 @pytest.fixture(scope="module")
 def self_configured_task(gym_config):
     """A task that sampled its own episode (the gymnasium entry point)."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
     yield task
     task.close()
 
@@ -76,11 +76,11 @@ def test_batched_config_is_rejected_on_the_gym_path(gym_config, monkeypatch):
     """The gymnasium interface is single-env only, and says so up front."""
     task = None
     try:
-        task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+        task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
         monkeypatch.setattr(type(task._env), "n_batch", property(lambda self: 2))
         with pytest.raises(ValueError, match="single-environment only"):
             gym_config.task_config.task_cls(
-                exp_config=gym_config, task_sampler=task._sampler, configure=True
+                exp_config=gym_config, task_sampler=task._sampler, episode_source="self"
             )
     finally:
         if task is not None:
@@ -95,7 +95,7 @@ def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
         assert sampler.sample_task() is None
         with pytest.raises(EpisodesExhausted):
             gym_config.task_config.task_cls(
-                exp_config=gym_config, task_sampler=sampler, configure=True
+                exp_config=gym_config, task_sampler=sampler, episode_source="self"
             )
     finally:
         sampler.close()
@@ -103,7 +103,7 @@ def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
 
 def test_first_reset_keeps_the_episode_built_at_construction(gym_config):
     """__init__ already sampled an episode; the first reset must not throw it away."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
     try:
         description = task.get_task_description()
         task.reset()
@@ -114,7 +114,7 @@ def test_first_reset_keeps_the_episode_built_at_construction(gym_config):
 
 def test_later_resets_sample_a_new_episode(gym_config):
     """A self-configured task advances episodes on reset, as gym callers expect."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
     try:
         task.reset()
         first = task.get_task_description()
@@ -140,14 +140,14 @@ def test_sampler_built_task_reset_does_not_resample(gym_config):
         task.reset()
         task.reset()
         assert task.get_task_description() == description
-        assert not task._self_configured
+        assert task.episode_source is EpisodeSource.SAMPLER
         task.close()
     finally:
         sampler.close()
 
 
 def test_reset_rejects_unknown_options(gym_config):
-    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
     try:
         with pytest.raises(ValueError, match="Unsupported reset options"):
             task.reset(options={"not_a_real_option": 1})
@@ -164,7 +164,7 @@ def test_render_returns_an_rgb_frame(self_configured_task):
 
 def test_render_rejects_unsupported_mode(gym_config):
     task = gym_config.task_config.task_cls(
-        exp_config=gym_config, configure=True, render_mode="human"
+        exp_config=gym_config, episode_source="self", render_mode="human"
     )
     try:
         with pytest.raises(ValueError, match="Unsupported render_mode"):
@@ -183,7 +183,7 @@ def test_make_env_builds_a_task_from_a_config_object(gym_config):
     env = gym_registration.make_env(exp_config=gym_config)
     try:
         assert isinstance(env, gym.Env)
-        assert env._self_configured
+        assert env.episode_source is EpisodeSource.SELF
         assert env.get_task_description().strip()
     finally:
         env.close()

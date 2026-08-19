@@ -13,7 +13,7 @@ task_sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
 task = task_sampler.sample_task()
 
 # 2. Gymnasium: the task builds itself, creating its own sampler.
-task = exp_config.task_config.task_cls(exp_config=exp_config, configure=True)
+task = exp_config.task_config.task_cls(exp_config=exp_config, episode_source="self")
 
 # 3. Gymnasium, via registration.
 import molmo_spaces.tasks.gym_registration as gym_registration
@@ -75,8 +75,8 @@ what `config.seed` reproduces. `reset()` without a seed touches no RNG.
 
 | Built via | `reset()` does |
 | --- | --- |
-| `configure=True` (gym) | Samples a **new** episode, except the first call, which uses the episode built during construction. Pass `seed` or `options` to force a re-sample. |
-| `sample_task()` (datagen) | Clears task state only; the scene and episode are untouched. A new episode means another `sample_task()`. |
+| `episode_source="self"` (gym) | Samples a **new** episode, except the first call, which uses the episode built during construction. Pass `seed` or `options` to force a re-sample. |
+| `episode_source="sampler"`, via `sample_task()` (datagen) | Clears task state only; the scene and episode are untouched. A new episode means another `sample_task()`. |
 
 `options` accepts only `house_index` and `force_advance_scene`; anything else
 raises.
