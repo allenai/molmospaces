@@ -12,8 +12,9 @@ pointing third-party RL code at a molmospaces env.
 task_sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
 task = task_sampler.sample_task()
 
-# 2. Gymnasium: the task builds itself, creating its own sampler.
-task = exp_config.task_config.task_cls(exp_config=exp_config, episode_source="self")
+# 2. Gymnasium: omit the env and the task builds itself, creating its own
+#    sampler. NOTE this samples an episode, so it can load a scene.
+task = exp_config.task_config.task_cls(exp_config=exp_config)
 
 # 3. Gymnasium, via registration.
 import molmo_spaces.tasks.gym_registration as gym_registration
@@ -75,11 +76,20 @@ what `config.seed` reproduces. `reset()` without a seed touches no RNG.
 
 | Built via | `reset()` does |
 | --- | --- |
-| `episode_source="self"` (gym) | Samples a **new** episode, except the first call, which uses the episode built during construction. Pass `seed` or `options` to force a re-sample. |
-| `episode_source="sampler"`, via `sample_task()` (datagen) | Clears task state only; the scene and episode are untouched. A new episode means another `sample_task()`. |
+| `EpisodeSource.SELF` (no env passed; gym) | Samples a **new** episode, except the first call, which uses the episode built during construction. Pass `seed` or `options` to force a re-sample. |
+| `EpisodeSource.SAMPLER` (env passed, via `sample_task()`; datagen) | Clears task state only; the scene and episode are untouched. A new episode means another `sample_task()`. |
 
-`options` accepts only `house_index` and `force_advance_scene`; anything else
-raises.
+`options` is forwarded to `BaseMujocoTaskSampler.prepare_episode`, so
+`house_index` and `force_advance_scene`; anything else is that function's
+`TypeError`.
+
+`episode_source` is derived, not passed: an `env` argument means a sampler built
+the episode, no `env` means the task samples its own.
+
+Re-sampling is not unbounded. Samplers consume their per-house candidate pool, so
+enough resets on one house eventually raise `HouseInvalidForTask` -- the same
+signal data generation handles by advancing houses. Gym callers should be ready
+to catch it, or pass `options={"force_advance_scene": True}`.
 
 ### Reset can be expensive
 

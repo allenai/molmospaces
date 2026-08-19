@@ -25,7 +25,7 @@ from molmo_spaces.data_generation.config_registry import (
     get_config_class,
     list_available_configs,
 )
-from molmo_spaces.tasks.task import BaseMujocoTask, EpisodeSource
+from molmo_spaces.tasks.task import BaseMujocoTask
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +74,8 @@ def make_env(
             f"so there is no task class to build."
         )
 
-    return task_cls(exp_config=exp_config, episode_source=EpisodeSource.SELF, **task_kwargs)
+    # No env, so the task samples its own episode (EpisodeSource.SELF).
+    return task_cls(exp_config=exp_config, **task_kwargs)
 
 
 def register_configs(version: int = 0) -> list[str]:

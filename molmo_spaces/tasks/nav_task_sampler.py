@@ -137,9 +137,7 @@ class NavToObjTaskSampler(BaseMujocoTaskSampler):
         # Delegate to base class for other keys (e.g., __gripper__)
         return super().resolve_visibility_object(env, key)
 
-    def _sample_task(
-        self, env: CPUMujocoEnv, task: NavToObjTask | None = None
-    ) -> NavToObjTask:
+    def _sample_task(self, env: CPUMujocoEnv, task: NavToObjTask | None = None) -> NavToObjTask:
         """Sample a navigation to object task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly

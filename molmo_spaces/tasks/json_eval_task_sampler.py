@@ -837,9 +837,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         # Replace the stub task_config with the properly typed one
         self.config.task_config = task_config
 
-    def _sample_task(
-        self, env: CPUMujocoEnv, task: BaseMujocoTask | None = None
-    ) -> BaseMujocoTask:
+    def _sample_task(self, env: CPUMujocoEnv, task: BaseMujocoTask | None = None) -> BaseMujocoTask:
         """
         Create the task from episode spec.
 

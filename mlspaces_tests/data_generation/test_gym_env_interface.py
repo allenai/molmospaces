@@ -28,7 +28,7 @@ def gym_config():
 @pytest.fixture(scope="module")
 def self_configured_task(gym_config):
     """A task that sampled its own episode (the gymnasium entry point)."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
+    task = gym_config.task_config.task_cls(exp_config=gym_config)
     yield task
     task.close()
 
@@ -76,12 +76,10 @@ def test_batched_config_is_rejected_on_the_gym_path(gym_config, monkeypatch):
     """The gymnasium interface is single-env only, and says so up front."""
     task = None
     try:
-        task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
+        task = gym_config.task_config.task_cls(exp_config=gym_config)
         monkeypatch.setattr(type(task._env), "n_batch", property(lambda self: 2))
         with pytest.raises(ValueError, match="single-environment only"):
-            gym_config.task_config.task_cls(
-                exp_config=gym_config, task_sampler=task._sampler, episode_source="self"
-            )
+            gym_config.task_config.task_cls(exp_config=gym_config, task_sampler=task._sampler)
     finally:
         if task is not None:
             task.close()
@@ -94,16 +92,18 @@ def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
         sampler._current_tasks_left = 0
         assert sampler.sample_task() is None
         with pytest.raises(EpisodesExhausted):
-            gym_config.task_config.task_cls(
-                exp_config=gym_config, task_sampler=sampler, episode_source="self"
-            )
+            gym_config.task_config.task_cls(exp_config=gym_config, task_sampler=sampler)
     finally:
         sampler.close()
 
 
 def test_first_reset_keeps_the_episode_built_at_construction(gym_config):
-    """__init__ already sampled an episode; the first reset must not throw it away."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
+    """__init__ already sampled an episode; the first reset must not throw it away.
+
+    Not just for speed: samplers consume their per-house candidate pool, so a
+    wasted episode brings the next HouseInvalidForTask closer.
+    """
+    task = gym_config.task_config.task_cls(exp_config=gym_config)
     try:
         description = task.get_task_description()
         task.reset()
@@ -112,10 +112,11 @@ def test_first_reset_keeps_the_episode_built_at_construction(gym_config):
         task.close()
 
 
-def test_later_resets_sample_a_new_episode(gym_config):
+def test_resets_keep_the_task_bound_to_the_live_env(gym_config):
     """A self-configured task advances episodes on reset, as gym callers expect."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
+    task = gym_config.task_config.task_cls(exp_config=gym_config)
     try:
+        assert task.episode_source is EpisodeSource.SELF, "derived from omitting env"
         task.reset()
         first = task.get_task_description()
         obs, info = task.reset()
@@ -146,13 +147,10 @@ def test_sampler_built_task_reset_does_not_resample(gym_config):
         sampler.close()
 
 
-def test_reset_rejects_unknown_options(gym_config):
-    task = gym_config.task_config.task_cls(exp_config=gym_config, episode_source="self")
-    try:
-        with pytest.raises(ValueError, match="Unsupported reset options"):
-            task.reset(options={"not_a_real_option": 1})
-    finally:
-        task.close()
+def test_reset_rejects_unknown_options(self_configured_task):
+    """Unknown options are prepare_episode's TypeError, not a hand-rolled check."""
+    with pytest.raises(TypeError, match="not_a_real_option"):
+        self_configured_task.reset(options={"not_a_real_option": 1})
 
 
 def test_render_returns_an_rgb_frame(self_configured_task):
@@ -162,15 +160,10 @@ def test_render_returns_an_rgb_frame(self_configured_task):
     assert "rgb_array" in type(self_configured_task).metadata["render_modes"]
 
 
-def test_render_rejects_unsupported_mode(gym_config):
-    task = gym_config.task_config.task_cls(
-        exp_config=gym_config, episode_source="self", render_mode="human"
-    )
-    try:
-        with pytest.raises(ValueError, match="Unsupported render_mode"):
-            task.render()
-    finally:
-        task.close()
+def test_render_rejects_unsupported_mode(self_configured_task, monkeypatch):
+    monkeypatch.setattr(self_configured_task, "render_mode", "human")
+    with pytest.raises(ValueError, match="Unsupported render_mode"):
+        self_configured_task.render()
 
 
 def test_spaces_are_deliberately_absent(self_configured_task):
