@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import mujoco as mj
@@ -5,6 +6,8 @@ import numpy as np
 
 from molmo_spaces.env.mj_extensions import MjModelBindings
 from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
+
+log = logging.getLogger(__name__)
 
 
 def prepare_locals_for_super(
@@ -55,6 +58,10 @@ class MjFilamentRenderer(MjAbstractRenderer):
         # Enable shadow rendering by default (shadows are controlled by lights with castshadow enabled)
         self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
 
+        # MuJoCo's renderer requires an active GL context before MjrContext
+        # initialization. Without this, Filament jobs fail with gladLoadGL.
+        self._gl_context = mj.GLContext(width, height)
+        self._gl_context.make_current()
         self._mjr_context = mj.MjrContext(model, mj.mjtFontScale.mjFONTSCALE_150.value)
         # mj.mjr_resizeOffscreen(width, height, self._mjr_context)
         mj.mjr_setBuffer(mj.mjtFramebuffer.mjFB_OFFSCREEN.value, self._mjr_context)
@@ -105,6 +112,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
+        self._gl_context.make_current()
         height = height or self._height
         width = width or self._width
         rect = mj.MjrRect(0, 0, width, height)
@@ -225,6 +233,8 @@ class MjFilamentRenderer(MjAbstractRenderer):
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
 
+        out[:] = np.flipud(out)
+
         return out
 
     def render_rgb(
@@ -234,6 +244,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
+        self._gl_context.make_current()
         height = height or self._height
         width = width or self._width
         rect = mj.MjrRect(0, 0, width, height)
@@ -285,9 +296,12 @@ class MjFilamentRenderer(MjAbstractRenderer):
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
 
+        out[:] = np.flipud(out)
+
         return out
 
     def upload_textures(self, data: mj.MjData | None = None) -> None:
+        self._gl_context.make_current()
         if self.model.ntex == 0:
             log.debug("upload_textures(): Skipping - no textures in model (ntex == 0)")
             return
@@ -304,6 +318,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
         camera: int | str | mj.MjvCamera = -1,
         scene_option: mj.MjvOption | None = None,
     ) -> None:
+        self._gl_context.make_current()
         if not isinstance(camera, mj.MjvCamera):
             camera_id = camera
             if isinstance(camera_id, str):
@@ -342,6 +357,9 @@ class MjFilamentRenderer(MjAbstractRenderer):
         if hasattr(self, "_mjr_context") and self._mjr_context:
             self._mjr_context.free()
         self._mjr_context = None
+        if hasattr(self, "_gl_context") and self._gl_context:
+            self._gl_context.free()
+        self._gl_context = None
 
 
 if __name__ == "__main__":

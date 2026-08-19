@@ -1,3 +1,5 @@
+import logging
+import os
 from queue import Queue
 from typing import Any, Literal
 
@@ -32,6 +34,8 @@ from molmo_spaces.env.mj_extensions import MjModelBindings
 # from molmo_spaces.env.vector_env import MuJoCoVectorEnv # -- this import creates lots of problem. why?
 from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer, MultithreadRenderer
 
+log = logging.getLogger(__name__)
+
 
 def prepare_locals_for_super(
     local_vars, args_name="args", kwargs_name="kwargs", ignore_kwargs=False
@@ -46,6 +50,13 @@ def prepare_locals_for_super(
             kwargs.update(new_locals)
             new_locals = kwargs
     return new_locals
+
+
+def should_use_software_gl_context() -> bool:
+    """Respect explicit software-rendering requests from the environment."""
+    mujoco_gl = os.environ.get("MUJOCO_GL", "").lower()
+    pyopengl_platform = os.environ.get("PYOPENGL_PLATFORM", "").lower()
+    return mujoco_gl == "osmesa" or pyopengl_platform == "osmesa"
 
 
 class MjOpenGLRenderer(MjAbstractRenderer):
@@ -79,7 +90,7 @@ class MjOpenGLRenderer(MjAbstractRenderer):
           ValueError: If `camera_id` is outside the valid range, or if `width` or
             `height` exceed the dimensions of MuJoCo's offscreen framebuffer.
         """
-        if device_id is None:
+        if device_id is None and not should_use_software_gl_context():
             try:
                 import torch
 
@@ -110,15 +121,33 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         # Create render contexts.
         # TODO(nimrod): Figure out why pytype doesn't like gl_context.GLContext
         self._context_is_cgl = False
+        self._gl_backend = "software" if device_id is None else "egl"
         if device_id is None:
             from mujoco import gl_context
 
             self._gl_context = gl_context.GLContext(width, height)  # type: ignore
-            self._context_is_cgl = True
+            self._context_is_cgl = self._gl_context.__class__.__module__.startswith("mujoco.cgl")
         else:
-            from molmo_spaces.renderer.opengl_context import EGLGLContext
+            try:
+                from molmo_spaces.renderer.opengl_context import EGLGLContext
 
-            self._gl_context = EGLGLContext(width, height, device_id)
+                self._gl_context = EGLGLContext(width, height, device_id)
+            except (ImportError, RuntimeError) as exc:
+                if not should_use_software_gl_context():
+                    raise
+
+                from mujoco import gl_context
+
+                log.warning(
+                    "Falling back to MuJoCo software rendering after EGL initialization failed: %s",
+                    exc,
+                )
+                self._gl_context = gl_context.GLContext(width, height)  # type: ignore
+                self._context_is_cgl = self._gl_context.__class__.__module__.startswith(
+                    "mujoco.cgl"
+                )
+                self._gl_backend = "software"
+                self.device_id = None
         self._gl_context.make_current()
         self._mjr_context = MjrContext(model, mjtFontScale.mjFONTSCALE_150.value)
         mjr_resizeOffscreen(width, height, self._mjr_context)
