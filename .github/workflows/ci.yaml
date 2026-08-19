@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   unit-tests:
+    timeout-minutes: 60
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -31,8 +32,14 @@ jobs:
       - name: Free disk space (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache
+          # Deleting these took ~85s of every job while nothing waited for the
+          # space, so detach it and let it finish during later steps.
+          # /opt/hostedtoolcache is deliberately left alone: later steps can read
+          # from it, and a background delete would race them.
+          sudo nohup rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost >/dev/null 2>&1 &
           sudo apt-get clean
+          # NOTE: reports space before the background delete has finished.
           df -h /
 
       - name: Checkout repository
@@ -40,9 +47,25 @@ jobs:
 
       - name: Install OSMesa dependencies
         if: runner.os == 'Linux'
+        # A stalled mirror used to hang this step for hours: apt has no timeout of
+        # its own and the step had none either. Cap each attempt so a stall becomes
+        # a retry rather than a hang, and cap the step so we fail in 5 minutes
+        # instead of holding the runner.
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglew-dev libosmesa6-dev
+          retry() {
+            for attempt in 1 2 3; do
+              timeout --kill-after=10s 100s "$@" && return 0
+              if [ "$attempt" -lt 3 ]; then
+                echo "'$*' failed or stalled (attempt ${attempt}/3); retrying in 5s" >&2
+                sleep 5
+              fi
+            done
+            echo "::error::'$*' did not succeed within the 5 minute budget" >&2
+            return 1
+          }
+          retry sudo apt-get update
+          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
 
       - name: Set MuJoCo rendering backend
         if: runner.os == 'Linux'
@@ -73,6 +96,7 @@ jobs:
           python -m pytest mlspaces_tests/component_tests/ -v --tb=short -x
 
   data-generation-tests:
+    timeout-minutes: 60
     # On private/internal repos, larger runners are available -- use the 8-core XL
     # runner there (these tests are the CI bottleneck and the standard 2-core hosted
     # runner is where we've seen memory pressure). Public repos aren't eligible for
@@ -98,17 +122,39 @@ jobs:
 
       - name: Free disk space (Ubuntu)
         run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache
+          # Deleting these took ~85s of every job while nothing waited for the
+          # space, so detach it and let it finish during later steps.
+          # /opt/hostedtoolcache is deliberately left alone: later steps can read
+          # from it, and a background delete would race them.
+          sudo nohup rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost >/dev/null 2>&1 &
           sudo apt-get clean
+          # NOTE: reports space before the background delete has finished.
           df -h /
 
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install OSMesa dependencies
+        # A stalled mirror used to hang this step for hours: apt has no timeout of
+        # its own and the step had none either. Cap each attempt so a stall becomes
+        # a retry rather than a hang, and cap the step so we fail in 5 minutes
+        # instead of holding the runner.
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libglew-dev libosmesa6-dev
+          retry() {
+            for attempt in 1 2 3; do
+              timeout --kill-after=10s 100s "$@" && return 0
+              if [ "$attempt" -lt 3 ]; then
+                echo "'$*' failed or stalled (attempt ${attempt}/3); retrying in 5s" >&2
+                sleep 5
+              fi
+            done
+            echo "::error::'$*' did not succeed within the 5 minute budget" >&2
+            return 1
+          }
+          retry sudo apt-get update
+          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
 
       - name: Set MuJoCo rendering backend
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
@@ -186,8 +232,8 @@ jobs:
           retry() {
             for attempt in 1 2 3; do
               "$@" && return 0
-              echo "'$*' failed (attempt ${attempt}/3); retrying in 15s" >&2
-              sleep 15
+              echo "'$*' failed (attempt ${attempt}/3); retrying in 3s" >&2
+              sleep 3
             done
             return 1
           }
@@ -255,6 +301,7 @@ jobs:
           python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
 
   ruff-checks:
+    timeout-minutes: 60
     # Job id kept as `ruff-checks` -- required by main's branch protection status
     # checks. Runs the exact same hooks (and pinned tool versions) as
     # `.pre-commit-config.yaml` via `pre-commit/action`, so CI can never drift
