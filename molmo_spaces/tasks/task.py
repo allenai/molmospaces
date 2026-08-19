@@ -197,9 +197,9 @@ class BaseMujocoTask(gym.Env, ABC):
     ) -> BaseMujocoEnv:
         """Have this task's sampler prepare a scene and sample an episode into it.
 
-        Runs the same sampler steps, in the same order, as
-        ``BaseMujocoTaskSampler._sample_task`` -- the difference being that the
-        task already exists, so there is nothing to construct.
+        Runs the sampler's own steps -- ``prepare_episode``, then ``_sample_task``
+        with this task passed in so it configures us rather than building a second
+        task, then ``finalize_episode``.
 
         Returns:
             The sim env the episode was sampled into. Note this is read from the
@@ -223,7 +223,14 @@ class BaseMujocoTask(gym.Env, ABC):
                 f"n_batch={sim_env.n_batch}. Use the task sampler directly for batches."
             )
 
-        self._sampler._configure_episode(sim_env)
+        configured = self._sampler._sample_task(sim_env, task=self)
+        if configured is not self:
+            raise TypeError(
+                f"{type(self._sampler).__name__}._sample_task ignored its `task` "
+                f"argument and returned {type(configured).__name__} instead, so this "
+                f"task has no episode. Samplers must configure and return the task "
+                f"they are given."
+            )
         return sim_env
 
     _EPISODE_OPTIONS = frozenset({"house_index", "force_advance_scene"})
@@ -264,10 +271,9 @@ class BaseMujocoTask(gym.Env, ABC):
         self._episode_is_fresh = False
 
     def _finalize_own_episode(self) -> None:
-        """Run the sampler's post-construction steps against this task."""
+        """Run the sampler's end-of-episode setup against this task."""
         if self._sampler is None:
             return
-        self._sampler._post_construct(self)
         self._sampler.finalize_episode(self)
 
     def _bind_env(self, env: BaseMujocoEnv, exp_config: "MlSpacesExpConfig") -> None:

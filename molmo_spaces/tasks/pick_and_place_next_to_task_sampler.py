@@ -21,8 +21,6 @@ log = logging.getLogger(__name__)
 
 
 class PickAndPlaceNextToTaskSampler(AbstractPickAndPlaceObjectTargetTaskSampler):
-    task_cls = PickAndPlaceNextToTask
-
     def __init__(self, config: "PickAndPlaceNextToDataGenConfig") -> None:
         super().__init__(config)
         self.config: PickAndPlaceNextToDataGenConfig
@@ -168,5 +166,10 @@ class PickAndPlaceNextToTaskSampler(AbstractPickAndPlaceObjectTargetTaskSampler)
 
         return False
 
-    def _configure_episode(self, env: CPUMujocoEnv) -> None:
+    def _sample_task(
+        self, env: CPUMujocoEnv, task: PickAndPlaceNextToTask | None = None
+    ) -> PickAndPlaceNextToTask:
         self._configure_pick_and_place(env)
+        if task is None:
+            task = PickAndPlaceNextToTask(env, self.config)
+        return task

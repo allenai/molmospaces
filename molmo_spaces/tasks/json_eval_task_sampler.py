@@ -837,26 +837,14 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         # Replace the stub task_config with the properly typed one
         self.config.task_config = task_config
 
-    @property
-    def task_class(self) -> type:
-        return self._get_task_class()
-
-    def _post_construct(self, task: BaseMujocoTask) -> None:
-        # The benchmark's recorded description wins over whatever the task class
-        # would derive from the config.
-        task_description = self.episode_spec.language.task_description
-
-        def get_task_description(self, _td=task_description) -> str:
-            return _td
-
-        task.get_task_description = types.MethodType(get_task_description, task)
-
-    def _configure_episode(self, env: CPUMujocoEnv) -> None:
+    def _sample_task(
+        self, env: CPUMujocoEnv, task: BaseMujocoTask | None = None
+    ) -> BaseMujocoTask:
         """
-        Configure the episode from the episode spec.
+        Create the task from episode spec.
 
-        Unlike other task samplers, this doesn't sample - it applies the exact
-        configuration from the episode spec.
+        Unlike other task samplers, this doesn't sample - it creates the task
+        using the exact configuration from the episode spec.
         """
         assert env.current_batch_index == 0
 
@@ -892,3 +880,16 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
 
         # only one camera setup is needed. cameras and robot placement are not randomized.
         self.setup_cameras(env)
+
+        # Get task class and instantiate
+        if task is None:
+            task = self._get_task_class()(env, self.config)
+
+        task_description = self.episode_spec.language.task_description
+
+        def get_task_description(self, _td=task_description) -> str:
+            return _td
+
+        task.get_task_description = types.MethodType(get_task_description, task)
+
+        return task

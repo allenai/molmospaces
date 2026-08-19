@@ -138,12 +138,11 @@ class PickAndPlaceColorTaskSampler(PickAndPlaceReceptacleTaskSampler):
 
         return target_color_name, target_color_rgba
 
-    @property
-    def task_class(self):
+    def _sample_task(self, env: CPUMujocoEnv, task=None):
         from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
 
-        return PickAndPlaceColorTask
-
-    def _configure_episode(self, env: CPUMujocoEnv) -> None:
         self._configure_pick_and_place(env)
         self._assign_colors_to_receptacles(env)
+        if task is None:
+            task = PickAndPlaceColorTask(env, self.config)
+        return task

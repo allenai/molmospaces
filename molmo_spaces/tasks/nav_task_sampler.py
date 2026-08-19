@@ -137,14 +137,10 @@ class NavToObjTaskSampler(BaseMujocoTaskSampler):
         # Delegate to base class for other keys (e.g., __gripper__)
         return super().resolve_visibility_object(env, key)
 
-    task_cls = NavToObjTask
-
-    def _post_construct(self, task: NavToObjTask) -> None:
-        # Store occupancy map reference in task for policy access
-        task.occupancy_map = self._cached_thormap
-
-    def _configure_episode(self, env: CPUMujocoEnv) -> None:
-        """Sample a navigation to object task configuration."""
+    def _sample_task(
+        self, env: CPUMujocoEnv, task: NavToObjTask | None = None
+    ) -> NavToObjTask:
+        """Sample a navigation to object task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
         assert env.current_batch_index == 0
@@ -288,6 +284,12 @@ class NavToObjTaskSampler(BaseMujocoTaskSampler):
         self.config.task_config.referral_expressions_priority["object_name"] = [
             (1.0, 1.0, object_name)
         ]
+
+        if task is None:
+            task = NavToObjTask(env, exp_config=self.config)
+        # Store occupancy map reference in task for policy access
+        task.occupancy_map = self._cached_thormap
+        return task
 
     def _get_scene_objects(self, env: CPUMujocoEnv) -> list[MlSpacesObject]:
         """

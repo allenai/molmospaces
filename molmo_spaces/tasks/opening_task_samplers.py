@@ -52,10 +52,13 @@ class OpenTaskSampler(PickTaskSampler):
         log.info(f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available")
         return False
 
-    task_cls = OpeningTask
-
-    def _configure_episode(self, env: CPUMujocoEnv, skip_robot_placement: bool = False) -> None:
-        """Sample an opening or closing task configuration."""
+    def _sample_task(
+        self,
+        env: CPUMujocoEnv,
+        task: OpeningTask | None = None,
+        skip_robot_placement: bool = False,
+    ) -> OpeningTask:
+        """Sample an opening or closing task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
         assert env.current_batch_index == 0
@@ -117,6 +120,10 @@ class OpenTaskSampler(PickTaskSampler):
         # Setup cameras after pickup object and robot placement
         # This allows cameras to use task-specific info (pickup object, workspace center)
         self.setup_cameras(env)
+
+        if task is None:
+            task = OpeningTask(env, self.config)
+        return task
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         """Sample a pickup object and open/close the joint, place robot using occupancy map, and return sampled params.
@@ -456,12 +463,8 @@ class DoorOpeningTaskSampler(BaseMujocoTaskSampler):
             "Was not able to place robot near any door in the scene. Skipping this task."
         )
 
-    @property
-    def task_class(self):
-        return self.config.task_config.task_cls
-
-    def _configure_episode(self, env: CPUMujocoEnv) -> None:
-        """Sample a door opening task configuration."""
+    def _sample_task(self, env: CPUMujocoEnv, task: OpeningTask | None = None):
+        """Sample a door opening task configuration and create the task."""
 
         # Set current batch index to 0 (most common case for single-batch environments)
         env.current_batch_index = 0
@@ -515,3 +518,8 @@ class DoorOpeningTaskSampler(BaseMujocoTaskSampler):
         # All cameras are defined in camera_config (MJCF cameras for RBY1)
         # Dynamic cameras will be positioned based on get_workspace_center()
         self.setup_cameras(env)
+
+        # Create and return the task using self.config (which has the modified task_config)
+        if task is None:
+            task = task_cfg.task_cls(env, self.config)
+        return task

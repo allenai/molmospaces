@@ -512,53 +512,22 @@ class BaseMujocoTaskSampler:
 
         return visibility_resolver
 
-    # Task class this sampler instantiates. Subclasses either set this, or override
-    # the `task_class` property when the class is only known at runtime (e.g. read
-    # off the task config, or imported lazily to avoid a circular import).
-    task_cls: type[BaseMujocoTask] | None = None
-
-    @property
-    def task_class(self) -> type[BaseMujocoTask]:
-        """The task class to instantiate for the configured episode."""
-        if self.task_cls is None:
-            raise NotImplementedError(
-                f"{type(self).__name__} must set `task_cls` or override `task_class`."
-            )
-        return self.task_cls
-
     @abstractmethod
-    def _configure_episode(self, env: BaseMujocoEnv) -> None:
-        """Sample this episode: mutate ``self.config.task_config`` and the scene.
+    def _sample_task(
+        self,
+        env: BaseMujocoEnv,
+        task: BaseMujocoTask | None = None,
+    ) -> BaseMujocoTask:
+        """Sample this episode into ``env`` and return the task for it.
 
-        Everything an episode needs must land in the config or the simulation
-        state, so that constructing the task afterwards is a pure step. This
-        separation is what lets a task configure itself (see
-        :meth:`BaseMujocoTask.__init__`) instead of being built by the sampler.
+        Mutates ``self.config.task_config`` and the scene, then builds the task.
+        If ``task`` is given, configure *that* task's episode rather than building
+        one -- this is how a task samples its own episodes
+        (``EpisodeSource.SELF``, see :meth:`BaseMujocoTask.__init__`). Either way
+        the task in play must be returned; ignoring ``task`` and returning a
+        different object is an error the caller checks for.
         """
         raise NotImplementedError
-
-    def _post_construct(self, task: BaseMujocoTask) -> None:
-        """Hook for state that can only be attached after the task exists."""
-
-    def _sample_task(self, env: BaseMujocoEnv, **configure_kwargs: Any) -> BaseMujocoTask:
-        """Configure an episode and build the task for it.
-
-        Extra keyword arguments are forwarded to :meth:`_configure_episode`, which
-        is how samplers with episode options (e.g. ``skip_robot_placement``) are
-        driven by their callers.
-        """
-        self._configure_episode(env, **configure_kwargs)
-
-        if self._datagen_profiler is not None:
-            self._datagen_profiler.start("sample_task_create")
-        try:
-            task = self.task_class(env, self.config)
-        finally:
-            if self._datagen_profiler is not None:
-                self._datagen_profiler.end("sample_task_create")
-
-        self._post_construct(task)
-        return task
 
     def reset(self) -> None:
         self._house_iterator_index = -1  # -1 so that it doesn't skip the first task

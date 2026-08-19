@@ -140,8 +140,6 @@ class PickTaskSampler(BaseMujocoTaskSampler):
     House order (`house_inds`) and samples per house are provided via config.
     """
 
-    task_cls = PickTask
-
     def __init__(self, config: "PickBaseConfig") -> None:
         super().__init__(config)
         self.candidate_objects: None | list[MlSpacesObject] = None
@@ -792,8 +790,12 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
         return expression_priority, filtered_expression_priority
 
-    def _configure_episode(self, env: CPUMujocoEnv) -> None:
-        """Sample a pick task configuration."""
+    def _sample_task(self, env: CPUMujocoEnv, task: PickTask | None = None) -> PickTask:
+        """Sample a pick task configuration and create the task.
+
+        If ``task`` is given, configure that task's episode instead of building
+        one (see ``EpisodeSource.SELF``); it must be returned either way.
+        """
         assert env.current_batch_index == 0
         assert self.candidate_objects is not None and len(self.candidate_objects) > 0
 
@@ -827,6 +829,17 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_context_expressions")
+
+        if self._datagen_profiler is not None:
+            self._datagen_profiler.start("sample_task_create")
+
+        if task is None:
+            task = PickTask(env, self.config)
+
+        if self._datagen_profiler is not None:
+            self._datagen_profiler.end("sample_task_create")
+
+        return task
 
     def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MlSpacesObject]:
         """
