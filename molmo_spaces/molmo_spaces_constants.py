@@ -132,6 +132,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     benchmarks={
         "molmospaces-bench-v1": "20260408",
         "molmospaces-bench-v2": "20260415",
+        "molmospaces-commonsense-bench": "20260824",
     },
 )
 

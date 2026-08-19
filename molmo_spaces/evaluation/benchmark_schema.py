@@ -82,6 +82,60 @@ class ExocentricCameraSpec(BaseModel):
 CameraSpec = RobotMountedCameraSpec | ExocentricCameraSpec
 
 
+# Supported MuJoCo geom primitives for procedurally-created bodies.
+PrimitiveGeomType = Literal["box", "sphere", "capsule", "cylinder", "ellipsoid"]
+
+
+class PrimitiveGeomSpec(BaseModel):
+    """A single MuJoCo geom inside a procedurally-created primitive body.
+
+    Mirrors the arguments passed to ``MjsBody.add_geom`` so the eval-time
+    loader can faithfully replay whatever the datagen sampler built.
+    """
+
+    # Suffix appended to the body name to form the geom name
+    # (e.g. "_visual", "_collision", "_geom").
+    name_suffix: str
+
+    geom_type: PrimitiveGeomType
+    # MuJoCo's geom size vector, zero-padded to length 3
+    # (e.g. box=[hx,hy,hz], sphere=[r,0,0], capsule=[r,h,0]).
+    size: list[float] = Field(..., min_length=3, max_length=3)
+    rgba: list[float] = Field(..., min_length=4, max_length=4)
+
+    # Optional MuJoCo attributes. None means "don't set — leave the MuJoCo
+    # default", so we don't inadvertently override compiler-computed values.
+    contype: int | None = None
+    conaffinity: int | None = None
+    friction: list[float] | None = None  # [slide, spin, roll]
+    mass: float | None = None  # None → auto-compute from geom volume+density
+
+
+class PrimitiveObjectSpec(BaseModel):
+    """A procedurally-created body composed of one or more primitive geoms.
+
+    Used for bodies that are added to the scene at spec time via
+    ``spec.worldbody.add_body`` + ``add_geom`` rather than loaded from an
+    XML asset. The JSON eval loader reconstructs these by replaying the
+    add-body / add-joint / add-geom sequence captured here.
+    """
+
+    body_name: str  # e.g. "block_1", "mug_ball_pick_ball"
+
+    # Position baked into the spec at build time. The authoritative initial
+    # pose for evaluation comes from ``SceneModificationsSpec.object_poses``;
+    # this is just the placeholder position the body is compiled with.
+    initial_pos: list[float] = Field(
+        default_factory=lambda: [0.0, 0.0, 0.0], min_length=3, max_length=3
+    )
+
+    add_freejoint: bool = True
+    freejoint_name: str | None = None  # None → MuJoCo default (unnamed)
+    freejoint_damping: float | None = None  # None → MuJoCo default (no damping)
+
+    geoms: list[PrimitiveGeomSpec]
+
+
 class SceneModificationsSpec(BaseModel):
     """Scene modifications required for this episode.
 
@@ -92,6 +146,11 @@ class SceneModificationsSpec(BaseModel):
     # Objects to add: name -> path relative to ASSETS_DIR
     # e.g. {"place_receptacle/0/Bowl_27": "objects/thor/Bowl_27.xml"}
     added_objects: dict[str, str] = Field(default_factory=dict)
+
+    # Procedurally-created primitive bodies (blocks, balls, anchors) that
+    # have no XML asset. Keyed by body name so entries line up with
+    # object_poses. Replayed at eval time by the JSON task sampler.
+    primitive_objects: dict[str, PrimitiveObjectSpec] = Field(default_factory=dict)
 
     # Object poses: name -> [x, y, z, qw, qx, qy, qz]
     # Includes both added objects and existing scene objects that need repositioning
@@ -134,6 +193,27 @@ class PickTaskSpec(BaseTaskSpec):
     succ_pos_threshold: float = 0.01  # lift height threshold in meters
 
 
+class MugBallPickTaskSpec(PickTaskSpec):
+    """Task-specific parameters for the mug-ball (object permanence) pick task.
+
+    Exists solely to carry `scene_settle_duration`. The mug-ball sampler sets it
+    imperatively at datagen time (mug_ball_pick_task_sampler.py) and it was never part
+    of any TaskSpec, so it did not survive serialization into the benchmark JSON. At
+    eval it therefore fell back to the task-config default of 0.0, which disables the
+    whole settle block in MugBallPickTask.step(): the scene is not given time to settle
+    (the policy acts while the mugs are still falling) AND pickup_obj_start_pose /
+    pickup_obj_goal_pose are never refreshed to the settled poses.
+
+    Declaring it here fixes existing benchmarks without regenerating them, because
+    apply_task_spec_to_config() runs model_validate() on the stored task dict and
+    model_dump() fills in schema defaults for absent fields.
+    """
+
+    # Seconds of forced no-op actions while the mugs fall. Matches the value the
+    # sampler used at datagen time.
+    scene_settle_duration: float = 5.0
+
+
 class PickAndPlaceTaskSpec(PickTaskSpec):
     """Task-specific parameters for pick and place tasks."""
 
@@ -159,6 +239,12 @@ class PickAndPlaceColorTaskSpec(PickAndPlaceTaskSpec):
     object_colors: dict[str, list[float]] | None = None  # object name -> rgba
     other_receptacle_names: list[str] | None = None
     other_receptacle_start_poses: dict[str, list[float]] | None = None
+
+
+class PackingTaskSpec(PickAndPlaceTaskSpec):
+    """Task-specific parameters for packing tasks."""
+
+    packing_object_names: list[str] | None = None
 
 
 class OpenCloseTaskSpec(BaseTaskSpec):
@@ -200,25 +286,44 @@ class DoorOpeningTaskSpec(BaseTaskSpec):
     door_openness_threshold: float = 0.67  # percentage of door opening
 
 
+class BlockSupportTaskSpec(PickTaskSpec):
+    """Task-specific parameters for block-support / block-stacking tasks.
+
+    The blocks themselves are procedural primitives (see
+    ``SceneModificationsSpec.primitive_objects``) keyed by the names in
+    ``block_names``. ``pickup_obj_name`` and ``place_receptacle_name`` are
+    inherited from PickTaskSpec and point at entries in ``block_names``.
+    """
+
+    place_receptacle_name: str | None = None
+    # Ordered list of block body names (e.g. ["block_1", "block_2", ...]).
+    block_names: list[str] = Field(default_factory=list)
+
+
 TaskSpec = (
     PickTaskSpec
     | PickAndPlaceTaskSpec
+    | PackingTaskSpec
     | PickAndPlaceColorTaskSpec
     | PickAndPlaceNextToTaskSpec
     | OpenCloseTaskSpec
     | NavToObjTaskSpec
     | DoorOpeningTaskSpec
+    | BlockSupportTaskSpec
 )
 
 # All TaskSpec subclasses for introspection
 ALL_TASK_SPEC_CLASSES: list[type[BaseTaskSpec]] = [
     PickTaskSpec,
+    MugBallPickTaskSpec,
     PickAndPlaceTaskSpec,
     PickAndPlaceNextToTaskSpec,
     PickAndPlaceColorTaskSpec,
+    PackingTaskSpec,
     OpenCloseTaskSpec,
     NavToObjTaskSpec,
     DoorOpeningTaskSpec,
+    BlockSupportTaskSpec,
 ]
 
 # Fields that are metadata about the task, not configuration to copy
@@ -391,6 +496,11 @@ class BenchmarkMetadata(BaseModel):
 
     # Camera system info
     camera_system_class: str | None = None  # CameraSystemConfig class name
+
+    # Density balancing info (written by create_json_benchmark when balancing by
+    # nearby-object density)
+    balancing_axis_counts: dict[str, dict] | None = None  # axis -> {bucket label: count}
+    nearby_graspable_stats: dict[str, float] | None = None  # radius_m, min/max/mean/median
 
     # Provenance dates
     source_data_date: str | None = None  # Approximate date source H5 files were created
