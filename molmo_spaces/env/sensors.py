@@ -973,6 +973,24 @@ class PolicyNumRetriesSensor(Sensor):
         self._logged_warning = False
 
 
+class GraspPoseSensor(Sensor):
+    """Sensor for the planned grasp pose in 7D format."""
+
+    def __init__(self, uuid: str = "grasp_pose") -> None:
+        observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
+        super().__init__(uuid=uuid, observation_space=observation_space)
+
+    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
+        """Return the registered planner policy's planned grasp pose (zeros if unavailable)."""
+        if task._registered_policy is None or "grasp" not in task._registered_policy.target_poses:
+            return np.zeros(7, dtype=np.float32)
+        else:
+            return np.array(
+                pose_mat_to_7d(task._registered_policy.target_poses["grasp"]),
+                dtype=np.float32,
+            )
+
+
 def get_core_sensors(exp_config):
     """Get core sensors for Franka pick-place data generation.
 

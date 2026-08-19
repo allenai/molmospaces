@@ -670,6 +670,15 @@ AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA = {
     "WineBottle": "wine_bottle",
 }
 
+EASY_PICK_AND_PLACE_OBJECTS = [
+    "bowl",
+    "cup",
+    "egg",
+    "mug",
+    "pepper_shaker",
+    "salt_shaker",
+]
+
 PICK_AND_PLACE_OBJECTS = [
     "alarm_clock",
     "aluminum_foil",
