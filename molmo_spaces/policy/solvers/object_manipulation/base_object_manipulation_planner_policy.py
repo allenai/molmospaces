@@ -4,11 +4,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+import gymnasium.spaces as gyms
 import mujoco
 import numpy as np
 from mujoco import MjSpec
 from scipy.spatial.transform import Rotation as R
-import gymnasium.spaces as gyms
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.configs.policy_configs import ObjectManipulationPlannerPolicyConfig
@@ -266,7 +266,15 @@ class TCPMoveSequence(MoveSequence):
         trf = np.linalg.inv(gripper.leaf_frame_to_world) @ curr_target_pose
         pos_err = np.linalg.norm(trf[:3, 3])
         rot_err = R.from_matrix(trf[:3, :3]).magnitude()
-        return pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold
+        failed = pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold
+        if failed:
+            seg_name = self.move_segments[min(self.move_seg_idx, len(self.move_segments) - 1)].name
+            log.debug(
+                f"[TCP FAILURE] segment='{seg_name}' pos_err={pos_err:.4f}m (threshold={self.tcp_pos_err_threshold:.4f}) "
+                f"rot_err={np.degrees(rot_err):.1f}deg (threshold={np.degrees(self.tcp_rot_err_threshold):.1f}) "
+                f"gripper_pos={gripper.leaf_frame_to_world[:3, 3]} target_pos={curr_target_pose[:3, 3]}"
+            )
+        return failed
 
 
 class JointMoveSequence(MoveSequence):
@@ -486,6 +494,11 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                     ]
 
     def get_action(self, info: dict[str, Any]) -> dict[str, Any]:
+        if not self.action_primitives:
+            # No-op ctrl keeps the rollout loop's action application well-formed
+            # (e.g. packing with every object already in the receptacle).
+            return {**self.robot_view.get_noop_ctrl_dict(), "done": True}
+
         if self._check_for_failures():
             return self._handle_failure()
 
@@ -504,9 +517,12 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
         else:
             action = self.action_primitives[-1].get_current_action()
             action["done"] = True
+            log.info("[POLICY] All action primitives completed, setting done=True")
         return action
 
     def get_phase(self) -> str:
+        if not self.action_primitives:
+            return "done"
         if self.action_idx < len(self.action_primitives):
             act_prim = self.action_primitives[self.action_idx]
         else:
@@ -520,18 +536,35 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
     def _check_for_failures(self) -> bool:
         # TODO(abhayd): check for collision with other objects
         if self.action_idx >= len(self.action_primitives):
+            log.debug(
+                f"[FAILURE CHECK] action_idx={self.action_idx} >= num_primitives={len(self.action_primitives)}, all primitives exhausted"
+            )
             return True
         action_primitive = self.action_primitives[self.action_idx]
         return action_primitive.check_failure()
 
     def _handle_failure(self) -> dict[str, Any]:
+        # Log which primitive failed and why
+        if self.action_idx < len(self.action_primitives):
+            failed_prim = self.action_primitives[self.action_idx]
+            phase = failed_prim.get_current_phase()
+            prim_type = type(failed_prim).__name__
+        else:
+            phase = "all_completed"
+            prim_type = "N/A"
+
         if self.retry_count >= self.policy_config.max_retries:
-            log.info(f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed.")
+            log.info(
+                f"Max retries ({self.policy_config.max_retries}) exceeded. Task failed. "
+                f"Last failure: primitive={prim_type} phase='{phase}' action_idx={self.action_idx}/{len(self.action_primitives)}"
+            )
             return {"done": True, "success": False}
 
         self._retry_count += 1
         log.info(
-            f"🔄 Failure detected! Initiating retry {self.retry_count}/{self.policy_config.max_retries}"
+            f"Failure detected at primitive={prim_type} phase='{phase}' "
+            f"action_idx={self.action_idx}/{len(self.action_primitives)}. "
+            f"Retry {self.retry_count}/{self.policy_config.max_retries}"
         )
         self.reset(reset_retries=False)
 
@@ -654,6 +687,41 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                 )
                 i += 1
         viewer.user_scn.ngeom = ngeom + i
+
+    def _show_axes(self, pose: np.ndarray, length: float = 0.1, radius: float = 0.004) -> None:
+        """Draw an X/Y/Z axis triad at the given 4x4 world pose.
+
+        Red=X, Green=Y, Blue=Z. Useful for confirming a body's local frame
+        (e.g. where the place-receptacle origin sits relative to its AABB).
+        """
+        if self.task.viewer is None:
+            return
+        assert pose.shape == (4, 4)
+        viewer = self.task.viewer
+        ngeom = viewer.user_scn.ngeom
+        half_length = length / 2
+        rot = pose[:3, :3]
+        origin = pose[:3, 3]
+        # MuJoCo cylinders extend along their local Z. For each axis, rotate so
+        # the cylinder's Z aligns with the desired world axis, then translate the
+        # cylinder's center half_length along that axis from `origin`.
+        axes = [
+            ((1, 0, 0, 1), np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], dtype=float)),  # X
+            ((0, 1, 0, 1), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=float)),  # Y
+            ((0, 0, 1, 1), np.eye(3)),  # Z
+        ]
+        for i, (color, R_local) in enumerate(axes):
+            R_world = rot @ R_local
+            center = origin + R_world @ np.array([0.0, 0.0, half_length])
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[ngeom + i],
+                type=mujoco.mjtGeom.mjGEOM_CYLINDER,
+                size=np.array([radius, half_length, 0.0]),
+                pos=center,
+                mat=R_world.flatten(),
+                rgba=color,
+            )
+        viewer.user_scn.ngeom = ngeom + 3
 
     @staticmethod
     def add_auxiliary_objects(config: MlSpacesExpConfig, spec: MjSpec) -> None:
