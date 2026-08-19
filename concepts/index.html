@@ -1924,8 +1924,8 @@ It handles the control loop: receiving action commands keyed by move group ID, d
 <h4 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h4>
 <p>Robot configs (<code>BaseRobotConfig</code>) reference move group IDs as dictionary keys:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BaseRobotConfig</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">init_qpos</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>  <span class="c1"># e.g. {&quot;arm&quot;: [...], &quot;gripper&quot;: [...]}</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">command_mode</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>  <span class="c1"># e.g. {&quot;arm&quot;: &quot;joint_position&quot;, &quot;gripper&quot;: &quot;joint_position&quot;}</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">init_qpos</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>  <span class="c1"># e.g. {"arm": [...], "gripper": [...]}</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">command_mode</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>  <span class="c1"># e.g. {"arm": "joint_position", "gripper": "joint_position"}</span>
 </code></pre></div>
 <p>These keys must match the names of the robot's move groups.</p>
 <p>The <strong>command mode</strong> determines what the action arrays for each move group mean and which controller is used:</p>
@@ -1942,12 +1942,12 @@ This separation is handled by the task layer (see <a href="#timing">Timing</a> b
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Robot
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── robot_view: RobotView
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│   └── move_groups: dict[str, MoveGroup]
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│       ├── &quot;arm&quot;     → MoveGroup (7 DoF)
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│       ├── &quot;gripper&quot; → GripperGroup (1 DoF)
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│       └── &quot;base&quot;    → ImmobileRobotBaseGroup (0 DoF)
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│       ├── "arm"     → MoveGroup (7 DoF)
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│       ├── "gripper" → GripperGroup (1 DoF)
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│       └── "base"    → ImmobileRobotBaseGroup (0 DoF)
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>├── controllers: dict[str, Controller]
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   ├── &quot;arm&quot;     → JointPosController
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│   └── &quot;gripper&quot; → JointPosController
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   ├── "arm"     → JointPosController
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│   └── "gripper" → JointPosController
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>└── kinematics: MlSpacesKinematics
 </code></pre></div>
 <h2 id="environment-tasks-and-task-samplers">Environment, Tasks, and Task Samplers<a class="headerlink" href="#environment-tasks-and-task-samplers" title="Permanent link">&para;</a></h2>
