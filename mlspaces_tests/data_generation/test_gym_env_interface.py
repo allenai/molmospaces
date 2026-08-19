@@ -97,3 +97,57 @@ def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
             )
     finally:
         sampler.close()
+
+
+def test_first_reset_keeps_the_episode_built_at_construction(gym_config):
+    """__init__ already sampled an episode; the first reset must not throw it away."""
+    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    try:
+        description = task.get_task_description()
+        task.reset()
+        assert task.get_task_description() == description
+    finally:
+        task.close()
+
+
+def test_later_resets_sample_a_new_episode(gym_config):
+    """A self-configured task advances episodes on reset, as gym callers expect."""
+    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    try:
+        task.reset()
+        first = task.get_task_description()
+        obs, info = task.reset()
+        assert obs[0], "expected observations for the new episode"
+        assert task.episode_step_count == 0
+        assert not task.observation_cache[1:], "caches must be cleared for the new episode"
+        # The sampler advanced, so task state was rebuilt; the description may or
+        # may not differ (same house can resample the same objects), but the env
+        # binding must always be the sampler's current one.
+        assert task._env is task._sampler.env
+        assert isinstance(first, str)
+    finally:
+        task.close()
+
+
+def test_sampler_built_task_reset_does_not_resample(gym_config):
+    """The data generation path keeps its reset semantics: clear state, same episode."""
+    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
+    try:
+        task = sampler.sample_task()
+        description = task.get_task_description()
+        task.reset()
+        task.reset()
+        assert task.get_task_description() == description
+        assert not task._self_configured
+        task.close()
+    finally:
+        sampler.close()
+
+
+def test_reset_rejects_unknown_options(gym_config):
+    task = gym_config.task_config.task_cls(exp_config=gym_config, configure=True)
+    try:
+        with pytest.raises(ValueError, match="Unsupported reset options"):
+            task.reset(options={"not_a_real_option": 1})
+    finally:
+        task.close()

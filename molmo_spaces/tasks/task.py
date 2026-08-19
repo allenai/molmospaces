@@ -68,6 +68,10 @@ class BaseMujocoTask(gym.Env, ABC):
 
         self._sampler = task_sampler
         self._owns_sampler = False
+        # Whether this task samples its own episodes, and so whether reset()
+        # advances to a new one.
+        self._self_configured = configure
+        self._episode_is_fresh = configure
 
         if configure:
             env = self._configure_own_episode(exp_config, episode_options)
@@ -155,6 +159,43 @@ class BaseMujocoTask(gym.Env, ABC):
 
         self._sampler._configure_episode(sim_env)
         return sim_env
+
+    _EPISODE_OPTIONS = frozenset({"house_index", "force_advance_scene"})
+
+    def _resample_episode(
+        self,
+        seed: int | None = None,
+        options: dict[str, Any] | None = None,
+    ) -> None:
+        """Sample a fresh episode into this task, for gymnasium-style reset().
+
+        The first call after construction is a no-op unless a seed or options are
+        given: ``__init__`` already sampled an episode, and re-sampling it would
+        throw away that work (a scene load, in the worst case) before the caller
+        ever saw it.
+        """
+        if options:
+            unknown = set(options) - self._EPISODE_OPTIONS
+            if unknown:
+                raise ValueError(
+                    f"Unsupported reset options {sorted(unknown)}; "
+                    f"supported: {sorted(self._EPISODE_OPTIONS)}"
+                )
+
+        if self._episode_is_fresh and seed is None and not options:
+            self._episode_is_fresh = False
+            return
+
+        if seed is not None:
+            self._sampler.seed_task_sampling(seed)
+
+        sim_env = self._configure_own_episode(self.config, options)
+        # A scene load replaces the sim env, so re-bind rather than assume ours
+        # is still the live one.
+        self._bind_env(sim_env, self.config)
+        self._on_episode_configured()
+        self._finalize_own_episode()
+        self._episode_is_fresh = False
 
     def _finalize_own_episode(self) -> None:
         """Run the sampler's post-construction steps against this task."""
@@ -322,11 +363,32 @@ class BaseMujocoTask(gym.Env, ABC):
 
         return observation, reward, terminated, truncated, info
 
-    def reset(self):
-        """Reset the task and record initial observations."""
-        # TODO(rose): Something like this should be done here to be compatible with gym API
-        # consider placing settle_scene here.
-        # self._env.reset()
+    def reset(
+        self,
+        *,
+        seed: int | None = None,
+        options: dict[str, Any] | None = None,
+    ):
+        """Reset the task and record initial observations.
+
+        For a self-configured task (``configure=True``) this samples a *new*
+        episode, except on the first call, which uses the episode built during
+        construction -- passing ``seed`` forces a re-sample so the seed takes
+        effect. For a sampler-built task there is no sampler to re-sample with,
+        so the scene is left alone and only task state is cleared; a new episode
+        means a new ``sample_task()``.
+
+        Args:
+            seed: Seeds episode sampling. NOTE this is process-global (see
+                ``BaseMujocoTaskSampler.seed_task_sampling``), so it perturbs
+                the RNG of everything else in the process, callers included.
+            options: Forwarded to episode sampling; only ``house_index`` and
+                ``force_advance_scene`` are accepted.
+        """
+        super().reset(seed=seed)
+
+        if self._self_configured:
+            self._resample_episode(seed=seed, options=options)
 
         self.episode_step_count = 0
         self._cumulative_reward = np.zeros(self._env.n_batch)
@@ -638,6 +700,12 @@ class BaseMujocoTask(gym.Env, ABC):
 
         # Clear environment reference (not closing it as it is owned by the task sampler)
         self._env = None
+
+        # A self-configured task created its own sampler, so it owns the sim env
+        # behind it and has to close it; a sampler passed in belongs to the caller.
+        if getattr(self, "_owns_sampler", False) and self._sampler is not None:
+            self._sampler.close()
+            self._sampler = None
 
         if hasattr(self, "renderer") and self.renderer is not None:
             with contextlib.suppress(AttributeError):

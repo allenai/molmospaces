@@ -87,10 +87,10 @@ class MultiTask(BaseMujocoTask):
         obs_scene["num_tasks"] = len(self.tasks)
         return obs_scene
 
-    def reset(self) -> dict[str, Any]:
+    def reset(self, **kwargs: Any) -> dict[str, Any]:
         for task in self.tasks:
-            task.reset()
-        return self.tasks[0].reset()
+            task.reset(**kwargs)
+        return self.tasks[0].reset(**kwargs)
 
     def step(
         self, action: dict[str, Any]

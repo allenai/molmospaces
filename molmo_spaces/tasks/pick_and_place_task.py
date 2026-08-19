@@ -65,8 +65,8 @@ class PickAndPlaceTask(BaseMujocoTask):
 
         return SensorSuite(sensors)
 
-    def reset(self):
-        result = super().reset()
+    def reset(self, **kwargs: Any):
+        result = super().reset(**kwargs)
         self._supported_rel_poses.clear()
         return result
 
