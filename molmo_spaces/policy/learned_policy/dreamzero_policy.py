@@ -7,11 +7,10 @@ import cv2
 import numpy as np
 import websockets.exceptions
 import websockets.sync.client
-import msgpack_numpy
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
-from molmo_spaces.policy.learned_policy.utils import resize_with_pad
+from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_pad
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +23,8 @@ class DreamZeroWebsocketClient:
     """Websocket client that adds endpoint field for DreamZero server."""
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8000) -> None:
+        from openpi_client import msgpack_numpy
+
         self._uri = f"ws://{host}:{port}"
         self._packer = msgpack_numpy.Packer()
         self._ws, self._server_metadata = self._wait_for_server()
@@ -31,6 +32,8 @@ class DreamZeroWebsocketClient:
         self._connected_uri = self._uri
 
     def _connect_once(self, uri: str) -> tuple[websockets.sync.client.ClientConnection, dict]:
+        from openpi_client import msgpack_numpy
+
         conn = websockets.sync.client.connect(
             uri,
             compression=None,
@@ -69,6 +72,8 @@ class DreamZeroWebsocketClient:
                 time.sleep(retry_delay)
 
     def infer(self, obs: dict) -> dict:
+        from openpi_client import msgpack_numpy
+
         obs["endpoint"] = "infer"
         data = self._packer.pack(obs)
         try:
@@ -106,6 +111,12 @@ class DreamZero_Policy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
+        self.prompt_sampler = PromptSampler(
+            task_type=exp_config.task_type,
+            prompt_templates=exp_config.policy_config.prompt_templates,
+            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            prompt_level=exp_config.policy_config.prompt_level,
+        )
         self.checkpoint_path = exp_config.policy_config.checkpoint_path
         self.grasping_type = exp_config.policy_config.grasping_type
         self.chunk_size = exp_config.policy_config.chunk_size
@@ -116,6 +127,7 @@ class DreamZero_Policy(InferencePolicy):
     def reset(self):
         self.actions_buffer = None
         self.current_buffer_index = 0
+        self.prompt_sampler.next()
         self.starting_time = None
         self.session_id = str(uuid.uuid4())
 
@@ -150,13 +162,16 @@ class DreamZero_Policy(InferencePolicy):
                     raise
 
     def render(self, obs):
+        obs = obs[0]
         views = np.concatenate([obs["wrist_camera"], obs["exo_camera_1"]], axis=1)
         cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
         cv2.waitKey(1)
 
     def obs_to_model_input(self, obs):
         # self.render(obs)
-        prompt = self.task.get_task_description()
+        if isinstance(obs, list):
+            obs = obs[0]
+        prompt = self.prompt_sampler.get_prompt(self.task)
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         if grip < 0.1:
             grip = 0.00
@@ -194,7 +209,10 @@ class DreamZero_Policy(InferencePolicy):
             self.starting_time = time.time()
         if self.actions_buffer is None or self.current_buffer_index >= self.chunk_size:
             result = self.model.infer(model_input)
-            self.actions_buffer = result["actions"]
+            if isinstance(result, dict):
+                self.actions_buffer = result["actions"]
+            else:
+                self.actions_buffer = result
             self.current_buffer_index = 0
         model_output = self.actions_buffer[self.current_buffer_index]
         self.current_buffer_index += 1
@@ -234,7 +252,7 @@ class DreamZero_Policy(InferencePolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.task.get_task_description()
+        info["prompt"] = self.prompt_sampler.get_prompt(self.task)
         info["session_id"] = self.session_id
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()

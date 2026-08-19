@@ -1,14 +1,14 @@
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy, StatefulPolicy
-from molmo_spaces.policy.learned_policy.utils import resize_with_pad
+from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_pad
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +32,20 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.grasping_type = exp_config.policy_config.grasping_type
         self.chunk_size = exp_config.policy_config.chunk_size
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
+        self.use_prompt_sampler = exp_config.policy_config.use_prompt_sampler
+        # PromptSampler is the prompt source whenever use_prompt_sampler is
+        # True (default): it pulls per-object templates from utils.py for
+        # generic tasks and from semantic_pick_prompts.py for
+        # semantic_grasp_pick (driven by policy_config.prompt_level). The
+        # construction-time exp_config.task_type is whatever the eval config
+        # defaults to (e.g. "pick" for JsonBenchmarkEvalConfig); the actual
+        # task_type is re-synced per-episode inside PromptSampler.get_prompt.
+        self.prompt_sampler = PromptSampler(
+            task_type=exp_config.task_type,
+            prompt_templates=exp_config.policy_config.prompt_templates,
+            prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,
+            prompt_level=exp_config.policy_config.prompt_level,
+        )
         self.model = None  # don't init model till inference to allow multiprocessing
 
     def get_state(self):
@@ -50,6 +64,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.actions_buffer = None
         self.current_buffer_index = 0
         self.starting_time = None
+        self.prompt_sampler.next()
 
     def prepare_model(self):
         self.model_name = os.path.basename(self.checkpoint_path)
@@ -100,6 +115,7 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
                     raise
 
     def render(self, obs):
+        obs = obs[0]
         views = np.concatenate([obs["wrist_camera"], obs["exo_camera_1"]], axis=1)
         cv2.imshow("views", cv2.cvtColor(views, cv2.COLOR_RGB2BGR))
         cv2.waitKey(1)
@@ -117,7 +133,10 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
                 )
             obs = obs[0]
         model_input = {**obs}
-        prompt = self.task.get_task_description()
+        if self.use_prompt_sampler:
+            prompt = self.prompt_sampler.get_prompt(self.task)
+        else:
+            prompt = self.task.get_task_description()
 
         # For local eval
         if isinstance(obs, list | tuple):
@@ -195,7 +214,10 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.task.get_task_description()
+        if self.use_prompt_sampler:
+            info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        else:
+            info["prompt"] = self.task.get_task_description()
         log.info(f"Current prompt: {info['prompt']}")
 
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
