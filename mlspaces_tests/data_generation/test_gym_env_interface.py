@@ -7,9 +7,11 @@ that path and pin the parts of the gymnasium contract that do hold; see
 """
 
 import gymnasium as gym
+import numpy as np
 import pytest
 
 from mlspaces_tests.data_generation.config import FrankaPickAndPlaceDroidTestConfig
+from molmo_spaces.tasks import gym_registration
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.tasks.task_sampler_errors import EpisodesExhausted
 
@@ -151,3 +153,54 @@ def test_reset_rejects_unknown_options(gym_config):
             task.reset(options={"not_a_real_option": 1})
     finally:
         task.close()
+
+
+def test_render_returns_an_rgb_frame(self_configured_task):
+    frame = self_configured_task.render()
+    assert frame.ndim == 3 and frame.shape[2] == 3
+    assert frame.dtype == np.uint8
+    assert "rgb_array" in type(self_configured_task).metadata["render_modes"]
+
+
+def test_render_rejects_unsupported_mode(gym_config):
+    task = gym_config.task_config.task_cls(
+        exp_config=gym_config, configure=True, render_mode="human"
+    )
+    try:
+        with pytest.raises(ValueError, match="Unsupported render_mode"):
+            task.render()
+    finally:
+        task.close()
+
+
+def test_spaces_are_deliberately_absent(self_configured_task):
+    """Pinned so the omission is a decision, not an accident. See docs/gym_compatibility.md."""
+    assert getattr(self_configured_task, "action_space", None) is None
+    assert getattr(self_configured_task, "observation_space", None) is None
+
+
+def test_make_env_builds_a_task_from_a_config_object(gym_config):
+    env = gym_registration.make_env(exp_config=gym_config)
+    try:
+        assert isinstance(env, gym.Env)
+        assert env._self_configured
+        assert env.get_task_description().strip()
+    finally:
+        env.close()
+
+
+def test_make_env_requires_exactly_one_source(gym_config):
+    with pytest.raises(ValueError, match="exactly one"):
+        gym_registration.make_env()
+    with pytest.raises(ValueError, match="exactly one"):
+        gym_registration.make_env(config_name="X", exp_config=gym_config)
+
+
+def test_register_configs_is_idempotent():
+    import molmo_spaces.data_generation.config.object_manipulation_datagen_configs  # noqa: F401
+
+    first = gym_registration.register_configs()
+    assert first, "expected at least one config to register"
+    assert all(env_id in gym.registry for env_id in first)
+    # A second call must not raise or re-register.
+    assert gym_registration.register_configs() == []

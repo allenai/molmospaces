@@ -50,9 +50,17 @@ class BaseMujocoTask(gym.Env, ABC):
       resulting sim env. This is the gymnasium entry point.
 
     See ``docs/gym_compatibility.md`` for which parts of the gymnasium contract
-    hold; notably there is no ``action_space`` and only ``n_batch == 1`` is
-    supported.
+    hold. Notably neither ``action_space`` nor ``observation_space`` is declared,
+    and only ``n_batch == 1`` is supported.
     """
+
+    metadata = {"render_modes": ["rgb_array"]}
+
+    # Deliberately not declared, see docs/gym_compatibility.md:
+    #   action_space      -- actions are dicts keyed by move group, with no space
+    #   observation_space -- sensors have per-sensor spaces, but observations are
+    #                        list[dict] (one per batch element), so no single
+    #                        space describes what reset()/step() return
 
     def __init__(
         self,
@@ -62,9 +70,14 @@ class BaseMujocoTask(gym.Env, ABC):
         task_sampler: "BaseMujocoTaskSampler | None" = None,
         configure: bool = False,
         episode_options: dict[str, Any] | None = None,
+        render_mode: str | None = None,
+        render_camera: str | None = None,
     ) -> None:
         if exp_config is None:
             raise ValueError("exp_config is required")
+
+        self.render_mode = render_mode
+        self.render_camera = render_camera
 
         self._sampler = task_sampler
         self._owns_sampler = False
@@ -123,6 +136,30 @@ class BaseMujocoTask(gym.Env, ABC):
 
         # Please don't call self.reset() here. reset should return the first observation, if we do it in
         # __init__ it will end up in the cache, but not being returned to the user.
+
+    def render(self) -> np.ndarray:
+        """Render the current scene as an RGB array.
+
+        Uses ``render_camera`` if set, else the first camera in the camera config.
+        Unlike ``gym.Env.render`` this does not require ``render_mode`` to have
+        been set -- returning a frame beats returning None for an unset mode.
+        """
+        if self.render_mode not in (None, "rgb_array"):
+            raise ValueError(
+                f"Unsupported render_mode {self.render_mode!r}; supported: 'rgb_array'."
+            )
+
+        camera_name = self.render_camera
+        if camera_name is None:
+            camera_config = self.config.camera_config
+            if camera_config is None or not camera_config.cameras:
+                raise RuntimeError(
+                    "Cannot render: no cameras configured. Set exp_config.camera_config "
+                    "or this task's render_camera."
+                )
+            camera_name = camera_config.cameras[0].name
+
+        return self._env.render_rgb_frame(camera_name)
 
     def _configure_own_episode(
         self,
