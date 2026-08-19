@@ -28,7 +28,9 @@ from molmo_spaces.configs.camera_configs import (
 )
 from molmo_spaces.configs.policy_configs import (
     AStarNavToObjPolicyConfig,
+    BlockStackingPolicyConfig,
     OpenClosePlannerPolicyConfig,
+    PackingPlannerPolicyConfig,
     PickAndPlaceNextToPlannerPolicyConfig,
     PickAndPlacePlannerPolicyConfig,
     PickPlannerPolicyConfig,
@@ -50,6 +52,11 @@ from molmo_spaces.configs.robot_configs import (
 )
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.configs.base_packing_configs import PackingDataGenConfig
+from molmo_spaces.configs.commonsense_configs import (
+    BlockSupportConfig,
+    MugBallPickConfig,
+    SemanticGraspPickConfig,
+)
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDroidDataGenConfig,
     FrankaPickAndPlaceColorDataGenConfig,
@@ -109,19 +116,31 @@ class MyRolloutRunner(ParallelRolloutRunner):
 
         while not task.is_done():
             if shutdown_event is not None and shutdown_event.is_set():
+                log.info("[ROLLOUT] Terminated: shutdown signal received")
                 return False
 
             # Get action from policy and step the task
             action_cmd = policy.get_action(observation)
             if action_cmd is None:
+                log.info("[ROLLOUT] Terminated: policy returned None action")
                 break
             observation, reward, terminal, truncated, infos = task.step(action_cmd)
             if end_on_success and "success" in infos[0] and infos[0]["success"]:
+                log.info(f"[ROLLOUT] Terminated: success detected at step {task.episode_step_count}")
                 success = True
                 break
 
             if viewer is not None:
                 viewer.sync()
+
+        if task.is_done():
+            is_terminal = task.is_terminal().any()
+            is_timed_out = task.is_timed_out().any()
+            log.info(
+                f"[ROLLOUT] Terminated: task.is_done()=True "
+                f"(is_terminal={is_terminal}, is_timed_out={is_timed_out}, "
+                f"steps={task.episode_step_count}, horizon={task._task_horizon})"
+            )
 
         # disable sleep mode after the rollout
         try:
@@ -160,10 +179,19 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.policy_config = PickAndPlaceNextToPlannerPolicyConfig()
     elif task_type == "packing":
         datagen_cfg = PackingDataGenConfig()
-        datagen_cfg.policy_config = PickAndPlacePlannerPolicyConfig()
+        datagen_cfg.policy_config = PackingPlannerPolicyConfig(place_z_offset=0.05)
     elif task_type == "nav_to_obj":
         datagen_cfg = NavToObjBaseConfig()
         datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
+    elif task_type == "block_stacking":
+        datagen_cfg = BlockSupportConfig()
+        datagen_cfg.policy_config = BlockStackingPolicyConfig()
+    elif task_type == "mug_ball_pick":
+        datagen_cfg = MugBallPickConfig()
+        datagen_cfg.policy_config = PickPlannerPolicyConfig()
+    elif task_type == "semantic_grasp_pick":
+        datagen_cfg = SemanticGraspPickConfig()
+        datagen_cfg.policy_config = PickPlannerPolicyConfig()
     else:
         raise ValueError(f"Invalid task type: {task_type}")
 
@@ -172,9 +200,13 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     datagen_cfg.data_split = args.data_split  # train or test
     datagen_cfg.task_type = task_type
 
-    datagen_cfg.task_horizon = 300
+    datagen_cfg.task_horizon = 1500 if task_type == "packing" else 300
+    if args.task_horizon is not None:
+        datagen_cfg.task_horizon = args.task_horizon
     if args.target_types:
         datagen_cfg.task_sampler_config.pickup_types = args.target_types.split(",")
+    if args.clutter:
+        datagen_cfg.task_sampler_config.clutter_scene_around_target_object = True
     datagen_cfg.task_sampler_config.samples_per_house = (
         args.samples_per_house
     )  # overwrite with scene samples
@@ -289,6 +321,7 @@ def main(args: argparse.ArgumentParser) -> None:
         exp_config.seed = 42  # new seed
         exp_config.filter_for_successful_trajectories = False  # see eval failures
         exp_config.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)  # for eval
+        exp_config.task_sampler_config.eval_without_obj_pos_changes = args.eval_without_obj_pos_changes
     elif args.config:  # 2) load an experiment config
         exp_config = get_config_class(args.config)()
     else:  # 3) create config from arguments
@@ -354,12 +387,18 @@ if __name__ == "__main__":
         help="ithor, procthor-10k, procthor-objaverse, procthor-100k-debug",
     )
     args.add_argument("--data_split", type=str, default="train", help="train or test")
-    args.add_argument("--house_inds", type=int, default=1, help="house indices")
+    args.add_argument("--house_inds", type=int, nargs="+", default=[1], help="house indices")
     args.add_argument(
         "--target_types", type=str, default=None, help="comma separated list of target types"
     )
     args.add_argument(
         "--samples_per_house", type=int, default=4, help="number of samples per house"
+    )
+    args.add_argument(
+        "--task_horizon",
+        type=int,
+        default=None,
+        help="override max steps per episode (defaults: 1500 for packing, 300 otherwise)",
     )
     args.add_argument(
         "--filter_for_successful_trajectories",
@@ -372,5 +411,11 @@ if __name__ == "__main__":
     args.add_argument("--randomize_scene", type=bool, default=False, help="randomize scene all")
     args.add_argument("--seed", type=int, default=2, help="random seed")
     args.add_argument("--run_name_prefix", type=str, default="", help="prefix for run name")
+    args.add_argument("--eval_without_obj_pos_changes", action="store_true",
+                      help="Whether to run without obj pos changes in eval benchmark, relevant with --eval flag")
+    args.add_argument("--clutter", action="store_true",
+                      help="Clutter the scene around the pickup object (pick task); see "
+                           "PickTaskSamplerConfig clutter_* fields for the clutter style")
+
     args = args.parse_args()
     main(args)
