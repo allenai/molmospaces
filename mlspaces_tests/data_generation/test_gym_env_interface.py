@@ -1,9 +1,9 @@
 """Tests for the gymnasium interface on tasks.
 
-A task can build itself -- creating its own sampler, having it prepare a scene
-and sample an episode -- instead of being built by a sampler. These tests cover
-that path and pin the parts of the gymnasium contract that do hold; see
-``docs/gym_compatibility.md`` for the parts that do not.
+``gym_registration.make_env`` builds a task sampler, samples one episode and
+returns the resulting task as a ``gymnasium.Env``. These tests pin the parts of
+the gymnasium contract that hold; see ``docs/gym_compatibility.md`` for the
+parts that do not, chief among them that the env holds a single episode.
 """
 
 import gymnasium as gym
@@ -12,8 +12,7 @@ import pytest
 
 from mlspaces_tests.data_generation.config import FrankaPickAndPlaceDroidTestConfig
 from molmo_spaces.tasks import gym_registration
-from molmo_spaces.tasks.task import BaseMujocoTask, EpisodeSource
-from molmo_spaces.tasks.task_sampler_errors import EpisodesExhausted
+from molmo_spaces.tasks.task import BaseMujocoTask
 
 
 @pytest.fixture(scope="module")
@@ -26,63 +25,118 @@ def gym_config():
 
 
 @pytest.fixture(scope="module")
-def self_configured_task(gym_config):
-    """A task that sampled its own episode (the gymnasium entry point)."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config)
-    yield task
-    task.close()
+def gym_env(gym_config):
+    """An env from the gymnasium entry point, with its own sampler."""
+    env = gym_registration.make_env(exp_config=gym_config)
+    yield env
+    env.close()
 
 
-def test_task_is_a_gym_env(self_configured_task):
-    assert isinstance(self_configured_task, gym.Env)
+def test_task_is_a_gym_env(gym_env):
+    assert isinstance(gym_env, gym.Env)
+    assert isinstance(gym_env, BaseMujocoTask)
     # gym.Env's own initialization must have happened, not just ours.
-    assert self_configured_task.unwrapped is self_configured_task
-    assert self_configured_task.np_random is not None
+    assert gym_env.unwrapped is gym_env
+    assert gym_env.np_random is not None
 
 
-def test_self_configuration_produced_an_episode(self_configured_task):
-    task = self_configured_task
-    assert task._owns_sampler, "task should have created its own sampler"
-    assert task._env is task._sampler.env, "task must bind the sampler's current sim env"
-    assert task._env.n_batch == 1
-    assert task.get_task_description().strip()
-    # Step ratios are derived from the bound env's model, so they must be sane.
-    assert task._n_sim_steps_per_ctrl >= 1
-    assert task._n_ctrl_steps_per_policy >= 1
+def test_make_env_sampled_an_episode(gym_env):
+    assert gym_env._gym_sampler is not None, "make_env should own the sampler it built"
+    assert gym_env._env is gym_env._gym_sampler.env
+    assert gym_env._env.n_batch == 1
+    assert gym_env.get_task_description().strip()
 
 
-def test_reset_returns_observation_and_info(self_configured_task):
-    observation, info = self_configured_task.reset()
+def test_reset_returns_observation_and_info(gym_env):
+    observation, info = gym_env.reset()
     assert len(observation) == 1
     assert observation[0], "expected a non-empty observation dict"
     assert len(info) == 1
 
 
-def test_sampler_path_and_gym_path_agree_on_observation_keys(gym_config, self_configured_task):
-    """Both construction paths must yield the same observation contract."""
+def test_second_reset_is_not_supported(gym_config):
+    """One episode per env: the second reset says so rather than silently repeating."""
+    env = gym_registration.make_env(exp_config=gym_config)
+    try:
+        assert env.gym_single_episode
+        env.reset()
+        with pytest.raises(NotImplementedError, match="single episode"):
+            env.reset()
+    finally:
+        env.close()
+
+
+def test_sampled_tasks_may_still_be_reset_more_than_once(gym_config):
+    """The single-reset rule is the gym path's, not the sampler path's.
+
+    Data generation resets once before register_policy and once after, so the
+    check must stay off for tasks the caller sampled itself.
+    """
+    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
+    try:
+        task = sampler.sample_task()
+        assert not task.gym_single_episode
+        task.reset()
+        task.reset()
+        task.close()
+    finally:
+        sampler.close()
+
+
+def test_reset_rejects_seed_and_options(gym_config):
+    """Episode selection belongs to the sampler, so reset() cannot honour these."""
+    env = gym_registration.make_env(exp_config=gym_config)
+    try:
+        with pytest.raises(NotImplementedError, match="not supported"):
+            env.reset(seed=0)
+        with pytest.raises(NotImplementedError, match="not supported"):
+            env.reset(options={"house_index": 0})
+        # A rejected reset must not count against the single allowed one.
+        env.reset()
+    finally:
+        env.close()
+
+
+def test_gym_path_and_sampler_path_agree_on_observation_keys(gym_config, gym_env):
+    """The gym env is a sampled task, so its observation contract is the same one."""
     sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
     try:
         sampler_task = sampler.sample_task()
         assert isinstance(sampler_task, BaseMujocoTask)
         sampler_obs, _ = sampler_task.reset()
-        gym_obs, _ = self_configured_task.reset()
+        gym_env_task = gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+        gym_obs, _ = gym_env_task.reset()
         assert set(sampler_obs[0]) == set(gym_obs[0])
+        gym_env_task.close()
         sampler_task.close()
+    finally:
+        sampler.close()
+
+
+def test_make_env_does_not_close_a_caller_supplied_sampler(gym_config):
+    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
+    try:
+        env = gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+        assert env.gym_single_episode, "still a gym env, whoever built the sampler"
+        assert env._gym_sampler is None, "a caller's sampler stays the caller's to close"
+        env.close()
+        # Still usable, so close() left it alone.
+        assert sampler.sample_task() is not None
     finally:
         sampler.close()
 
 
 def test_batched_config_is_rejected_on_the_gym_path(gym_config, monkeypatch):
     """The gymnasium interface is single-env only, and says so up front."""
-    task = None
+    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
     try:
-        task = gym_config.task_config.task_cls(exp_config=gym_config)
+        task = sampler.sample_task()
         monkeypatch.setattr(type(task._env), "n_batch", property(lambda self: 2))
         with pytest.raises(ValueError, match="single-environment only"):
-            gym_config.task_config.task_cls(exp_config=gym_config, task_sampler=task._sampler)
+            gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+        task.close()
     finally:
-        if task is not None:
-            task.close()
+        sampler.close()
 
 
 def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
@@ -91,95 +145,29 @@ def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
     try:
         sampler._current_tasks_left = 0
         assert sampler.sample_task() is None
-        with pytest.raises(EpisodesExhausted):
-            gym_config.task_config.task_cls(exp_config=gym_config, task_sampler=sampler)
+        with pytest.raises(RuntimeError, match="no task"):
+            gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
     finally:
         sampler.close()
 
 
-def test_first_reset_keeps_the_episode_built_at_construction(gym_config):
-    """__init__ already sampled an episode; the first reset must not throw it away.
-
-    Not just for speed: samplers consume their per-house candidate pool, so a
-    wasted episode brings the next HouseInvalidForTask closer.
-    """
-    task = gym_config.task_config.task_cls(exp_config=gym_config)
-    try:
-        description = task.get_task_description()
-        task.reset()
-        assert task.get_task_description() == description
-    finally:
-        task.close()
-
-
-def test_resets_keep_the_task_bound_to_the_live_env(gym_config):
-    """A self-configured task advances episodes on reset, as gym callers expect."""
-    task = gym_config.task_config.task_cls(exp_config=gym_config)
-    try:
-        assert task.episode_source is EpisodeSource.SELF, "derived from omitting env"
-        task.reset()
-        first = task.get_task_description()
-        obs, info = task.reset()
-        assert obs[0], "expected observations for the new episode"
-        assert task.episode_step_count == 0
-        assert not task.observation_cache[1:], "caches must be cleared for the new episode"
-        # The sampler advanced, so task state was rebuilt; the description may or
-        # may not differ (same house can resample the same objects), but the env
-        # binding must always be the sampler's current one.
-        assert task._env is task._sampler.env
-        assert isinstance(first, str)
-    finally:
-        task.close()
-
-
-def test_sampler_built_task_reset_does_not_resample(gym_config):
-    """The data generation path keeps its reset semantics: clear state, same episode."""
-    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
-    try:
-        task = sampler.sample_task()
-        description = task.get_task_description()
-        task.reset()
-        task.reset()
-        assert task.get_task_description() == description
-        assert task.episode_source is EpisodeSource.SAMPLER
-        task.close()
-    finally:
-        sampler.close()
-
-
-def test_reset_rejects_unknown_options(self_configured_task):
-    """Unknown options are prepare_episode's TypeError, not a hand-rolled check."""
-    with pytest.raises(TypeError, match="not_a_real_option"):
-        self_configured_task.reset(options={"not_a_real_option": 1})
-
-
-def test_render_returns_an_rgb_frame(self_configured_task):
-    frame = self_configured_task.render()
+def test_render_returns_an_rgb_frame(gym_env):
+    frame = gym_env.render()
     assert frame.ndim == 3 and frame.shape[2] == 3
     assert frame.dtype == np.uint8
-    assert "rgb_array" in type(self_configured_task).metadata["render_modes"]
+    assert "rgb_array" in type(gym_env).metadata["render_modes"]
 
 
-def test_render_rejects_unsupported_mode(self_configured_task, monkeypatch):
-    monkeypatch.setattr(self_configured_task, "render_mode", "human")
+def test_render_rejects_unsupported_mode(gym_env, monkeypatch):
+    monkeypatch.setattr(gym_env, "render_mode", "human")
     with pytest.raises(ValueError, match="Unsupported render_mode"):
-        self_configured_task.render()
+        gym_env.render()
 
 
-def test_spaces_are_deliberately_absent(self_configured_task):
+def test_spaces_are_deliberately_absent(gym_env):
     """Pinned so the omission is a decision, not an accident. See docs/gym_compatibility.md."""
-    assert getattr(self_configured_task, "action_space", None) is None
-    assert getattr(self_configured_task, "observation_space", None) is None
-
-
-def test_make_env_builds_a_task_from_a_config_object(gym_config):
-    env = gym_registration.make_env(exp_config=gym_config)
-    try:
-        assert isinstance(env, gym.Env)
-        assert env.episode_source is EpisodeSource.SELF
-        assert env.get_task_description().strip()
-    finally:
-        env.close()
+    assert getattr(gym_env, "action_space", None) is None
+    assert getattr(gym_env, "observation_space", None) is None
 
 
 def test_make_env_requires_exactly_one_source(gym_config):

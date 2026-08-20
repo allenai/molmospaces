@@ -52,12 +52,7 @@ class OpenTaskSampler(PickTaskSampler):
         log.info(f"Skipping {pickup_obj.name} (uid={asset_uid}) - no grasp file available")
         return False
 
-    def _sample_task(
-        self,
-        env: CPUMujocoEnv,
-        task: OpeningTask | None = None,
-        skip_robot_placement: bool = False,
-    ) -> OpeningTask:
+    def _sample_task(self, env: CPUMujocoEnv, skip_robot_placement: bool = False) -> OpeningTask:
         """Sample an opening or closing task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
@@ -121,8 +116,7 @@ class OpenTaskSampler(PickTaskSampler):
         # This allows cameras to use task-specific info (pickup object, workspace center)
         self.setup_cameras(env)
 
-        if task is None:
-            task = OpeningTask(env, self.config)
+        task = OpeningTask(env, self.config)
         return task
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
@@ -463,7 +457,7 @@ class DoorOpeningTaskSampler(BaseMujocoTaskSampler):
             "Was not able to place robot near any door in the scene. Skipping this task."
         )
 
-    def _sample_task(self, env: CPUMujocoEnv, task: OpeningTask | None = None):
+    def _sample_task(self, env: CPUMujocoEnv):
         """Sample a door opening task configuration and create the task."""
 
         # Set current batch index to 0 (most common case for single-batch environments)
@@ -520,6 +514,4 @@ class DoorOpeningTaskSampler(BaseMujocoTaskSampler):
         self.setup_cameras(env)
 
         # Create and return the task using self.config (which has the modified task_config)
-        if task is None:
-            task = task_cfg.task_cls(env, self.config)
-        return task
+        return task_cfg.task_cls(env, self.config)

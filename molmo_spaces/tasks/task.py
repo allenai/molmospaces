@@ -15,7 +15,6 @@ Action Noise:
 import contextlib
 import logging
 from abc import ABC, abstractmethod
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 import gymnasium as gym
@@ -26,52 +25,38 @@ from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.data_views import MlSpacesObjectAbstract
 from molmo_spaces.env.env import BaseMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
-from molmo_spaces.tasks.task_sampler_errors import EpisodesExhausted
 
 if TYPE_CHECKING:
     from molmo_spaces.configs import BaseMujocoTaskConfig
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.policy.base_policy import BasePolicy
-    from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 
 
 log = logging.getLogger(__name__)
 
 
-class EpisodeSource(StrEnum):
-    """Where a task's episodes come from, and so what ``reset()`` does."""
-
-    SAMPLER = "sampler"
-    """A task sampler configured this episode and built the task for it. reset()
-    clears task state and leaves the scene alone; a new episode means another
-    ``sample_task()``. This is the data generation and evaluation path."""
-
-    SELF = "self"
-    """The task holds a sampler and advances its own episodes. reset() samples a
-    new one. This is the gymnasium path."""
-
-
 class BaseMujocoTask(gym.Env, ABC):
-    """A task, and the gymnasium env for that task.
+    """A task, and a single-episode gymnasium env for that task.
 
-    Two ways to build one:
+    Tasks are built by a task sampler, which configures the episode in ``env``
+    before constructing the task around it. That is the only way to build one;
+    the gymnasium entry point (``molmo_spaces.tasks.gym_registration``) does the
+    same thing, it just does it for you.
 
-    Which one you get follows from the arguments, and is recorded as
-    ``episode_source``:
+    A task therefore holds exactly *one* episode for its whole life: ``reset()``
+    clears task state for the episode already in the scene, it never re-samples.
+    A new episode means another ``sample_task()``.
 
-    * ``Task(sim_env, exp_config)`` -- ``EpisodeSource.SAMPLER``: a sampler has
-      already configured the episode in ``sim_env``; this is what
-      ``BaseMujocoTaskSampler._sample_task`` does and what data generation uses.
-      ``reset()`` clears task state and leaves the scene alone.
-    * ``Task(exp_config=cfg)`` (no env) -- ``EpisodeSource.SELF``: the task
-      creates its own sampler, or uses ``task_sampler``, has it prepare a scene
-      and sample an episode, and binds to the resulting sim env. This is the
-      gymnasium entry point, and ``reset()`` samples a new episode. Note that
-      omitting the env therefore triggers a scene load.
+    Envs built through ``gym_registration.make_env`` set ``gym_single_episode``,
+    which makes a second ``reset()`` raise rather than quietly replay the same
+    episode -- gym callers reset per episode and would otherwise never notice.
+    Internal callers reset more than once on purpose (typically once before
+    ``register_policy`` and once after, so the returned observation includes the
+    policy's sensors), so the check is off by default.
 
     See ``docs/gym_compatibility.md`` for which parts of the gymnasium contract
     hold. Notably neither ``action_space`` nor ``observation_space`` is declared,
-    and only ``n_batch == 1`` is supported.
+    and only ``n_batch == 1`` is meaningfully supported.
     """
 
     metadata = {"render_modes": ["rgb_array"]}
@@ -84,40 +69,18 @@ class BaseMujocoTask(gym.Env, ABC):
 
     def __init__(
         self,
-        env: BaseMujocoEnv | None = None,
-        exp_config: "MlSpacesExpConfig | None" = None,
-        *,
-        task_sampler: "BaseMujocoTaskSampler | None" = None,
-        episode_options: dict[str, Any] | None = None,
-        render_mode: str | None = None,
-        render_camera: str | None = None,
+        env: BaseMujocoEnv,
+        exp_config: "MlSpacesExpConfig",
     ) -> None:
-        if exp_config is None:
-            raise ValueError("exp_config is required")
-
-        self.render_mode = render_mode
-        self.render_camera = render_camera
-
-        # An env means a sampler already configured this episode; no env means the
-        # task samples its own, so there is nothing else the mode could be.
-        self.episode_source = EpisodeSource.SAMPLER if env is not None else EpisodeSource.SELF
-        self._sampler = task_sampler
-        self._owns_sampler = False
-
-        self._episode_is_fresh = self.episode_source is EpisodeSource.SELF
-
-        if self.episode_source is EpisodeSource.SELF:
-            env = self._start_episode(exp_config, episode_options)
-        else:
-            if task_sampler is not None:
-                raise ValueError(
-                    "A task built around an existing env already has its episode; "
-                    "omit env to have the task sample its own with this sampler."
-                )
-            if episode_options:
-                raise ValueError("episode_options requires the task to sample its own episode")
-
-        self._bind_env(env, exp_config)
+        self._env = env
+        self._ctrl_dt_ms = exp_config.ctrl_dt_ms
+        sim_dt_ms = round(self._env.mj_model.opt.timestep * 1000)
+        if self._ctrl_dt_ms % sim_dt_ms != 0:
+            raise ValueError(
+                f"Control dt {self._ctrl_dt_ms}ms is not divisible by sim dt {sim_dt_ms}ms"
+            )
+        self._n_sim_steps_per_ctrl = int(self._ctrl_dt_ms // sim_dt_ms)
+        self._n_ctrl_steps_per_policy = int(exp_config.policy_dt_ms // self._ctrl_dt_ms)
         self._task_horizon = (
             exp_config.task_horizon if exp_config.task_horizon is not None else np.inf
         )
@@ -155,138 +118,18 @@ class BaseMujocoTask(gym.Env, ABC):
         # Optional profiler for granular timing (set via set_datagen_profiler)
         self._datagen_profiler = None
 
-        self._on_episode_configured()
-
-        if self.episode_source is EpisodeSource.SELF:
-            self._sampler.finalize_episode(self)
+        # gymnasium bits, all set by gym_registration.make_env. render_mode stays
+        # None unless a caller sets it; render() works either way. _gym_sampler is
+        # the sampler make_env built on the caller's behalf, so close() closes it.
+        self.render_mode: str | None = None
+        self.render_camera: str | None = None
+        self.gym_single_episode = False
+        # BaseMujocoTaskSampler | None; unannotated to keep the import type-only.
+        self._gym_sampler = None
+        self._n_resets = 0
 
         # Please don't call self.reset() here. reset should return the first observation, if we do it in
         # __init__ it will end up in the cache, but not being returned to the user.
-
-    def render(self) -> np.ndarray:
-        """Render the current scene as an RGB array.
-
-        Uses ``render_camera`` if set, else the first camera in the camera config.
-        Unlike ``gym.Env.render`` this does not require ``render_mode`` to have
-        been set -- returning a frame beats returning None for an unset mode.
-        """
-        if self.render_mode not in (None, "rgb_array"):
-            raise ValueError(
-                f"Unsupported render_mode {self.render_mode!r}; supported: 'rgb_array'."
-            )
-
-        camera_name = self.render_camera
-        if camera_name is None:
-            camera_config = self.config.camera_config
-            if camera_config is None or not camera_config.cameras:
-                raise RuntimeError(
-                    "Cannot render: no cameras configured. Set exp_config.camera_config "
-                    "or this task's render_camera."
-                )
-            camera_name = camera_config.cameras[0].name
-
-        return self._env.render_rgb_frame(camera_name)
-
-    def _start_episode(
-        self,
-        exp_config: "MlSpacesExpConfig",
-        episode_options: dict[str, Any] | None = None,
-    ) -> BaseMujocoEnv:
-        """Have this task's sampler prepare a scene and sample an episode into it.
-
-        Runs the sampler's own steps -- ``prepare_episode``, then ``_sample_task``
-        with this task passed in so it configures us rather than building a second
-        task, then ``finalize_episode``.
-
-        Returns:
-            The sim env the episode was sampled into. Note this is read from the
-            sampler *after* preparing the scene, because loading a scene replaces
-            the sim env.
-        """
-        if self._sampler is None:
-            self._sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
-            self._owns_sampler = True
-
-        if not self._sampler.prepare_episode(**(episode_options or {})):
-            raise EpisodesExhausted(
-                f"{type(self._sampler).__name__} is out of tasks (max_tasks reached); "
-                f"call task_sampler.reset() to start over."
-            )
-
-        sim_env = self._sampler.env
-        if sim_env.n_batch != 1:
-            raise ValueError(
-                f"The gymnasium interface is single-environment only, got "
-                f"n_batch={sim_env.n_batch}. Use the task sampler directly for batches."
-            )
-
-        configured = self._sampler._sample_task(sim_env, task=self)
-        if configured is not self:
-            raise TypeError(
-                f"{type(self._sampler).__name__}._sample_task ignored its `task` "
-                f"argument and returned {type(configured).__name__} instead, so this "
-                f"task has no episode. Samplers must configure and return the task "
-                f"they are given."
-            )
-        return sim_env
-
-    def _resample_episode(
-        self,
-        seed: int | None = None,
-        options: dict[str, Any] | None = None,
-    ) -> None:
-        """Sample a fresh episode into this task, for gymnasium-style reset().
-
-        The first call after construction is a no-op unless a seed or options are
-        given: ``__init__`` already sampled an episode. Re-sampling it would not
-        just waste the work -- samplers consume their candidate pool per house
-        (see ``PickTaskSampler``), so every extra episode brings the next
-        ``HouseInvalidForTask`` closer.
-
-        Options are whatever ``BaseMujocoTaskSampler.prepare_episode`` accepts
-        (``house_index``, ``force_advance_scene``); anything else is its TypeError.
-        """
-        if self._episode_is_fresh and seed is None and not options:
-            self._episode_is_fresh = False
-            return
-
-        if seed is not None:
-            self._sampler.seed_task_sampling(seed)
-
-        sim_env = self._start_episode(self.config, options)
-        # A scene load replaces the sim env, so re-bind rather than assume ours
-        # is still the live one.
-        self._bind_env(sim_env, self.config)
-        self._on_episode_configured()
-        self._sampler.finalize_episode(self)
-        self._episode_is_fresh = False
-
-    def _bind_env(self, env: BaseMujocoEnv, exp_config: "MlSpacesExpConfig") -> None:
-        """Point this task at ``env`` and derive the step ratios from its model.
-
-        Loading a scene builds a *new* ``CPUMujocoEnv`` around the newly compiled
-        model (see ``BaseMujocoTaskSampler.update_scene``), so a task that outlives
-        a scene change has to re-bind rather than keep its original env: the sim
-        timestep, and hence the number of sim steps per control step, comes from
-        ``env.mj_model``.
-        """
-        self._env = env
-        self._ctrl_dt_ms = exp_config.ctrl_dt_ms
-        sim_dt_ms = round(env.mj_model.opt.timestep * 1000)
-        if self._ctrl_dt_ms % sim_dt_ms != 0:
-            raise ValueError(
-                f"Control dt {self._ctrl_dt_ms}ms is not divisible by sim dt {sim_dt_ms}ms"
-            )
-        self._n_sim_steps_per_ctrl = int(self._ctrl_dt_ms // sim_dt_ms)
-        self._n_ctrl_steps_per_policy = int(exp_config.policy_dt_ms // self._ctrl_dt_ms)
-
-    def _on_episode_configured(self) -> None:  # noqa: B027 - optional hook, not abstract
-        """Derive per-episode state from ``self.config`` and the current scene.
-
-        Anything a task caches from its config or the scene belongs here rather
-        than in ``__init__``, so it can be recomputed when the same task object is
-        pointed at a freshly sampled episode.
-        """
 
     @property
     def sensor_suite(self) -> SensorSuite | None:
@@ -428,22 +271,34 @@ class BaseMujocoTask(gym.Env, ABC):
     ):
         """Reset the task and record initial observations.
 
-        With ``EpisodeSource.SELF`` this samples a *new* episode every time. With
-        ``EpisodeSource.SAMPLER`` there is no sampler to re-sample with, so the
-        scene is left alone and only task state is cleared; a new episode means a
-        new ``sample_task()``.
+        This clears task state for the episode the sampler already configured; it
+        does not re-sample. With ``gym_single_episode`` set a second call raises
+        ``NotImplementedError`` rather than replaying the episode -- see
+        ``docs/gym_compatibility.md``.
 
         Args:
-            seed: Seeds episode sampling. NOTE this is process-global (see
-                ``BaseMujocoTaskSampler.seed_task_sampling``), so it perturbs
-                the RNG of everything else in the process, callers included.
-            options: Forwarded to ``BaseMujocoTaskSampler.prepare_episode``, so
-                ``house_index`` and ``force_advance_scene``.
+            seed: Not supported. Episode sampling happens in the task sampler,
+                which is seeded with ``BaseMujocoTaskSampler.seed_task_sampling``
+                before the task is built.
+            options: Not supported, for the same reason.
         """
-        super().reset(seed=seed)
+        if seed is not None or options:
+            raise NotImplementedError(
+                "reset(seed=...)/reset(options=...) are not supported: the episode "
+                "is chosen by the task sampler before the task exists. Seed the "
+                "sampler with seed_task_sampling() and sample a new task instead."
+            )
 
-        if self.episode_source is EpisodeSource.SELF:
-            self._resample_episode(seed=seed, options=options)
+        self._n_resets += 1
+        if self.gym_single_episode and self._n_resets > 1:
+            raise NotImplementedError(
+                "This env holds a single episode, so it can only be reset once. "
+                "Call task_sampler.sample_task() for a new episode."
+            )
+
+        # TODO(rose): Something like this should be done here to be compatible with gym API
+        # consider placing settle_scene here.
+        # self._env.reset()
 
         self.episode_step_count = 0
         self._cumulative_reward = np.zeros(self._env.n_batch)
@@ -742,6 +597,30 @@ class BaseMujocoTask(gym.Env, ABC):
 
         return history
 
+    def render(self) -> np.ndarray:
+        """Render the current scene as an RGB array.
+
+        Uses ``render_camera`` if set, else the first camera in the camera config.
+        Unlike ``gym.Env.render`` this does not require ``render_mode`` to have
+        been set -- returning a frame beats returning None for an unset mode.
+        """
+        if self.render_mode not in (None, "rgb_array"):
+            raise ValueError(
+                f"Unsupported render_mode {self.render_mode!r}; supported: 'rgb_array'."
+            )
+
+        camera_name = self.render_camera
+        if camera_name is None:
+            camera_config = self.config.camera_config
+            if camera_config is None or not camera_config.cameras:
+                raise RuntimeError(
+                    "Cannot render: no cameras configured. Set exp_config.camera_config "
+                    "or this task's render_camera."
+                )
+            camera_name = camera_config.cameras[0].name
+
+        return self._env.render_rgb_frame(camera_name)
+
     def close(self):
         # Clear any MlSpacesObject references
         for attr in list(vars(self).keys()):
@@ -756,11 +635,11 @@ class BaseMujocoTask(gym.Env, ABC):
         # Clear environment reference (not closing it as it is owned by the task sampler)
         self._env = None
 
-        # A self-configured task created its own sampler, so it owns the sim env
-        # behind it and has to close it; a sampler passed in belongs to the caller.
-        if getattr(self, "_owns_sampler", False) and self._sampler is not None:
-            self._sampler.close()
-            self._sampler = None
+        # A sampler the gym entry point created on the caller's behalf has no other
+        # owner, so close it here. Samplers the caller built are left alone.
+        if getattr(self, "_gym_sampler", None) is not None:
+            self._gym_sampler.close()
+            self._gym_sampler = None
 
         if hasattr(self, "renderer") and self.renderer is not None:
             with contextlib.suppress(AttributeError):

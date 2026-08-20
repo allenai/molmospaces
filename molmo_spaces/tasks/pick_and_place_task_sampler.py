@@ -394,13 +394,11 @@ class PickAndPlaceReceptacleTaskSampler(AbstractPickAndPlaceObjectTargetTaskSamp
             added.update(receptacle_added_objects)
             self.config.task_config.added_objects = added
 
-    def _sample_task(self, env: CPUMujocoEnv, task=None):
+    def _sample_task(self, env: CPUMujocoEnv):
         from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 
         self._configure_pick_and_place(env)
-        if task is None:
-            task = PickAndPlaceTask(env, self.config)
-        return task
+        return PickAndPlaceTask(env, self.config)
 
 
 class PickAndPlaceTaskSampler(PickAndPlaceReceptacleTaskSampler):

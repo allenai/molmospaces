@@ -790,12 +790,8 @@ class PickTaskSampler(BaseMujocoTaskSampler):
 
         return expression_priority, filtered_expression_priority
 
-    def _sample_task(self, env: CPUMujocoEnv, task: PickTask | None = None) -> PickTask:
-        """Sample a pick task configuration and create the task.
-
-        If ``task`` is given, configure that task's episode instead of building
-        one (see ``EpisodeSource.SELF``); it must be returned either way.
-        """
+    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
+        """Sample a pick task configuration and create the task."""
         assert env.current_batch_index == 0
         assert self.candidate_objects is not None and len(self.candidate_objects) > 0
 
@@ -833,8 +829,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("sample_task_create")
 
-        if task is None:
-            task = PickTask(env, self.config)
+        task = PickTask(env, self.config)
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_task_create")

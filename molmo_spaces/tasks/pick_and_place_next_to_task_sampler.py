@@ -166,10 +166,6 @@ class PickAndPlaceNextToTaskSampler(AbstractPickAndPlaceObjectTargetTaskSampler)
 
         return False
 
-    def _sample_task(
-        self, env: CPUMujocoEnv, task: PickAndPlaceNextToTask | None = None
-    ) -> PickAndPlaceNextToTask:
+    def _sample_task(self, env: CPUMujocoEnv) -> PickAndPlaceNextToTask:
         self._configure_pick_and_place(env)
-        if task is None:
-            task = PickAndPlaceNextToTask(env, self.config)
-        return task
+        return PickAndPlaceNextToTask(env, self.config)

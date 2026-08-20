@@ -1,31 +1,62 @@
 # Gym Compatibility
 
 Tasks (`BaseMujocoTask`) subclass `gymnasium.Env`, and can be built through
-`gymnasium.make`. The compatibility is **deliberately partial**: the parts that
-would need to change the data generation path were left alone. Read this before
-pointing third-party RL code at a molmospaces env.
+`gymnasium.make`. The compatibility is **deliberately partial**: nothing about
+the data generation path changed to accommodate it. Read this before pointing
+third-party RL code at a molmospaces env.
 
-## Two ways to build a task
+## How a gym env is built
 
 ```python
-# 1. Data generation / evaluation: the sampler builds the task (unchanged).
+# Data generation / evaluation, unchanged: the sampler builds the task.
 task_sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
 task = task_sampler.sample_task()
 
-# 2. Gymnasium: omit the env and the task builds itself, creating its own
-#    sampler. NOTE this samples an episode, so it can load a scene.
-task = exp_config.task_config.task_cls(exp_config=exp_config)
-
-# 3. Gymnasium, via registration.
+# Gymnasium: exactly the same two lines, wrapped so gymnasium can call them.
 import molmo_spaces.tasks.gym_registration as gym_registration
 gym_registration.register_configs()
 env = gymnasium.make("MolmoSpaces/FrankaPickDroidDataGenConfig-v0")
 ```
 
+`gymnasium.make` builds the config's task sampler, calls `sample_task()` **once**
+and hands back the task, which is already a `gymnasium.Env`. There is only one
+way to build a task -- a sampler builds it -- so tasks, samplers and the datagen
+pipeline are untouched by this.
+
 Env ids come from the data generation config registry, so any config registered
 with `@register_config` is available as `MolmoSpaces/<ConfigName>-v0`.
 
+`gym_registration.make_env` takes the arguments the env id cannot carry:
+`exp_config` instead of `config_name`, `config_overrides`, an existing
+`task_sampler` to sample from, a `seed`, a `render_camera`, and anything
+`sample_task()` accepts (`house_index`, `force_advance_scene`).
+
 ## What does not hold
+
+### One episode per env
+
+An env is one sampled episode. `reset()` clears task state for that episode and
+returns its first observation; a **second** `reset()` raises
+`NotImplementedError`. A new episode means another `sample_task()`, or another
+`gymnasium.make`.
+
+The check is the `gym_single_episode` flag, which `make_env` sets and nothing
+else does. A task you sampled yourself can still be reset repeatedly, as the
+datagen path does (once before `register_policy`, once after) -- there it is
+understood that reset replays the same episode, which is exactly the assumption
+a gym caller does not make.
+
+This is the main thing standard RL code will trip over -- training loops reset
+every episode. It is deliberate: making `reset()` re-sample means the task has to
+survive its scene being replaced and be re-configured in place, which would push
+episode-advancing machinery into every task and every sampler. Loop over
+`sample_task()` instead.
+
+`reset(seed=...)` and `reset(options=...)` raise `NotImplementedError` for the
+same reason: by the time the task exists, its episode is already chosen. Seed
+`BaseMujocoTaskSampler.seed_task_sampling` (or pass `seed=` to `make_env`) before
+sampling. Note that seeding is **process-global** -- it calls `random.seed`,
+`np.random.seed` and `torch.manual_seed`, so it also reseeds the caller's RNG.
 
 ### No `action_space`
 
@@ -55,72 +86,34 @@ size themselves from the sampled episode's objects.
 
 ### Single environment only
 
-The gymnasium path requires `n_batch == 1` and raises otherwise. Batched task
-state exists (`step()` returns arrays over the batch), but termination and
-success are index-0 only, so batching is not usable end-to-end. There is no
+`make_env` requires `n_batch == 1` and raises otherwise. Batched task state
+exists (`step()` returns arrays over the batch), but termination and success are
+index-0 only, so batching is not usable end-to-end. There is no
 `gymnasium.vector.VectorEnv` implementation; use the task sampler directly for
 batches.
 
-### `reset(seed=...)` seeds process-global RNG
+### Construction is expensive
 
-`seed` is forwarded to `BaseMujocoTaskSampler.seed_task_sampling`, which calls
-`random.seed`, `np.random.seed` and `torch.manual_seed`. **It reseeds the whole
-process**, including the RNG of the code that called `reset` -- so seeding an env
-per episode will also reset your policy's exploration noise.
-
-This is because the samplers draw from the global `random`/`np.random` modules
-in ~70 places; localizing that would change every sampled episode and redefine
-what `config.seed` reproduces. `reset()` without a seed touches no RNG.
-
-### `reset()` semantics depend on how the task was built
-
-| Built via | `reset()` does |
-| --- | --- |
-| `EpisodeSource.SELF` (no env passed; gym) | Samples a **new** episode, except the first call, which uses the episode built during construction. Pass `seed` or `options` to force a re-sample. |
-| `EpisodeSource.SAMPLER` (env passed, via `sample_task()`; datagen) | Clears task state only; the scene and episode are untouched. A new episode means another `sample_task()`. |
-
-`options` is forwarded to `BaseMujocoTaskSampler.prepare_episode`, so
-`house_index` and `force_advance_scene`; anything else is that function's
-`TypeError`.
-
-`episode_source` is derived, not passed: an `env` argument means a sampler built
-the episode, no `env` means the task samples its own.
-
-Re-sampling is not unbounded. Samplers consume their per-house candidate pool, so
-enough resets on one house eventually raise `HouseInvalidForTask` -- the same
-signal data generation handles by advancing houses. Gym callers should be ready
-to catch it, or pass `options={"force_advance_scene": True}`.
-
-### Reset can be expensive
-
-A reset that crosses a house boundary loads a scene and recompiles the MuJoCo
-model, which takes seconds. Callers that assume a cheap reset will see spikes.
-Note also that loading a scene **replaces** the underlying `CPUMujocoEnv`, so
-never cache `task.env` across a reset.
-
-### No cross-env scene reuse
-
-Each gym env owns its own sampler and therefore its own sim env, so N parallel
-envs each pay their own scene loads. Samplers cannot be shared between live envs:
-a sampler holds exactly one sim env, and one env's reset would mutate the other's
-scene.
+`gymnasium.make` builds a sampler, loads a scene and compiles a MuJoCo model, so
+it takes seconds. Each env owns its own sampler and therefore its own sim env, so
+N parallel envs each pay their own scene load. Pass an existing `task_sampler` to
+`make_env` to reuse one -- but only sequentially: a sampler holds exactly one sim
+env, so two live envs from one sampler would share and clobber a scene.
 
 ## What does hold
 
 - `isinstance(task, gymnasium.Env)`, `task.unwrapped`, `task.np_random`.
-- `reset(*, seed=None, options=None)` returning `(observation, info)`.
+- `reset()` returning `(observation, info)`, once.
 - `step(action)` returning `(observation, reward, terminated, truncated, info)`.
 - `render()` returning an RGB `uint8` array, from `render_camera` if set or the
   first configured camera otherwise. `metadata["render_modes"] == ["rgb_array"]`.
   Unlike `gym.Env.render`, it does not require `render_mode` to be set.
-- `close()`, which closes the sampler only when the task created it -- a
+- `close()`, which closes the sampler only when `make_env` created it -- a
   caller-supplied sampler is never closed underneath the caller.
-- Both construction paths produce the **same observation keys**, which is covered
-  by a test.
 
 ## Tests
 
-`mlspaces_tests/data_generation/test_gym_env_interface.py` covers the gym path,
-cross-path observation parity, reset semantics for both paths, the batched
-rejection, sampler exhaustion (`EpisodesExhausted` rather than `None`), render,
-registration, and the deliberate absence of both spaces.
+`mlspaces_tests/data_generation/test_gym_env_interface.py` covers the gym path:
+observation parity with a directly sampled task, the single-reset rule, rejected
+`seed`/`options`, sampler ownership, the batched rejection, sampler exhaustion,
+render, registration, and the deliberate absence of both spaces.

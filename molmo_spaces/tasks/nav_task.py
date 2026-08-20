@@ -16,13 +16,11 @@ class NavToObjTask(BaseMujocoTask):
     """Navigation to object task implementation."""
 
     def __init__(self, env: BaseMujocoEnv, exp_config: MlSpacesExpConfig) -> None:
-        # Set before super().__init__, which runs _on_episode_configured().
-        self.exp_config = exp_config
         super().__init__(env, exp_config)
+        self.exp_config = exp_config
 
-    def _on_episode_configured(self) -> None:
         # For eval mode: reconstruct candidate list from category if needed
-        self._reconstruct_candidate_list_if_needed(self._env)
+        self._reconstruct_candidate_list_if_needed(env)
 
         self.nav_objs = self._get_nav_objects()
 

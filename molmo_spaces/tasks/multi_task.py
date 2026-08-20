@@ -12,19 +12,39 @@ class MultiTask(BaseMujocoTask):
         if not tasks:
             raise ValueError("MultiTask requires at least one task")
 
-        # Defer to the base for all the standard task state (counters, caches,
-        # timing, sensor suite) so MultiTask picks up anything the base adds
-        # rather than re-deriving it field by field.
-        super().__init__(tasks[0]._env, tasks[0].config)
-
         self.tasks = tasks
         self.prompt = prompt
 
         self.max_rewards = [0.0] * len(tasks)
 
-        # Share the first task's sensor suite instead of the one the base built,
-        # so sub-task sensors and MultiTask's observations stay consistent.
+        self._env = tasks[0]._env
+        self._ctrl_dt_ms = tasks[0]._ctrl_dt_ms
+        self._n_sim_steps_per_ctrl = tasks[0]._n_sim_steps_per_ctrl
+        self._n_ctrl_steps_per_policy = tasks[0]._n_ctrl_steps_per_policy
+        self._task_horizon = tasks[0]._task_horizon
+        self._cumulative_reward = np.zeros(self._env.n_batch)
+        self._num_steps_taken = np.zeros(self._env.n_batch, dtype=int)
+        self.config = tasks[0].config
+        self.episode_step_count = 0
+        self.viewer = None
+        self.frozen_config = None
         self._sensor_suite = tasks[0]._sensor_suite
+        self.last_action = None
+        self.action_cache = []
+        self.observation_cache = []
+        self.reward_cache = []
+        self.terminal_cache = []
+        self.truncated_cache = []
+        self.success_cache = []
+        self._policy_done = False
+        self._registered_policy = None
+        self._done_action_received = False
+        self._datagen_profiler = None
+        self.render_mode = None
+        self.render_camera = None
+        self.gym_single_episode = False
+        self._gym_sampler = None
+        self._n_resets = 0
 
     def _create_sensor_suite_from_config(self, exp_config):
         return SensorSuite(get_core_sensors(exp_config))

@@ -837,7 +837,7 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         # Replace the stub task_config with the properly typed one
         self.config.task_config = task_config
 
-    def _sample_task(self, env: CPUMujocoEnv, task: BaseMujocoTask | None = None) -> BaseMujocoTask:
+    def _sample_task(self, env: CPUMujocoEnv) -> BaseMujocoTask:
         """
         Create the task from episode spec.
 
@@ -880,8 +880,8 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         self.setup_cameras(env)
 
         # Get task class and instantiate
-        if task is None:
-            task = self._get_task_class()(env, self.config)
+        task_cls = self._get_task_class()
+        task = task_cls(env, self.config)
 
         task_description = self.episode_spec.language.task_description
 

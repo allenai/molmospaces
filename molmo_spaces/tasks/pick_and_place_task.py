@@ -21,7 +21,8 @@ from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 class PickAndPlaceTask(BaseMujocoTask):
     """Franka pick-and-place task implementation."""
 
-    def _on_episode_configured(self) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self._supported_rel_poses: dict[int, list[np.ndarray]] = {}
 
     def get_task_description(self) -> str:

@@ -202,7 +202,7 @@ class EvalTaskSampler(PickTaskSampler):
 
         log.info("Scene setup completed.\n")
 
-    def _sample_task(self, env: CPUMujocoEnv, task: PickTask | None = None) -> PickTask:
+    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
         """Sample a pick-and-place task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
@@ -229,8 +229,7 @@ class EvalTaskSampler(PickTaskSampler):
         # This allows cameras to use task-specific info (pickup object, workspace center)
         self.setup_cameras(env)
 
-        if task is None:
-            task = self.config.task_config.task_cls(env, self.config)
+        task = self.config.task_config.task_cls(env, self.config)
         return task
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
@@ -291,7 +290,7 @@ class DefaulEvalTaskSampler(BaseMujocoTaskSampler):
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
         return
 
-    def _sample_task(self, env: CPUMujocoEnv, task: PickTask | None = None) -> PickTask:
+    def _sample_task(self, env: CPUMujocoEnv) -> PickTask:
         """Sample a pick-and-place task configuration and create the task."""
         # Set current batch index to 0 (most common case for single-batch environments)
         # TODO(rose) at some point: handle multi-batch environments properly
@@ -312,8 +311,7 @@ class DefaulEvalTaskSampler(BaseMujocoTaskSampler):
         # This allows cameras to use task-specific info (pickup object, workspace center)
         self.setup_cameras(env)
 
-        if task is None:
-            task = self.config.task_config.task_cls(env, self.config)
+        task = self.config.task_config.task_cls(env, self.config)
         return task
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:

@@ -513,20 +513,7 @@ class BaseMujocoTaskSampler:
         return visibility_resolver
 
     @abstractmethod
-    def _sample_task(
-        self,
-        env: BaseMujocoEnv,
-        task: BaseMujocoTask | None = None,
-    ) -> BaseMujocoTask:
-        """Sample this episode into ``env`` and return the task for it.
-
-        Mutates ``self.config.task_config`` and the scene, then builds the task.
-        If ``task`` is given, configure *that* task's episode rather than building
-        one -- this is how a task samples its own episodes
-        (``EpisodeSource.SELF``, see :meth:`BaseMujocoTask.__init__`). Either way
-        the task in play must be returned; ignoring ``task`` and returning a
-        different object is an error the caller checks for.
-        """
+    def _sample_task(self, env: BaseMujocoEnv) -> BaseMujocoTask:
         raise NotImplementedError
 
     def reset(self) -> None:
@@ -1027,24 +1014,17 @@ class BaseMujocoTaskSampler:
                 self._datagen_profiler.end("randomize_dynamics")
             log.info("Dynamics randomization completed.\n")
 
-    def prepare_episode(
+    def sample_task(
         self,
         force_advance_scene=False,
         house_index=None,
-    ) -> bool:
-        """Get the scene ready for one episode, up to but not including the task.
-
-        Advances house iteration, loads or reuses the scene, applies scene
-        randomization and flushes metadata. Afterwards ``self.env`` is the env to
-        build the episode in -- note that loading a scene *replaces* it.
+    ) -> None | BaseMujocoTask:
+        """Returns a task with batch size task_batch_size.
 
         Args:
             force_advance_scene: Whether to force advancing to the next scene
             house_index: Specific house index to use, overriding iteration
-
-        Returns:
-            False if the sampler is out of tasks, in which case no scene work was
-            done; True otherwise.
+            variant: Scene variant to use ("ceiling", "map", "base", etc.). Defaults to "ceiling".
         """
         # save the task_config at the beginning of the experiment
         if self.config.task_config_preset_exp is None:
@@ -1055,7 +1035,7 @@ class BaseMujocoTaskSampler:
         # Stopping condition for dataset workflows
         if not math.isinf(self._current_tasks_left):
             if self._current_tasks_left <= 0:
-                return False
+                return None  # type: ignore[return-value]
 
         self._increment_task_and_reset_house(
             force_advance_scene=force_advance_scene, house_index=house_index
@@ -1133,32 +1113,6 @@ class BaseMujocoTaskSampler:
         # Flush accumulated metadata from add_auxiliary_objects into scene metadata
         self._metadata_adder.add_meta(self.env.current_scene_metadata)
 
-        return True
-
-    def finalize_episode(self, task: BaseMujocoTask) -> None:
-        """Finish an episode's setup once its task exists."""
-        # Update robot-mounted camera poses to ensure they reflect the final robot state.
-        # This is needed because camera setup may happen before the final mj_forward call,
-        # and env.step() (which normally updates cameras) hasn't been called yet.
-        self.env.camera_manager.registry.update_all_cameras(self.env)
-        log.info(f"Sampled task '{task.get_task_description()}'")
-
-    def sample_task(
-        self,
-        force_advance_scene=False,
-        house_index=None,
-    ) -> None | BaseMujocoTask:
-        """Returns a task with batch size task_batch_size.
-
-        Args:
-            force_advance_scene: Whether to force advancing to the next scene
-            house_index: Specific house index to use, overriding iteration
-        """
-        if not self.prepare_episode(
-            force_advance_scene=force_advance_scene, house_index=house_index
-        ):
-            return None  # type: ignore[return-value]
-
         # Time task-specific sampling (object selection, robot placement, camera setup, etc.)
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("task_specific_sample")
@@ -1168,7 +1122,11 @@ class BaseMujocoTaskSampler:
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("task_specific_sample")
 
-        self.finalize_episode(task)
+        # Update robot-mounted camera poses to ensure they reflect the final robot state.
+        # This is needed because camera setup may happen before the final mj_forward call,
+        # and env.step() (which normally updates cameras) hasn't been called yet.
+        self.env.camera_manager.registry.update_all_cameras(self.env)
+        log.info(f"Sampled task '{task.get_task_description()}'")
 
         return task
 

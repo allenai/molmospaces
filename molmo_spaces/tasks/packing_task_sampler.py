@@ -121,10 +121,10 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
 
         mujoco.mj_forward(model, data)
 
-    def _sample_task(self, env: CPUMujocoEnv, task: PackingTask | None = None) -> PackingTask:
+    def _sample_task(self, env: CPUMujocoEnv) -> PackingTask:
         """Sample a packing task — open box flaps, then delegate placement to parent."""
         # First let parent handle all placement (box, robot, cameras)
-        _ = super()._sample_task(env, task=task)
+        _ = super()._sample_task(env)
 
         # Open flaps AFTER placement so nothing can overwrite the qpos values
         self._open_box_flaps(env)
@@ -137,6 +137,4 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
             if namespace in jnt_name and "flap" in jnt_name:
                 log.info(f"VERIFY '{jnt_name}': qpos={data.qpos[model.jnt_qposadr[i]]:.3f}")
 
-        if task is None:
-            task = PackingTask(env, self.config)
-        return task
+        return PackingTask(env, self.config)

@@ -7,6 +7,12 @@ built through ``gymnasium.make`` once registered:
     reg.register_configs()
     env = gymnasium.make("MolmoSpaces/FrankaPickAndPlace-v0")
 
+That builds the config's task sampler, samples **one** episode from it and hands
+back the resulting task. Nothing about the sampler path changes -- this is the
+same ``sample_task()`` data generation calls, just wrapped so gymnasium can
+construct it. The env therefore holds a single episode: ``reset()`` works once
+and raises ``NotImplementedError`` after that.
+
 Env ids come from the data generation config registry, so anything registered
 with ``@register_config`` is available here under the same name.
 
@@ -16,7 +22,7 @@ code: they declare neither ``action_space`` nor ``observation_space``, so
 """
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import gymnasium as gym
 
@@ -26,6 +32,9 @@ from molmo_spaces.data_generation.config_registry import (
     list_available_configs,
 )
 from molmo_spaces.tasks.task import BaseMujocoTask
+
+if TYPE_CHECKING:
+    from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
 
 log = logging.getLogger(__name__)
 
@@ -42,19 +51,28 @@ def make_env(
     exp_config: MlSpacesExpConfig | None = None,
     *,
     config_overrides: dict[str, Any] | None = None,
-    **task_kwargs: Any,
+    task_sampler: "BaseMujocoTaskSampler | None" = None,
+    seed: int | None = None,
+    render_camera: str | None = None,
+    **sample_task_kwargs: Any,
 ) -> BaseMujocoTask:
-    """Build a task as a gymnasium env, sampling its own episode.
+    """Build a task sampler, sample one episode from it, and return that task.
 
     Args:
         config_name: Name of a config in the data generation config registry.
         exp_config: An already-built config, instead of ``config_name``.
         config_overrides: Attributes to set on the config before sampling.
-        **task_kwargs: Forwarded to the task (e.g. ``render_mode``,
-            ``task_sampler``, ``episode_options``).
+        task_sampler: Sample from this sampler rather than building one. The
+            caller keeps ownership: it is not closed with the task.
+        seed: Seeds episode sampling via ``seed_task_sampling``. NOTE that is
+            process-global, see ``docs/gym_compatibility.md``.
+        render_camera: Camera ``render()`` should use; defaults to the first
+            camera in the config.
+        **sample_task_kwargs: Forwarded to ``sample_task`` (``house_index``,
+            ``force_advance_scene``).
 
     Returns:
-        A task bound to a freshly sampled episode.
+        A task holding one sampled episode.
     """
     if (config_name is None) == (exp_config is None):
         raise ValueError("Pass exactly one of config_name or exp_config")
@@ -67,15 +85,39 @@ def make_env(
             raise ValueError(f"Config {type(exp_config).__name__} has no attribute {key!r}")
         setattr(exp_config, key, value)
 
-    task_cls = exp_config.task_config.task_cls
-    if task_cls is None:
-        raise ValueError(
-            f"Config {type(exp_config).__name__} has no task_config.task_cls, "
-            f"so there is no task class to build."
-        )
+    sampler = task_sampler
+    if sampler is None:
+        sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
 
-    # No env, so the task samples its own episode (EpisodeSource.SELF).
-    return task_cls(exp_config=exp_config, **task_kwargs)
+    try:
+        if seed is not None:
+            sampler.seed_task_sampling(seed)
+
+        task = sampler.sample_task(**sample_task_kwargs)
+        if task is None:
+            raise RuntimeError(
+                f"{type(sampler).__name__} returned no task (max_tasks reached); "
+                f"call task_sampler.reset() to start over."
+            )
+        if task._env.n_batch != 1:
+            raise ValueError(
+                f"The gymnasium interface is single-environment only, got "
+                f"n_batch={task._env.n_batch}. Use the task sampler directly for batches."
+            )
+    except BaseException:
+        # We built the sampler, so nothing else will close it.
+        if task_sampler is None:
+            sampler.close()
+        raise
+
+    task.render_camera = render_camera
+    # A gym caller resets per episode, and this env only has the one.
+    task.gym_single_episode = True
+    if task_sampler is None:
+        # Hand the sampler to the task so task.close() closes it. A caller-supplied
+        # sampler stays the caller's to close.
+        task._gym_sampler = sampler
+    return task
 
 
 def register_configs(version: int = 0) -> list[str]:
