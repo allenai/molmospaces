@@ -40,10 +40,6 @@ class MultiTask(BaseMujocoTask):
         self._registered_policy = None
         self._done_action_received = False
         self._datagen_profiler = None
-        # Only what the inherited render() reads; MultiTask is never a gym env
-        # (it has no sampler and overrides reset()).
-        self.render_mode = None
-        self.render_camera = None
 
     def _create_sensor_suite_from_config(self, exp_config):
         return SensorSuite(get_core_sensors(exp_config))
@@ -106,10 +102,10 @@ class MultiTask(BaseMujocoTask):
         obs_scene["num_tasks"] = len(self.tasks)
         return obs_scene
 
-    def reset(self, **kwargs: Any) -> dict[str, Any]:
+    def reset(self) -> dict[str, Any]:
         for task in self.tasks:
-            task.reset(**kwargs)
-        return self.tasks[0].reset(**kwargs)
+            task.reset()
+        return self.tasks[0].reset()
 
     def step(
         self, action: dict[str, Any]

@@ -1,9 +1,10 @@
 # Gym Compatibility
 
-Tasks (`BaseMujocoTask`) subclass `gymnasium.Env`, and can be built through
-`gymnasium.make`. The compatibility is **deliberately partial**: nothing about
-the data generation path changed to accommodate it. Read this before pointing
-third-party RL code at a molmospaces env.
+`GymEnv` (`molmo_spaces.tasks.gym_env`) is a `gymnasium.Env` wrapper around a
+molmospaces task sampler, and every data generation config is registered as a
+gym env id. The compatibility is **deliberately partial**: nothing about the data
+generation path changed to accommodate it. Read this before pointing third-party
+RL code at a molmospaces env.
 
 ## How a gym env is built
 
@@ -12,59 +13,44 @@ third-party RL code at a molmospaces env.
 task_sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
 task = task_sampler.sample_task()
 
-# Gymnasium: exactly the same two lines, wrapped so gymnasium can call them.
-import molmo_spaces.tasks.gym_registration as gym_registration
-gym_registration.register_configs()
+# Gymnasium: the env owns a sampler and makes that call in reset().
+import molmo_spaces.tasks.gym_env as gym_env
+gym_env.register_configs()
 env = gymnasium.make("MolmoSpaces/FrankaPickDroidDataGenConfig-v0")
+
+observation, info = env.reset()   # sample_task() + task.reset()
+observation, info = env.reset()   # a new episode
 ```
 
-`gymnasium.make` builds the config's task sampler, calls `sample_task()` **once**
-and hands back the task, which is already a `gymnasium.Env`. There is only one
-way to build a task -- a sampler builds it -- so tasks, samplers and the datagen
-pipeline are untouched by this.
+The env owns a task sampler and holds the current episode's task on `env.task`.
+`reset()` closes the previous task, calls `sample_task()` for the next episode
+and returns `task.reset()`; `step()` and `render()` delegate to the current task.
+Tasks, samplers and the datagen pipeline are untouched by this -- a task still
+holds exactly one episode and is still built only by a sampler.
 
-Registration passes `order_enforce=False`, so `gymnasium.make` returns the task
-itself rather than wrapping it. Gymnasium wrappers stopped proxying attribute
-access in 1.0, so a wrapper would put the task's own API (`register_policy`,
-`env`, `get_task_description`) behind `.unwrapped` and make `render()` raise
-before the first `reset()`. The order it enforces -- reset before step -- is
-already implied by an env holding one episode. Wrap it yourself if you want it
-back.
+There is **no attribute proxying**. The task's own API is reached explicitly
+through `env.task` (`register_policy`, `get_task_description`, `env`, ...) and
+the sampler through `env.task_sampler`.
+
+Registration passes `order_enforce=False`, so `gymnasium.make` returns the
+`GymEnv` itself rather than wrapping it -- gymnasium wrappers stopped proxying
+attribute access in 1.0, so `OrderEnforcing` would put `task` and `task_sampler`
+behind `.unwrapped`. `GymEnv` enforces reset-before-step itself, with a message
+that names the env. Wrap it yourself if you want gym's version back.
 
 Env ids come from the data generation config registry, so any config registered
 with `@register_config` is available as `MolmoSpaces/<ConfigName>-v0`.
 
-`gym_registration.make_env` takes the arguments the env id cannot carry:
-`exp_config` instead of `config_name`, `config_overrides`, an existing
-`task_sampler` to sample from, a `seed`, a `render_camera`, and anything
-`sample_task()` accepts (`house_index`, `force_advance_scene`).
+`GymEnv.__init__` takes the arguments the env id cannot carry: `exp_config`
+instead of `config_name`, `config_overrides`, `render_mode`, `render_camera`, and
+`sample_task()` defaults (`house_index`, `force_advance_scene`). Per-episode
+`sample_task()` arguments go through `reset(options=...)`.
+
+Instead of a config you can hand it an existing `task_sampler` to sample from --
+that sampler carries its own config, so it takes no `config_name`, `exp_config`
+or `config_overrides` alongside it, and `close()` leaves it open.
 
 ## What does not hold
-
-### One episode per env
-
-An env is one sampled episode. `reset()` clears task state for that episode and
-returns its first observation; a **second** `reset()` raises
-`NotImplementedError`. A new episode means another `sample_task()`, or another
-`gymnasium.make`.
-
-The check is the `gym_single_episode` flag, which `make_env` sets and nothing
-else does. A task you sampled yourself can still be reset repeatedly, as the
-datagen path does (once before `register_policy`, once after) -- there it is
-understood that reset replays the same episode, which is exactly the assumption
-a gym caller does not make.
-
-This is the main thing standard RL code will trip over -- training loops reset
-every episode. It is deliberate: making `reset()` re-sample means the task has to
-survive its scene being replaced and be re-configured in place, which would push
-episode-advancing machinery into every task and every sampler. Loop over
-`sample_task()` instead.
-
-`reset(seed=...)` and `reset(options=...)` raise `NotImplementedError` for the
-same reason: by the time the task exists, its episode is already chosen. Seed
-`BaseMujocoTaskSampler.seed_task_sampling` (or pass `seed=` to `make_env`) before
-sampling. Note that seeding is **process-global** -- it calls `random.seed`,
-`np.random.seed` and `torch.manual_seed`, so it also reseeds the caller's RNG.
 
 ### No `action_space`
 
@@ -90,42 +76,57 @@ describes them. Rather than declare a space that
 
 The observation contract is also **not fixed for a config**: robot sensors are
 added at construction, `register_policy()` adds policy sensors, and some sensors
-size themselves from the sampled episode's objects.
+size themselves from the sampled episode's objects. A new episode can therefore
+change the observation keys, and each `reset()` builds a new task.
+
+### `reset()` is expensive, and invalidates the previous task
+
+Each `reset()` samples an episode, which may load a scene and compile a MuJoCo
+model -- seconds, not milliseconds. It also closes the task it replaces: a task
+is bound to the sampler's single sim env, which scene loading replaces, so a
+handle kept from before a `reset()` is dead. Read what you need from
+`env.task` before resetting again.
+
+`reset(seed=...)` reseeds the sampler via `seed_task_sampling`. Note that
+seeding is **process-global** -- it calls `random.seed`, `np.random.seed` and
+`torch.manual_seed`, so it also reseeds the caller's RNG.
 
 ### Single environment only
 
-`make_env` requires `n_batch == 1` and raises otherwise. Batched task state
-exists (`step()` returns arrays over the batch), but termination and success are
-index-0 only, so batching is not usable end-to-end. There is no
+`reset()` requires `n_batch == 1` and raises otherwise. Batched task state exists
+(`step()` returns arrays over the batch), but termination and success are index-0
+only, so batching is not usable end-to-end. There is no
 `gymnasium.vector.VectorEnv` implementation; use the task sampler directly for
 batches.
 
-### Construction is expensive
+### One live episode per sampler
 
-`gymnasium.make` builds a sampler, loads a scene and compiles a MuJoCo model, so
-it takes seconds. Each env owns its own sampler and therefore its own sim env, so
-N parallel envs each pay their own scene load. Pass an existing `task_sampler` to
-`make_env` to reuse one -- but only sequentially: a sampler holds exactly one sim
-env, so two live envs from one sampler would share and clobber a scene.
+A sampler holds exactly one sim env, so two `GymEnv`s sharing a `task_sampler`
+would clobber each other's scene. Each env builds its own sampler by default;
+pass an existing one only when the envs are used sequentially. N parallel envs
+therefore each pay their own scene load.
 
 ## What does hold
 
-- `isinstance(task, gymnasium.Env)`, `task.unwrapped`, `task.np_random`.
-- `reset()` returning `(observation, info)`, once.
+- `isinstance(env, gymnasium.Env)`, `env.unwrapped`, `env.np_random`.
+- `reset()` returning `(observation, info)` for a freshly sampled episode, as
+  many times as the sampler has episodes (it raises once `max_tasks` is
+  exhausted; call `env.task_sampler.reset()` to start over).
+- `reset(seed=...)` and `reset(options={"house_index": ..., ...})`.
 - `step(action)` returning `(observation, reward, terminated, truncated, info)`.
 - `render()` returning an RGB `uint8` array, from `render_camera` if set or the
   first configured camera otherwise. `metadata["render_modes"] == ["rgb_array"]`.
   Unlike `gym.Env.render`, it does not require `render_mode` to be set.
-- `close()`, which closes the sampler only when `make_env` created it -- a
-  caller-supplied sampler is never closed underneath the caller.
-- `gymnasium.make` returning the task itself, so `isinstance(env, BaseMujocoTask)`
-  holds and no `.unwrapped` hop is needed.
+- `close()`, which closes the current task and the sampler -- but only when the
+  env built the sampler; a caller-supplied one is never closed underneath the
+  caller.
+- `gymnasium.make` returning the `GymEnv` itself, so no `.unwrapped` hop is
+  needed to reach `env.task`.
 
 ## Tests
 
 `mlspaces_tests/data_generation/test_gym_env_interface.py` covers the gym path:
-observation parity with a directly sampled task, the single-reset rule and its
-absence on the sampler path, rejected `seed`/`options`, sampler ownership, the
-batched rejection, sampler exhaustion, render, `gymnasium.make` returning an
-unwrapped task, the registration flags, and the deliberate absence of both
-spaces.
+observation parity with a directly sampled task, resampling on reset, reset
+options, reset-before-step, sampler ownership, the batched rejection, sampler
+exhaustion, render, `gymnasium.make` returning an unwrapped env, the registration
+flags, and the deliberate absence of both spaces.

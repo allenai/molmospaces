@@ -42,9 +42,9 @@ class PickAndPlaceNextToTask(PickAndPlaceTask):
         place_name = self.config.task_config.referral_expressions["place_name"]
         return f"Pick up the {pickup_name} and place it next to the {place_name}"
 
-    def reset(self, **kwargs):
+    def reset(self):
         """Reset the task and print goal."""
-        observation, info = super().reset(**kwargs)
+        observation, info = super().reset()
 
         pickup_name = self.config.task_config.referral_expressions["pickup_name"]
         place_name = self.config.task_config.referral_expressions["place_name"]

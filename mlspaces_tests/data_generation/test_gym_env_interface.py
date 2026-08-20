@@ -1,9 +1,9 @@
 """Tests for the gymnasium interface on tasks.
 
-``gym_registration.make_env`` builds a task sampler, samples one episode and
-returns the resulting task as a ``gymnasium.Env``. These tests pin the parts of
-the gymnasium contract that hold; see ``docs/gym_compatibility.md`` for the
-parts that do not, chief among them that the env holds a single episode.
+``GymEnv`` wraps a task sampler: ``reset()`` samples an episode and returns its
+first observation, ``step()`` drives the task it sampled. These tests pin the
+parts of the gymnasium contract that hold; see ``docs/gym_compatibility.md`` for
+the parts that do not.
 """
 
 import gymnasium as gym
@@ -15,7 +15,8 @@ from molmo_spaces.data_generation.config_registry import (
     _MJT_CONFIG_REGISTRY,
     register_config,
 )
-from molmo_spaces.tasks import gym_registration
+from molmo_spaces.tasks import gym_env as gym_env_module
+from molmo_spaces.tasks.gym_env import GymEnv
 from molmo_spaces.tasks.task import BaseMujocoTask
 
 
@@ -30,25 +31,25 @@ def gym_config():
 
 @pytest.fixture(scope="module")
 def gym_env(gym_config):
-    """An env from the gymnasium entry point, with its own sampler."""
-    env = gym_registration.make_env(exp_config=gym_config)
+    """A reset env with its own sampler, shared by the read-only tests."""
+    env = GymEnv(exp_config=gym_config)
+    env.reset()
     yield env
     env.close()
 
 
-def test_task_is_a_gym_env(gym_env):
+def test_env_is_a_gym_env(gym_env):
     assert isinstance(gym_env, gym.Env)
-    assert isinstance(gym_env, BaseMujocoTask)
     # gym.Env's own initialization must have happened, not just ours.
     assert gym_env.unwrapped is gym_env
     assert gym_env.np_random is not None
 
 
-def test_make_env_sampled_an_episode(gym_env):
-    assert gym_env._gym_sampler is not None, "make_env should own the sampler it built"
-    assert gym_env._env is gym_env._gym_sampler.env
-    assert gym_env._env.n_batch == 1
-    assert gym_env.get_task_description().strip()
+def test_reset_sampled_an_episode(gym_env):
+    assert isinstance(gym_env.task, BaseMujocoTask)
+    assert gym_env.task.env is gym_env.task_sampler.env
+    assert gym_env.task.env.n_batch == 1
+    assert gym_env.task.get_task_description().strip()
 
 
 def test_reset_returns_observation_and_info(gym_env):
@@ -58,51 +59,45 @@ def test_reset_returns_observation_and_info(gym_env):
     assert len(info) == 1
 
 
-def test_second_reset_is_not_supported(gym_config):
-    """One episode per env: the second reset says so rather than silently repeating."""
-    env = gym_registration.make_env(exp_config=gym_config)
+def test_reset_samples_a_new_episode(gym_config):
+    """The point of the wrapper: a gym loop can reset per episode."""
+    env = GymEnv(exp_config=gym_config)
     try:
-        assert env.gym_single_episode
         env.reset()
-        with pytest.raises(NotImplementedError, match="single episode"):
-            env.reset()
+        first = env.task
+        env.reset()
+        assert env.task is not first, "reset() must sample a new task"
+        assert first._env is None, "the replaced task must be closed"
     finally:
         env.close()
 
 
-def test_sampled_tasks_may_still_be_reset_more_than_once(gym_config):
-    """The single-reset rule is the gym path's, not the sampler path's.
-
-    Data generation resets once before register_policy and once after, so the
-    check must stay off for tasks the caller sampled itself.
-    """
-    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
+def test_step_and_render_before_reset_raise(gym_config):
+    env = GymEnv(exp_config=gym_config)
     try:
-        task = sampler.sample_task()
-        assert not task.gym_single_episode
-        task.reset()
-        task.reset()
-        task.close()
+        with pytest.raises(RuntimeError, match="reset"):
+            env.step({})
+        with pytest.raises(RuntimeError, match="reset"):
+            env.render()
     finally:
-        sampler.close()
+        env.close()
 
 
-def test_reset_rejects_seed_and_options(gym_config):
-    """Episode selection belongs to the sampler, so reset() cannot honour these."""
-    env = gym_registration.make_env(exp_config=gym_config)
+def test_reset_options_reach_sample_task(gym_config):
+    """``options`` carries the sample_task arguments an env id cannot."""
+    env = GymEnv(exp_config=gym_config)
     try:
-        with pytest.raises(NotImplementedError, match="not supported"):
-            env.reset(seed=0)
-        with pytest.raises(NotImplementedError, match="not supported"):
-            env.reset(options={"house_index": 0})
-        # A rejected reset must not count against the single allowed one.
-        env.reset()
+        house_index = env.task_sampler._house_inds[0]
+        env.reset(options={"house_index": house_index})
+        assert env.task_sampler.current_house_index == house_index
+        with pytest.raises(ValueError, match="Unsupported reset options"):
+            env.reset(options={"nonsense": 1})
     finally:
         env.close()
 
 
 def test_gym_path_and_sampler_path_agree_on_observation_keys(gym_config, gym_env):
-    """The gym env is a sampled task, so its observation contract is the same one."""
+    """The gym env drives a sampled task, so the observation contract is the same."""
     sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
     try:
         sampler_task = sampler.sample_task()
@@ -112,22 +107,21 @@ def test_gym_path_and_sampler_path_agree_on_observation_keys(gym_config, gym_env
         sampler_obs, _ = sampler_task.reset()
         sampler_task.close()
 
-        gym_env_task = gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+        env = GymEnv(task_sampler=sampler)
         try:
-            gym_obs, _ = gym_env_task.reset()
+            gym_obs, _ = env.reset()
             assert set(sampler_obs[0]) == set(gym_obs[0])
         finally:
-            gym_env_task.close()
+            env.close()
     finally:
         sampler.close()
 
 
-def test_make_env_does_not_close_a_caller_supplied_sampler(gym_config):
+def test_close_leaves_a_caller_supplied_sampler_open(gym_config):
     sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
     try:
-        env = gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
-        assert env.gym_single_episode, "still a gym env, whoever built the sampler"
-        assert env._gym_sampler is None, "a caller's sampler stays the caller's to close"
+        env = GymEnv(task_sampler=sampler)
+        env.reset()
         env.close()
         # Still usable, so close() left it alone.
         assert sampler.sample_task() is not None
@@ -140,9 +134,10 @@ def test_batched_config_is_rejected_on_the_gym_path(gym_config, monkeypatch):
     sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
     try:
         task = sampler.sample_task()
-        monkeypatch.setattr(type(task._env), "n_batch", property(lambda self: 2))
+        monkeypatch.setattr(type(task.env), "n_batch", property(lambda self: 2))
+        env = GymEnv(task_sampler=sampler)
         with pytest.raises(ValueError, match="single-environment only"):
-            gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+            env.reset()
         task.close()
     finally:
         sampler.close()
@@ -154,8 +149,9 @@ def test_exhausted_sampler_raises_rather_than_returning_none(gym_config):
     try:
         sampler._current_tasks_left = 0
         assert sampler.sample_task() is None
+        env = GymEnv(task_sampler=sampler)
         with pytest.raises(RuntimeError, match="no task"):
-            gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+            env.reset()
     finally:
         sampler.close()
 
@@ -164,7 +160,7 @@ def test_render_returns_an_rgb_frame(gym_env):
     frame = gym_env.render()
     assert frame.ndim == 3 and frame.shape[2] == 3
     assert frame.dtype == np.uint8
-    assert "rgb_array" in type(gym_env).metadata["render_modes"]
+    assert "rgb_array" in GymEnv.metadata["render_modes"]
 
 
 def test_render_rejects_unsupported_mode(gym_env, monkeypatch):
@@ -179,38 +175,47 @@ def test_spaces_are_deliberately_absent(gym_env):
     assert getattr(gym_env, "observation_space", None) is None
 
 
-def test_make_env_requires_exactly_one_source(gym_config):
+def test_requires_exactly_one_config_source(gym_config):
     with pytest.raises(ValueError, match="exactly one"):
-        gym_registration.make_env()
+        GymEnv()
     with pytest.raises(ValueError, match="exactly one"):
-        gym_registration.make_env(config_name="X", exp_config=gym_config)
+        GymEnv(config_name="X", exp_config=gym_config)
 
 
-def test_gymnasium_make_returns_the_task_itself(gym_config):
-    """``gym.make`` must hand back the task, not a wrapper.
+def test_a_task_sampler_may_not_be_combined_with_a_config(gym_config):
+    """A sampler already has a config; two would leave it ambiguous which wins."""
+    sampler = gym_config.task_sampler_config.task_sampler_class(gym_config)
+    try:
+        with pytest.raises(ValueError, match="brings its own config"):
+            GymEnv(exp_config=gym_config, task_sampler=sampler)
+    finally:
+        sampler.close()
+
+
+def test_gymnasium_make_returns_the_env_itself(gym_config):
+    """``gym.make`` must hand back the GymEnv, not a wrapper.
 
     Gymnasium wrappers stopped proxying attribute access in 1.0, so an
-    ``OrderEnforcing`` wrapper would hide ``register_policy``, ``env`` and the
-    rest of the task API behind ``.unwrapped``, and make ``render()`` raise
-    before the first reset. Hence ``order_enforce=False`` at registration.
+    ``OrderEnforcing`` wrapper would hide ``task`` and ``task_sampler`` behind
+    ``.unwrapped``. Hence ``order_enforce=False`` at registration.
     """
     # Env ids come from the datagen config registry, so the test config has to be
     # in it. Registered and removed here rather than left behind for other tests.
     config_name = "GymMakeTestConfig"
-    env_id = gym_registration.env_id_for_config(config_name)
+    env_id = gym_env_module.env_id_for_config(config_name)
     register_config(config_name, strict=False)(type(gym_config))
     try:
-        gym_registration.register_configs()
+        gym_env_module.register_configs()
         env = gym.make(
             env_id,
             config_overrides={"use_passive_viewer": False, "use_wandb": False, "profile": False},
         )
         try:
-            assert isinstance(env, BaseMujocoTask), "a wrapper would hide the task API"
+            assert isinstance(env, GymEnv), "a wrapper would hide the env API"
             assert env.unwrapped is env
-            assert env.get_task_description().strip()
-            assert env.render().ndim == 3, "render() must work before the first reset"
             env.reset()
+            assert env.task.get_task_description().strip()
+            assert env.render().ndim == 3
         finally:
             env.close()
     finally:
@@ -221,19 +226,19 @@ def test_gymnasium_make_returns_the_task_itself(gym_config):
 def test_registered_envs_skip_the_checker_and_the_order_wrapper():
     import molmo_spaces.data_generation.config.object_manipulation_datagen_configs  # noqa: F401
 
-    gym_registration.register_configs()
-    spec = gym.registry[gym_registration.env_id_for_config("FrankaPickDroidDataGenConfig")]
+    gym_env_module.register_configs()
+    spec = gym.registry[gym_env_module.env_id_for_config("FrankaPickDroidDataGenConfig")]
     assert spec.disable_env_checker, "no spaces are declared, so the checker cannot pass"
-    assert not spec.order_enforce, "the wrapper would hide the task API"
+    assert not spec.order_enforce, "the wrapper would hide the env API"
     assert spec.max_episode_steps is None, "the task enforces its own horizon"
 
 
 def test_register_configs_is_idempotent():
     import molmo_spaces.data_generation.config.object_manipulation_datagen_configs  # noqa: F401
 
-    gym_registration.register_configs()
+    gym_env_module.register_configs()
     assert [
-        env_id for env_id in gym.registry if env_id.startswith(f"{gym_registration.NAMESPACE}/")
+        env_id for env_id in gym.registry if env_id.startswith(f"{gym_env_module.NAMESPACE}/")
     ], "expected at least one config to be registered"
     # A second call must not raise or re-register.
-    assert gym_registration.register_configs() == []
+    assert gym_env_module.register_configs() == []
