@@ -40,11 +40,10 @@ class MultiTask(BaseMujocoTask):
         self._registered_policy = None
         self._done_action_received = False
         self._datagen_profiler = None
+        # Only what the inherited render() reads; MultiTask is never a gym env
+        # (it has no sampler and overrides reset()).
         self.render_mode = None
         self.render_camera = None
-        self.gym_single_episode = False
-        self._gym_sampler = None
-        self._n_resets = 0
 
     def _create_sensor_suite_from_config(self, exp_config):
         return SensorSuite(get_core_sensors(exp_config))

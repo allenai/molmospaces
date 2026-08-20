@@ -99,10 +99,10 @@ def make_env(
                 f"{type(sampler).__name__} returned no task (max_tasks reached); "
                 f"call task_sampler.reset() to start over."
             )
-        if task._env.n_batch != 1:
+        if task.env.n_batch != 1:
             raise ValueError(
                 f"The gymnasium interface is single-environment only, got "
-                f"n_batch={task._env.n_batch}. Use the task sampler directly for batches."
+                f"n_batch={task.env.n_batch}. Use the task sampler directly for batches."
             )
     except BaseException:
         # We built the sampler, so nothing else will close it.
@@ -143,6 +143,13 @@ def register_configs(version: int = 0) -> list[str]:
             max_episode_steps=None,
             # These envs cannot pass gym's checker (no spaces declared).
             disable_env_checker=True,
+            # Without this gym.make returns an OrderEnforcing wrapper, and
+            # gymnasium wrappers no longer proxy attribute access -- so the task's
+            # own API (register_policy, env, get_task_description) would be
+            # unreachable except through .unwrapped, and render() before the first
+            # reset would raise. The order it enforces (reset before step) is
+            # already implied by the task's single episode.
+            order_enforce=False,
         )
         registered.append(env_id)
 

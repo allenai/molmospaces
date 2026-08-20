@@ -11,6 +11,10 @@ import numpy as np
 import pytest
 
 from mlspaces_tests.data_generation.config import FrankaPickAndPlaceDroidTestConfig
+from molmo_spaces.data_generation.config_registry import (
+    _MJT_CONFIG_REGISTRY,
+    register_config,
+)
 from molmo_spaces.tasks import gym_registration
 from molmo_spaces.tasks.task import BaseMujocoTask
 
@@ -103,12 +107,17 @@ def test_gym_path_and_sampler_path_agree_on_observation_keys(gym_config, gym_env
     try:
         sampler_task = sampler.sample_task()
         assert isinstance(sampler_task, BaseMujocoTask)
+        # Read the first task's observation before sampling again: a second episode
+        # can load a scene, which replaces the sim env the first task is bound to.
         sampler_obs, _ = sampler_task.reset()
-        gym_env_task = gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
-        gym_obs, _ = gym_env_task.reset()
-        assert set(sampler_obs[0]) == set(gym_obs[0])
-        gym_env_task.close()
         sampler_task.close()
+
+        gym_env_task = gym_registration.make_env(exp_config=gym_config, task_sampler=sampler)
+        try:
+            gym_obs, _ = gym_env_task.reset()
+            assert set(sampler_obs[0]) == set(gym_obs[0])
+        finally:
+            gym_env_task.close()
     finally:
         sampler.close()
 
@@ -177,11 +186,54 @@ def test_make_env_requires_exactly_one_source(gym_config):
         gym_registration.make_env(config_name="X", exp_config=gym_config)
 
 
+def test_gymnasium_make_returns_the_task_itself(gym_config):
+    """``gym.make`` must hand back the task, not a wrapper.
+
+    Gymnasium wrappers stopped proxying attribute access in 1.0, so an
+    ``OrderEnforcing`` wrapper would hide ``register_policy``, ``env`` and the
+    rest of the task API behind ``.unwrapped``, and make ``render()`` raise
+    before the first reset. Hence ``order_enforce=False`` at registration.
+    """
+    # Env ids come from the datagen config registry, so the test config has to be
+    # in it. Registered and removed here rather than left behind for other tests.
+    config_name = "GymMakeTestConfig"
+    env_id = gym_registration.env_id_for_config(config_name)
+    register_config(config_name, strict=False)(type(gym_config))
+    try:
+        gym_registration.register_configs()
+        env = gym.make(
+            env_id,
+            config_overrides={"use_passive_viewer": False, "use_wandb": False, "profile": False},
+        )
+        try:
+            assert isinstance(env, BaseMujocoTask), "a wrapper would hide the task API"
+            assert env.unwrapped is env
+            assert env.get_task_description().strip()
+            assert env.render().ndim == 3, "render() must work before the first reset"
+            env.reset()
+        finally:
+            env.close()
+    finally:
+        _MJT_CONFIG_REGISTRY.pop(config_name, None)
+        gym.registry.pop(env_id, None)
+
+
+def test_registered_envs_skip_the_checker_and_the_order_wrapper():
+    import molmo_spaces.data_generation.config.object_manipulation_datagen_configs  # noqa: F401
+
+    gym_registration.register_configs()
+    spec = gym.registry[gym_registration.env_id_for_config("FrankaPickDroidDataGenConfig")]
+    assert spec.disable_env_checker, "no spaces are declared, so the checker cannot pass"
+    assert not spec.order_enforce, "the wrapper would hide the task API"
+    assert spec.max_episode_steps is None, "the task enforces its own horizon"
+
+
 def test_register_configs_is_idempotent():
     import molmo_spaces.data_generation.config.object_manipulation_datagen_configs  # noqa: F401
 
-    first = gym_registration.register_configs()
-    assert first, "expected at least one config to register"
-    assert all(env_id in gym.registry for env_id in first)
+    gym_registration.register_configs()
+    assert [
+        env_id for env_id in gym.registry if env_id.startswith(f"{gym_registration.NAMESPACE}/")
+    ], "expected at least one config to be registered"
     # A second call must not raise or re-register.
     assert gym_registration.register_configs() == []

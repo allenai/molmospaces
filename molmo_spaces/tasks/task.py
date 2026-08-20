@@ -289,6 +289,10 @@ class BaseMujocoTask(gym.Env, ABC):
                 "sampler with seed_task_sampling() and sample a new task instead."
             )
 
+        # gym convention. A no-op without a seed, which this never takes, but it
+        # keeps whatever bookkeeping gymnasium does in reset().
+        super().reset()
+
         self._n_resets += 1
         if self.gym_single_episode and self._n_resets > 1:
             raise NotImplementedError(
@@ -637,8 +641,11 @@ class BaseMujocoTask(gym.Env, ABC):
 
         # A sampler the gym entry point created on the caller's behalf has no other
         # owner, so close it here. Samplers the caller built are left alone.
+        # Suppressed because close() also runs from __del__, where a raise becomes
+        # an ignored-exception traceback at interpreter shutdown.
         if getattr(self, "_gym_sampler", None) is not None:
-            self._gym_sampler.close()
+            with contextlib.suppress(Exception):
+                self._gym_sampler.close()
             self._gym_sampler = None
 
         if hasattr(self, "renderer") and self.renderer is not None:

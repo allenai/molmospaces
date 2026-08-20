@@ -23,6 +23,14 @@ and hands back the task, which is already a `gymnasium.Env`. There is only one
 way to build a task -- a sampler builds it -- so tasks, samplers and the datagen
 pipeline are untouched by this.
 
+Registration passes `order_enforce=False`, so `gymnasium.make` returns the task
+itself rather than wrapping it. Gymnasium wrappers stopped proxying attribute
+access in 1.0, so a wrapper would put the task's own API (`register_policy`,
+`env`, `get_task_description`) behind `.unwrapped` and make `render()` raise
+before the first `reset()`. The order it enforces -- reset before step -- is
+already implied by an env holding one episode. Wrap it yourself if you want it
+back.
+
 Env ids come from the data generation config registry, so any config registered
 with `@register_config` is available as `MolmoSpaces/<ConfigName>-v0`.
 
@@ -110,10 +118,14 @@ env, so two live envs from one sampler would share and clobber a scene.
   Unlike `gym.Env.render`, it does not require `render_mode` to be set.
 - `close()`, which closes the sampler only when `make_env` created it -- a
   caller-supplied sampler is never closed underneath the caller.
+- `gymnasium.make` returning the task itself, so `isinstance(env, BaseMujocoTask)`
+  holds and no `.unwrapped` hop is needed.
 
 ## Tests
 
 `mlspaces_tests/data_generation/test_gym_env_interface.py` covers the gym path:
-observation parity with a directly sampled task, the single-reset rule, rejected
-`seed`/`options`, sampler ownership, the batched rejection, sampler exhaustion,
-render, registration, and the deliberate absence of both spaces.
+observation parity with a directly sampled task, the single-reset rule and its
+absence on the sampler path, rejected `seed`/`options`, sampler ownership, the
+batched rejection, sampler exhaustion, render, `gymnasium.make` returning an
+unwrapped task, the registration flags, and the deliberate absence of both
+spaces.
