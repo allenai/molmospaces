@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://allenai.github.io/molmospaces/data_format/">
+        <link rel="canonical" href="https://allenai.github.io/molmospaces/gym_compatibility/">
       
       
-        <link rel="prev" href="../asset_libraries/">
+        <link rel="prev" href="../code_structure/">
       
       
-        <link rel="next" href="../data_processing/">
+        <link rel="next" href="../development/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Data Format - MolmoSpaces</title>
+        <title>Gym Compatibility - MolmoSpaces</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#data-format" class="md-skip">
+        <a href="#gym-compatibility" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Data Format
+              Gym Compatibility
             
           </span>
         </div>
@@ -557,37 +557,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Data Format
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../data_format/" class="md-nav__link">
         
   
   
@@ -603,54 +576,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#data-postprocessing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Data postprocessing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data postprocessing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#final-h5-root-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Final h5 root structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -772,10 +697,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../gym_compatibility/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gym Compatibility
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -791,6 +743,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-gym-env-is-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How a gym env is built
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-does-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What does hold
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-doesnt-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What doesn't hold
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1447,30 +1452,35 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#data-postprocessing" class="md-nav__link">
+  <a href="#how-a-gym-env-is-built" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data postprocessing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Data postprocessing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#final-h5-root-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Final h5 root structure
+        How a gym env is built
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#what-does-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What does hold
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-doesnt-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What doesn't hold
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1491,7 +1501,7 @@
 
 
   
-    <a href="https://github.com/allenai/molmospaces/edit/main/docs/data_format.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/allenai/molmospaces/edit/main/docs/gym_compatibility.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1499,57 +1509,93 @@
   
 
 
-<h1 id="data-format">Data Format<a class="headerlink" href="#data-format" title="Permanent link">&para;</a></h1>
-<p>Data generation produces a folder structure as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>train/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    house_{house_idx}/
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        episode_{ep_idx:08d}_{camera_name}_batch_{batch_idx}_of_{n_batches}.mp4
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        ...
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        trajectories_batch_{batch_idx}_of_{n_batches}.h5
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ...
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    ...
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>test/
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    ...
+<h1 id="gym-compatibility">Gym Compatibility<a class="headerlink" href="#gym-compatibility" title="Permanent link">&para;</a></h1>
+<p>MolmoSpaces and Gymanisum are designed for different purposes and have different
+abstractions. MolmoSpaces scenes are a bit larger and can have several tasks
+associated with them. To make this more efficinent task construction is split into
+a task sampler, which gives you a new task, and tasks, which you can call step on.
+See <a href="../concepts/">concepts.md</a> for detail.</p>
+<p>As a usability feature we provide wrappers to our classes that provide gym-style
+APIs. These are only partially implemented and are probably not suitable for
+scaled use in datagen and traning.
+<code>GymEnv</code> (<code>molmo_spaces.tasks.gym_env</code>) is a <code>gymnasium.Env</code> wrapper around a
+molmospaces task sampler, and every data generation config is registered as a
+gym env id.</p>
+<h2 id="how-a-gym-env-is-built">How a gym env is built<a class="headerlink" href="#how-a-gym-env-is-built" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Data generation / evaluation, unchanged: the sampler builds the task.</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">task_sampler</span> <span class="o">=</span> <span class="n">exp_config</span><span class="o">.</span><span class="n">task_sampler_config</span><span class="o">.</span><span class="n">task_sampler_class</span><span class="p">(</span><span class="n">exp_config</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">task</span> <span class="o">=</span> <span class="n">task_sampler</span><span class="o">.</span><span class="n">sample_task</span><span class="p">()</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Gymnasium: the env owns a sampler and makes that call in reset().</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">molmo_spaces.tasks.gym_env</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gym_env</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">gym_env</span><span class="o">.</span><span class="n">register_configs</span><span class="p">()</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">env</span> <span class="o">=</span> <span class="n">gymnasium</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">"MolmoSpaces/FrankaPickDroidDataGenConfig-v0"</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">observation</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>   <span class="c1"># sample_task() + task.reset()</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">observation</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>   <span class="c1"># a new episode</span>
 </code></pre></div>
-<p>Within each h5 file, the structure is (largely) described as follows. When a type is annotated as <code>dict</code>, it means that it is a <code>(K,)</code> uint8 array containing a byte-encoded json-encoded dictionary right-padded with <code>\x00</code> to <code>K</code> bytes. When a type is annotated as <code>list[dict]</code> it is a 2D array where each element is a <code>(K,)</code> uint8 array. Note that <code>K</code> might differ between values within a trajectory, and <code>T</code> will differ between trajectories.</p>
-<p>Additionally, note that the <code>i</code>-th state corresponds to the <code>i+1</code>-th action. This means that the first action is dummy and should not be used. Furthermore, a special <code>done</code> sentinel action is used during datagen, which is also included as the last action. If one intends only to supervise on move actions (without considering <code>done</code> actions), the first and last action should be discarded, and the last 2 states should be discarded. In all cases, however, the first action and last state should be discarded.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>traj_{ep_idx}/
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    actions/
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        commanded_action: list[dict]  # the action returned by the policy (e.g. demonstrator), may or may not be positions
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        joint_pos: list[dict]  # joint position commands for position-controlled move-groups
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        joint_pos_rel: list[dict]  # delta between commanded joint pos and current joint pos for position-controlled move-groups
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        ee_pose: list[dict]  # commanded leaf frame rel. to robot base (pos+quat) for position-controlled move-groups
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        ee_twist: list[dict]  # commanded 6D body-frame ee twist of leaf frame for position-controlled move groups
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    obs/
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        agent/
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>            qpos: list[dict]
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>            qvel: list[dict]
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        extra/ (other state information)
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>            ...
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        sensor_data/
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>            {camera_name}: byte-encoded string representing the video filename of this camera's feed, in the same directory as the h5 file.
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        sensor_param/
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>            {camera_name}/
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>                cam2world_gl: (T, 4, 4) array of camera-to-world transformation matrices
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>                extrinsic_cv: (T, 3, 4) top 3 rows of cam2world_gl
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>                intrinsic_cv: (T, 3, 3) camera intrinsics matrics
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    obs_scene: dict, time-invariant scene-specific information
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    rewards: (T,) array of floats, per-step reward
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    success: (T,) array of bool, per-step done signal
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    terminated: (T,) array of bool, per-step done or timeout signal
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    truncated: (T,) array of bool, per-step timeout signal
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>...
-</code></pre></div>
-<h2 id="data-postprocessing">Data postprocessing<a class="headerlink" href="#data-postprocessing" title="Permanent link">&para;</a></h2>
-<p>After generating data, it must be postprocessed for consumption by a training pipeline. See <a href="../data_processing/">the documentation</a> for more information.</p>
-<h3 id="final-h5-root-structure">Final h5 root structure<a class="headerlink" href="#final-h5-root-structure" title="Permanent link">&para;</a></h3>
-<p>The data postprocessing doesn't modify any existing data in the h5 files, it only adds new groups and values to the root of the file.
-After this pipeline, the root keys of the h5 file are:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>traj_{i}/
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>...
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>stats/
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>valid_traj_mask
-</code></pre></div>
+<p>The env owns a task sampler and holds the current episode's task on <code>env.task</code>.
+<code>reset()</code> closes the previous task, calls <code>sample_task()</code> for the next episode
+and returns <code>task.reset()</code>; <code>step()</code> and <code>render()</code> delegate to the current task.
+Tasks, samplers and the datagen pipeline are untouched by this -- a task still
+holds exactly one episode and is still built only by a sampler.</p>
+<p>There is *no attribute proxying. The task's own API is reached explicitly
+through <code>env.task</code> (<code>register_policy</code>, <code>get_task_description</code>, <code>env</code>, ...) and
+the sampler through <code>env.task_sampler</code>.</p>
+<p>Registration passes <code>order_enforce=False</code>, so <code>gymnasium.make</code> returns the
+<code>GymEnv</code> itself rather than wrapping it -- gymnasium wrappers stopped proxying
+attribute access in 1.0, so <code>OrderEnforcing</code> would put <code>task</code> and <code>task_sampler</code>
+behind <code>.unwrapped</code>. <code>GymEnv</code> enforces reset-before-step itself, with a message
+that names the env. Wrap it yourself if you want gym's version back.</p>
+<p>Env ids come from the data generation config registry, so any config registered
+with <code>@register_config</code> is available as <code>MolmoSpaces/&lt;ConfigName&gt;-v0</code>.</p>
+<p><code>GymEnv.__init__</code> takes the arguments the env id cannot carry: <code>exp_config</code>
+instead of <code>config_name</code>, <code>config_overrides</code>, <code>render_mode</code>, <code>render_camera</code>, and
+<code>sample_task()</code> defaults (<code>house_index</code>, <code>force_advance_scene</code>). Per-episode
+<code>sample_task()</code> arguments go through <code>reset(options=...)</code>.</p>
+<p>Instead of a config you can hand it an existing <code>task_sampler</code> to sample from --
+that sampler carries its own config, so it takes no <code>config_name</code>, <code>exp_config</code>
+or <code>config_overrides</code> alongside it, and <code>close()</code> leaves it open.</p>
+<h2 id="what-does-hold">What does hold<a class="headerlink" href="#what-does-hold" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>isinstance(env, gymnasium.Env)</code>, <code>env.unwrapped</code>, <code>env.np_random</code>.</li>
+<li><code>reset()</code> returning <code>(observation, info)</code> for a freshly sampled episode, as
+  many times as the sampler has episodes (it raises once <code>max_tasks</code> is
+  exhausted; call <code>env.task_sampler.reset()</code> to start over).</li>
+<li><code>reset(seed=...)</code> and <code>reset(options={"house_index": ..., ...})</code>.</li>
+<li><code>step(action)</code> returning <code>(observation, reward, terminated, truncated, info)</code>.</li>
+<li><code>render()</code> returning an RGB <code>uint8</code> array, from <code>render_camera</code> if set or the
+  first configured camera otherwise. <code>metadata["render_modes"] == ["rgb_array"]</code>.
+  Unlike <code>gym.Env.render</code>, it does not require <code>render_mode</code> to be set.</li>
+<li><code>close()</code>, which closes the current task and the sampler -- but only when the
+  env built the sampler; a caller-supplied one is never closed underneath the
+  caller.</li>
+<li><code>gymnasium.make</code> returning the <code>GymEnv</code> itself, so no <code>.unwrapped</code> hop is
+  needed to reach <code>env.task</code>.</li>
+</ul>
+<h2 id="what-doesnt-hold">What doesn't hold<a class="headerlink" href="#what-doesnt-hold" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No <code>action_space</code>** — actions are dicts keyed by move group (<code>arm</code>,
+  <code>gripper</code>, etc.), so <code>check_env</code> and most RL libraries (SB3, CleanRL, RLlib)
+  choke on construction; registered envs set <code>disable_env_checker=True</code>. Build
+  your own adapter if you need a <code>Box</code>/<code>Dict</code> space.</li>
+<li>No <code>observation_space</code>** — observations are <code>list[dict]</code> (one per batch
+  element), and the key set isn't fixed per config: robot/policy sensors and
+  episode-dependent sizing mean it can change between resets.</li>
+<li><code>reset()</code> is expensive and kills the old task** — it samples an episode,
+  possibly loading a scene and compiling a MuJoCo model (seconds). The
+  previous task is closed in the process, so grab what you need from
+  <code>env.task</code> before calling <code>reset()</code> again. <code>reset(seed=...)</code> also reseeds
+  <code>random</code>, <code>np.random</code>, and <code>torch</code> globally.</li>
+<li>Single environment only — <code>reset()</code> requires <code>n_batch == 1</code>; batched
+  state exists in <code>step()</code> but termination/success are index-0 only, so it's
+  not usable end-to-end. No <code>VectorEnv</code>; use the task sampler directly for
+  batching.</li>
+<li>*One live episode per sampler — a sampler owns one sim env, so sharing a
+  <code>task_sampler</code> across <code>GymEnv</code>s clobbers scenes. Each env makes its own
+  sampler by default (share one only for sequential use), so N parallel envs
+  each pay their own scene-load cost.</li>
+</ul>
 
 
 
@@ -1572,7 +1618,7 @@ After this pipeline, the root keys of the h5 file are:</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 11, 2026 05:56:05 UTC"><span class="timeago" datetime="2026-02-11T05:56:05+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 11, 2026 05:56:05 UTC">2026-02-11</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 21, 2026 07:02:49 UTC"><span class="timeago" datetime="2026-08-21T07:02:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 21, 2026 07:02:49 UTC">2026-08-21</span>
   </span>
 
     
@@ -1582,7 +1628,7 @@ After this pipeline, the root keys of the h5 file are:</p>
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 11, 2026 05:56:05 UTC"><span class="timeago" datetime="2026-02-11T05:56:05+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 11, 2026 05:56:05 UTC">2026-02-11</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 21, 2026 07:02:49 UTC"><span class="timeago" datetime="2026-08-21T07:02:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 21, 2026 07:02:49 UTC">2026-08-21</span>
   </span>
 
     
