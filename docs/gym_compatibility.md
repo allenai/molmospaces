@@ -1,10 +1,17 @@
 # Gym Compatibility
 
+MolmoSpaces and Gymanisum are designed for different purposes and have different
+abstractions. MolmoSpaces scenes are a bit larger and can have several tasks
+associated with them. To make this more efficinent task construction is split into
+a task sampler, which gives you a new task, and tasks, which you can call step on.
+See [concepts.md](concepts.md) for detail.
+
+As a usability feature we provide wrappers to our classes that provide gym-style
+APIs. These are only partially implemented and are probably not suitable for 
+scaled use in datagen and traning. 
 `GymEnv` (`molmo_spaces.tasks.gym_env`) is a `gymnasium.Env` wrapper around a
 molmospaces task sampler, and every data generation config is registered as a
-gym env id. The compatibility is **deliberately partial**: nothing about the data
-generation path changed to accommodate it. Read this before pointing third-party
-RL code at a molmospaces env.
+gym env id. 
 
 ## How a gym env is built
 
@@ -28,7 +35,7 @@ and returns `task.reset()`; `step()` and `render()` delegate to the current task
 Tasks, samplers and the datagen pipeline are untouched by this -- a task still
 holds exactly one episode and is still built only by a sampler.
 
-There is **no attribute proxying**. The task's own API is reached explicitly
+There is *no attribute proxying. The task's own API is reached explicitly
 through `env.task` (`register_policy`, `get_task_description`, `env`, ...) and
 the sampler through `env.task_sampler`.
 
@@ -50,62 +57,6 @@ Instead of a config you can hand it an existing `task_sampler` to sample from --
 that sampler carries its own config, so it takes no `config_name`, `exp_config`
 or `config_overrides` alongside it, and `close()` leaves it open.
 
-## What does not hold
-
-### No `action_space`
-
-Actions are dicts keyed by move group (`{"arm": ..., "gripper": ...}`), and no
-space describes them. Consequences:
-
-- `gymnasium.utils.env_checker.check_env` fails.
-- Most wrappers and RL libraries (Stable-Baselines3, CleanRL, RLlib) raise on
-  construction, since they read `action_space` unconditionally. Registered envs
-  therefore set `disable_env_checker=True`.
-
-If you need one, write an adapter that declares a space for your robot and
-translates arrays to the action dict; it is not provided because the useful
-shape (flat `Box` vs nested `Dict`) depends on the consumer.
-
-### No `observation_space`
-
-Individual sensors carry `gymnasium` spaces (`sensor.observation_space`, and
-`sensor_suite.observation_spaces`), but observations returned by `reset()` and
-`step()` are `list[dict]` -- one dict per batch element -- so no single space
-describes them. Rather than declare a space that
-`observation_space.contains(obs)` would reject, none is declared.
-
-The observation contract is also **not fixed for a config**: robot sensors are
-added at construction, `register_policy()` adds policy sensors, and some sensors
-size themselves from the sampled episode's objects. A new episode can therefore
-change the observation keys, and each `reset()` builds a new task.
-
-### `reset()` is expensive, and invalidates the previous task
-
-Each `reset()` samples an episode, which may load a scene and compile a MuJoCo
-model -- seconds, not milliseconds. It also closes the task it replaces: a task
-is bound to the sampler's single sim env, which scene loading replaces, so a
-handle kept from before a `reset()` is dead. Read what you need from
-`env.task` before resetting again.
-
-`reset(seed=...)` reseeds the sampler via `seed_task_sampling`. Note that
-seeding is **process-global** -- it calls `random.seed`, `np.random.seed` and
-`torch.manual_seed`, so it also reseeds the caller's RNG.
-
-### Single environment only
-
-`reset()` requires `n_batch == 1` and raises otherwise. Batched task state exists
-(`step()` returns arrays over the batch), but termination and success are index-0
-only, so batching is not usable end-to-end. There is no
-`gymnasium.vector.VectorEnv` implementation; use the task sampler directly for
-batches.
-
-### One live episode per sampler
-
-A sampler holds exactly one sim env, so two `GymEnv`s sharing a `task_sampler`
-would clobber each other's scene. Each env builds its own sampler by default;
-pass an existing one only when the envs are used sequentially. N parallel envs
-therefore each pay their own scene load.
-
 ## What does hold
 
 - `isinstance(env, gymnasium.Env)`, `env.unwrapped`, `env.np_random`.
@@ -123,10 +74,26 @@ therefore each pay their own scene load.
 - `gymnasium.make` returning the `GymEnv` itself, so no `.unwrapped` hop is
   needed to reach `env.task`.
 
-## Tests
 
-`mlspaces_tests/data_generation/test_gym_env_interface.py` covers the gym path:
-observation parity with a directly sampled task, resampling on reset, reset
-options, reset-before-step, sampler ownership, the batched rejection, sampler
-exhaustion, render, `gymnasium.make` returning an unwrapped env, the registration
-flags, and the deliberate absence of both spaces.
+## What doesn't hold
+
+- No `action_space`** — actions are dicts keyed by move group (`arm`,
+  `gripper`, etc.), so `check_env` and most RL libraries (SB3, CleanRL, RLlib)
+  choke on construction; registered envs set `disable_env_checker=True`. Build
+  your own adapter if you need a `Box`/`Dict` space.
+- No `observation_space`** — observations are `list[dict]` (one per batch
+  element), and the key set isn't fixed per config: robot/policy sensors and
+  episode-dependent sizing mean it can change between resets.
+- `reset()` is expensive and kills the old task** — it samples an episode,
+  possibly loading a scene and compiling a MuJoCo model (seconds). The
+  previous task is closed in the process, so grab what you need from
+  `env.task` before calling `reset()` again. `reset(seed=...)` also reseeds
+  `random`, `np.random`, and `torch` globally.
+- Single environment only — `reset()` requires `n_batch == 1`; batched
+  state exists in `step()` but termination/success are index-0 only, so it's
+  not usable end-to-end. No `VectorEnv`; use the task sampler directly for
+  batching.
+- *One live episode per sampler — a sampler owns one sim env, so sharing a
+  `task_sampler` across `GymEnv`s clobbers scenes. Each env makes its own
+  sampler by default (share one only for sequential use), so N parallel envs
+  each pay their own scene-load cost.

@@ -2,6 +2,109 @@
 
 This page explains the core abstractions in MolmoSpaces and how they compose.
 
+## Environment, Tasks, and Task Samplers
+
+The simulation lifecycle is a three-layer stack: **Env** runs physics, **Task** wraps it for episodic interaction, and **Task Sampler** generates randomized task instances.
+
+### Env
+
+The **environment** is the MuJoCo-backed physics and rendering substrate.
+It owns the compiled model, batched simulation data, robots, cameras, and object managers.
+
+**Base class:** [`BaseMujocoEnv`][molmo_spaces.env.env.BaseMujocoEnv] / [`CPUMujocoEnv`][molmo_spaces.env.env.CPUMujocoEnv]
+
+**What it manages:**
+
+- `MjModel` and one `MjData` per batch slot
+- Robot instances (created via factory from config)
+- Rendering (Filament or OpenGL)
+- `CameraManager` and `ObjectManager` per batch row
+- Collision checks, segmentation, visibility queries
+
+**Key interface:**
+
+- `reset(idxs)` — `mj_resetData` + `mj_forward` for selected batch indices
+- `step(n_steps)` — `mj_step` across all batch data
+
+!!! warning "Batched environments"
+    The env API is nominally batched (multiple `MjData` slots, per-index reset, etc.), but in practice batch sizes greater than 1 are not well tested and have sharp edges throughout the stack. Assume `n_batch=1` for now; broader batching support may be improved in the future.
+
+### Task
+
+A **task** wraps (but does not own!) an env for Gymnasium-style episodic interaction.
+It defines timing (control dt vs sim dt vs policy dt), aggregates sensors into observations, implements reward/success semantics, and manages the step counter.
+Note that the lifecycle of an env is generally longer than that of a task.
+
+**Base class:** [`BaseMujocoTask`][molmo_spaces.tasks.task.BaseMujocoTask]
+
+**Key interface:**
+
+- `reset()` → `(observation, info)` — clears episode state, resets sensors and policy, returns first observation
+- `step(action)` → `(obs, reward, terminated, truncated, info)` — applies action, runs nested physics steps, polls sensors
+- `is_done()` — `is_terminal() or is_timed_out()`
+- `judge_success()` — abstract, implemented by subclasses
+- `get_task_description()` — natural language instruction for the episode
+
+#### Timing
+
+The task manages three nested timestep rates:
+
+- **Simulation dt** (`sim_dt`) — the MuJoCo physics timestep (e.g. 2ms). This is set in the MuJoCo model and determines numerical integration accuracy.
+- **Control dt** (`ctrl_dt_ms`) — how often robot controllers update `ctrl` (e.g. 20ms). Each control step runs `ctrl_dt / sim_dt` simulation sub-steps.
+- **Policy dt** (`policy_dt_ms`) — how often the policy is queried for a new action (e.g. 200ms). Each policy step runs `policy_dt / ctrl_dt` control steps.
+
+A single call to `task.step(action)` corresponds to **one policy step**: it sets the action on the controllers, then loops over `n_ctrl_steps_per_policy` control ticks. On each control tick, the controllers write `ctrl` and the env advances `n_sim_steps_per_ctrl` simulation sub-steps. This means the physics is simulated at high frequency for stability while the policy and controllers operate at their own (slower) rates.
+
+**Important:** `task.reset()` does **not** call `env.reset()`.
+The task assumes the environment is already in the desired physical state (set up by the sampler).
+It only resets its own bookkeeping: step counter, caches, sensors, and registered policy.
+
+**Concrete example:** [`PickTask`][molmo_spaces.tasks.pick_task.PickTask] adds lift-based rewards, success checking via object height, and task-specific sensor configuration.
+
+### Task Sampler
+
+A **task sampler** owns the environment lifecycle and generates randomized task instances.
+It loads scenes (houses), places robots and objects, configures cameras, and constructs a concrete `Task`.
+
+**Base class:** [`BaseMujocoTaskSampler`][molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler]
+
+**What it does that a task doesn't:**
+
+| | Task Sampler | Task |
+|---|---|---|
+| Owns the env | Yes (creates and closes it) | Holds a reference |
+| Loads/compiles scenes | Yes (MjSpec, assets, houses) | No |
+| Randomizes placement | Yes (robot pose, objects, lighting) | No |
+| Implements `reset`/`step` | No | Yes |
+| Defines reward/success | No | Yes |
+
+**Key interface:**
+
+- `sample_task()` → `BaseMujocoTask | None` — the main entry point; loads or reuses a scene (an env), randomizes it, and returns a ready-to-use task
+- `randomize_scene(env, robot_view)` — abstract; subclass randomizes lighting, textures, dynamics, joint noise
+- `_sample_task(env)` — abstract; subclass selects objects, places the robot, configures the task, and returns a `Task` instance
+
+**Concrete example:** `PickTaskSampler` selects a graspable object from candidates, places the robot within reach, generates referral expressions, and returns a `PickTask`.
+
+### Episode lifecycle
+
+A typical episode flows through these layers:
+
+1. **Construct sampler** — `PickTaskSampler(config)` seeds RNG; env is `None` until the first scene loads.
+
+2. **`task = sampler.sample_task()`** — Loads or reuses a house scene (an env), randomizes object/robot placement, and constructs a `PickTask`. The env is now in a specific physical state.
+
+3. **`obs, info = task.reset()`** — Clears episode bookkeeping (step counter, caches). Resets sensors and the registered policy. Returns the first observation. The MuJoCo state is **not** reset here.
+
+4. **`obs, reward, terminated, truncated, info = task.step(action)`** — The action dict (keyed by move group ID) is dispatched to robot controllers. The env steps MuJoCo forward. Sensors produce the next observation.
+
+5. **Termination** — `task.is_done()` returns `True` when the task succeeds, a "done" action is sent, or the horizon is reached.
+
+6. **Next episode** — Call `sampler.sample_task()` again. The sampler may reuse the same compiled scene or load a new house.
+
+**Ownership:** The sampler owns and closes the env. Closing a task only clears its env reference without shutting down the simulator.
+
+
 ## Robot System
 
 The robot abstraction is a three-layer hierarchy: **Move Groups** are assembled into a **Robot View**, which is held by a **Robot**.
@@ -145,104 +248,3 @@ Robot
 └── kinematics: MlSpacesKinematics
 ```
 
-## Environment, Tasks, and Task Samplers
-
-The simulation lifecycle is a three-layer stack: **Env** runs physics, **Task** wraps it for episodic interaction, and **Task Sampler** generates randomized task instances.
-
-### Env
-
-The **environment** is the MuJoCo-backed physics and rendering substrate.
-It owns the compiled model, batched simulation data, robots, cameras, and object managers.
-
-**Base class:** [`BaseMujocoEnv`][molmo_spaces.env.env.BaseMujocoEnv] / [`CPUMujocoEnv`][molmo_spaces.env.env.CPUMujocoEnv]
-
-**What it manages:**
-
-- `MjModel` and one `MjData` per batch slot
-- Robot instances (created via factory from config)
-- Rendering (Filament or OpenGL)
-- `CameraManager` and `ObjectManager` per batch row
-- Collision checks, segmentation, visibility queries
-
-**Key interface:**
-
-- `reset(idxs)` — `mj_resetData` + `mj_forward` for selected batch indices
-- `step(n_steps)` — `mj_step` across all batch data
-
-!!! warning "Batched environments"
-    The env API is nominally batched (multiple `MjData` slots, per-index reset, etc.), but in practice batch sizes greater than 1 are not well tested and have sharp edges throughout the stack. Assume `n_batch=1` for now; broader batching support may be improved in the future.
-
-### Task
-
-A **task** wraps (but does not own!) an env for Gymnasium-style episodic interaction.
-It defines timing (control dt vs sim dt vs policy dt), aggregates sensors into observations, implements reward/success semantics, and manages the step counter.
-Note that the lifecycle of an env is generally longer than that of a task.
-
-**Base class:** [`BaseMujocoTask`][molmo_spaces.tasks.task.BaseMujocoTask]
-
-**Key interface:**
-
-- `reset()` → `(observation, info)` — clears episode state, resets sensors and policy, returns first observation
-- `step(action)` → `(obs, reward, terminated, truncated, info)` — applies action, runs nested physics steps, polls sensors
-- `is_done()` — `is_terminal() or is_timed_out()`
-- `judge_success()` — abstract, implemented by subclasses
-- `get_task_description()` — natural language instruction for the episode
-
-#### Timing
-
-The task manages three nested timestep rates:
-
-- **Simulation dt** (`sim_dt`) — the MuJoCo physics timestep (e.g. 2ms). This is set in the MuJoCo model and determines numerical integration accuracy.
-- **Control dt** (`ctrl_dt_ms`) — how often robot controllers update `ctrl` (e.g. 20ms). Each control step runs `ctrl_dt / sim_dt` simulation sub-steps.
-- **Policy dt** (`policy_dt_ms`) — how often the policy is queried for a new action (e.g. 200ms). Each policy step runs `policy_dt / ctrl_dt` control steps.
-
-A single call to `task.step(action)` corresponds to **one policy step**: it sets the action on the controllers, then loops over `n_ctrl_steps_per_policy` control ticks. On each control tick, the controllers write `ctrl` and the env advances `n_sim_steps_per_ctrl` simulation sub-steps. This means the physics is simulated at high frequency for stability while the policy and controllers operate at their own (slower) rates.
-
-**Important:** `task.reset()` does **not** call `env.reset()`.
-The task assumes the environment is already in the desired physical state (set up by the sampler).
-It only resets its own bookkeeping: step counter, caches, sensors, and registered policy.
-
-**Concrete example:** [`PickTask`][molmo_spaces.tasks.pick_task.PickTask] adds lift-based rewards, success checking via object height, and task-specific sensor configuration.
-
-### Task Sampler
-
-A **task sampler** owns the environment lifecycle and generates randomized task instances.
-It loads scenes (houses), places robots and objects, configures cameras, and constructs a concrete `Task`.
-
-**Base class:** [`BaseMujocoTaskSampler`][molmo_spaces.tasks.task_sampler.BaseMujocoTaskSampler]
-
-**What it does that a task doesn't:**
-
-| | Task Sampler | Task |
-|---|---|---|
-| Owns the env | Yes (creates and closes it) | Holds a reference |
-| Loads/compiles scenes | Yes (MjSpec, assets, houses) | No |
-| Randomizes placement | Yes (robot pose, objects, lighting) | No |
-| Implements `reset`/`step` | No | Yes |
-| Defines reward/success | No | Yes |
-
-**Key interface:**
-
-- `sample_task()` → `BaseMujocoTask | None` — the main entry point; loads or reuses a scene (an env), randomizes it, and returns a ready-to-use task
-- `randomize_scene(env, robot_view)` — abstract; subclass randomizes lighting, textures, dynamics, joint noise
-- `_sample_task(env)` — abstract; subclass selects objects, places the robot, configures the task, and returns a `Task` instance
-
-**Concrete example:** `PickTaskSampler` selects a graspable object from candidates, places the robot within reach, generates referral expressions, and returns a `PickTask`.
-
-### Episode lifecycle
-
-A typical episode flows through these layers:
-
-1. **Construct sampler** — `PickTaskSampler(config)` seeds RNG; env is `None` until the first scene loads.
-
-2. **`task = sampler.sample_task()`** — Loads or reuses a house scene (an env), randomizes object/robot placement, and constructs a `PickTask`. The env is now in a specific physical state.
-
-3. **`obs, info = task.reset()`** — Clears episode bookkeeping (step counter, caches). Resets sensors and the registered policy. Returns the first observation. The MuJoCo state is **not** reset here.
-
-4. **`obs, reward, terminated, truncated, info = task.step(action)`** — The action dict (keyed by move group ID) is dispatched to robot controllers. The env steps MuJoCo forward. Sensors produce the next observation.
-
-5. **Termination** — `task.is_done()` returns `True` when the task succeeds, a "done" action is sent, or the horizon is reached.
-
-6. **Next episode** — Call `sampler.sample_task()` again. The sampler may reuse the same compiled scene or load a new house.
-
-**Ownership:** The sampler owns and closes the env. Closing a task only clears its env reference without shutting down the simulator.
