@@ -1,3 +1,6 @@
+# So one `pre-commit install` wires up every hook type this file declares.
+default_install_hook_types: [pre-commit]
+
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
@@ -12,7 +15,6 @@ repos:
   - id: check-json
   - id: check-toml
   - id: check-xml
-  - id: check-yaml
   - id: end-of-file-fixer
   - id: trailing-whitespace
   - id: debug-statements

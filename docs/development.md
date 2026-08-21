@@ -28,25 +28,50 @@ pip install -e .
 uv pip install -e .
 ```
 
-**Note**: For development purposes, you can install the extra dev packages:
+**Note**: For development purposes, install the extra dev packages and the git
+hooks together -- the hooks are what keep your commits in step with CI, and
+installing them is the same one-time step as installing the tools they run:
 
 ```bash
 # If using conda as package manager, just use plain `pip`
-pip install -e . --group dev
+pip install -e . --group dev && pre-commit install
 # If using uv as package manager, use `uv pip` instead
-uv pip install -e . --group dev
+uv pip install -e . --group dev && uv run pre-commit install
 ```
 
 ## Configure development setup
 
-After you have installed the dependencies in the `dev` group, we have to setup
-`pre-commit` and the related hooks so these can run when doing a commit to the
-repository. Just run the following to install the hooks:
+The command above already installed the hooks. If you cloned before adding them,
+or you are not sure whether they are in place, it is safe to run again -- it is
+idempotent:
 
 ```bash
 # Install pre-commit hooks
 pre-commit install
 ```
+
+Git cannot install hooks for you when you clone a repository, by design: hooks
+are executable code, and running them on clone would mean any repository could
+run anything on your machine. So one explicit step is unavoidable. What you *can*
+do is make it automatic for every repository you clone from now on, by pointing
+git at a template directory that pre-commit has prepared:
+
+```bash
+git config --global init.templateDir ~/.git-template
+pre-commit init-templatedir ~/.git-template
+```
+
+To check what CI will say before you push -- CI runs every hook over every file,
+not just the staged ones:
+
+```bash
+pre-commit run --all-files
+```
+
+Worth knowing which hooks those are. The CI job is called `ruff-checks` (the name
+is pinned by branch protection on `main`) but it runs the whole config, so it can
+fail on a missing newline at the end of a file while `ruff check` is perfectly
+happy. Running `ruff` alone will not reproduce it.
 
 After this, you can run `pre-commit run` on your local changes that are staged,
 it should show something like this:

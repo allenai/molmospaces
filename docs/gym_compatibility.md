@@ -7,11 +7,11 @@ a task sampler, which gives you a new task, and tasks, which you can call step o
 See [concepts.md](concepts.md) for detail.
 
 As a usability feature we provide wrappers to our classes that provide gym-style
-APIs. These are only partially implemented and are probably not suitable for 
-scaled use in datagen and traning. 
+APIs. These are only partially implemented and are probably not suitable for
+scaled use in datagen and traning.
 `GymEnv` (`molmo_spaces.tasks.gym_env`) is a `gymnasium.Env` wrapper around a
 molmospaces task sampler, and every data generation config is registered as a
-gym env id. 
+gym env id.
 
 ## How a gym env is built
 

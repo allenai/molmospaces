@@ -247,4 +247,3 @@ Robot
 │   └── "gripper" → JointPosController
 └── kinematics: MlSpacesKinematics
 ```
-
