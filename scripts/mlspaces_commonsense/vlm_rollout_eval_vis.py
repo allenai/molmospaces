@@ -8,7 +8,7 @@ per-class subfolder so you can eyeball whether the VLM is classifying
 correctly. Classes with fewer videos than the cap get all of them.
 
 Usage:
-    python scripts/vlm_rollout_eval_vis.py \\
+    python scripts/mlspaces_commonsense/vlm_rollout_eval_vis.py \\
         --jsonl rollout_eval.jsonl \\
         --out vlm_eval_vis \\
         --max-per-class 10

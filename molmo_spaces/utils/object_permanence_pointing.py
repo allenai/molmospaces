@@ -6,7 +6,7 @@ the mug the ball ended up hidden under. Answering correctly requires remembering
 the ball went after it stopped being visible.
 
 The prompts, response schema and point convention here are lifted from
-``scripts/object_permanence_point_eval.py`` so the online policy and the offline eval
+``scripts/mlspaces_commonsense/object_permanence_point_eval.py`` so the online policy and the offline eval
 ask the model exactly the same question. NOTE: that script still carries its own copies;
 it should be switched over to import from here once it settles down, otherwise the two
 will drift.

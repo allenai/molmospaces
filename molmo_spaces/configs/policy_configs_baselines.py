@@ -1,54 +1,6 @@
-import os
-
 from molmo_spaces.configs.policy_configs import BasePolicyConfig
 from molmo_spaces.policy.base_policy import PolicyFactory
 from molmo_spaces.utils.function_utils import make_lenient
-
-
-def _get_optional_int_env(var_name: str) -> int | None:
-    value = os.environ.get(var_name)
-    if value is None:
-        return None
-    value = value.strip()
-    if not value:
-        return None
-    return int(value)
-
-
-def _get_optional_float_env(var_name: str) -> float | None:
-    value = os.environ.get(var_name)
-    if value is None:
-        return None
-    value = value.strip()
-    if not value:
-        return None
-    return float(value)
-
-
-def _get_optional_str_list_env(var_name: str) -> list[str]:
-    value = os.environ.get(var_name, "")
-    if not value:
-        return []
-    return [item.strip() for item in value.split(",") if item.strip()]
-
-
-def _get_molmoact2_remote_config_from_env() -> dict | None:
-    server_urls = _get_optional_str_list_env("MOLMOACT2_REMOTE_SERVER_URLS")
-    if not server_urls:
-        single_url = os.environ.get("MOLMOACT2_REMOTE_SERVER_URL", "").strip()
-        if single_url:
-            server_urls = [single_url]
-
-    if not server_urls:
-        return None
-
-    remote_config: dict[str, object] = {
-        "server_urls": server_urls,
-    }
-    connection_timeout = _get_optional_float_env("MOLMOACT2_REMOTE_CONNECTION_TIMEOUT_SECS")
-    if connection_timeout is not None:
-        remote_config["connection_timeout"] = connection_timeout
-    return remote_config
 
 
 class PiPolicyConfig(BasePolicyConfig):
@@ -155,54 +107,6 @@ class CAPPolicyConfig(BasePolicyConfig):
             self.policy_factory = make_lenient(CAP_Policy)
 
 
-class GeminiCAPPolicyConfig(CAPPolicyConfig):
-    """CAP anchored on a Gemini object-permanence point rather than ground truth."""
-
-    # Frames buffered before querying Gemini. Keep <= the settle window (10 steps at
-    # 2 Hz for mug/ball) so accumulation happens while the arm is frozen and the
-    # viewpoint is static.
-    num_accum_frames: int = 10
-    point_camera: str = "exo_camera_1"  # needs record_depth=True; the CAP override sets it
-    gemini_model: str = "gemini-robotics-er-1.6-preview"
-    gemini_temperature: float = 0.0
-    # "object_permanence" = ask which mug hides the ball.
-    # "random_mug"        = chance-level control (see RandomMugGeminiCAPPolicyConfig).
-    gemini_prompt_mode: str = "object_permanence"
-
-    # Forced on: the inherited anchor logic must take the VLM (point + depth) branch.
-    use_vlm: bool = True
-
-    policy_cls: type = None
-    policy_factory: PolicyFactory | None = None
-
-    def model_post_init(self, __context) -> None:
-        """Set policy_cls after initialization to avoid circular imports."""
-        BasePolicyConfig.model_post_init(self, __context)
-        if self.policy_cls is None:
-            from molmo_spaces.policy.learned_policy.gemini_cap_policy import GeminiCAP_Policy
-
-            self.policy_cls = GeminiCAP_Policy
-            self.policy_factory = make_lenient(GeminiCAP_Policy)
-
-
-class RandomMugGeminiCAPPolicyConfig(GeminiCAPPolicyConfig):
-    """Ablation: point at an ARBITRARY mug instead of the one hiding the ball.
-
-    Everything else is held identical to GeminiCAPPolicyConfig -- same 10 accumulated
-    frames, same model, same depth back-projection, same CAP -- so the only variable is
-    whether the chosen mug is the correct one. Separates "CAP can grasp a mug it is
-    pointed at" from "the pointing identifies the right mug".
-
-    Temperature is raised because the point of the control is variation between episodes.
-    At temperature 0 the model would apply a fixed positional habit (e.g. always the left
-    mug); that still lands near chance across episodes, since which mug is correct varies,
-    but a per-episode coin flip is the cleaner baseline.
-    """
-
-    gemini_prompt_mode: str = "random_mug"
-    gemini_temperature: float = 1.0
-
-
 class TeleopPolicyConfig(BasePolicyConfig):
     device: str = "keyboard"  # "spacemouse", "keyboard", "phone"
     policy_cls: type = None
@@ -272,50 +176,3 @@ class BimanualYamPiPolicyConfig(BasePolicyConfig):
 
             self.policy_cls = BimanualYamPiPolicy
             self.policy_factory = make_lenient(BimanualYamPiPolicy)
-
-
-class Molmoact2PolicyConfig(BasePolicyConfig):
-    checkpoint_path: str = "checkpoints/molmoact2"
-    # Path to a local checkout of the molmoact2 repo (added to sys.path at load time).
-    mm_olmo_path: str = os.environ.get("MOLMOACT2_MM_OLMO_PATH", "")
-    device: str = os.environ.get("MOLMOACT2_DEVICE", "cuda")
-    exo_camera_key: str = os.environ.get("MOLMOACT2_EXO_CAMERA_KEY", "")
-    seq_len: int | None = None
-    num_steps: int | None = None
-    n_action_steps: int | None = _get_optional_int_env("MOLMOACT2_N_ACTION_STEPS")
-    action_mode: str = os.environ.get("MOLMOACT2_ACTION_MODE", "continuous")
-    discrete_action_tokenizer: str | None = None
-    discrete_generation_max_steps: int = 128
-    style: str = os.environ.get("MOLMOACT2_STYLE", "")
-    norm_tag: str = os.environ.get("MOLMOACT2_NORM_TAG", "")
-    verbose: bool = False
-    remote_config: dict | None = _get_molmoact2_remote_config_from_env()
-    grasping_type: str = "binary"
-    grasping_threshold: float = 0.5
-    chunk_size: int = 8
-    prompt_object_word_num: int = 1
-    prompt_templates: list[str] | None = None
-    # When True, every episode's prompt is produced by PromptSampler
-    # (templates in learned_policy/utils.py + semantic_pick_prompts.py).
-    # When False, fall back to task.get_task_description() — i.e. the
-    # benchmark's referral expressions for pick/pick_and_place tasks.
-    use_prompt_sampler: bool = True
-    # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
-    # 1 = basic pick prompt, 2 = existing semantic prompts (default),
-    # 3 = "pick up the {object} by the {part}.".
-    prompt_level: int = 2
-
-    policy_cls: type = None
-    policy_factory: PolicyFactory | None = None
-    policy_type: str = "learned"
-
-    def model_post_init(self, __context) -> None:
-        """Set policy_cls after initialization to avoid circular imports."""
-        super().model_post_init(__context)
-        if self.policy_cls is None:
-            from molmo_spaces.policy.learned_policy.molmoact2_remote_policy import (
-                Molmoact2RemotePolicy,
-            )
-
-            self.policy_cls = Molmoact2RemotePolicy
-            self.policy_factory = make_lenient(Molmoact2RemotePolicy)

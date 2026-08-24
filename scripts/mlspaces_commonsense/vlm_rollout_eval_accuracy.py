@@ -8,13 +8,13 @@ classification accuracy table.
 Usage:
     export GEMINI_API_KEY=...
     # One-shot: run inference in-memory and score.
-    python scripts/vlm_rollout_eval_accuracy.py \\
+    python scripts/mlspaces_commonsense/vlm_rollout_eval_accuracy.py \\
         --annotations human_annotations.jsonl \\
         --report vlm_accuracy_report.txt
 
     # Persistent / resumable: append predictions to a file so re-runs skip
     # already-predicted episodes.
-    python scripts/vlm_rollout_eval_accuracy.py \\
+    python scripts/mlspaces_commonsense/vlm_rollout_eval_accuracy.py \\
         --annotations human_annotations.jsonl \\
         --predictions vlm_predictions.jsonl
 

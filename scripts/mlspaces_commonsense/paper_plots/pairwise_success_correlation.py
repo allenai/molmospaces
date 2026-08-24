@@ -11,7 +11,7 @@ the same scenes?": a row that stays near each policy's marginal success rate mea
 successes are roughly independent, while values well above the marginal mean the policies
 are solving the same episodes.
 
-Success is defined exactly as scripts/paper_plots/thor_analysis.py does -- an episode
+Success is defined exactly as scripts/mlspaces_commonsense/paper_plots/thor_analysis.py does -- an episode
 counts as a success if its per-timestep `success` array is ever True -- so the marginal
 rates printed here match `analyze_run.py --run-path <folder>`.
 
@@ -21,13 +21,13 @@ fingerprint taken from the episode's initial robot base pose and object start po
 differ per episode. Misaligned episodes are reported rather than silently correlated.
 
 Usage:
-    python scripts/paper_plots/pairwise_success_correlation.py \
+    python scripts/mlspaces_commonsense/paper_plots/pairwise_success_correlation.py \
         --run-path pi05=/path/to/pi05_results \
         --run-path dreamzero=/path/to/dreamzero_results \
         --run-path molmoact2=/path/to/molmoact2_results
 
     # labels are optional; the folder name is used when omitted
-    python scripts/paper_plots/pairwise_success_correlation.py -r /a -r /b --csv out.csv
+    python scripts/mlspaces_commonsense/paper_plots/pairwise_success_correlation.py -r /a -r /b --csv out.csv
 """
 
 from __future__ import annotations

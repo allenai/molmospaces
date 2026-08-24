@@ -206,6 +206,54 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
 
         return preplace_pose, place_pose, postplace_pose
 
+    PLACEMENT_POSE_NAMES = frozenset({"preplace", "place", "postplace"})
+
+    def _retry_placement_ik(
+        self,
+        preplace_pose: np.ndarray,
+        place_pose: np.ndarray,
+        postplace_pose: np.ndarray,
+        place_receptacle: MlSpacesObject,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+        """Resample the placement XY when only the placement poses are IK-infeasible.
+
+        The default placement targets the receptacle centre, which for large or awkwardly
+        positioned receptacles (e.g. packing boxes) is often out of reach even though the
+        rest of the receptacle is not. Shift all three placement poses by the same random
+        XY offset, drawn from the central half of the receptacle footprint, up to
+        ``policy_config.max_placement_retries`` times. Returns the first feasible
+        (preplace, place, postplace) triple, or None if every attempt failed.
+        """
+        _, receptacle_aabb_size = body_aabb(
+            self.task.env.current_data.model,
+            self.task.env.current_data,
+            place_receptacle.object_id,
+        )
+        max_retries = self.policy_config.max_placement_retries
+        for retry in range(max_retries):
+            half_range = receptacle_aabb_size[:2] / 4
+            xy_offset = np.random.uniform(-half_range, half_range)
+            log.info(
+                f"[PLACEMENT RETRY {retry + 1}/{max_retries}] "
+                f"Resampling placement with XY offset ({xy_offset[0]:.3f}, {xy_offset[1]:.3f})"
+            )
+            candidates = []
+            for pose in (preplace_pose, place_pose, postplace_pose):
+                candidate = pose.copy()
+                candidate[:2, 3] += xy_offset
+                candidates.append(candidate)
+
+            retry_failed = [
+                name
+                for name, pose in zip(("preplace", "place", "postplace"), candidates)
+                if not self.check_feasible_ik(pose)
+            ]
+            if not retry_failed:
+                log.info(f"[PLACEMENT RETRY] Success on attempt {retry + 1}")
+                return tuple(candidates)
+            log.info(f"[PLACEMENT RETRY] Still failing: {', '.join(retry_failed)}")
+        return None
+
     def _compute_target_poses(self) -> dict[str, np.ndarray]:
         task_config = self.config.task_config
         assert isinstance(task_config, PickAndPlaceTaskConfig)
@@ -248,72 +296,20 @@ class PickAndPlacePlannerPolicy(BaseObjectManipulationPlannerPolicy):
             place_receptacle=place_receptacle,
         )
 
-        # Check IK feasibility for all poses
-        placement_pose_names = {"preplace", "place", "postplace"}
+        # Check IK feasibility for all poses. Unlike a fail-fast check, evaluating every
+        # pose first lets the failure log list all unreachable poses at once.
         pose_names = ["pregrasp", "grasp", "lift", "preplace", "place", "postplace"]
         poses = [pregrasp_pose, grasp_pose, lift_pose, preplace_pose, place_pose, postplace_pose]
-        ik_results = {name: self.check_feasible_ik(pose) for name, pose in zip(pose_names, poses)}
+        failed = [name for name, pose in zip(pose_names, poses) if not self.check_feasible_ik(pose)]
 
-        failed = [name for name, ok in ik_results.items() if not ok]
-
-        # If only placement poses failed, retry with different XY offsets within the receptacle
-        if failed and all(f in placement_pose_names for f in failed):
-            place_receptacle_aabb_center, place_receptacle_aabb_size = body_aabb(
-                self.task.env.current_data.model,
-                self.task.env.current_data,
-                place_receptacle.object_id,
+        if failed and all(name in self.PLACEMENT_POSE_NAMES for name in failed):
+            retried = self._retry_placement_ik(
+                preplace_pose, place_pose, postplace_pose, place_receptacle
             )
-            max_placement_retries = 5
-            for retry in range(max_placement_retries):
-                # Sample random XY offset within receptacle footprint
-                xy_offset = np.array(
-                    [
-                        np.random.uniform(
-                            -place_receptacle_aabb_size[0] / 4, place_receptacle_aabb_size[0] / 4
-                        ),
-                        np.random.uniform(
-                            -place_receptacle_aabb_size[1] / 4, place_receptacle_aabb_size[1] / 4
-                        ),
-                    ]
-                )
-                log.info(
-                    f"[PLACEMENT RETRY {retry + 1}/{max_placement_retries}] "
-                    f"Resampling placement with XY offset ({xy_offset[0]:.3f}, {xy_offset[1]:.3f})"
-                )
-
-                # Recompute placement poses with offset
-                retry_preplace = preplace_pose.copy()
-                retry_preplace[:2, 3] += xy_offset
-                retry_place = place_pose.copy()
-                retry_place[:2, 3] += xy_offset
-                retry_postplace = postplace_pose.copy()
-                retry_postplace[:2, 3] += xy_offset
-
-                retry_poses = [
-                    pregrasp_pose,
-                    grasp_pose,
-                    lift_pose,
-                    retry_preplace,
-                    retry_place,
-                    retry_postplace,
-                ]
-                retry_ik = {
-                    name: self.check_feasible_ik(p) for name, p in zip(pose_names, retry_poses)
-                }
-                retry_failed = [name for name, ok in retry_ik.items() if not ok]
-
-                if not retry_failed:
-                    log.info(f"[PLACEMENT RETRY] Success on attempt {retry + 1}")
-                    preplace_pose, place_pose, postplace_pose = (
-                        retry_preplace,
-                        retry_place,
-                        retry_postplace,
-                    )
-                    poses = retry_poses
-                    failed = []
-                    break
-                else:
-                    log.info(f"[PLACEMENT RETRY] Still failing: {', '.join(retry_failed)}")
+            if retried is not None:
+                preplace_pose, place_pose, postplace_pose = retried
+                poses = [pregrasp_pose, grasp_pose, lift_pose, *retried]
+                failed = []
 
         if failed:
             log.warning(

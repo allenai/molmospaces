@@ -6,16 +6,16 @@ rectangle selection to mark grasps as semantically good.
 
 Usage:
     # Single asset
-    python scripts/grasps/classify_grasps.py --asset_id Pan_22
-    python scripts/grasps/classify_grasps.py --asset_id Pan_22 --resume
-    python scripts/grasps/classify_grasps.py --asset_id Mug_1 --output_dir /tmp/classifications
+    python scripts/mlspaces_commonsense/classify_grasps.py --asset_id Pan_22
+    python scripts/mlspaces_commonsense/classify_grasps.py --asset_id Pan_22 --resume
+    python scripts/mlspaces_commonsense/classify_grasps.py --asset_id Mug_1 --output_dir /tmp/classifications
 
     # Loop through every instance of one or more categories
-    python scripts/grasps/classify_grasps.py --categories Pan,Mug,Bowl
-    python scripts/grasps/classify_grasps.py --categories Pan --skip_existing
+    python scripts/mlspaces_commonsense/classify_grasps.py --categories Pan,Mug,Bowl
+    python scripts/mlspaces_commonsense/classify_grasps.py --categories Pan --skip_existing
 
     # Loop through the full default set of pickupable iTHOR categories
-    python scripts/grasps/classify_grasps.py --all_graspable --skip_existing
+    python scripts/mlspaces_commonsense/classify_grasps.py --all_graspable --skip_existing
 """
 
 import argparse

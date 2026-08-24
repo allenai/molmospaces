@@ -39,10 +39,7 @@ from molmo_spaces.configs.policy_configs import (
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
     DreamZeroPolicyConfig,
-    GeminiCAPPolicyConfig,
-    Molmoact2PolicyConfig,
     PiPolicyConfig,
-    RandomMugGeminiCAPPolicyConfig,
     TeleopPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import (
@@ -203,45 +200,17 @@ class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
         self.robot_config.action_noise_config.enabled = False
 
 
-class Molmoact2PolicyEvalConfig(JsonBenchmarkEvalConfig):
-    robot_config: FrankaRobotConfig = FrankaRobotConfig()
-    policy_config: Molmoact2PolicyConfig = Molmoact2PolicyConfig()
-    policy_dt_ms: float = 66.0  # ~15hz
-    end_on_success: bool = True
-
-    def model_post_init(self, __context):
-        super().model_post_init(__context)
-        self.robot_config.action_noise_config.enabled = False
-
-
 class CAPPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaCAPRobotConfig = FrankaCAPRobotConfig()
     policy_config: CAPPolicyConfig = CAPPolicyConfig()
     policy_dt_ms: float = 500.0  # Match your model's expected control rate
-    # Stop as soon as success is detected, as PiPolicyEvalConfig/Molmoact2PolicyEvalConfig
+    # Stop as soon as success is detected, as PiPolicyEvalConfig
     # do. Without this, an episode that succeeds can keep running and undo its own success.
     end_on_success: bool = True
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
         self.robot_config.action_noise_config.enabled = False
-
-
-class GeminiCAPPolicyEvalConfig(CAPPolicyEvalConfig):
-    """CAP anchored on a Gemini object-permanence point (mug/ball task).
-
-    Not registered: reference it by module path, e.g.
-      molmo_spaces.evaluation.configs.evaluation_configs:GeminiCAPPolicyEvalConfig
-    Requires GEMINI_API_KEY in the environment.
-    """
-
-    policy_config: GeminiCAPPolicyConfig = GeminiCAPPolicyConfig()
-
-
-class RandomMugGeminiCAPPolicyEvalConfig(GeminiCAPPolicyEvalConfig):
-    """Chance-level pointing control for GeminiCAPPolicyEvalConfig."""
-
-    policy_config: RandomMugGeminiCAPPolicyConfig = RandomMugGeminiCAPPolicyConfig()
 
 
 class TeleopPolicyEvalConfig(JsonBenchmarkEvalConfig):
