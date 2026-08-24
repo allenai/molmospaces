@@ -3,19 +3,27 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import jax
 import mujoco
-import mujoco.mjx as mjx
+import mujoco_warp as mjw
 import numpy as np
+import warp as wp
+from molmo_spaces.editor.thor_model_editor import ThorMjModelEditor
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
-from molmo_spaces.editor.thor_model_editor import ThorMjModelEditor
 from molmo_spaces.utils.scene_maps import iTHORMap
 
-# Performance optimization: MJX batch processing
-BATCH_SIZE = 16  # Smaller batch size for better compatibility
+# Performance optimization: one mjwarp world per handle
+BATCH_SIZE = 16  # Number of handles simulated in parallel (worlds per rollout)
 PHYSICS_STEPS_PER_FRAME = 25  # Reduced for faster simulation
+
+
+def warp_device(device_id=None):
+    """Return the warp device to run on, falling back to CPU when no CUDA device is available."""
+    n_cuda = wp.get_cuda_device_count()
+    if n_cuda == 0:
+        return wp.get_device("cpu")
+    return wp.get_device(f"cuda:{(device_id or 0) % n_cuda}")
 
 
 def regenerate_map(ithor_scene_path, thread_id=None, use_gpu=False) -> None:
@@ -54,13 +62,10 @@ def get_all_handles(model, data):
             parent_name = model.body(parent_id).name
             if parent_id == 0:
                 continue
-            root_body = int(model.body_rootid[i])
-            model.body(root_body).name
-
             geom_id = int(model.body_geomadr[i])
             geom_num = int(model.body_geomnum[i])
             for j in range(geom_num):
-                geom_group = int(model.geom(geom_id + j).group)
+                geom_group = int(model.geom(geom_id + j).group[0])
                 if geom_group == 0:
                     geom_id = geom_id + j
                     break
@@ -152,69 +157,78 @@ def step_path(to_handle_dist, current_pos, current_quat, step_size, gripper_leng
     return path
 
 
-def process_handles_with_mjx_simple(handles, ithor_scene_path, ithor_map, device_id=0):
-    """Simplified MJX processing that should work with MuJoCo 3.3.2"""
+def get_handle_qpos_index(model, handle):
+    """qpos index of the handle's (first) joint, or -1 if the handle body has no joint."""
+    body = model.body(handle["name"])
+    if body.jntnum[0] == 0:
+        return -1
+    return int(model.joint(int(body.jntadr[0])).qposadr[0])
 
-    # Load model and convert to MJX
+
+def process_handles_with_mjwarp_simple(handles, ithor_scene_path, ithor_map, device_id=0):
+    """Simulate one handle per mjwarp world, all handles of the batch in parallel"""
+
+    if len(handles) == 0:
+        return []
+
+    # Load model and upload it to the warp device
     model = mujoco.MjModel.from_xml_path(ithor_scene_path)
 
-    # Use CPU device for compatibility
-    device = jax.devices()[0]  # Use first available device (usually CPU)
-    mjx_model = mjx.put_model(model, device=device)
+    device = warp_device(device_id)
+    with wp.ScopedDevice(device):
+        mjw_model = mjw.put_model(model)
+
+        # Common initial state for every world
+        mjd = mujoco.MjData(model)
+        mujoco.mj_forward(model, mjd)
+
+        # One world per handle
+        data = mjw.put_data(model, mjd, nworld=len(handles))
+
+        # Place the gripper mocap of every world in front of its own handle
+        if model.nmocap > 0:
+            mocap_pos = data.mocap_pos.numpy()
+            mocap_quat = data.mocap_quat.numpy()
+            for world_id, handle in enumerate(handles):
+                gripper_pose = get_gripper_pose_based_on_handle_pose(handle, ithor_map)
+                mocap_pos[world_id, 0] = gripper_pose["position"]
+                mocap_quat[world_id, 0] = gripper_pose["quaternion"]
+            data.mocap_pos.assign(mocap_pos)
+            data.mocap_quat.assign(mocap_quat)
+
+        handle_qpos_indices = [get_handle_qpos_index(model, handle) for handle in handles]
+        start_qpos = data.qpos.numpy().copy()
+
+        # Run simulation steps for all worlds at once
+        for _step in range(PHYSICS_STEPS_PER_FRAME):
+            mjw.step(mjw_model, data)
+
+        end_qpos = data.qpos.numpy()
 
     results = []
+    for world_id, handle in enumerate(handles):
+        handle_qpos_idx = handle_qpos_indices[world_id]
+        if handle_qpos_idx == -1:
+            continue
 
-    # Process handles one by one for better compatibility
-    for handle in handles:
-        handle_name = handle["name"]
-        handle_id = handle["handle_id"]
+        start_handle_joint_pos = start_qpos[world_id, handle_qpos_idx]
+        end_handle_joint_pos = end_qpos[world_id, handle_qpos_idx]
 
-        # Get gripper pose
-        gripper_pose = get_gripper_pose_based_on_handle_pose(handle, ithor_map)
+        success = int(np.abs(end_handle_joint_pos - start_handle_joint_pos) > np.deg2rad(5))
 
-        # Create MJX data
-        data = mujoco.MjData(model)
-
-        # Set initial state
-        if data.mocap_pos.size > 0:
-            data.mocap_pos[0] = gripper_pose["position"]
-            data.mocap_quat[0] = gripper_pose["quaternion"]
-
-        # Convert to MJX
-        mjx_data = mjx.put_data(mjx_model, data, device=device)
-
-        # Run simulation steps
-        for _step in range(PHYSICS_STEPS_PER_FRAME):
-            mjx_data = mjx.step(mjx_model, mjx_data)
-
-        # Get handle joint position
-        handle_joint_id = model.body(handle_id).jntadr[0]
-        if handle_joint_id != -1:
-            handle_qpos_idx = model.joint(handle_joint_id).qposadr[0]
-
-            # Get initial position
-            data_init = mujoco.MjData(model)
-            mujoco.mj_step(model, data_init)
-            start_handle_joint_pos = data_init.qpos[handle_qpos_idx]
-
-            # Get final position from MJX
-            end_handle_joint_pos = mjx_data.qpos[handle_qpos_idx]
-
-            success = int(np.abs(end_handle_joint_pos - start_handle_joint_pos) > np.deg2rad(5))
-
-            results.append(
-                {
-                    "handle_name": handle_name,
-                    "start_handle_joint_pos": float(start_handle_joint_pos),
-                    "end_handle_joint_pos": float(end_handle_joint_pos),
-                    "success": success,
-                }
-            )
+        results.append(
+            {
+                "handle_name": handle["name"],
+                "start_handle_joint_pos": float(start_handle_joint_pos),
+                "end_handle_joint_pos": float(end_handle_joint_pos),
+                "success": success,
+            }
+        )
 
     return results
 
 
-def run_one_floorplan_mjx_simple(i, mesh, thread_id=None, use_gpu=False) -> None:
+def run_one_floorplan_mjwarp_simple(i, mesh, thread_id=None, use_gpu=False) -> None:
     if mesh:
         ithor_scene_path = f"debug/good_iTHOR/FloorPlan{i}_physics_mesh.xml"
         ithor_map_path = f"{ithor_scene_path.replace('_mesh.xml', '_map.png')}"
@@ -226,7 +240,7 @@ def run_one_floorplan_mjx_simple(i, mesh, thread_id=None, use_gpu=False) -> None
         print(f"Scene path {ithor_scene_path} does not exist")
         return
 
-    print(f"Processing FloorPlan {i} with MJX Simple (thread {thread_id})...")
+    print(f"Processing FloorPlan {i} with mjwarp Simple (thread {thread_id})...")
 
     regenerate_map(ithor_scene_path, thread_id, use_gpu)
     ithor_map = iTHORMap.load(ithor_map_path)
@@ -246,7 +260,7 @@ def run_one_floorplan_mjx_simple(i, mesh, thread_id=None, use_gpu=False) -> None
         gripper_path = add_gripper_to_scene(ithor_scene_path, gripper_pose)
         print("Added gripper to scene")
 
-    # Process handles in batches using simplified MJX
+    # Process handles in batches using mjwarp
     success_metric = {}
     n_success = 0
     n_total = 0
@@ -257,15 +271,15 @@ def run_one_floorplan_mjx_simple(i, mesh, thread_id=None, use_gpu=False) -> None
         all_handles[j : j + BATCH_SIZE] for j in range(0, len(all_handles), BATCH_SIZE)
     ]
 
-    device_id = thread_id % len(jax.devices()) if thread_id is not None else 0
+    device_id = thread_id if thread_id is not None else 0
 
     for batch_idx, handle_batch in enumerate(handle_batches):
         print(
-            f"Processing MJX Simple batch {batch_idx + 1}/{len(handle_batches)} ({len(handle_batch)} handles)"
+            f"Processing mjwarp Simple batch {batch_idx + 1}/{len(handle_batches)} ({len(handle_batch)} handles)"
         )
 
-        # Process batch with simplified MJX
-        batch_results = process_handles_with_mjx_simple(
+        # Process batch with mjwarp
+        batch_results = process_handles_with_mjwarp_simple(
             handle_batch, gripper_path, ithor_map, device_id
         )
 
@@ -290,7 +304,7 @@ def run_one_floorplan_mjx_simple(i, mesh, thread_id=None, use_gpu=False) -> None
     print(success_metric)
     os.makedirs(f"debug/mocap_data/iTHOR_rum_gripper/floorplan_{i}", exist_ok=True)
     with open(
-        f"debug/mocap_data/iTHOR_rum_gripper/floorplan_{i}/success_metric_mjx_simple.json", "w"
+        f"debug/mocap_data/iTHOR_rum_gripper/floorplan_{i}/success_metric_mjwarp_simple.json", "w"
     ) as f:
         json.dump(success_metric, f)
 
@@ -312,7 +326,9 @@ def main() -> None:
     parser.add_argument(
         "--gpu", action="store_true", help="Enable GPU rendering if available (default: CPU-only)"
     )
-    parser.add_argument("--batch-size", type=int, default=16, help="MJX batch size (default: 16)")
+    parser.add_argument(
+        "--batch-size", type=int, default=16, help="mjwarp worlds per rollout (default: 16)"
+    )
     parser.add_argument(
         "--physics-steps", type=int, default=25, help="Physics steps per frame (default: 25)"
     )
@@ -323,10 +339,9 @@ def main() -> None:
     BATCH_SIZE = args.batch_size
     PHYSICS_STEPS_PER_FRAME = args.physics_steps
 
-    # Set JAX environment for GPU
+    wp.init()
     if args.gpu:
-        os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=true"
-        print(f"Using {len(jax.devices())} devices: {jax.devices()}")
+        print(f"Using {wp.get_cuda_device_count()} CUDA devices: {wp.get_cuda_devices()}")
 
     i = args.i
     mesh = args.mesh
@@ -337,10 +352,10 @@ def main() -> None:
         floorplan_indices = list(range(13, 0, -1))
 
         print(
-            f"Processing {len(floorplan_indices)} floorplans using MJX Simple with {nthread} threads..."
+            f"Processing {len(floorplan_indices)} floorplans using mjwarp Simple with {nthread} threads..."
         )
         print(f"Floorplan range: {floorplan_indices[0]} to {floorplan_indices[-1]}")
-        print(f"MJX batch size: {BATCH_SIZE}, Physics steps per frame: {PHYSICS_STEPS_PER_FRAME}")
+        print(f"mjwarp worlds: {BATCH_SIZE}, Physics steps per frame: {PHYSICS_STEPS_PER_FRAME}")
 
         completed_count = 0
         failed_count = 0
@@ -348,13 +363,13 @@ def main() -> None:
         with ThreadPoolExecutor(max_workers=nthread) as executor:
             future_to_floorplan = {
                 executor.submit(
-                    run_one_floorplan_mjx_simple, floorplan_i, mesh, thread_id, use_gpu
+                    run_one_floorplan_mjwarp_simple, floorplan_i, mesh, thread_id, use_gpu
                 ): floorplan_i
                 for thread_id, floorplan_i in enumerate(floorplan_indices)
             }
 
             with tqdm(
-                total=len(floorplan_indices), desc="Processing floorplans with MJX Simple"
+                total=len(floorplan_indices), desc="Processing floorplans with mjwarp Simple"
             ) as pbar:
                 for future in as_completed(future_to_floorplan):
                     floorplan_i = future_to_floorplan[future]
@@ -371,11 +386,11 @@ def main() -> None:
                     pbar.update(1)
 
         print(
-            f"All floorplans processed with MJX Simple! Completed: {completed_count}, Failed: {failed_count}"
+            f"All floorplans processed with mjwarp Simple! Completed: {completed_count}, Failed: {failed_count}"
         )
         return
     else:
-        run_one_floorplan_mjx_simple(i, mesh, use_gpu=use_gpu)
+        run_one_floorplan_mjwarp_simple(i, mesh, use_gpu=use_gpu)
 
 
 if __name__ == "__main__":

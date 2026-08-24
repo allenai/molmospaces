@@ -245,7 +245,7 @@ def get_resource_manager(
         MIN_VERSION = "0.0.2"
         if Version(version("molmospaces-resources")) < Version(MIN_VERSION):
             raise ImportError(
-                f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>)"
+                f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>), e.g., by reinstalling/updating molmospaces"
             )
 
         def post_setup(manager: ResourceManager):
