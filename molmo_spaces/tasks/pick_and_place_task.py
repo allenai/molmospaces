@@ -195,11 +195,7 @@ class PickAndPlaceTask(BaseMujocoTask):
             tilt_displacement = np.arccos(cos_tilt)
 
             # Check that the robot has released the object (no robot-object contact).
-            # Map the base move group's root body to the root of the robot's kinematic
-            # tree; they differ when the robot is nested under an outer body (RBY1).
-            robot_root_body_id = data.model.body_rootid[
-                int(self._env.current_robot.robot_view.base.root_body_id)
-            ]
+            robot_root_body_id = self._env.current_robot.robot_view.root_body_id
             robot_contact = False
             for c in data.contact:
                 root_body1 = data.model.body_rootid[data.model.geom_bodyid[c.geom1]]

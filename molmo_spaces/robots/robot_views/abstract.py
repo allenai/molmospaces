@@ -721,6 +721,17 @@ class RobotView(ABC):
         """The base of the robot."""
         raise NotImplementedError
 
+    @cached_property
+    def root_body_id(self) -> int:
+        """The ID of the root body of the robot's kinematic tree.
+
+        This is not necessarily ``base.root_body_id``: the base move group's root body
+        is the base itself, which may be nested under an outer wrapper body (RBY1's MJCF
+        nests ``robot_0/base`` under ``robot_0/``). Contacts identify a body's tree via
+        ``model.body_rootid``, so comparisons against contact bodies must use this.
+        """
+        return int(self.mj_model.body_rootid[int(self.base.root_body_id)])
+
     def move_group_ids(self) -> list[str]:
         """Get the IDs of all move groups in this robot."""
         return list(self._move_groups.keys())

@@ -150,12 +150,7 @@ class PickTask(BaseMujocoTask):
 
             # Option 2: go via root body and check if all contacts are with robot geoms
             # Check if object collides only with robot geoms
-            # The base move group's root body is not necessarily the root of the robot's
-            # kinematic tree (RBY1 nests its base under an outer "robot_0/" body), so map
-            # it through body_rootid to match what geom_bodyid/body_rootid yields below.
-            robot_root_body_id = data.model.body_rootid[
-                int(self.env.current_robot.robot_view.base.root_body_id)
-            ]
+            robot_root_body_id = self.env.current_robot.robot_view.root_body_id
             robot_collision = False
             non_robot_collision = False
             for c in data.contact:
