@@ -247,7 +247,7 @@ def filter_semantically_good_grasps(uid: str, grasps: np.ndarray) -> np.ndarray:
     """
     Keep only the grasps marked "semantically good" for a given object.
 
-    Classifications are produced by ``scripts/grasps/classify_grasps.py`` and are indexed
+    Classifications are produced by ``scripts/mlspaces_commonsense/classify_grasps.py`` and are indexed
     positionally against the object's full (unsampled) grasp array. If no classification
     file exists for the object, all grasps are returned unchanged.
 

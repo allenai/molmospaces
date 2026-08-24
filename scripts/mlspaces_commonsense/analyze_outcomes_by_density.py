@@ -9,7 +9,7 @@ The "nearby graspable" metric matches the one used in create_json_benchmark.py:
 filtered against THOR_PICKUP_OBJECTS_LOWERCASE.
 
 USAGE:
-    python scripts/benchmarks/analyze_outcomes_by_density.py \\
+    python scripts/mlspaces_commonsense/analyze_outcomes_by_density.py \\
         --annotation_file rollout_eval.jsonl \\
         --threshold 2 \\
         --output_dir /path/to/rollout_analysis

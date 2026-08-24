@@ -23,15 +23,15 @@ rollout, so the answer is never given away by the manipulation itself.
 
 Usage:
     export GEMINI_API_KEY=...
-    python scripts/object_permanence_point_eval.py \\
+    python scripts/mlspaces_commonsense/object_permanence_point_eval.py \\
         --eval-dir eval_output/objpermanence_cap/CAPPolicyEvalConfig/20260807_150608 \\
         --output op_point_eval.jsonl --debug-image-dir /tmp/op_frames
 
     # control: hide the mid-air frame, so the model can only guess
-    python scripts/object_permanence_point_eval.py ... --frame-mode drop-first
+    python scripts/mlspaces_commonsense/object_permanence_point_eval.py ... --frame-mode drop-first
 
     # re-print the summary for an existing run
-    python scripts/object_permanence_point_eval.py --summarize op_point_eval.jsonl
+    python scripts/mlspaces_commonsense/object_permanence_point_eval.py --summarize op_point_eval.jsonl
 """
 
 from __future__ import annotations

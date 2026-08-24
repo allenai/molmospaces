@@ -9,7 +9,7 @@ never loses completed work.
 The classification space matches the enum in ``vlm_rollout_eval.py``.
 
 Usage:
-    python scripts/vlm_rollout_annotate.py \\
+    python scripts/mlspaces_commonsense/vlm_rollout_annotate.py \\
         --eval-dir /path/to/eval_output/<run>/<timestamp> \\
         --output human_annotations.jsonl
 

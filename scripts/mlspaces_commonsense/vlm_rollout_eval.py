@@ -6,7 +6,7 @@ success/failure mode of the rollout. Results are written to a JSONL file.
 
 Usage:
     export GEMINI_API_KEY=...
-    python scripts/vlm_rollout_eval.py \\
+    python scripts/mlspaces_commonsense/vlm_rollout_eval.py \\
         --eval-dir /path/to/eval_output/<run>/<timestamp> \\
         --output rollout_eval.jsonl
 """

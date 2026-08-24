@@ -6,7 +6,7 @@ was asked to answer in). The ground-truth mug centre is drawn there too, so the
 tile can be read on its own.
 
 Usage:
-    python scripts/object_permanence_point_vis.py \\
+    python scripts/mlspaces_commonsense/object_permanence_point_vis.py \\
         --results op_point_eval.jsonl --output-dir op_point_vis
 """
 

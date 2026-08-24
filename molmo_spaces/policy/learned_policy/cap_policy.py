@@ -193,9 +193,8 @@ class CAP_Policy(InferencePolicy):
         """Return the 2D point to anchor on, as (x, y) normalized to [0, 1].
 
         Overridable hook: everything downstream of this (intrinsics, depth lookup, the
-        world-frame lift) is independent of how the point was obtained. GeminiCAP_Policy
-        overrides it to supply a point reasoned over a sequence of frames instead of a
-        single-image object query.
+        world-frame lift) is independent of how the point was obtained, so subclasses
+        (e.g. a VLM that reasons over a sequence of frames) only need to override this.
         """
         return self.model.infer_point(
             rgb=rgb,
@@ -217,8 +216,8 @@ class CAP_Policy(InferencePolicy):
         # Upstream CAP breaks the rollout at the first close, so it never has to hold a
         # grasp; here the episode continues and the raw gripper signal oscillates, so a
         # per-step check can reopen mid-lift and drop the object. Note the signal can dip
-        # spuriously during the opening steps; GeminiCAP_Policy avoids burning the latch
-        # on that by returning no-ops until its Gemini point is available.
+        # spuriously during the opening steps; subclasses that need a warm-up window can
+        # return no-ops until their anchor point is available to avoid burning the latch.
         self.is_grasping = max(self.is_grasping, model_output[0][6] < self.grasping_threshold)
         delta_pose_mat = action_tensor_to_matrix(model_output[0][:6], "euler")
         T_world_ego = self.T_world_camera @ delta_pose_mat

@@ -75,6 +75,9 @@ class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):
 
     # Retry behavior parameters
     max_retries: int = 3  # Maximum number of retry attempts
+    # Pick-and-place: how many random XY offsets within the receptacle to try when only the
+    # placement poses are IK-infeasible (the receptacle centre is often unreachable).
+    max_placement_retries: int = 5
     gripper_empty_threshold: float = 0.002  # Gripper separation to detect empty gripper (meters)
     phase_timeout: float = 10.0  # Maximum time to spend in any phase (seconds)
     max_sequential_ik_failures: int = 8  # Maximum number of IK failures
