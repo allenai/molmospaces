@@ -99,6 +99,8 @@ class MlSpacesExpConfig(Config, ABC):
 
     environment_light_intensity: float = 15000.0
 
+    no_cached_map: bool = False
+
     def model_post_init(self, _context) -> None:
         """This serves as the __init__() called after internal validation of config parameters"""
         assert (self.policy_dt_ms / self.ctrl_dt_ms).is_integer(), (

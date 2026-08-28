@@ -719,7 +719,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         if "ithor" in self.current_model_path:
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
             precomputed_map = model_path.parent / f"{model_path.stem}_map.png"
-            if precomputed_map.is_file():
+            if precomputed_map.is_file() and not self.config.no_cached_map:
                 thormap = iTHORMap.load(
                     path=precomputed_map.as_posix(),
                     agent_radius=agent_radius,
@@ -735,7 +735,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         elif "procthor" in self.current_model_path or "holodeck" in self.current_model_path:
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
             precomputed_map = model_path.parent / f"{model_path.stem}_map.png"
-            if precomputed_map.is_file():
+            if precomputed_map.is_file() and not self.config.no_cached_map:
                 thormap = ProcTHORMap.load(
                     path=precomputed_map.as_posix(),
                     agent_radius=agent_radius,
