@@ -718,8 +718,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
         if "ithor" in self.current_model_path:
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
-            precomputed_map = model_path.parent / f"{model_path.stem}_map.png"
-            if precomputed_map.is_file():
+            precomputed_map = model_path.resolve().parent / f"{model_path.stem}_map.png"
+            precomputed_map_symlink = model_path.parent / f"{model_path.stem}_map.png"
+            if precomputed_map.is_file() and precomputed_map_symlink.is_file():
                 thormap = iTHORMap.load(
                     path=precomputed_map.as_posix(),
                     agent_radius=agent_radius,
@@ -732,10 +733,15 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     device_id=None,
                     use_filament=HAS_FILAMENT,
                 )
+                thormap.save(precomputed_map.resolve().as_posix())
+                precomputed_map_symlink.symlink_to(precomputed_map)
+                log.info(f"Saved thormap for later @ {precomputed_map.resolve().as_posix()}")
+                log.info(f"Symlinked thormap for later @ {precomputed_map_symlink.resolve().as_posix()}")
         elif "procthor" in self.current_model_path or "holodeck" in self.current_model_path:
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
-            precomputed_map = model_path.parent / f"{model_path.stem}_map.png"
-            if precomputed_map.is_file():
+            precomputed_map = model_path.resolve().parent / f"{model_path.stem}_map.png"
+            precomputed_map_symlink = model_path.parent / f"{model_path.stem}_map.png"
+            if precomputed_map.is_file() and precomputed_map_symlink.is_file():
                 thormap = ProcTHORMap.load(
                     path=precomputed_map.as_posix(),
                     agent_radius=agent_radius,
@@ -748,6 +754,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     device_id=None,
                     use_filament=HAS_FILAMENT,
                 )
+                thormap.save(precomputed_map.resolve().as_posix())
+                precomputed_map_symlink.symlink_to(precomputed_map)
+                log.info(f"Saved thormap for later @ {precomputed_map.resolve().as_posix()}")
+                log.info(f"Symlinked thormap for later @ {precomputed_map_symlink.resolve().as_posix()}")
         else:
             raise ValueError(f"Unknown scene type: {self.current_model_path}")
 
