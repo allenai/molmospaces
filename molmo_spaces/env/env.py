@@ -736,7 +736,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
                 thormap.save(precomputed_map.resolve().as_posix())
                 precomputed_map_symlink.symlink_to(precomputed_map)
                 log.info(f"Saved thormap for later @ {precomputed_map.resolve().as_posix()}")
-                log.info(f"Symlinked thormap for later @ {precomputed_map_symlink.resolve().as_posix()}")
+                log.info(
+                    f"Symlinked thormap for later @ {precomputed_map_symlink.resolve().as_posix()}"
+                )
         elif "procthor" in self.current_model_path or "holodeck" in self.current_model_path:
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
             precomputed_map = model_path.resolve().parent / f"{model_path.stem}_map.png"
@@ -757,7 +759,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
                 thormap.save(precomputed_map.resolve().as_posix())
                 precomputed_map_symlink.symlink_to(precomputed_map)
                 log.info(f"Saved thormap for later @ {precomputed_map.resolve().as_posix()}")
-                log.info(f"Symlinked thormap for later @ {precomputed_map_symlink.resolve().as_posix()}")
+                log.info(
+                    f"Symlinked thormap for later @ {precomputed_map_symlink.resolve().as_posix()}"
+                )
         else:
             raise ValueError(f"Unknown scene type: {self.current_model_path}")
 
