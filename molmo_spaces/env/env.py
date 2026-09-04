@@ -720,7 +720,11 @@ class CPUMujocoEnv(BaseMujocoEnv):
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
             precomputed_map = model_path.resolve().parent / f"{model_path.stem}_map.png"
             precomputed_map_symlink = model_path.parent / f"{model_path.stem}_map.png"
-            if precomputed_map.is_file() and precomputed_map_symlink.is_file():
+            if (
+                precomputed_map.is_file()
+                and precomputed_map_symlink.is_file()
+                and not self.config.no_cached_map
+            ):
                 thormap = iTHORMap.load(
                     path=precomputed_map.as_posix(),
                     agent_radius=agent_radius,
@@ -743,7 +747,11 @@ class CPUMujocoEnv(BaseMujocoEnv):
             model_path = Path(self.current_model_path.replace("_ceiling", ""))
             precomputed_map = model_path.resolve().parent / f"{model_path.stem}_map.png"
             precomputed_map_symlink = model_path.parent / f"{model_path.stem}_map.png"
-            if precomputed_map.is_file() and precomputed_map_symlink.is_file():
+            if (
+                precomputed_map.is_file()
+                and precomputed_map_symlink.is_file()
+                and not self.config.no_cached_map
+            ):
                 thormap = ProcTHORMap.load(
                     path=precomputed_map.as_posix(),
                     agent_radius=agent_radius,
