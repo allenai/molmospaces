@@ -1,6 +1,7 @@
 import gc
 import logging
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from collections.abc import Callable, Collection, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -143,6 +144,18 @@ class BaseMujocoEnv(ABC):
 
 
 class CPUMujocoEnv(BaseMujocoEnv):
+    # Which occupancy-map implementation get_occupancy_map() returns; see
+    # configs/task_sampler_configs.OccupancyMapImpl, which owns the set of
+    # valid values (spelled here as its plain string value only because
+    # importing configs at module scope is circular -- see get_occupancy_map).
+    # Task samplers set it from BaseMujocoTaskSamplerConfig.occupancy_map_impl,
+    # and only G1/FetchMan experiments set it to anything but the default.
+    occupancy_map_impl: "OccupancyMapImpl | str" = "thor"
+
+    # How many maps get_occupancy_map() caches; task samplers set it from
+    # BaseMujocoTaskSamplerConfig.occupancy_map_cache_size.
+    occupancy_map_cache_size: int = 4
+
     def __init__(
         self,
         exp_config: "MlSpacesExpConfig",
@@ -173,6 +186,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
         # Cached occupancy map for robot placement (expensive to create)
         self._cached_thormap = None
         self._cached_thormap_key = None  # (model_path, agent_radius, px_per_m)
+        self._occupancy_maps: OrderedDict = OrderedDict()
+        self.occupancy_map_impl = exp_config.task_sampler_config.occupancy_map_impl
+        self.occupancy_map_cache_size = exp_config.task_sampler_config.occupancy_map_cache_size
 
         self._initialize_with_model(mj_model, mj_base_scene_path)
 
@@ -779,6 +795,64 @@ class CPUMujocoEnv(BaseMujocoEnv):
         log.info("[THORMAP] Occupancy map created and cached")
 
         return thormap
+
+    def get_occupancy_map(
+        self, agent_radius: float = 0.35, px_per_m: int = 200, impl: str | None = None
+    ):
+        """Blessed entry point for a scene's occupancy map.
+
+        Same name/shape as G1Env.get_occupancy_map, so callers need not know which
+        env they hold. ProcTHORMap/iTHORMap and AABBMap share one query API
+        (is_free, dilated, any_free_in_annulus, same_free_component, sample_near,
+        sample_robot_pose; True = free).
+
+        `impl` (see OccupancyMapImpl) defaults to this env's `occupancy_map_impl`,
+        "thor" for everything but G1/FetchMan. The grids are NOT cell-for-cell
+        equal, so selecting "aabb" elsewhere silently changes which cells count as
+        standable.
+
+        Results are cached per (impl, scene, agent_radius, px_per_m), so several
+        maps can be held at once without interfering; the two implementations share
+        no state. The cache keeps the most recent `occupancy_map_cache_size` maps
+        and is dropped wholesale on scene load.
+        """
+        # Deferred: molmo_spaces.configs' package __init__ reaches back into
+        # this module (configs -> policy_configs -> base_policy -> tasks.task
+        # -> env.env), so configs can only be imported once this one is loaded.
+        from molmo_spaces.configs.task_sampler_configs import OccupancyMapImpl
+
+        try:
+            impl = OccupancyMapImpl(impl or self.occupancy_map_impl)
+        except ValueError:
+            raise ValueError(
+                f"unknown occupancy map impl {impl!r}, "
+                f"expected one of {[m.value for m in OccupancyMapImpl]}"
+            ) from None
+
+        key = (impl, str(self.current_model_path), float(agent_radius), int(px_per_m))
+        cached = self._occupancy_maps.get(key)
+        if cached is not None:
+            self._occupancy_maps.move_to_end(key)
+            return cached
+
+        if impl == "aabb":
+            # Imported here, not at module scope: scene_maps_aabb monkeypatches MuJoCo's
+            # segmentation renderer on import, and only these experiments opt in.
+            from molmo_spaces.utils.scene_maps_aabb import AABBMap
+
+            occupancy_map = AABBMap.from_model_path(
+                self.current_model_path, agent_radius=agent_radius, px_per_m=px_per_m
+            )
+        else:
+            # get_thormap keeps its own single slot for its direct callers; this
+            # cache is what keeps two different radii from re-rendering the scene
+            # on every alternating call.
+            occupancy_map = self.get_thormap(agent_radius=agent_radius, px_per_m=px_per_m)
+
+        self._occupancy_maps[key] = occupancy_map
+        while len(self._occupancy_maps) > self.occupancy_map_cache_size:
+            self._occupancy_maps.popitem(last=False)
+        return occupancy_map
 
     def place_robot_near(
         self,
