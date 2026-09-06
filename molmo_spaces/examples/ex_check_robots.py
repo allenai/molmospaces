@@ -7,6 +7,8 @@ import tyro
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
 from molmo_spaces.molmo_spaces_constants import get_robot_path
+from molmo_spaces.robots.abstract import Robot
+from molmo_spaces.robots.franka import FrankaRobot
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
@@ -16,6 +18,7 @@ class RobotInfo:
     xml_file: str
     init_pos: tuple[float, float, float]
     init_quat: tuple[float, float, float, float]
+    robot_cls: type[Robot] | None = None
 
 
 ROBOTS_INFO: dict[str, RobotInfo] = {
@@ -23,6 +26,7 @@ ROBOTS_INFO: dict[str, RobotInfo] = {
         xml_file="model.xml",
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
+        robot_cls=FrankaRobot,
     ),
     "g1": RobotInfo(
         xml_file="g1_dex.xml",
@@ -58,6 +62,10 @@ def main() -> int:
 
     model = spec.compile()
     data = mj.MjData(model)
+
+    # robot: Robot | None = None
+    # if robot_info.robot_cls:
+    #     robot = robot_info.robot_cls(data, ...)
 
     mj.mj_resetData(model, data)
 
