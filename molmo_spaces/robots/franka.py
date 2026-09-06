@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 import logging
 import random
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import mujoco
 import numpy as np
 from mujoco import MjData, MjsBody, MjSpec, mjtGeom
 from PIL import Image, ImageDraw
 
+from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
@@ -66,9 +69,13 @@ class FrankaRobot(Robot):
     def __init__(
         self,
         mj_data: MjData,
-        config: "MlSpacesExpConfig",
+        config: MlSpacesExpConfig,
     ) -> None:
         super().__init__(mj_data, config)
+
+        assert config.robot_config.robot_view_factory, (
+            "Something went wrong, 'robot_view_factory' shouldn't be None"
+        )
         self._robot_view = config.robot_config.robot_view_factory(
             mj_data, config.robot_config.robot_namespace
         )
@@ -81,7 +88,7 @@ class FrankaRobot(Robot):
             or config.robot_config.command_mode["arm"] == "joint_position"
             else JointRelPosController
         )
-        self._controllers = {
+        self._controllers: dict[str, Controller] = {
             "arm": arm_controller_cls(self._robot_view.get_move_group("arm")),
             "gripper": JointPosController(self._robot_view.get_move_group("gripper")),
         }
@@ -118,7 +125,7 @@ class FrankaRobot(Robot):
     def reset(self) -> None:
         for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
-                self._robot_view.get_move_group(mg_id).joint_pos = default_pos
+                self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
     @staticmethod
     def robot_model_root_name() -> str:
@@ -127,11 +134,11 @@ class FrankaRobot(Robot):
     @classmethod
     def create_robot_base_material(
         cls,
-        robot_config: "FrankaRobotConfig",
+        robot_config: FrankaRobotConfig,
         spec: MjSpec,
         prefix: str,
         randomize_base_texture: bool,
-    ) -> None:
+    ) -> str:
         texture_dir = robot_config.get_robot_dir() / "assets" / "base_textures"
         assert texture_dir.is_dir(), f"Texture directory {texture_dir} does not exist"
         texture_path: Path | None = None
@@ -162,7 +169,7 @@ class FrankaRobot(Robot):
     @classmethod
     def randomize_robot_textures(
         cls,
-        robot_config: "FrankaRobotConfig",
+        robot_config: FrankaRobotConfig,
         spec: MjSpec,
         prefix: str,
         robot_spec: MjSpec,
@@ -213,7 +220,7 @@ class FrankaRobot(Robot):
     @classmethod
     def add_robot_to_scene(
         cls,
-        robot_config: "FrankaRobotConfig",
+        robot_config: BaseRobotConfig,
         spec: MjSpec,
         prefix: str,
         pos: list[float],
@@ -221,7 +228,10 @@ class FrankaRobot(Robot):
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
-        robot_config = cast("FrankaRobotConfig", robot_config)
+        assert isinstance(robot_config, FrankaRobotConfig), (
+            "Given robot config should be of type 'FrankaRobotConfig'"
+        )
+
         add_base = robot_config.base_size is not None
         pos = pos + [0.0] if len(pos) == 2 else pos
 
@@ -236,6 +246,9 @@ class FrankaRobot(Robot):
             mocap=True,
         )
         if add_base:
+            assert robot_config.base_size, (
+                "If using 'base' must provide 'base_size' in configuration"
+            )
             base_height = robot_config.base_size[2]
 
             # Add base geometry (wooden platform)

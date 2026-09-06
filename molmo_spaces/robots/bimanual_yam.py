@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np
 from mujoco import MjData, MjSpec, mjtGeom
@@ -122,7 +122,6 @@ class BimanualYamRobot(Robot):
         assert isinstance(robot_config, BimanualYamRobotConfig), (
             "Given robot config should be of type 'BimanualYamRobotConfig'"
         )
-        robot_config = cast(BimanualYamRobotConfig, robot_config)
         add_base = robot_config.base_size is not None
         pos = pos + [0.0] if len(pos) == 2 else pos
 
