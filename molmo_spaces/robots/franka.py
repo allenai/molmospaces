@@ -215,27 +215,10 @@ class FrankaRobot(Robot):
         """Fuse each finger's two pad boxes into one, so they share no seam.
 
         Each Robotiq finger carries its pad as two stacked boxes on one body,
-        18.75 mm tall each, meeting flush: pad1 spans 0.11063-0.12937 and pad2
-        0.12938-0.14813. An object thin enough to penetrate that boundary ends up
+        pad1 and pad2. An object thin enough to penetrate that boundary ends up
         inside both boxes at once, and each pushes it out of itself and therefore
-        into the other. The contacts oppose -- measured on a paper cup, normals at
-        -0.983 carrying 1190 N and 853 N from two geoms on the *same* finger,
-        against 26 N on the whole opposite finger -- there is no equilibrium to
-        settle into, and nothing can release the object, because opening the jaws
-        moves the finger, the seam and whatever is caught in it together. The cup
-        was carried away wedged in one finger at 2703 N.
-
-        That is a collision artefact rather than a grip: one box over the same
-        span is the same shape to everything outside the gripper, and has no
-        interior boundary to catch anything on. Any thin wall, rim, lid, plate or
-        sheet can reach the seam, so this is applied unconditionally.
-
-        The surviving collider is ``pad2``, which is the geom the robot views
-        identify each finger by (see ``franka_droid_view``/``franka_cap_view``).
-        Only the local z extent changes, so the distance between the two fingers
-        -- and hence ``inter_finger_dist`` -- is untouched.
-
-        Returns how many fingers were merged.
+        into the other. The surviving collider is ``pad2``, which is the geom the
+        robot views identify each finger by. Returns how many fingers were merged.
         """
         pads: dict[str, dict[str, mujoco.MjsGeom]] = {}
         for geom in robot_spec.geoms:
