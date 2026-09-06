@@ -11,7 +11,8 @@ import os
 import mujoco
 import numpy as np
 
-from molmo_spaces.editor.constants import ALL_ARTICULATION_TYPES_THOR
+from molmo_spaces.utils.constants.object_constants import ALL_ARTICULATION_TYPES_THOR
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.env.arena.arena_utils import load_env_with_objects
 
 
@@ -77,7 +78,9 @@ def save_data(
     plt.savefig("qvel_for_all_categories.png")
 
 
-folder_path = "assets/scenes/ithor_081125"
+# The iTHOR scenes live in the resource manager's asset tree, not in a
+# repo-relative `assets/`; ASSETS_DIR honours $MLSPACES_ASSETS_DIR.
+folder_path = ASSETS_DIR / "scenes" / "ithor"
 all_xml_files = [
     f for f in os.listdir(folder_path) if f.endswith(".xml") and "gripper" not in f.lower()
 ]

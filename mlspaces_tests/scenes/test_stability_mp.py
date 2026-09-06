@@ -10,15 +10,16 @@ from typing import Any, TypedDict, cast
 
 import mujoco as mj
 import numpy as np
-from p_tqdm import p_uimap
 from test_utils import (
     get_categories_failed_stability_test,
     get_fail_info_stability_test,
     get_stability_tests_results_info,
+    p_uimap,
     sort_results_stability_test_by_scene_number,
 )
 from tqdm import tqdm
 
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.env.arena.scene_tweaks import (
     is_body_com_within_box_site,
     is_body_within_site_in_freespace,
@@ -33,9 +34,11 @@ ERRORS_FILEPATH = "stability_test_errors_{dataset}_{split}_{identifier}.json"
 DEFAULT_HOUSES_FOLDER_WEKA = (
     "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}-refactor"
 )
-DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
+# Local scenes come from the resource manager's asset tree, not a
+# repo-relative `assets/`; ASSETS_DIR honours $MLSPACES_ASSETS_DIR.
+DEFAULT_HOUSES_FOLDER_LOCAL = str(ASSETS_DIR / "scenes" / "{dataset}-{split}")
 DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
-DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = str(ASSETS_DIR / "scenes" / "ithor")
 
 DEFAULT_TIMESTEP = 0.002
 DEFAULT_SETTLE_TIME = 1.0  # Settle for 1 seconds

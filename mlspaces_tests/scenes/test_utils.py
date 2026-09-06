@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -6,10 +7,37 @@ from pathlib import Path
 
 import mujoco as mj
 import trimesh
+from tqdm import tqdm
 
 from molmo_spaces.utils.constants.object_constants import (
     AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA as TYPE_TO_LEMMA,
 )
+
+
+def p_uimap(func, items, num_cpus: int | None = None):
+    """Parallel unordered imap with a progress bar, over stdlib multiprocessing.
+
+    Stands in for `p_tqdm.p_uimap`, which pulled in pathos for a single call
+    site in each of the `*_mp` sweeps. Same contract: yields results as workers
+    finish, in completion order, not input order.
+
+    Forks where the platform allows it. Every caller sets a module-level
+    `SETTINGS` in `main()` and reads it back inside the worker, so the workers
+    have to inherit the parent's globals; under macOS' default "spawn" the
+    child re-imports the module and every one of them fails on `SETTINGS is
+    None`. Linux forks by default, which is why the sweeps work there.
+
+    `func` is pickled to the workers, so it must be a module-level function --
+    which is what every caller here passes.
+    """
+    items = list(items)
+    ctx = (
+        multiprocessing.get_context("fork")
+        if "fork" in multiprocessing.get_all_start_methods()
+        else multiprocessing.get_context()
+    )
+    with ctx.Pool(num_cpus) as pool:
+        yield from tqdm(pool.imap_unordered(func, items), total=len(items))
 
 WARNINGS_TO_CHECK = [
     mj.mjtWarning.mjWARN_BADQACC,

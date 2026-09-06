@@ -157,6 +157,15 @@ exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
     "resources/base_scene.xml",
 ]
 
+[tool.pytest.ini_options]
+# `mlspaces_tests/scenes` is mostly standalone analysis and visualisation
+# scripts, but it collects cleanly now and contributes four real tests, so it is
+# no longer excluded. See mlspaces_tests/scenes/README.md.
+norecursedirs = [".git", "*.egg-info", "build", "dist"]
+markers = [
+    "slow: takes minutes of physics stepping; deselect with -m 'not slow'",
+]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
