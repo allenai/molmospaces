@@ -335,10 +335,10 @@ class ObjectManager:
         context_objects: Collection[ObjectOrNameOrIdType],
     ) -> list[str]:
         annotated_synsets = sorted(
-            set(
+            {
                 self.get_annotation_synset(object_or_name_or_id)
                 for object_or_name_or_id in context_objects
-            )
+            }
             - {None}
         )
 

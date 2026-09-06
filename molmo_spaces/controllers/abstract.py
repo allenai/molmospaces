@@ -54,7 +54,7 @@ class Controller:
         pass
 
     @abc.abstractmethod
-    def compute_ctrl_inputs(self):
+    def compute_ctrl_inputs(self) -> np.ndarray:
         """
         Compute the control inputs based on the current state and the target set by the user.
 

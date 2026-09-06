@@ -29,3 +29,9 @@ repos:
   - id: ruff-check
     args: [--fix, --exit-non-zero-on-fix]
   - id: ruff-format
+
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
+    hooks:
+    -   id: pyupgrade
+        args: [--py311-plus]
