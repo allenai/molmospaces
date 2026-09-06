@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 """Camera configuration classes for MolmoSpaces experiments."""
 
 import logging
@@ -36,6 +38,31 @@ class CameraConfig(Config, ABC):
     visibility_constraints: dict[str, float] | None = None
 
 
+class FisheyeImpl(StrEnum):
+    """Which implementation renders a warped camera's image; see
+    CameraConfig.fisheye_impl. Ignored unless the camera sets is_warped.
+
+    CUBEMAP  utils/fisheye_cubemap.py. Composites five wide tile cameras through
+             an OpenCV fisheye model calibrated on the real lens. Needs the five
+             tile cameras present in the MJCF, which is its only real cost. Use
+             this for any new warped camera. The G1 head is the only one today;
+             see FisheyeMjcfCameraConfig.
+    WARPING  DEPRECATED -- utils/fisheye_warping.py. Post-distorts one pinhole
+             render with a radial k1..k4 model. Do not use for new cameras.
+
+    At matched lens, FOV and render budget CUBEMAP is 5.1x sharper (variance of
+    Laplacian 5476 vs 1070), marginally faster (5.90 vs 6.24 ms/frame), and
+    reaches the G1 head lens's 72.8 deg half-FOV, which WARPING's k1..k4
+    polynomial caps at 68.26 deg (mlspaces_tests/component_tests/
+    compare_fisheye_renderers.py). WARPING stays the default only so existing
+    configs keep their recorded behaviour; nothing renders through it today.
+    """
+
+    CUBEMAP = "cubemap"
+    # Deprecated; see the class docstring. Kept so existing configs still load.
+    WARPING = "warping"
+
+
 class MjcfCameraConfig(CameraConfig):
     """Camera defined in the MJCF file.
 
@@ -54,6 +81,89 @@ class MjcfCameraConfig(CameraConfig):
         None  # Random rotation noise in degrees
     )
     fov_noise_degrees: tuple[float, float] | None = None  # Add noise to FOV (min, max)
+
+
+class FisheyeMjcfCameraConfig(MjcfCameraConfig):
+    """MJCF camera carrying the parameters FisheyeImpl.CUBEMAP needs.
+
+    Only worth using with `fisheye_impl=CUBEMAP` -- the WARPING default reads
+    none of these fields. The G1 head is the one camera wide enough to need it;
+    see G1CameraSystem.
+
+    `fov` stays the pinhole camera's FOV and `tile_fov` the tile cameras', so
+    both render paths take their FOV from this config and neither drifts.
+    """
+
+    # (cubemap) Suffixes appended to mjcf_name to find the tile cameras. Order is
+    # load-bearing: FisheyeRenderer's LUT assumes center/up/down/left/right.
+    tile_suffixes: tuple[str, str, str, str, str] = ("center", "up", "down", "left", "right")
+    # Vertical FOV of each tile camera, degrees. FisheyeRenderer requires >=90
+    # (it has to cover the fisheye circle with five tiles); g1_dex.xml declares
+    # 100 on each head_pov_tile_* camera and g1_molmo renders them as authored.
+    tile_fov: float = 100.0
+    # (cubemap) Off-screen render size per tile. g1_molmo's render_fisheye default.
+    tile_size: int = 512
+    # (cubemap) Cosine-falloff exponent blending overlapping tiles; FisheyeRenderer default.
+    weight_power: float = 4.0
+    # (cubemap) OpenCV fisheye calibration and the (W, H) it was measured at.
+    # Defaults are the G1's real head lens -- the values g1_molmo renders with,
+    # and the only lens this impl renders today; a different lens must say so
+    # here. They used to be HEAD_FISHEYE_* defaults inside
+    # utils/fisheye_cubemap.py, where the renderer's copy silently won for any
+    # caller that forgot to pass K/D; the renderer now has no fallback.
+    fisheye_K: list[list[float]] = [
+        [801.6382129934864, 0.0, 976.1246839545557],
+        [0.0, 802.1081824931498, 542.7122090223202],
+        [0.0, 0.0, 1.0],
+    ]
+    fisheye_D: list[float] = [
+        -0.02559442829261663,
+        0.008371943913215045,
+        -0.006921566406199126,
+        0.0010132813066123071,
+    ]
+    fisheye_image_size: tuple[int, int] = (1920, 1080)
+
+    # (cubemap) Per-episode randomization the fisheye lens has and a pinhole one
+    # does not, so it has nowhere to live on the base config:
+    #
+    # `distortion_noise` scales every OpenCV distortion coefficient by
+    # 1 +/- this fraction of its OWN magnitude -- proportional, not absolute, so
+    # k1 moves ~20x more than k4 and the model stays self-consistent instead of
+    # scrambling the image edge. g1_molmo calls this head_camera_distortion_noise.
+    distortion_noise: float | None = None
+    #
+    # On a fisheye, `fov_noise_degrees` cannot move cam_fovy -- the pinhole FOV
+    # is not what sets the projection, the calibrated focal length is. g1_molmo
+    # instead scales K's fx/fy by 1 + u/90 for u drawn over that range, which is
+    # what this divisor is. Both are applied by rebuilding the renderer's LUT
+    # (FisheyeRenderer.set_intrinsics), not by touching the MJCF camera.
+    fov_noise_focal_divisor: float = 90.0
+
+    def tile_camera_names(self) -> list[str]:
+        """Fully-qualified MJCF names of the five tile cameras ("cubemap" backend)."""
+        prefix = self.robot_namespace or ""
+        return [f"{prefix}{self.mjcf_name}_tile_{s}" for s in self.tile_suffixes]
+
+    def cubemap_renderer_kwargs(self, output_h: int, output_w: int) -> dict:
+        """Every FisheyeRenderer argument except the MuJoCo model, so callers
+        construct one straight from config rather than restating its parameters.
+
+        Output size stays a call argument: it is the resolution the caller wants
+        this frame (CameraSystemConfig.img_resolution), not a property of the
+        lens.
+        """
+        return {
+            "tile_cam_names": self.tile_camera_names(),
+            "K": self.fisheye_K,
+            "D": self.fisheye_D,
+            "image_size": self.fisheye_image_size,
+            "tile_size": self.tile_size,
+            "tile_fovy": self.tile_fov,
+            "weight_power": self.weight_power,
+            "output_h": output_h,
+            "output_w": output_w,
+        }
 
 
 class RobotMountedCameraConfig(CameraConfig):
