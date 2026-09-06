@@ -211,6 +211,37 @@ class FrankaRobot(Robot):
         log.info(f"Successfully randomized robot textures for robot '{robot_config.name}'")
 
     @classmethod
+    def merge_gripper_pads(cls, robot_spec: MjSpec) -> int:
+        """Fuse each finger's two pad boxes into one, so they share no seam.
+
+        Each Robotiq finger carries its pad as two stacked boxes on one body,
+        pad1 and pad2. An object thin enough to penetrate that boundary ends up
+        inside both boxes at once, and each pushes it out of itself and therefore
+        into the other. The surviving collider is ``pad2``, which is the geom the
+        robot views identify each finger by. Returns how many fingers were merged.
+        """
+        pads: dict[str, dict[str, mujoco.MjsGeom]] = {}
+        for geom in robot_spec.geoms:
+            if geom.name.endswith("_pad1") or geom.name.endswith("_pad2"):
+                pads.setdefault(geom.name[:-1], {})[geom.name[-1]] = geom
+        merged = 0
+        for finger, pair in sorted(pads.items()):
+            if set(pair) != {"1", "2"}:
+                continue
+            first, second = pair["1"], pair["2"]
+            low = min(first.pos[2] - first.size[2], second.pos[2] - second.size[2])
+            high = max(first.pos[2] + first.size[2], second.pos[2] + second.size[2])
+            second.pos = [second.pos[0], second.pos[1], (low + high) / 2.0]
+            second.size = [second.size[0], second.size[1], (high - low) / 2.0]
+            # Kept as geometry but no longer colliding: the merged box already
+            # covers its span, and two colliders over one span is the whole bug.
+            first.contype = 0
+            first.conaffinity = 0
+            merged += 1
+            log.debug("merged gripper pads for %s into %s2", finger, finger)
+        return merged
+
+    @classmethod
     def add_robot_to_scene(
         cls,
         robot_config: "FrankaRobotConfig",
@@ -251,6 +282,7 @@ class FrankaRobot(Robot):
             attach_frame = robot_body.add_frame()
 
         robot_spec = cls._load_robot_spec(robot_config, strip_meshes=strip_meshes)
+        cls.merge_gripper_pads(robot_spec)
 
         if randomize_textures:
             cls.randomize_robot_textures(robot_config, spec, prefix, robot_spec)
