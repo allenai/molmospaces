@@ -87,6 +87,71 @@ def find_object_paths(xml_path, exclude_thor=True):
                     yield source, rel_asset
 
 
+def find_model_paths(xml_path):
+    """Yield ``(scene_source, rel_asset)`` for model files referenced by a scene MJCF.
+
+    Expects paths like ``../../models/<model>/meshes/<file>.obj`` that resolve
+    under ``scenes/<scene_source>/models/...``.
+
+    Uses logical path normalization (no symlink following) so already-installed
+    model files that point into ``cache_dir`` do not break lookup.
+    """
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+
+    scene_dir = Path(xml_path).parent
+    scenes_root = get_scenes_root()
+    scene_source = Path(xml_path).relative_to(scenes_root).parts[0]
+    source_root = scenes_root / scene_source
+
+    for asset_type in ["mesh", "texture", "material", "hfield", "skin"]:
+        for elem in root.findall(f".//asset/{asset_type}"):
+            file_path = elem.attrib.get("file")
+            if not file_path or not file_path.startswith("../"):
+                continue
+            if "/models/" not in file_path.replace("\\", "/"):
+                continue
+
+            logical_path = (scene_dir / file_path).resolve()
+            if logical_path.is_file():
+                # File already exists
+                continue
+            try:
+                rel_asset = logical_path.relative_to(source_root)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Model path {file_path!r} in {xml_path} is outside "
+                    f"scene source root {source_root}: {logical_path}"
+                ) from exc
+
+            yield scene_source, rel_asset
+
+
+def install_rlbench_models(xml_path):
+    if "rlbench" not in DATA_TYPE_TO_SOURCE_TO_VERSION["scenes"]:
+        raise ValueError("Missing rlbench from `DATA_TYPE_TO_SOURCE_TO_VERSION['scenes']`.")
+
+    source_to_archives: dict[str, list[str]] = {}
+    seen: set[tuple[str, Path]] = set()
+
+    for source, rel_asset in find_model_paths(xml_path):
+        key = (source, rel_asset)
+        if key in seen:
+            continue
+        seen.add(key)
+        archives = get_resource_manager().find_archives("scenes", source, [rel_asset])
+        source_to_archives.setdefault(source, []).extend(archives)
+
+    source_to_archives = {
+        source: list(set(archives)) for source, archives in source_to_archives.items()
+    }
+
+    if source_to_archives:
+        get_resource_manager().install_packages("scenes", source_to_archives)
+
+    return source_to_archives
+
+
 def install_objects_for_scene(xml_path, exclude_thor=True):
     if "objaverse" not in DATA_TYPE_TO_SOURCE_TO_VERSION["objects"]:
         return {}
@@ -243,6 +308,11 @@ def install_scene_with_objects_and_grasps_from_path(
 ):
     if isinstance(xml_path, dict):
         xml_path = xml_path["base"]
+
+    scene_source = Path(xml_path).relative_to(get_scenes_root()).parts[0]
+    if scene_source == "rlbench":
+        return {"scenes": {**install_rlbench_models(xml_path)}}
+
     type_to_source_to_archives = {
         "scenes": install_scene_from_path(xml_path),
     }
