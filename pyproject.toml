@@ -81,6 +81,8 @@ dev = [
     "pytest-split>=0.10.0",
     "ruff==0.15.0",  # keep in sync with .pre-commit-config.yaml's ruff-pre-commit rev
     "ty>=0.0.15",
+    "ipython",
+    "ipdb",
 ]
 grasp = [
     "matplotlib",
