@@ -1,9 +1,12 @@
-"""Bimanual YAM robot implementation for the framework."""
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
 from mujoco import MjData, MjSpec, mjtGeom
 
+from molmo_spaces.configs.robot_configs import BaseRobotConfig
+from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.env.sensors import TCPPoseSensor
@@ -24,9 +27,13 @@ class BimanualYamRobot(Robot):
     def __init__(
         self,
         mj_data: MjData,
-        config: "MlSpacesExpConfig",
+        config: MlSpacesExpConfig,
     ) -> None:
         super().__init__(mj_data, config)
+
+        assert config.robot_config.robot_view_factory, (
+            "Something went wrong, 'robot_view_factory' shouldn't be None"
+        )
         self._robot_view = config.robot_config.robot_view_factory(
             mj_data, config.robot_config.robot_namespace
         )
@@ -52,7 +59,7 @@ class BimanualYamRobot(Robot):
         else:
             gripper_controller_cls = JointPosController
 
-        self._controllers = {
+        self._controllers: dict[str, Controller] = {
             "left_arm": arm_controller_cls(self._robot_view.get_move_group("left_arm")),
             "right_arm": arm_controller_cls(self._robot_view.get_move_group("right_arm")),
             "left_gripper": gripper_controller_cls(self._robot_view.get_move_group("left_gripper")),
@@ -78,7 +85,7 @@ class BimanualYamRobot(Robot):
         return self._parallel_kinematics
 
     @property
-    def controllers(self):
+    def controllers(self) -> dict[str, Controller]:
         return self._controllers
 
     def create_robot_sensors(self):
@@ -94,7 +101,7 @@ class BimanualYamRobot(Robot):
     def reset(self) -> None:
         for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
-                self._robot_view.get_move_group(mg_id).joint_pos = default_pos
+                self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
     @staticmethod
     def robot_model_root_name() -> str:
@@ -104,7 +111,7 @@ class BimanualYamRobot(Robot):
     @classmethod
     def add_robot_to_scene(
         cls,
-        robot_config: "BimanualYamRobotConfig",
+        robot_config: BaseRobotConfig,
         spec: MjSpec,
         prefix: str,
         pos: list[float],
@@ -112,7 +119,10 @@ class BimanualYamRobot(Robot):
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
-        robot_config = cast("BimanualYamRobotConfig", robot_config)
+        assert isinstance(robot_config, BimanualYamRobotConfig), (
+            "Given robot config should be of type 'BimanualYamRobotConfig'"
+        )
+        robot_config = cast(BimanualYamRobotConfig, robot_config)
         add_base = robot_config.base_size is not None
         pos = pos + [0.0] if len(pos) == 2 else pos
 
@@ -125,6 +135,9 @@ class BimanualYamRobot(Robot):
         )
 
         if add_base:
+            assert robot_config.base_size, (
+                "If using 'base' must provide 'base_size' in configuration"
+            )
             base_height = robot_config.base_size[2]
 
             # Create a base material (plain dark wood color)
