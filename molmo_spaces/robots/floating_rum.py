@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjSpec, mjtEq, mjtObj
 
 from molmo_spaces.env.sensors import TCPPoseSensor
 from molmo_spaces.kinematics.floating_rum_kinematics import FloatingRUMKinematics
@@ -9,33 +11,24 @@ from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import DummyPara
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.configs.robot_configs import BaseRobotConfig
 
 
 class FloatingRUMRobot(Robot):
-    """Floating RUM robot implementation for the framework."""
-
-    def __init__(
-        self,
-        mj_data: MjData,
-        config: "MlSpacesExpConfig",
-        # robot_view_factory: RobotViewFactory = FloatingRUMRobotView,
-    ):
+    def __init__(self, mj_data: mj.MjData, config: BaseRobotConfig):
         super().__init__(mj_data, config)
-        self._robot_view = config.robot_config.robot_view_factory(
-            mj_data, config.robot_config.robot_namespace
+
+        assert config.robot_view_factory, (
+            "Something went wrong, 'robot_view_factory' shouldn't be None"
         )
-        self._kinematics = FloatingRUMKinematics(config.robot_config)
-        self._parallel_kinematics = DummyParallelKinematics(
-            config.robot_config,
-            self._kinematics,
-        )
+        self._robot_view = config.robot_view_factory(mj_data, config.robot_namespace)
+        self._kinematics = FloatingRUMKinematics(config)
+        self._parallel_kinematics = DummyParallelKinematics(config, self._kinematics)
         self._last_cmd_action: dict[str, np.ndarray] | None = None
 
     @property
     def namespace(self):
-        return self.exp_config.robot_config.robot_namespace
+        return self.config.robot_namespace
 
     @property
     def robot_view(self):
@@ -70,9 +63,9 @@ class FloatingRUMRobot(Robot):
 
     def reset(self):
         self._last_cmd_action = None
-        for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
+        for mg_id, default_pos in self.config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
-                self._robot_view.get_move_group(mg_id).joint_pos = default_pos
+                self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
     @staticmethod
     def robot_model_root_name() -> str:
@@ -81,8 +74,8 @@ class FloatingRUMRobot(Robot):
     @classmethod
     def add_robot_to_scene(
         cls,
-        robot_config: "BaseRobotConfig",
-        spec: MjSpec,
+        robot_config: BaseRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
@@ -100,13 +93,13 @@ class FloatingRUMRobot(Robot):
             strip_meshes=strip_meshes,
         )
 
-        # add target pose body and weld to base
         target_body_name = f"{prefix}target_ee_pose"
         spec.worldbody.add_body(name=target_body_name, pos=pos, quat=quat, mocap=True)
-        eq = spec.add_equality()
-        eq.name1 = target_body_name
-        eq.name2 = f"{prefix}{cls.robot_model_root_name()}"
-        eq.solref = np.array([0.02, 1])
-        eq.solimp = np.array([0.9, 0.95, 0.0, 1, 2])
-        eq.objtype = mjtObj.mjOBJ_BODY
-        eq.type = mjtEq.mjEQ_WELD
+        spec.add_equality(
+            type=mj.mjtEq.mjEQ_WELD,
+            name1=target_body_name,
+            name2=f"{prefix}{cls.robot_model_root_name()}",
+            solref=[0.02, 1],
+            solimp=[0.9, 0.95, 0.0, 1, 2],
+            objtype=mj.mjtObj.mjOBJ_BODY,
+        )

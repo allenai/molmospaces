@@ -17,7 +17,6 @@ from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.robot_views.abstract import RobotView
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
     from molmo_spaces.configs.robot_configs import ActionNoiseConfig, BaseRobotConfig
     from molmo_spaces.env.abstract_sensors import Sensor
     from molmo_spaces.kinematics.parallel.parallel_kinematics import ParallelKinematics
@@ -27,14 +26,11 @@ log = logging.getLogger(__name__)
 
 
 class Robot:
-    def __init__(self, mj_data: MjData, exp_config: MlSpacesExpConfig):
-        """
-        Args:
-            mj_data: The MuJoCo data structure containing the robot definistion and current simulation state
-        """
+    def __init__(self, mj_data: MjData, config: BaseRobotConfig) -> None:
         self.mj_model = mj_data.model
         self.mj_data = mj_data
-        self.exp_config = exp_config
+        self.config = config
+
         self._last_unnoised_cmd_joint_pos: dict[str, np.ndarray] | None = None
 
     @property
@@ -193,7 +189,7 @@ class Robot:
         Returns:
             Modified action dict with noise added
         """
-        noise_config = self.exp_config.robot_config.action_noise_config
+        noise_config = self.config.action_noise_config
         assert noise_config, "Something is wrong here, 'noise_config' shouldn't be None"
 
         if not noise_config.enabled:

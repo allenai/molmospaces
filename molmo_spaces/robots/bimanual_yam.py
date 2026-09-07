@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjSpec, mjtGeom
 
-from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
@@ -17,43 +16,30 @@ from molmo_spaces.kinematics.parallel.dummy_parallel_kinematics import (
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-    from molmo_spaces.configs.robot_configs import BimanualYamRobotConfig
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig, BimanualYamRobotConfig
 
 
 class BimanualYamRobot(Robot):
-    """Bimanual YAM robot implementation (two 6-DOF arms with parallel grippers)."""
-
-    def __init__(
-        self,
-        mj_data: MjData,
-        config: MlSpacesExpConfig,
-    ) -> None:
+    def __init__(self, mj_data: mj.MjData, config: BaseRobotConfig) -> None:
         super().__init__(mj_data, config)
 
-        assert config.robot_config.robot_view_factory, (
+        assert config.robot_view_factory, (
             "Something went wrong, 'robot_view_factory' shouldn't be None"
         )
-        self._robot_view = config.robot_config.robot_view_factory(
-            mj_data, config.robot_config.robot_namespace
-        )
-        self._kinematics = MlSpacesKinematics(config.robot_config)
+        self._robot_view = config.robot_view_factory(mj_data, config.robot_namespace)
+        self._kinematics = MlSpacesKinematics(config)
 
         # Use DummyParallelKinematics for batch IK (wraps the MlSpacesKinematics)
         # Default to left arm for parallel kinematics
-        self._parallel_kinematics = DummyParallelKinematics(
-            config.robot_config,
-            self._kinematics,
-        )
+        self._parallel_kinematics = DummyParallelKinematics(config, self._kinematics)
 
-        # Determine controller classes based on command mode
-        arm_command_mode = config.robot_config.command_mode.get("arm", "joint_position")
+        arm_command_mode = config.command_mode.get("arm", "joint_position")
         if arm_command_mode == "joint_rel_position":
             arm_controller_cls = JointRelPosController
         else:
             arm_controller_cls = JointPosController
 
-        gripper_command_mode = config.robot_config.command_mode.get("gripper", "joint_position")
+        gripper_command_mode = config.command_mode.get("gripper", "joint_position")
         if gripper_command_mode == "joint_rel_position":
             gripper_controller_cls = JointRelPosController
         else:
@@ -70,7 +56,7 @@ class BimanualYamRobot(Robot):
 
     @property
     def namespace(self):
-        return self.exp_config.robot_config.robot_namespace
+        return self.config.robot_namespace
 
     @property
     def robot_view(self):
@@ -99,7 +85,7 @@ class BimanualYamRobot(Robot):
         return ["left_arm", "right_arm"]
 
     def reset(self) -> None:
-        for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
+        for mg_id, default_pos in self.config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
                 self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
@@ -108,30 +94,24 @@ class BimanualYamRobot(Robot):
         """The root body name in the bimanual_yam.xml."""
         return "bimanual_base"
 
+    # TODO(wilbert): uhmm, this part should be moved to a regular free function, or a factory fcn
+    # that is registered via metaclasses when creating the robot class
     @classmethod
-    def add_robot_to_scene(
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride]
         cls,
-        robot_config: BaseRobotConfig,
-        spec: MjSpec,
+        robot_config: BimanualYamRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
-        assert isinstance(robot_config, BimanualYamRobotConfig), (
-            "Given robot config should be of type 'BimanualYamRobotConfig'"
-        )
         add_base = robot_config.base_size is not None
         pos = pos + [0.0] if len(pos) == 2 else pos
 
         # Create a mocap body to control the robot base pose
-        robot_body = spec.worldbody.add_body(
-            name=f"{prefix}base",
-            pos=pos,
-            quat=quat,
-            mocap=True,
-        )
+        robot_body = spec.worldbody.add_body(name=f"{prefix}base", pos=pos, quat=quat, mocap=True)
 
         if add_base:
             assert robot_config.base_size, (
@@ -145,7 +125,7 @@ class BimanualYamRobot(Robot):
 
             # Add base geometry (platform)
             robot_body.add_geom(
-                type=mjtGeom.mjGEOM_BOX,
+                type=mj.mjtGeom.mjGEOM_BOX,
                 size=[x / 2 for x in robot_config.base_size],
                 pos=[0, 0, base_height / 2],
                 material=material_name,

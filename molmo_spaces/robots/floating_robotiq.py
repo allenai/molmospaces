@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -14,7 +16,7 @@ class FloatingRobotiqRobot(FloatingRUMRobot):
     @classmethod
     def add_robot_to_scene(
         cls,
-        robot_config: "BaseRobotConfig",
+        robot_config: BaseRobotConfig,
         spec: MjSpec,
         prefix: str,
         pos: list[float],

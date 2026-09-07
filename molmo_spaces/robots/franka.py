@@ -6,12 +6,9 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import mujoco
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjsBody, MjSpec, mjtGeom
-from PIL import Image, ImageDraw
 
-from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
@@ -19,73 +16,31 @@ from molmo_spaces.env.sensors import TCPPoseSensor
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 from molmo_spaces.robots.abstract import Robot
+from molmo_spaces.robots.utils.randomization import speckle_texture
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-    from molmo_spaces.configs.robot_configs import FrankaRobotConfig
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig, FrankaRobotConfig
 
 
 log = logging.getLogger(__name__)
 
 
-def _speckle_texture(
-    base_color,
-    size=256,
-    noise_strength=0.1,
-    num_blobs=80,
-    blob_size_range=(5, 25),
-    blob_variation=0.1,
-):
-    img = np.ones((size, size, 3)) * np.array(base_color)
-    noise = np.random.normal(0, noise_strength, (size, size, 1))
-    img += noise
-    img = np.clip(img, 0, 1)
-    img = (img * 255).astype(np.uint8)
-
-    pil_img = Image.fromarray(img)
-    draw = ImageDraw.Draw(pil_img)
-
-    # Draw chunky rectangular or elliptical blobs
-    for _ in range(num_blobs):
-        x = np.random.randint(0, size)
-        y = np.random.randint(0, size)
-        w = np.random.randint(*blob_size_range)
-        h = np.random.randint(*blob_size_range)
-
-        variation = np.random.uniform(-blob_variation, blob_variation)
-        blob_color = tuple(int(np.clip((c + variation) * 255, 0, 255)) for c in base_color)
-
-        if np.random.random() > 0.5:
-            draw.ellipse((x, y, x + w, y + h), fill=blob_color)
-        else:
-            draw.rectangle((x, y, x + w, y + h), fill=blob_color)
-
-    return pil_img
-
-
 class FrankaRobot(Robot):
-    """Franka robot implementation for the framework."""
-
-    def __init__(
-        self,
-        mj_data: MjData,
-        config: MlSpacesExpConfig,
-    ) -> None:
+    def __init__(self, mj_data: mj.MjData, config: BaseRobotConfig) -> None:
         super().__init__(mj_data, config)
 
-        assert config.robot_config.robot_view_factory, (
+        assert config.robot_view_factory, (
             "Something went wrong, 'robot_view_factory' shouldn't be None"
         )
-        self._robot_view = config.robot_config.robot_view_factory(
-            mj_data, config.robot_config.robot_namespace
-        )
-        self._kinematics = MlSpacesKinematics(config.robot_config)
+        self._robot_view = config.robot_view_factory(mj_data, config.robot_namespace)
+        self._kinematics = MlSpacesKinematics(config)
 
-        self._parallel_kinematics = SimpleWarpKinematics(config.robot_config)
+        # TODO(wilbert): use this one only if not in Darwin|MacOS, as warp works poorly when doing
+        # emulation on non-nvidia hardware
+        self._parallel_kinematics = SimpleWarpKinematics(config)
         arm_controller_cls = (
             JointPosController
-            if config.robot_config.command_mode == {}
-            or config.robot_config.command_mode["arm"] == "joint_position"
+            if config.command_mode == {} or config.command_mode["arm"] == "joint_position"
             else JointRelPosController
         )
         self._controllers: dict[str, Controller] = {
@@ -95,7 +50,7 @@ class FrankaRobot(Robot):
 
     @property
     def namespace(self):
-        return self.exp_config.robot_config.robot_namespace
+        return self.config.robot_namespace
 
     @property
     def robot_view(self):
@@ -123,7 +78,7 @@ class FrankaRobot(Robot):
         return ["arm"]
 
     def reset(self) -> None:
-        for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
+        for mg_id, default_pos in self.config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
                 self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
@@ -135,7 +90,7 @@ class FrankaRobot(Robot):
     def create_robot_base_material(
         cls,
         robot_config: FrankaRobotConfig,
-        spec: MjSpec,
+        spec: mj.MjSpec,
         prefix: str,
         randomize_base_texture: bool,
     ) -> str:
@@ -155,14 +110,14 @@ class FrankaRobot(Robot):
         texture_name = f"{prefix}robot_base_texture"
         spec.add_texture(
             name=texture_name,
-            type=mujoco.mjtTexture.mjTEXTURE_CUBE,
+            type=mj.mjtTexture.mjTEXTURE_CUBE,
             file=str(texture_path),
         )
         log.debug(f"Successfully created texture from {texture_path}")
 
         material_name = f"{prefix}robot_base_material"
         robot_base_mat = spec.add_material(name=material_name)
-        robot_base_mat.textures[mujoco.mjtTextureRole.mjTEXROLE_RGB] = texture_name
+        robot_base_mat.textures[mj.mjtTextureRole.mjTEXROLE_RGB] = texture_name
         log.debug(f"Successfully created material {material_name}")
         return material_name
 
@@ -170,9 +125,9 @@ class FrankaRobot(Robot):
     def randomize_robot_textures(
         cls,
         robot_config: FrankaRobotConfig,
-        spec: MjSpec,
+        spec: mj.MjSpec,
         prefix: str,
-        robot_spec: MjSpec,
+        robot_spec: mj.MjSpec,
     ):
         if random.random() > robot_config.perturb_texture_probability:
             log.info(f"Skipping texture randomization for robot '{robot_config.name}'")
@@ -180,14 +135,14 @@ class FrankaRobot(Robot):
 
         perturbed_materials: dict[str, str] = {}
         for material in robot_spec.materials:
-            material: mujoco.MjsMaterial
+            material: mj.MjsMaterial
             is_rgb_mat = all(
-                material.textures[i] == "" for i in range(mujoco.mjtTextureRole.mjNTEXROLE)
+                material.textures[i] == "" for i in range(mj.mjtTextureRole.mjNTEXROLE)
             )
             if not is_rgb_mat:
                 continue
 
-            speckle_img = _speckle_texture(material.rgba[:3])
+            speckle_img = speckle_texture(material.rgba[:3])
             buffer = BytesIO()
             speckle_img.save(buffer, format="PNG")
             buffer.seek(0)
@@ -196,14 +151,14 @@ class FrankaRobot(Robot):
             mat_name = f"{material.name}_perturbed"
             fn = f"{prefix}{tex_name}.png".replace("/", "__")
             spec.assets[fn] = buffer.getvalue()
-            robot_spec.add_texture(name=tex_name, type=mujoco.mjtTexture.mjTEXTURE_2D, file=fn)
+            robot_spec.add_texture(name=tex_name, type=mj.mjtTexture.mjTEXTURE_2D, file=fn)
             perturbed_mat = robot_spec.add_material(name=mat_name)
-            perturbed_mat.textures[mujoco.mjtTextureRole.mjTEXROLE_RGB] = tex_name
+            perturbed_mat.textures[mj.mjtTextureRole.mjTEXROLE_RGB] = tex_name
             perturbed_materials[material.name] = mat_name
 
-        def set_material(body: MjsBody):
+        def set_material(body: mj.MjsBody):
             for geom in body.geoms:
-                geom: mujoco.MjsGeom
+                geom: mj.MjsGeom
                 if geom.material in perturbed_materials:
                     log.debug(
                         f"Setting material {geom.material} to {perturbed_materials[geom.material]} "
@@ -217,23 +172,21 @@ class FrankaRobot(Robot):
         set_material(robot_body)
         log.info(f"Successfully randomized robot textures for robot '{robot_config.name}'")
 
+    # TODO(wilbert): uhmm, this part should be moved to a regular free function, or a factory fcn
+    # that is registered via metaclasses when creating the robot class
     @classmethod
-    def add_robot_to_scene(
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride]
         cls,
-        robot_config: BaseRobotConfig,
-        spec: MjSpec,
+        robot_config: FrankaRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
-        assert isinstance(robot_config, FrankaRobotConfig), (
-            "Given robot config should be of type 'FrankaRobotConfig'"
-        )
-
-        add_base = robot_config.base_size is not None
-        pos = pos + [0.0] if len(pos) == 2 else pos
+        if len(pos) == 2:
+            pos.append(0.0)
 
         material_name = cls.create_robot_base_material(
             robot_config, spec, prefix, randomize_textures
@@ -245,7 +198,7 @@ class FrankaRobot(Robot):
             quat=quat,
             mocap=True,
         )
-        if add_base:
+        if robot_config.base_size is not None:
             assert robot_config.base_size, (
                 "If using 'base' must provide 'base_size' in configuration"
             )
@@ -253,7 +206,7 @@ class FrankaRobot(Robot):
 
             # Add base geometry (wooden platform)
             robot_body.add_geom(
-                type=mjtGeom.mjGEOM_BOX,
+                type=mj.mjtGeom.mjGEOM_BOX,
                 size=[x / 2 for x in robot_config.base_size],
                 pos=[0, 0, base_height / 2],
                 material=material_name,

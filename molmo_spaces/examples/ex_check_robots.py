@@ -2,35 +2,65 @@ from dataclasses import dataclass
 from typing import Literal
 
 import mujoco as mj
-import mujoco.viewer as mjviewer
+import mujoco.viewer as mjviewer  # ty: ignore
 import tyro
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
-from molmo_spaces.molmo_spaces_constants import get_robot_path
-from molmo_spaces.robots.abstract import Robot
-from molmo_spaces.robots.franka import FrankaRobot
+from molmo_spaces.configs.robot_configs import (
+    BaseRobotConfig,
+    BimanualYamRobotConfig,
+    FloatingRobotiq2f85RobotConfig,
+    FloatingRUMRobotConfig,
+    FrankaRobotConfig,
+    I2rtYamRobotConfig,
+    MobileFrankaRobotConfig,
+    RBY1Config,
+)
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
 
 @dataclass
 class RobotInfo:
-    xml_file: str
+    config: BaseRobotConfig
     init_pos: tuple[float, float, float]
     init_quat: tuple[float, float, float, float]
-    robot_cls: type[Robot] | None = None
 
 
 ROBOTS_INFO: dict[str, RobotInfo] = {
-    "franka_droid": RobotInfo(
-        xml_file="model.xml",
+    "franka-droid": RobotInfo(
+        config=FrankaRobotConfig(),
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
-        robot_cls=FrankaRobot,
     ),
-    "g1": RobotInfo(
-        xml_file="g1_dex.xml",
-        init_pos=(0, 0, 2),
+    "i2rt-yam": RobotInfo(
+        config=I2rtYamRobotConfig(),
+        init_pos=(0, 0, 0),
+        init_quat=(1, 0, 0, 0),
+    ),
+    "bimanual-yam": RobotInfo(
+        config=BimanualYamRobotConfig(),
+        init_pos=(0, 0, 0),
+        init_quat=(1, 0, 0, 0),
+    ),
+    "floating-rum": RobotInfo(
+        config=FloatingRUMRobotConfig(),
+        init_pos=(0, 0, 0),
+        init_quat=(1, 0, 0, 0),
+    ),
+    "floating-robotiq": RobotInfo(
+        config=FloatingRobotiq2f85RobotConfig(),
+        init_pos=(0, 0, 0),
+        init_quat=(1, 0, 0, 0),
+    ),
+    "rby1": RobotInfo(
+        config=RBY1Config(),
+        init_pos=(0, 0, 0),
+        init_quat=(1, 0, 0, 0),
+    ),
+    "mobile-franka": RobotInfo(
+        config=MobileFrankaRobotConfig(),
+        init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),
 }
@@ -39,8 +69,13 @@ ROBOTS_INFO: dict[str, RobotInfo] = {
 @dataclass
 class Args:
     robot_id: Literal[
-        "franka_droid",
-        "g1",
+        "franka-droid",
+        "i2rt-yam",
+        "bimanual-yam",
+        "floating-rum",
+        "floating-robotiq",
+        "rby1",
+        "mobile-franka",
     ]
 
 
@@ -51,23 +86,25 @@ def main() -> int:
         return 1
 
     robot_info = ROBOTS_INFO[args.robot_id]
+    robot_config = robot_info.config
+    robot_cls = robot_config.robot_cls
+    assert robot_cls, f"Robot class from config of robot '{args.robot_id}' not defined"
 
     spec = mj.MjSpec.from_file(SCENE_EMPTY_XML.as_posix())
 
-    robot_path = get_robot_path(args.robot_id) / robot_info.xml_file
-    robot_spec = mj.MjSpec.from_file(robot_path.as_posix())
-
-    robot_frame = spec.worldbody.add_frame(pos=robot_info.init_pos, quat=robot_info.init_quat)
-    robot_frame.attach_body(robot_spec.worldbody.first_body(), prefix="robot/")
+    robot_cls.add_robot_to_scene(
+        robot_config,
+        spec,
+        prefix=robot_config.robot_namespace,
+        pos=list(robot_info.init_pos),
+        quat=list(robot_info.init_quat),
+    )
 
     model = spec.compile()
     data = mj.MjData(model)
+    mj.mj_forward(model, data)
 
-    # robot: Robot | None = None
-    # if robot_info.robot_cls:
-    #     robot = robot_info.robot_cls(data, ...)
-
-    mj.mj_resetData(model, data)
+    _ = robot_cls(data, robot_config)
 
     with mjviewer.launch_passive(
         model, data, key_callback=None, show_left_ui=False, show_right_ui=False
