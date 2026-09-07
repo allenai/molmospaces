@@ -150,6 +150,7 @@ class PickTask(BaseMujocoTask):
 
             # Option 2: go via root body and check if all contacts are with robot geoms
             # Check if object collides only with robot geoms
+            robot_root_body_id = self.env.current_robot.robot_view.root_body_id
             robot_collision = False
             non_robot_collision = False
             for c in data.contact:
@@ -157,7 +158,7 @@ class PickTask(BaseMujocoTask):
                 root_body2 = data.model.body_rootid[data.model.geom_bodyid[c.geom2]]
                 if (root_body1 == pickup_obj.body_id) ^ (root_body2 == pickup_obj.body_id):
                     other_root_body = root_body1 if root_body1 != pickup_obj.body_id else root_body2
-                    if other_root_body == self.env.current_robot.robot_view.base.root_body_id:
+                    if other_root_body == robot_root_body_id:
                         robot_collision = True
                     else:
                         non_robot_collision = True

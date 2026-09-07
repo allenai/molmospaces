@@ -147,13 +147,7 @@ class BaseMujocoTask(ABC):
         robot_view = self._env.robots[batch_index].robot_view
         for gripper_mg_id in robot_view.get_gripper_movegroup_ids():
             gripper_mg = robot_view.get_move_group(gripper_mg_id)
-            root_body_id = gripper_mg.root_body_id
-            # Handle both int IDs and body view objects (some robot views store the view directly)
-            if hasattr(root_body_id, "name"):
-                gripper_body_name = root_body_id.name
-            else:
-                gripper_body_name = robot_view.mj_model.body(root_body_id).name
-            objects[gripper_mg_id] = gripper_body_name
+            objects[gripper_mg_id] = robot_view.mj_model.body(gripper_mg.root_body_id).name
 
         added = getattr(self.config.task_config, "added_objects", {})
         for it, (name, _path) in enumerate(added.items()):
