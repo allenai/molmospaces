@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Simple configuration management using Pydantic.
 This module provides a base configuration class that can be extended to create specific configurations.
 It uses Pydantic for data validation and can return dicts or jsons or save or load jsons from files.
@@ -18,7 +20,6 @@ class Config(BaseModel):
     )
 
     def to_dict(self) -> dict:
-        """Convert the configuration to a dictionary."""
         return self.model_dump()
 
     def to_json(self) -> str:
@@ -26,18 +27,15 @@ class Config(BaseModel):
         return self.model_dump_json(warnings="error")
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Config":
-        """Create a configuration instance from a dictionary."""
+    def from_dict(cls, data: dict) -> Config:
         return cls.model_validate(data)
 
     @classmethod
-    def load_from_json(cls, file_path: str) -> "Config":
-        """Load the configuration from a JSON file."""
-        with open(file_path, "r") as f:
+    def load_from_json(cls, file_path: str) -> Config:
+        with open(file_path) as f:
             data = f.read()
         return cls.model_validate_json(data)
 
     def save_to_json(self, file_path: str) -> None:
-        """Save the configuration to a JSON file."""
         with open(file_path, "w") as f:
             f.write(self.to_json())

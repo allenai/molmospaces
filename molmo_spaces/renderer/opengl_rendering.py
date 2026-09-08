@@ -1,85 +1,23 @@
 import sys
-from queue import Queue
-from typing import Any, Literal
 
+import mujoco as mj
 import numpy as np
-from mujoco import (
-    MjData,
-    MjModel,
-    MjrContext,
-    MjrRect,
-    MjvCamera,
-    MjvOption,
-    MjvScene,
-    mj_name2id,
-    mjr_readPixels,
-    mjr_render,
-    mjr_resizeOffscreen,
-    mjr_setBuffer,
-    mjr_uploadTexture,
-    mjtCamera,
-    mjtCatBit,
-    mjtDepthMap,
-    mjtFontScale,
-    mjtFramebuffer,
-    mjtObj,
-    mjtRndFlag,
-    mjv_defaultFreeCamera,
-    mjv_updateScene,
-)
 
-from molmo_spaces.env.mj_extensions import MjModelBindings
-
-# from molmo_spaces.env.vector_env import MuJoCoVectorEnv # -- this import creates lots of problem. why?
-from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer, MultithreadRenderer
-
-
-def prepare_locals_for_super(
-    local_vars, args_name="args", kwargs_name="kwargs", ignore_kwargs=False
-):
-    assert args_name not in local_vars, f"`prepare_locals_for_super` does not support {args_name}."
-    new_locals = {k: v for k, v in local_vars.items() if k != "self" and "__" not in k}
-    if kwargs_name in new_locals:
-        if ignore_kwargs:
-            new_locals.pop(kwargs_name)
-        else:
-            kwargs = new_locals.pop(kwargs_name)
-            kwargs.update(new_locals)
-            new_locals = kwargs
-    return new_locals
+from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
 
 
 class MjOpenGLRenderer(MjAbstractRenderer):
-    """Renders MuJoCo scenes with OpenGL."""
-
     def __init__(
         self,
-        model_bindings: MjModelBindings = None,
+        model: mj.MjModel,
         device_id: int | None = None,
         height: int = 720,
         width: int = 1280,
         max_geom: int = 10000,
-        model: MjModel | None = None,
-        **kwargs: Any,
     ) -> None:
-        assert model_bindings is not None or model is not None, (
-            "model_bindings or model must be provided"
-        )
-        """Initializes a new `Renderer`.
-
-        Args:
-          model: an mujoco.Mjmodel instance.
-          device_id: The index of the device to use for rendering.
-          height: image height in pixels.
-          width: image width in pixels.
-          max_geom: Optional integer specifying the maximum number of geoms that can
-            be rendered in the same scene. If None this will be chosen automatically
-            based on the estimated maximum number of renderable geoms in the model_bindings.
-
-        Raises:
-          ValueError: If `camera_id` is outside the valid range, or if `width` or
-            `height` exceed the dimensions of MuJoCo's offscreen framebuffer.
-        """
+        # TODO(wilbert): remove this an use gpustat instead of full torch, and only
+        # if using linux. On MacOS we don't have multi-gpu so makes no sense to try to
+        # pass a device_id, right?
         if device_id is None:
             try:
                 import torch
@@ -89,62 +27,51 @@ class MjOpenGLRenderer(MjAbstractRenderer):
             except ImportError:
                 pass
 
-        super().__init__(**prepare_locals_for_super(locals()))
+        super().__init__(model, device_id)
 
         self._width = width
         self._height = height
 
-        if model_bindings is not None and model is not None:
-            assert model_bindings.model == model, "model_bindings and model must be the same"
-        model = model_bindings.model if model_bindings is not None else model
         self._model = model
 
-        self._scene = MjvScene(model=model, maxgeom=max_geom)
-        self._scene_option = MjvOption()
+        self._scene = mj.MjvScene(model=model, maxgeom=max_geom)
+        self._scene_option = mj.MjvOption()
 
-        # Turn off site rendering
         self._scene_option.sitegroup *= 0
+        self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
 
-        # Enable shadow rendering by default (shadows are controlled by lights with castshadow enabled)
-        self._scene.flags[mjtRndFlag.mjRND_SHADOW] = True
+        self._depth_rendering = False
+        self._segmentation_rendering = False
 
-        # Create render contexts.
         # TODO(nimrod): Figure out why pytype doesn't like gl_context.GLContext
         self._context_is_cgl = False
         if device_id is None:
             from mujoco import gl_context
 
-            self._gl_context = gl_context.GLContext(width, height)  # type: ignore
+            self._gl_context = gl_context.GLContext(width, height)
             self._context_is_cgl = sys.platform == "darwin"
         else:
             from molmo_spaces.renderer.opengl_context import EGLGLContext
 
             self._gl_context = EGLGLContext(width, height, device_id)
         self._gl_context.make_current()
-        self._mjr_context = MjrContext(model, mjtFontScale.mjFONTSCALE_150.value)
-        mjr_resizeOffscreen(width, height, self._mjr_context)
-        mjr_setBuffer(mjtFramebuffer.mjFB_OFFSCREEN.value, self._mjr_context)
-        self._mjr_context.readDepthMap = mjtDepthMap.mjDEPTH_ZEROFAR
+        self._mjr_context = mj.MjrContext(model, mj.mjtFontScale.mjFONTSCALE_150.value)
+        mj.mjr_resizeOffscreen(width, height, self._mjr_context)
+        mj.mjr_setBuffer(mj.mjtFramebuffer.mjFB_OFFSCREEN.value, self._mjr_context)
+        self._mjr_context.readDepthMap = mj.mjtDepthMap.mjDEPTH_ZEROFAR.value
 
         # TODO In MacOS, keeping the context locked seems to preclude others to progress,
         #  so it doesn't look like we can achieve true parallelism through multi threading?
         #  This also happens at the end of render()
         if self._context_is_cgl:
-            from mujoco.cgl import cgl
+            from mujoco.cgl import cgl  # ty: ignore[unresolved-import]
 
-            cgl.CGLUnlockContext(self._gl_context._context)
+            cgl.CGLUnlockContext(self._gl_context._context)  # pyright: ignore[reportAttributeAccessIssue]
 
-        # Default render flags.
-        self._depth_rendering = False
-        self._segmentation_rendering = False
-
-        # Track if textures need to be uploaded (set to True when textures are modified)
-        # NOTE: We start with False because textures are loaded from model at MjrContext creation
-        # We only need to upload if textures are modified AFTER renderer initialization
         self._textures_need_upload = False
 
     @property
-    def scene(self) -> MjvScene:
+    def scene(self) -> mj.MjvScene:
         return self._scene
 
     @property
@@ -199,19 +126,19 @@ class MjOpenGLRenderer(MjAbstractRenderer):
 
         height = height or self._height
         width = width or self._width
-        rect = MjrRect(0, 0, width, height)
+        rect = mj.MjrRect(0, 0, width, height)
 
         original_flags = self._scene.flags.copy()
 
         # Enable shadow rendering (required for shadows to appear in rendered images)
         # Shadows are controlled by lights with castshadow enabled
-        self._scene.flags[mjtRndFlag.mjRND_SHADOW] = True
+        self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
 
         # Using segmented rendering for depth makes the calculated depth more
         # accurate at far distances.
         if self._depth_rendering or self._segmentation_rendering:
-            self._scene.flags[mjtRndFlag.mjRND_SEGMENT] = True
-            self._scene.flags[mjtRndFlag.mjRND_IDCOLOR] = True
+            self._scene.flags[mj.mjtRndFlag.mjRND_SEGMENT] = True
+            self._scene.flags[mj.mjtRndFlag.mjRND_IDCOLOR] = True
 
         if self._gl_context is None:
             raise RuntimeError("render cannot be called after close.")
@@ -244,11 +171,11 @@ class MjOpenGLRenderer(MjAbstractRenderer):
                     f" `self._depth_rendering={self._depth_rendering}`."
                 )
 
-        # Render scene and read contents of RGB and depth buffers.
-        mjr_render(rect, self._scene, self._mjr_context)
+        assert self._mjr_context, "MjrContext must be created by now, but it's None"
+        mj.mjr_render(rect, self._scene, self._mjr_context)
 
         if self._depth_rendering:
-            mjr_readPixels(rgb=None, depth=out, viewport=rect, con=self._mjr_context)
+            mj.mjr_readPixels(rgb=None, depth=out, viewport=rect, con=self._mjr_context)
 
             # Get the distances to the near and far clipping planes.
             extent = self.model.stat.extent
@@ -284,7 +211,7 @@ class MjOpenGLRenderer(MjAbstractRenderer):
             # Reset scene flags.
             np.copyto(self._scene.flags, original_flags)
         elif self._segmentation_rendering:
-            mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
+            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
 
             # Convert 3-channel uint8 to 1-channel uint32.
             image3 = out.astype(np.uint32)
@@ -319,8 +246,8 @@ class MjOpenGLRenderer(MjAbstractRenderer):
             # Reset scene flags.
             np.copyto(self._scene.flags, original_flags)
         else:
-            mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
-            mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
+            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
+            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
 
         out[:] = np.flipud(out)
 
@@ -328,13 +255,13 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         #  so it doesn't look like we can achieve true parallelism through multi threading?
         #  This also happens at the end of __init__()
         if self._context_is_cgl:
-            from mujoco.cgl import cgl
+            from mujoco.cgl import cgl  # ty: ignore[unresolved-import]
 
-            cgl.CGLUnlockContext(self._gl_context._context)
+            cgl.CGLUnlockContext(self._gl_context._context)  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
         return out
 
-    def upload_textures(self, data: MjData | None = None) -> None:
+    def upload_textures(self) -> None:
         """Upload all textures to the GPU render context.
 
         This should be called after modifying texture data in model.tex_data
@@ -364,13 +291,13 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         self._gl_context.make_current()
         # Upload all textures to the render context
         for tex_id in range(self.model.ntex):
-            mjr_uploadTexture(self.model, self._mjr_context, tex_id)
+            mj.mjr_uploadTexture(self.model, self._mjr_context, tex_id)
 
         # Unlock context if needed (for macOS)
         if self._context_is_cgl:
-            from mujoco.cgl import cgl
+            from mujoco.cgl import cgl  # ty: ignore[unresolved-import]
 
-            cgl.CGLUnlockContext(self._gl_context._context)
+            cgl.CGLUnlockContext(self._gl_context._context)  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
     def mark_textures_dirty(self) -> None:
         """Mark that textures have been modified and need to be uploaded.
@@ -382,9 +309,9 @@ class MjOpenGLRenderer(MjAbstractRenderer):
 
     def update(
         self,
-        data: MjData,
-        camera: int | str | MjvCamera = -1,
-        scene_option: MjvOption | None = None,
+        data: mj.MjData,
+        camera: int | str | mj.MjvCamera = -1,
+        scene_option: mj.MjvOption | None = None,
     ) -> None:
         """Updates geometry used for rendering.
 
@@ -398,10 +325,10 @@ class MjOpenGLRenderer(MjAbstractRenderer):
           ValueError: If `camera_id` is outside the valid range, or if camera does
             not exist.
         """
-        if not isinstance(camera, MjvCamera):
+        if not isinstance(camera, mj.MjvCamera):
             camera_id = camera
             if isinstance(camera_id, str):
-                camera_id = mj_name2id(self.model, mjtObj.mjOBJ_CAMERA.value, camera_id)
+                camera_id = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_CAMERA.value, camera_id)
                 if camera_id == -1:
                     raise ValueError(f'The camera "{camera}" does not exist.')
             if camera_id < -1 or camera_id >= self.model.ncam:
@@ -409,47 +336,27 @@ class MjOpenGLRenderer(MjAbstractRenderer):
                     f"The camera id {camera_id} is out of range [-1, {self.model.ncam})."
                 )
 
-            # Render camera.
-            camera = MjvCamera()
+            camera = mj.MjvCamera()
             camera.fixedcamid = camera_id
 
-            # Defaults to mjCAMERA_FREE, otherwise mjCAMERA_FIXED refers to a
-            # camera explicitly defined in the model_bindings.
             if camera_id == -1:
-                camera.type = mjtCamera.mjCAMERA_FREE
-                mjv_defaultFreeCamera(self.model, camera)
+                camera.type = mj.mjtCamera.mjCAMERA_FREE
+                mj.mjv_defaultFreeCamera(self.model, camera)
             else:
-                camera.type = mjtCamera.mjCAMERA_FIXED
+                camera.type = mj.mjtCamera.mjCAMERA_FIXED
 
         scene_option = scene_option or self._scene_option
-        mjv_updateScene(
+        mj.mjv_updateScene(
             self.model,
             data,
             scene_option,
             None,
             camera,
-            mjtCatBit.mjCAT_ALL.value,
+            mj.mjtCatBit.mjCAT_ALL.value,
             self._scene,
         )
 
     def close(self) -> None:
-        """Frees the resources used by the renderer.
-
-        This method can be used directly:
-
-        ```python
-        renderer = Renderer(...)
-        # Use renderer.
-        renderer.close()
-        ```
-
-        or via a context manager:
-
-        ```python
-        with Renderer(...) as renderer:
-          # Use renderer.
-        ```
-        """
         if hasattr(self, "_gl_context") and self._gl_context:
             self._gl_context.free()
         self._gl_context = None
@@ -461,80 +368,38 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        del exc_type, exc_value, traceback  # Unused.
+        del exc_type, exc_value, traceback
         self.close()
 
     def __del__(self) -> None:
         self.close()
 
 
-class MjBatchRenderer:
-    """
-    Reference:
-    https://github.com/openai/mujoco-py/blob/master/mujoco_py/mjbatchrenderer.pyx
-    https://github.com/openai/mujoco-py/commit/aa82c0e555d28813394f04ee8a8c2fc6b18d6b3f
-    https://github.com/openai/mujoco-py/pull/94
-    https://github.com/openai/mujoco-py/pull/246/files#diff-2e59ed7fefb358a2579ea4033f71379d3659858b63dcb4a0d161fca9b3e43522
-    """
+if __name__ == "__main__":
+    from dataclasses import dataclass
+    from pathlib import Path
 
-    pass
+    import tyro
+    from PIL import Image
 
+    @dataclass
+    class Args:
+        model: Path
 
-class MultithreadOpenGLRenderer(MultithreadRenderer):
-    def __init__(
-        self,
-        env,  #: "MuJoCoVectorEnv",
-        renderer_cls: type[MjAbstractRenderer] = MjOpenGLRenderer,
-        max_render_contexts: int | None = None,
-        namespace: str = "robot_0/",
-        width: int = 1280,
-        height: int = 720,
-        **kwargs: Any,
-    ) -> None:
-        self.width = width
-        self.height = height
-        self.namespace = namespace
+    args = tyro.cli(Args)
 
-        self.render_outputs: list[np.ndarray] | None = None
+    if not args.model.is_file():
+        raise RuntimeError(f"Given path @ {args.model} doesn't point to a valid file")
 
-        super().__init__(**prepare_locals_for_super(locals()))
+    model = mj.MjModel.from_xml_path(args.model.as_posix())
+    data = mj.MjData(model)
+    mj.mj_forward(model, data)
 
-    @staticmethod
-    def process_request(
-        renderer: MjOpenGLRenderer, request: Any, output_queue: Queue, **process_request_kwargs
-    ) -> None:
-        idx, camera, data, mode = request
+    renderer = MjOpenGLRenderer(model)
+    renderer.update(data=data)
 
-        if mode == "rgb":
-            renderer.disable_depth_rendering()
-            renderer.disable_segmentation_rendering()
-        elif mode == "depth":
-            renderer.enable_depth_rendering()
-        elif mode == "segmentation":
-            renderer.enable_segmentation_rendering()
-        else:
-            raise ValueError(f"Invalid mode: {mode}")
+    image = renderer.render()
+    pil_image = Image.fromarray(image)
+    pil_image.save("test_render_classic.png")
 
-        renderer.update(data, camera=camera)
-        img = renderer.render(**process_request_kwargs)
-        output_queue.put((idx, img))
-
-    def render(
-        self,
-        camera: str = "camera_rgb",
-        mode: Literal["rgb", "depth", "segmentation"] = "rgb",
-        add_namespace: bool = True,
-    ):
-        for idx, (model, data) in enumerate(zip(self.env.mj_models, self.env.mj_datas)):
-            self.model_id_to_render_input_queue[id(model)].put(
-                (idx, (self.namespace if add_namespace else "") + camera, data, mode)
-            )
-
-        idx_render_tuples = [
-            self.render_output_queue.get(block=True) for _ in range(len(self.env.mj_models))
-        ]
-
-        idx_render_tuples.sort(key=lambda x: x[0])
-        self.render_outputs = [img for _, img in idx_render_tuples]
-
-        return self.render_outputs
+    renderer.close()

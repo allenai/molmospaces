@@ -1,72 +1,39 @@
-from typing import Any
-
 import mujoco as mj
 import numpy as np
 
-from molmo_spaces.env.mj_extensions import MjModelBindings
 from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
-
-
-def prepare_locals_for_super(
-    local_vars, args_name="args", kwargs_name="kwargs", ignore_kwargs=False
-):
-    assert args_name not in local_vars, f"`prepare_locals_for_super` does not support {args_name}."
-    new_locals = {k: v for k, v in local_vars.items() if k != "self" and "__" not in k}
-    if kwargs_name in new_locals:
-        if ignore_kwargs:
-            new_locals.pop(kwargs_name)
-        else:
-            kwargs = new_locals.pop(kwargs_name)
-            kwargs.update(new_locals)
-            new_locals = kwargs
-    return new_locals
 
 
 class MjFilamentRenderer(MjAbstractRenderer):
     def __init__(
         self,
-        model_bindings: MjModelBindings = None,
+        model: mj.MjModel,
         device_id: int | None = None,
         height: int = 720,
         width: int = 1280,
         max_geom: int = 10000,
-        model: mj.MjModel | None = None,
-        **kwargs: Any,
     ) -> None:
-        assert model_bindings is not None or model is not None, (
-            "model_bindings or model must be provided"
-        )
-        super().__init__(**prepare_locals_for_super(locals()))
+        super().__init__(model, device_id)
 
         self._width = width
         self._height = height
 
-        if model_bindings is not None and model is not None:
-            assert model_bindings.model == model, "model_bindings and model must be the same"
-        model = model_bindings.model if model_bindings is not None else model
         self._model = model
 
         self._scene = mj.MjvScene(model=model, maxgeom=max_geom)
         self._scene_option = mj.MjvOption()
 
-        # Turn off site rendering
         self._scene_option.sitegroup *= 0
-
-        # Enable shadow rendering by default (shadows are controlled by lights with castshadow enabled)
         self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
+
+        self._depth_rendering = False
+        self._segmentation_rendering = False
 
         self._mjr_context = mj.MjrContext(model, mj.mjtFontScale.mjFONTSCALE_150.value)
         # mj.mjr_resizeOffscreen(width, height, self._mjr_context)
         mj.mjr_setBuffer(mj.mjtFramebuffer.mjFB_OFFSCREEN.value, self._mjr_context)
-        self._mjr_context.readDepthMap = mj.mjtDepthMap.mjDEPTH_ZEROFAR
+        self._mjr_context.readDepthMap = mj.mjtDepthMap.mjDEPTH_ZEROFAR.value
 
-        # Default render flags.
-        self._depth_rendering = False
-        self._segmentation_rendering = False
-
-        # Track if textures need to be uploaded (set to True when textures are modified)
-        # NOTE: We start with False because textures are loaded from model at MjrContext creation
-        # We only need to upload if textures are modified AFTER renderer initialization
         self._textures_need_upload = False
 
     @property
@@ -147,7 +114,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
                     f" `self._depth_rendering={self._depth_rendering}`."
                 )
 
-        # Render scene and read contents of RGB and depth buffers.
+        assert self._mjr_context, "MjrContext must be created by now, but it's None"
         mj.mjr_render(rect, self._scene, self._mjr_context)
 
         if self._depth_rendering:
@@ -274,7 +241,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
                     f" `self._depth_rendering={self._depth_rendering}`."
                 )
 
-        # Render scene and read contents of RGB and depth buffers.
+        assert self._mjr_context, "MjrContext must be created by now, but it's None"
         mj.mjr_render(rect, self._scene, self._mjr_context)
 
         if self._depth_rendering:
@@ -287,9 +254,9 @@ class MjFilamentRenderer(MjAbstractRenderer):
 
         return out
 
-    def upload_textures(self, data: mj.MjData | None = None) -> None:
+    def upload_textures(self) -> None:
+        assert self._mjr_context, "MjrContext must be created by now, but it's None"
         if self.model.ntex == 0:
-            log.debug("upload_textures(): Skipping - no textures in model (ntex == 0)")
             return
 
         for tex_id in range(self.model.ntex):
@@ -315,12 +282,9 @@ class MjFilamentRenderer(MjAbstractRenderer):
                     f"The camera id {camera_id} is out of range [-1, {self.model.ncam})."
                 )
 
-            # Render camera.
             camera = mj.MjvCamera()
             camera.fixedcamid = camera_id
 
-            # Defaults to mjCAMERA_FREE, otherwise mjCAMERA_FIXED refers to a
-            # camera explicitly defined in the model_bindings.
             if camera_id == -1:
                 camera.type = mj.mjtCamera.mjCAMERA_FREE
                 mj.mjv_defaultFreeCamera(self.model, camera)
@@ -345,32 +309,30 @@ class MjFilamentRenderer(MjAbstractRenderer):
 
 
 if __name__ == "__main__":
-    import argparse
+    from dataclasses import dataclass
     from pathlib import Path
 
+    import tyro
     from PIL import Image
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="")
+    @dataclass
+    class Args:
+        model: Path
 
-    args = parser.parse_args()
+    args = tyro.cli(Args)
 
-    if args.model == "":
-        print("Must provide a model via --model option")
-        exit(1)
+    if not args.model.is_file():
+        raise RuntimeError(f"Given path @ {args.model} doesn't point to a valid file")
 
-    model_path = Path(args.model)
-    if not model_path.is_file():
-        print(f"Given model '{args.model}' is not a valid file")
-        exit(1)
-
-    model = mj.MjModel.from_xml_path(model_path.as_posix())
+    model = mj.MjModel.from_xml_path(args.model.as_posix())
     data = mj.MjData(model)
     mj.mj_forward(model, data)
 
-    renderer = MjFilamentRenderer(model=model)
+    renderer = MjFilamentRenderer(model)
     renderer.update(data=data)
 
     image = renderer.render()
     pil_image = Image.fromarray(image)
-    pil_image.save("test_render.png")
+    pil_image.save("test_render_filament.png")
+
+    renderer.close()
