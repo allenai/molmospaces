@@ -51,15 +51,13 @@ class Camera:
         )
         self.fov: float = fov
 
+        self.visibility_constraints: dict[str, float] | None = None
+
     def update_pose(self, env: CPUMujocoEnv) -> bool:
         """Update camera pose. Returns True if pose changed, False otherwise."""
         return False  # by default cameras don't update
 
     def get_pose(self) -> NDArray[np.float32]:
-        """
-        return 4x4 pose
-        """
-        # Validate and normalize camera vectors
         forward_norm = np.linalg.norm(self.forward)
         up_norm = np.linalg.norm(self.up)
 
@@ -84,7 +82,7 @@ class Camera:
         up = np.cross(right, forward)
 
         # Create cam2world matrix (standard camera convention)
-        world2cam = np.eye(4)
+        world2cam = np.eye(4, dtype=np.float32)
         world2cam[:3, 0] = right  # X-axis (right)
         world2cam[:3, 1] = -up  # Y-axis (up)
         world2cam[:3, 2] = forward  # Z-axis - camera looks down negative Z

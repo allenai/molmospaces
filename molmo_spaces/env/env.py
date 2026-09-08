@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 import logging
 from abc import ABC, abstractmethod
@@ -6,9 +8,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import mujoco
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjModel
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.camera_manager import CameraManager
@@ -28,144 +29,106 @@ from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+    from molmo_spaces.env.object_manager import ObjectManager
+
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-HAS_FILAMENT: bool = getattr(mujoco, "mjRENDERER", "classic") == "filament"
+HAS_FILAMENT: bool = getattr(mj, "mjRENDERER", "classic") == "filament"
+DEFAULT_RENDERER_RESOLUTION = (640, 480)
 
 
 class BaseMujocoEnv(ABC):
-    object_managers: list["ObjectManager"]
+    object_managers: list[ObjectManager]
 
-    def __init__(self, exp_config: "MlSpacesExpConfig", mj_model: MjModel = None) -> None:
-        self._mj_model = mj_model
-        self._current_batch_index = 0
-
+    def __init__(self, exp_config: MlSpacesExpConfig, mj_model: mj.MjModel | None = None) -> None:
         self.config = exp_config
+        self._mj_model = mj_model
 
-        # Rendering state
-        # TODO(anyone): can we remove these? too simple, we're on camera manager now.
-        self._renderer = None
-        self._rgb_frame = None
-        self._depth_frame = None
-        self._segmentation_frame = None
-        self._camera_name = "camera"
+        self._current_batch_index = 0
+        self._mj_base_scene_path: str = ""
+        self._scene_metadata: dict = {}
+
+        self.camera_manager = CameraManager()
 
     def is_loaded(self) -> bool:
-        """Check if a scene is currently loaded."""
         return self._mj_model is not None
 
     @property
-    def mj_model(self) -> MjModel:
-        if not self.is_loaded():
-            raise RuntimeError("No scene loaded. Call load_scene() first.")
+    def mj_model(self) -> mj.MjModel:
+        assert self._mj_model is not None, "Must initialize the scene first"
         return self._mj_model
 
     @property
     @abstractmethod
-    def mj_datas(self) -> Sequence[MjData]:
-        raise NotImplementedError
+    def mj_datas(self) -> Sequence[mj.MjData]: ...
 
     @property
     @abstractmethod
-    def n_batch(self) -> int:
-        raise NotImplementedError
+    def n_batch(self) -> int: ...
 
     @property
     @abstractmethod
-    def robots(self) -> Sequence[Robot]:
-        raise NotImplementedError
+    def robots(self) -> Sequence[Robot]: ...
+
+    @abstractmethod
+    def reset(self, idxs: Collection[int] | None = None) -> None: ...
+
+    @abstractmethod
+    def step(self, n_steps: int = 1) -> None: ...
 
     @property
     def current_batch_index(self) -> int:
-        """Current batch index for accessing data and robots."""
         return self._current_batch_index
 
     @current_batch_index.setter
     def current_batch_index(self, idx: int) -> None:
-        """Set the current batch index."""
         if idx < 0 or idx >= self.n_batch:
             raise ValueError(f"Batch index {idx} out of range [0, {self.n_batch - 1}]")
         self._current_batch_index = idx
 
     @property
-    def current_data(self) -> MjData:
-        """Current MjData instance based on current_batch_index."""
-        if not self.is_loaded():
-            raise RuntimeError("No scene loaded. Call load_scene() first.")
+    def current_data(self) -> mj.MjData:
         return self.mj_datas[self.current_batch_index]
 
     @property
-    def current_model(self) -> MjModel:
-        """Current MjModel instance (always the same across batches)."""
+    def current_model(self) -> mj.MjModel:
         return self.mj_model
 
     @property
     def current_model_path(self) -> str:
-        """Current string xml path instance (always the same across batches)."""
         return self._mj_base_scene_path
 
     @property
     def current_scene_metadata(self) -> dict | None:
-        """Current scene metadata instance (always the same across batches)."""
         return self._scene_metadata
 
     @property
     def current_robot(self) -> Robot:
-        """Current robot instance based on current_batch_index."""
-        if not self.is_loaded():
-            raise RuntimeError("No scene loaded. Call load_scene() first.")
         return self.robots[self.current_batch_index]
-
-    @property
-    def rgb_frame(self) -> np.ndarray:
-        """Get the latest RGB frame."""
-        return self._rgb_frame
-
-    @property
-    def depth_frame(self) -> np.ndarray:
-        """Get the latest depth frame."""
-        return self._depth_frame
-
-    @property
-    def segmentation_frame(self) -> np.ndarray:
-        """Get the latest segmentation frame."""
-        return self._segmentation_frame
-
-    @abstractmethod
-    def reset(self, idxs: Collection[int] | None = None) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def step(self, n_steps: int = 1) -> None:
-        raise NotImplementedError
 
 
 class CPUMujocoEnv(BaseMujocoEnv):
     def __init__(
         self,
-        exp_config: "MlSpacesExpConfig",
-        robot_factory: Callable[[MjData], Robot],
-        mj_model: MjModel,
+        exp_config: MlSpacesExpConfig,
+        robot_factory: Callable[[mj.MjData], Robot],
+        mj_model: mj.MjModel,
         mj_base_scene_path: str,
         parallelize: bool = True,
     ) -> None:
         super().__init__(exp_config, mj_model)
 
-        # Store configuration for scene loading
         self._robot_factory = robot_factory
         self._n_batch = exp_config.task_sampler_config.task_batch_size
         self._parallelize = parallelize
 
         # Initialize empty - will be populated when scene is loaded
-        self._mj_datas = None
-        self._robots = None
+        self._mj_datas: list[mj.MjData] = []
+        self._robots: list[Robot] = []
         self._executor = None
-        self._mj_base_scene_path = None
-        self._scene_metadata = None
 
-        self.camera_manager = CameraManager()
         self._renderer: MjAbstractRenderer | None = None
 
         self.object_managers = []
@@ -176,31 +139,28 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
         self._initialize_with_model(mj_model, mj_base_scene_path)
 
-    def _initialize_with_model(self, mj_model: MjModel, mj_base_scene_path: str) -> None:
+    def _initialize_with_model(self, mj_model: mj.MjModel, mj_base_scene_path: str) -> None:
         """Initialize the environment with a MuJoCo model."""
+
         # Clean up old renderer if it exists (important for GPU texture cleanup when loading new scenes)
         if self._renderer is not None:
             self._renderer.close()
             self._renderer = None
 
-        # Invalidate cached thormap when scene changes
         self._cached_thormap = None
         self._cached_thormap_key = None
 
         # scenes
         self._mj_model = mj_model
         self._mj_base_scene_path = mj_base_scene_path
-        self._scene_metadata = get_scene_metadata(mj_base_scene_path)
+        self._scene_metadata = get_scene_metadata(mj_base_scene_path) or {}
 
-        # data for each batch
-        self._mj_datas = [MjData(mj_model) for _ in range(self._n_batch)]
+        self._mj_datas = [mj.MjData(mj_model) for _ in range(self._n_batch)]
         for mj_data in self._mj_datas:
-            mujoco.mj_forward(mj_model, mj_data)
-            for _ in range(
-                self.config.task_sampler_config.sim_settle_timesteps
-            ):  # let objects settle
-                mujoco.mj_step(mj_model, mj_data)
-        self._robots = tuple(self._robot_factory(mj_data) for mj_data in self._mj_datas)
+            mj.mj_forward(mj_model, mj_data)
+            for _ in range(self.config.task_sampler_config.sim_settle_timesteps):
+                mj.mj_step(mj_model, mj_data)
+        self._robots = [self._robot_factory(mj_data) for mj_data in self._mj_datas]
 
         # Initialize the single renderer
         # TODO HERE: need to set devices here
@@ -208,7 +168,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         if self.config.camera_config is not None:
             width, height = self.config.camera_config.img_resolution
         else:
-            width, height = (640, 480)  # Default resolution
+            width, height = DEFAULT_RENDERER_RESOLUTION
         if HAS_FILAMENT:
             log.info("Using MuJoCo renderer: filament")
             self._renderer = MjFilamentRenderer(model=self.mj_model, width=width, height=height)
@@ -228,7 +188,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
             self.object_managers.append(ObjectManager(self, idx))
 
     @property
-    def mj_datas(self) -> Sequence[MjData]:
+    def mj_datas(self) -> Sequence[mj.MjData]:
         if not self.is_loaded():
             raise RuntimeError("No scene loaded. Call load_scene() first.")
         return self._mj_datas
@@ -257,15 +217,15 @@ class CPUMujocoEnv(BaseMujocoEnv):
             raise RuntimeError("Renderer not initialized. Call _initialize_with_model first.")
 
         prev_fov = self.mj_model.vis.global_.fovy
-        self.mj_model.vis.global_.fovy = fov  # set global fov
-        # Create a camera view object (from simple_camera_test.py render_scene)
-        cam = mujoco.MjvCamera()
-        # note that passing cam to update() is not actually required, but doesn't hurt
-        cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        self.mj_model.vis.global_.fovy = fov
+
+        cam = mj.MjvCamera()
+        cam.type = mj.mjtCamera.mjCAMERA_FREE
+
         self._renderer.update(self.current_data, cam)
 
         for camera in self._renderer.scene.camera:  # the for loop is necessary!
-            camera: mujoco.MjvGLCamera
+            camera: mj.MjvGLCamera
             camera.pos = pos
             camera.forward = forward
             camera.up = up
@@ -369,8 +329,8 @@ class CPUMujocoEnv(BaseMujocoEnv):
             self._renderer = None
 
     def _reset_single(self, idx: int) -> None:
-        mujoco.mj_resetData(self._mj_model, self._mj_datas[idx])
-        mujoco.mj_forward(self._mj_model, self._mj_datas[idx])
+        mj.mj_resetData(self._mj_model, self._mj_datas[idx])
+        mj.mj_forward(self._mj_model, self._mj_datas[idx])
 
     def reset(self, idxs: Collection[int] | None = None) -> None:
         if idxs is None:
@@ -386,16 +346,15 @@ class CPUMujocoEnv(BaseMujocoEnv):
     def step(self, n_steps: int = 1) -> None:
         if self._executor is not None:
             futures = [
-                self._executor.submit(mujoco.mj_step, self._mj_model, mj_data, n_steps)
+                self._executor.submit(mj.mj_step, self._mj_model, mj_data, n_steps)
                 for mj_data in self._mj_datas
             ]
             for future in as_completed(futures):
                 future.result()
         else:
             for mj_data in self._mj_datas:
-                mujoco.mj_step(self._mj_model, mj_data, n_steps)
+                mj.mj_step(self._mj_model, mj_data, n_steps)
 
-        # We got new scene state, so anything depending on data must be refreshed
         for om in self.object_managers:
             om.invalidate_data_cache()
 
@@ -520,25 +479,13 @@ class CPUMujocoEnv(BaseMujocoEnv):
         all_satisfied = True
         detailed_results = {}
 
-        # Prepare save directory if specified
-        if save_frames_dir is not None:
-            save_frames_dir = Path(save_frames_dir)
-            visibility_frames_dir = save_frames_dir / "visibility_check_frames"
-            visibility_frames_dir.mkdir(parents=True, exist_ok=True)
-
-        # Iterate through all cameras in the registry
         for camera in self.camera_manager.registry:
-            # Check if this camera has visibility constraints
-            if (
-                not hasattr(camera, "visibility_constraints")
-                or camera.visibility_constraints is None
-            ):
+            if not camera.visibility_constraints:
                 continue
 
             camera_name = camera.name
             constraints = camera.visibility_constraints
 
-            # Resolve special visibility keys
             resolved_constraints = {}
             for key, threshold in constraints.items():
                 if key.startswith("__") and key.endswith("__"):
@@ -557,14 +504,11 @@ class CPUMujocoEnv(BaseMujocoEnv):
                             f"[VISIBILITY CHECK] No visibility resolver provided for key '{key}' in camera '{camera_name}'"
                         )
                 else:
-                    # Regular body name
                     resolved_constraints[key] = threshold
 
             if not resolved_constraints:
-                # No valid constraints for this camera
                 continue
 
-            # Check visibility for all objects
             try:
                 visibility_results = self.check_visibility(
                     camera_name, *resolved_constraints.keys()
@@ -576,19 +520,20 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
                 detailed_results[camera_name] = visibility_results
 
-                # Save frame if directory specified
                 if save_frames_dir is not None:
+                    save_frames_dir = Path(save_frames_dir)
+                    visibility_frames_dir = save_frames_dir / "visibility_check_frames"
+                    visibility_frames_dir.mkdir(parents=True, exist_ok=True)
+
                     try:
                         import time
 
                         from PIL import Image
 
                         rgb_frame = self.render_rgb_frame(camera_name)
-                        # Convert from float [0,1] to uint8 if needed
                         if rgb_frame.dtype == np.float32 or rgb_frame.dtype == np.float64:
                             rgb_frame = (rgb_frame * 255).astype(np.uint8)
                         img = Image.fromarray(rgb_frame)
-                        # Add timestamp to filename to avoid overwriting
                         timestamp = int(time.time() * 1000)
                         frame_path = visibility_frames_dir / f"{camera_name}_{timestamp}.png"
                         img.save(frame_path)
@@ -598,7 +543,6 @@ class CPUMujocoEnv(BaseMujocoEnv):
                             f"[VISIBILITY CHECK] Failed to save frame for camera '{camera_name}': {e}"
                         )
 
-                # Check if all constraints are satisfied for this camera
                 for obj_name, threshold in resolved_constraints.items():
                     actual_visibility = visibility_results.get(obj_name, 0.0)
                     if actual_visibility < threshold:
@@ -630,13 +574,13 @@ class CPUMujocoEnv(BaseMujocoEnv):
         try:
             # Temporarily place robot at candidate position
             robot_view.base.pose = robot_pose
-            mujoco.mj_forward(model, data)
+            mj.mj_forward(model, data)
             return self.check_robot_collision_in_current_pose(robot_namespace)
 
         finally:
             # Restore original robot pose
             robot_view.base.pose = original_pose
-            mujoco.mj_forward(model, data)
+            mj.mj_forward(model, data)
 
     def check_robot_collision_in_current_pose(self, robot_namespace: str = "robot_0/") -> bool:
         model = self.current_model
@@ -689,7 +633,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
     def get_thormap(
         self, agent_radius: float = 0.35, px_per_m: int = 200
-    ) -> "ProcTHORMap | iTHORMap":
+    ) -> ProcTHORMap | iTHORMap:
         """
         Get or create a cached occupancy map for robot placement.
 
@@ -787,7 +731,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
         max_tries: int = 10,
         sampling_radius_range: tuple[float, float] = (0.0, 1.0),
         robot_safety_radius: float = 0.35,
-        preserve_z: float = None,
+        preserve_z: float | None = None,
         face_target: bool = True,
         check_camera_visibility: bool = False,
         visibility_resolver=None,
@@ -938,7 +882,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
                                 0.0  # Default orientation if target is at same XY position
                             )
                         # NOTE(yejin): is this robot-specific logic okay?
-                        if "rum" in self.config.robot_config.robot_cls.__name__.lower():
+                        if (
+                            self.config.robot_config.robot_cls
+                            and "rum" in self.config.robot_config.robot_cls.__name__.lower()
+                        ):
                             # Orient robot pitch to face the target
                             robot_base_pitch = -np.arctan2(
                                 target_pos[2] - robot_base_pos[2],
@@ -998,7 +945,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     collision_free_poses
                 ):
                     robot_view.base.pose = robot_pose
-                    mujoco.mj_forward(self.current_model, self.current_data)
+                    mj.mj_forward(self.current_model, self.current_data)
 
                     # Check visibility constraints if requested
                     if check_camera_visibility:

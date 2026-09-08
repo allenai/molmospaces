@@ -132,6 +132,13 @@ def main() -> None:
             project=exp_config.wandb_project, name=exp_config.wandb_name, config=vars(exp_config)
         )
 
+    exp_config.scene_dataset = "procthor-10k"
+    exp_config.data_split = "val"
+    exp_config.num_envs = 1
+    exp_config.num_workers = 1
+    exp_config.task_sampler_config.house_inds = [1]
+    exp_config.task_sampler_config.episodes_per_batch = 1
+    exp_config.task_sampler_config.samples_per_house = 1
     exp_config.save_config()
 
     # Create rollout runner with the set config parameters

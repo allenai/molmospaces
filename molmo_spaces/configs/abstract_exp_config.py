@@ -10,7 +10,6 @@ from typing import Any, ClassVar
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.configs.camera_configs import (
-    AllCameraSystems,
     CameraSystemConfig,
     FixedExocentricCameraConfig,
     MjcfCameraConfig,
@@ -140,12 +139,13 @@ class MlSpacesExpConfig(Config, ABC):
     class SavedEpisode(Config):
         """Config informationd describing a sinlge episode"""
 
-        camera_config: AllCameraSystems | None = None  # Configuration for cameras and sensors
+        camera_config: CameraSystemConfig | None = None  # Configuration for cameras and sensors
         robot_config: BaseRobotConfig | None = None  # Configuration for the robot
         task_config: AllTaskConfigs | None = None  # Configuration for tasks
         task_cls_str: str | None = None
 
-    def freeze_task_config(self, observation, task: BaseMujocoTask = None) -> None:
+    # TODO(wilbert): hey guys, do we need this 'task' to be optional at all?
+    def freeze_task_config(self, observation, task: BaseMujocoTask | None = None) -> None:
         """Saves the state of a sampled task i.e. an episode"""
         sc = self.SavedEpisode()
 
@@ -158,34 +158,40 @@ class MlSpacesExpConfig(Config, ABC):
         # save state
         sc.robot_config.init_qpos_noise_range = None  # remove ranges
         sc.robot_config.init_qpos = observation[0]["qpos"]
-        sc.camera_config = self.camera_config.model_copy(deep=True)
-        for i, camera in enumerate(sc.camera_config.cameras):
-            # Some cameras can contain random sampling, e.g. of positions
-            # Read the camera's positions and convert them to fixed cameras
-            if isinstance(camera, MjcfCameraConfig | RobotMountedCameraConfig):
-                cam = task.env.camera_manager.registry[camera.name]
-                new_camera = RobotMountedCameraConfig(
-                    name=cam.name,
-                    reference_body_names=list(cam.reference_body_names),
-                    camera_offset=list(cam.camera_offset),
-                    lookat_offset=list(cam.lookat_offset),
-                    camera_quaternion=list(cam.camera_quaternion),
-                    fov=cam.fov,
-                )
-                sc.camera_config.cameras[i] = new_camera
 
-            elif isinstance(camera, RandomizedExocentricCameraConfig | FixedExocentricCameraConfig):
-                cam = task.env.camera_manager.registry[camera.name]
-                new_camera = FixedExocentricCameraConfig(
-                    name=cam.name,
-                    fov=cam.fov,
-                    pos=list(cam.pos),
-                    up=list(cam.up),
-                    forward=list(cam.forward),
-                )
-                sc.camera_config.cameras[i] = new_camera
-            else:
-                raise NotImplementedError(f"Cannot freeze camera of type {type(camera).__name__}")
+        if task and self.camera_config:
+            sc.camera_config = self.camera_config.model_copy(deep=True)
+            for i, camera in enumerate(sc.camera_config.cameras):
+                # Some cameras can contain random sampling, e.g. of positions
+                # Read the camera's positions and convert them to fixed cameras
+                if isinstance(camera, MjcfCameraConfig | RobotMountedCameraConfig):
+                    cam = task.env.camera_manager.registry[camera.name]
+                    new_camera = RobotMountedCameraConfig(
+                        name=cam.name,
+                        reference_body_names=list(cam.reference_body_names),
+                        camera_offset=list(cam.camera_offset),
+                        lookat_offset=list(cam.lookat_offset),
+                        camera_quaternion=list(cam.camera_quaternion),
+                        fov=cam.fov,
+                    )
+                    sc.camera_config.cameras[i] = new_camera
+
+                elif isinstance(
+                    camera, RandomizedExocentricCameraConfig | FixedExocentricCameraConfig
+                ):
+                    cam = task.env.camera_manager.registry[camera.name]
+                    new_camera = FixedExocentricCameraConfig(
+                        name=cam.name,
+                        fov=cam.fov,
+                        pos=list(cam.pos),
+                        up=list(cam.up),
+                        forward=list(cam.forward),
+                    )
+                    sc.camera_config.cameras[i] = new_camera
+                else:
+                    raise NotImplementedError(
+                        f"Cannot freeze camera of type {type(camera).__name__}"
+                    )
 
         # for all task relevant objects, save the poses
         # assert task.config.task_config.object_poses is None

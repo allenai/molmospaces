@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import logging
 import re
@@ -9,7 +11,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-import mujoco
+import mujoco as mj
 import numpy as np
 import stringcase
 
@@ -38,6 +40,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+
 """
 - Object can be a MlSpacesObject or instance of some subclass
 - Name is the object's name
@@ -69,7 +72,7 @@ class ObjectManager:
 
     def __init__(
         self,
-        env: "BaseMujocoEnv",
+        env: BaseMujocoEnv,
         batch_idx: int,
         caching_enabled: bool = True,
         name_caching_enabled: bool = True,
@@ -119,7 +122,7 @@ class ObjectManager:
         )
 
     @property
-    def model(self) -> mujoco.MjModel:
+    def model(self) -> mj.MjModel:
         return self._env.current_model
 
     @property
@@ -267,9 +270,9 @@ class ObjectManager:
         self,
         object_or_name_or_id: ObjectOrNameOrIdType,
         context_type: Context = Context.BENCH,
-        bench_geom_ids: list[int] = None,
-        cameras: list[str] = None,
-        room_ids: list[str] = None,
+        bench_geom_ids: list[int] | None = None,
+        cameras: list[str] | None = None,
+        room_ids: list[str] | None = None,
         disable_caching: bool = True,
         **kwargs,
     ) -> list[MlSpacesObject]:
@@ -469,7 +472,9 @@ class ObjectManager:
         return res
 
     def get_cache_key(
-        self, object_or_name_or_id: ObjectOrNameOrIdType, context_synsets: Collection[str] = None
+        self,
+        object_or_name_or_id: ObjectOrNameOrIdType,
+        context_synsets: Collection[str] | None = None,
     ):
         plain_key = "__".join(
             [self.get_object_name(object_or_name_or_id)] + sorted(context_synsets or [])
@@ -477,7 +482,9 @@ class ObjectManager:
         return hashlib.md5(plain_key.encode()).hexdigest()
 
     def _extract_names_from_context(
-        self, object_or_name_or_id: ObjectOrNameOrIdType, context_synsets: Collection[str] = None
+        self,
+        object_or_name_or_id: ObjectOrNameOrIdType,
+        context_synsets: Collection[str] | None = None,
     ) -> dict[str, list[str]]:
         cache_key = self.get_cache_key(object_or_name_or_id, context_synsets=context_synsets)
 
@@ -523,7 +530,7 @@ class ObjectManager:
         return source_to_names
 
     def get_natural_object_names(
-        self, object_or_name_or_id: ObjectOrNameOrIdType, context_synsets: list[str] = None
+        self, object_or_name_or_id: ObjectOrNameOrIdType, context_synsets: list[str] | None = None
     ):
         cache_key = self.get_cache_key(object_or_name_or_id, context_synsets=context_synsets)
 
@@ -740,8 +747,8 @@ class ObjectManager:
             # if root body is same as the body_id, then joint is part of object
             if self.model.body(self.model.joint(joint_id).bodyid[0]).rootid[0] == body_id:
                 if self.model.joint(joint_id).type in [
-                    mujoco.mjtJoint.mjJNT_HINGE,
-                    mujoco.mjtJoint.mjJNT_SLIDE,
+                    mj.mjtJoint.mjJNT_HINGE,
+                    mj.mjtJoint.mjJNT_SLIDE,
                 ]:
                     return True
 
@@ -1228,7 +1235,7 @@ class ObjectManager:
     def get_free_objects(self) -> list[MlSpacesObject]:
         """Return list of all bodies with free joints"""
         model = self.model
-        freejoints = np.where(model.jnt_type == mujoco.mjtJoint.mjJNT_FREE)[0]
+        freejoints = np.where(model.jnt_type == mj.mjtJoint.mjJNT_FREE)[0]
         body_ids = model.jnt_bodyid[freejoints]
         return [self.get_object_by_name(model.body(id).name) for id in body_ids]
 

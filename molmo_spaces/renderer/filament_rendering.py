@@ -37,10 +37,6 @@ class MjFilamentRenderer(MjAbstractRenderer):
         self._textures_need_upload = False
 
     @property
-    def scene(self) -> mj.MjvScene:
-        return self._scene
-
-    @property
     def height(self):
         return self._height
 
@@ -72,6 +68,8 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
+        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
+
         height = height or self._height
         width = width or self._width
         rect = mj.MjrRect(0, 0, width, height)
@@ -201,6 +199,8 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
+        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
+
         height = height or self._height
         width = width or self._width
         rect = mj.MjrRect(0, 0, width, height)
@@ -271,6 +271,8 @@ class MjFilamentRenderer(MjAbstractRenderer):
         camera: int | str | mj.MjvCamera = -1,
         scene_option: mj.MjvOption | None = None,
     ) -> None:
+        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
+
         if not isinstance(camera, mj.MjvCamera):
             camera_id = camera
             if isinstance(camera_id, str):

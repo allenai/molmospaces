@@ -71,10 +71,6 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         self._textures_need_upload = False
 
     @property
-    def scene(self) -> mj.MjvScene:
-        return self._scene
-
-    @property
     def height(self):
         return self._height
 
@@ -123,6 +119,7 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         Raises:
           RuntimeError: if this method is called after the close method.
         """
+        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
 
         height = height or self._height
         width = width or self._width
@@ -325,6 +322,8 @@ class MjOpenGLRenderer(MjAbstractRenderer):
           ValueError: If `camera_id` is outside the valid range, or if camera does
             not exist.
         """
+        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
+
         if not isinstance(camera, mj.MjvCamera):
             camera_id = camera
             if isinstance(camera_id, str):
