@@ -40,6 +40,11 @@ def get_args():
         "optionally with the module name prepended with a colon (e.g. molmo_spaces.data_generation.config.object_manipulation_datagen_configs:FrankaPickDroidDataGenConfig). "
         "If the module is specified, only that module will be imported to populate the registry. Otherwise, all config files will be imported.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Use the debug settings (while working on 'dev' branch)",
+    )
     return parser.parse_args()
 
 
@@ -132,13 +137,14 @@ def main() -> None:
             project=exp_config.wandb_project, name=exp_config.wandb_name, config=vars(exp_config)
         )
 
-    exp_config.scene_dataset = "procthor-10k"
-    exp_config.data_split = "val"
-    exp_config.num_envs = 1
-    exp_config.num_workers = 1
-    exp_config.task_sampler_config.house_inds = [1]
-    exp_config.task_sampler_config.episodes_per_batch = 1
-    exp_config.task_sampler_config.samples_per_house = 1
+    if args.debug:
+        exp_config.scene_dataset = "procthor-10k"
+        exp_config.data_split = "val"
+        exp_config.num_envs = 1
+        exp_config.num_workers = 1
+        exp_config.task_sampler_config.house_inds = [3]
+        exp_config.task_sampler_config.episodes_per_batch = 1
+        exp_config.task_sampler_config.samples_per_house = 1
     exp_config.save_config()
 
     # Create rollout runner with the set config parameters
