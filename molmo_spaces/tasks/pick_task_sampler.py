@@ -219,16 +219,16 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             self._remove_candidate_object(obj_name)
             log.info(f"Removed {obj_name} after {count} grasp failures (threshold: {max_failures})")
 
-    def update_scene(self, scene_path: str | None = None, variant: str = "base") -> None:
+    def update_scene(self, scene_path: str | None = None) -> None:
         """Override to store scene path for use in add_auxiliary_objects."""
         if scene_path is None:
-            scene_path = self._current_house_scene_path(variant=variant)
+            scene_path = self._current_house_scene_path()
         # Store for use in add_auxiliary_objects
         self._current_scene_path = scene_path
         # Reset clutter tracking for new scene
         self._same_class_clutter_objects = {}
         self._same_class_clutter_metadata_adder = None
-        super().update_scene(scene_path=scene_path, variant=variant)
+        super().update_scene(scene_path=scene_path)
 
     def add_auxiliary_objects(self, spec: MjSpec) -> None:
         """Use this function to put task specific assets into the scene."""
