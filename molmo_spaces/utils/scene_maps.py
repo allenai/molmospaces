@@ -301,6 +301,105 @@ def sample_around_point(
     return valid_points[np.random.randint(len(valid_points))]
 
 
+def sample_around_points(
+    thormap: "ProcTHORMap | iTHORMap",
+    points: list[np.ndarray],
+    radius_range: tuple[float, float],
+    fallback_threshold: float = 0.05,
+    max_iter: int = 100,
+) -> np.ndarray:
+    """Sample a 2D point that lies within the annulus of ALL given target points.
+
+    The sampling region is the intersection of annuli (radius_range) around each
+    point, intersected with free space from the occupancy map.
+
+    Uses rejection sampling when the intersection is large enough, otherwise
+    falls back to uniform random selection from the discrete valid pixel set.
+
+    Args:
+        thormap: Occupancy map instance.
+        points: List of 2D target points, each shape (2,).
+        radius_range: (min_radius, max_radius) annulus around each target.
+        fallback_threshold: Fraction of annulus area below which we use pixel fallback.
+        max_iter: Maximum rejection-sampling iterations.
+
+    Returns:
+        Sampled 2D point as shape (2,) array.
+
+    Raises:
+        ValueError: If intersection of all annuli with free space is empty.
+    """
+    if len(points) == 0:
+        raise ValueError("Must provide at least one target point")
+    if len(points) == 1:
+        return sample_around_point(thormap, points[0], radius_range, fallback_threshold, max_iter)
+
+    for p in points:
+        assert p.shape == (2,), "Each point must be a 2D array"
+
+    free_points = thormap.get_free_points()
+
+    # Build valid_mask as AND of all annuli constraints
+    valid_mask = np.ones(len(free_points), dtype=bool)
+    for p in points:
+        dist = np.linalg.norm(free_points[:, :2] - p[None], axis=1)
+        valid_mask &= (dist > radius_range[0]) & (dist < radius_range[1])
+
+    valid_points = free_points[valid_mask]
+    if len(valid_points) == 0:
+        raise ValueError(
+            f"No free points in intersection of {len(points)} annuli "
+            f"(radius_range={radius_range}). Targets may be too far apart."
+        )
+
+    # Estimate intersection fraction relative to first target's annulus area
+    sq_m_per_sq_px = 1 / (thormap.px_per_m**2)
+    annulus_area = np.pi * (radius_range[1] ** 2 - radius_range[0] ** 2)
+    valid_neighborhood_frac = len(valid_points) * sq_m_per_sq_px / annulus_area
+
+    if valid_neighborhood_frac > fallback_threshold:
+        # Rejection sampling: propose from first target's annulus, reject if outside others
+        for i in range(max_iter):
+            batch_size = max(int(np.ceil(1 / valid_neighborhood_frac).item()), 4)
+            theta = np.random.uniform(0, 2 * np.pi, size=batch_size)
+            r = np.random.uniform(radius_range[0], radius_range[1], size=batch_size)
+            sampled = points[0][None] + np.stack([r * np.cos(theta), r * np.sin(theta)], axis=1)
+
+            # Reject samples outside any other target's annulus
+            keep = np.ones(batch_size, dtype=bool)
+            for p in points[1:]:
+                d = np.linalg.norm(sampled - p[None], axis=1)
+                keep &= (d > radius_range[0]) & (d < radius_range[1])
+
+            sampled = sampled[keep]
+            if len(sampled) == 0:
+                continue
+
+            # Check free-space collision for surviving samples
+            sampled_3d = np.concatenate([sampled, np.zeros((len(sampled), 1))], axis=1)
+            free_mask = thormap.check_collision(sampled_3d)
+            if free_mask.any():
+                idx = np.where(free_mask)[0][0]
+                log.debug(
+                    f"sample_around_points: found point after {i + 1} iters, "
+                    f"{valid_neighborhood_frac=:.1%}, {len(points)} targets"
+                )
+                return sampled[idx]
+
+        log.warning(
+            f"sample_around_points: rejection sampling failed after {max_iter} iters, "
+            f"falling back to pixel selection. {valid_neighborhood_frac=:.1%}"
+        )
+    else:
+        log.warning(
+            f"sample_around_points: intersection fraction {valid_neighborhood_frac:.1%} "
+            f"below {fallback_threshold:.0%}, sampling from discrete pixel set."
+        )
+
+    # Fallback: uniform random from valid pixel set
+    return valid_points[np.random.randint(len(valid_points))][:2]
+
+
 class ProcTHORMap(THORMap):
     def __init__(
         self,
