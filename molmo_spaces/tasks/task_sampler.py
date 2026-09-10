@@ -422,7 +422,11 @@ class BaseMujocoTaskSampler:
         torch.manual_seed(seed)
 
     def _create_robot(self, mj_data: MjData) -> Robot:
-        return self.config.robot_config.robot_factory(mj_data, self.config)
+        # TODO(wilbert): uhmmm, there's way too much of these cases where an attribute of a config
+        # is defined as optional when declared, but it ends up being required in most places. Will
+        # spend some time later on rewriting these configs stuff bc it's got too much jank LOL
+        assert self.config.robot_config.robot_factory, "Must provide a valid 'robot_factory' fcn"
+        return self.config.robot_config.robot_factory(mj_data, self.config.robot_config)
 
     def setup_cameras(self, env: CPUMujocoEnv, deterministic_only: bool = False) -> None:
         """Set up all cameras defined in the camera system config.

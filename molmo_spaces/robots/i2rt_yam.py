@@ -1,9 +1,11 @@
-"""i2rt YAM robot implementation for the framework."""
+from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-from mujoco import MjData, MjSpec, mjtGeom
+import mujoco as mj
+import numpy as np
 
+from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.env.sensors import TCPPoseSensor
@@ -12,40 +14,34 @@ from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematic
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-    from molmo_spaces.configs.robot_configs import I2rtYamRobotConfig
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig, I2rtYamRobotConfig
 
 
 class I2rtYamRobot(Robot):
-    """i2rt YAM 6-DOF arm robot implementation."""
-
-    def __init__(
-        self,
-        mj_data: MjData,
-        config: "MlSpacesExpConfig",
-    ) -> None:
+    def __init__(self, mj_data: mj.MjData, config: BaseRobotConfig) -> None:
         super().__init__(mj_data, config)
-        self._robot_view = config.robot_config.robot_view_factory(
-            mj_data, config.robot_config.robot_namespace
-        )
-        self._kinematics = MlSpacesKinematics(config.robot_config)
 
-        self._parallel_kinematics = SimpleWarpKinematics(config.robot_config)
+        assert config.robot_view_factory, (
+            "Something went wrong, 'robot_view_factory' shouldn't be None"
+        )
+        self._robot_view = config.robot_view_factory(mj_data, config.robot_namespace)
+        self._kinematics = MlSpacesKinematics(config)
+
+        self._parallel_kinematics = SimpleWarpKinematics(config)
 
         arm_controller_cls = (
             JointPosController
-            if config.robot_config.command_mode == {}
-            or config.robot_config.command_mode.get("arm") == "joint_position"
+            if config.command_mode == {} or config.command_mode.get("arm") == "joint_position"
             else JointRelPosController
         )
-        self._controllers = {
+        self._controllers: dict[str, Controller] = {
             "arm": arm_controller_cls(self._robot_view.get_move_group("arm")),
             "gripper": JointPosController(self._robot_view.get_move_group("gripper")),
         }
 
     @property
     def namespace(self):
-        return self.exp_config.robot_config.robot_namespace
+        return self.config.robot_namespace
 
     @property
     def robot_view(self):
@@ -73,28 +69,29 @@ class I2rtYamRobot(Robot):
         return ["arm"]
 
     def reset(self) -> None:
-        for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
+        for mg_id, default_pos in self.config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
-                self._robot_view.get_move_group(mg_id).joint_pos = default_pos
+                self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
     @staticmethod
     def robot_model_root_name() -> str:
         return "arm"
 
+    # TODO(wilbert): uhmm, this part should be moved to a regular free function, or a factory fcn
+    # that is registered via metaclasses when creating the robot class
     @classmethod
-    def add_robot_to_scene(
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride]
         cls,
-        robot_config: "I2rtYamRobotConfig",
-        spec: MjSpec,
+        robot_config: I2rtYamRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
-        robot_config = cast("I2rtYamRobotConfig", robot_config)
-        add_base = robot_config.base_size is not None
-        pos = pos + [0.0] if len(pos) == 2 else pos
+        if len(pos) == 2:
+            pos.append(0.0)
 
         # Create a mocap body to control the robot base pose
         robot_body = spec.worldbody.add_body(
@@ -104,7 +101,7 @@ class I2rtYamRobot(Robot):
             mocap=True,
         )
 
-        if add_base:
+        if robot_config.base_size is not None:
             base_height = robot_config.base_size[2]
 
             # Create a base material (plain dark wood color)
@@ -113,7 +110,7 @@ class I2rtYamRobot(Robot):
 
             # Add base geometry (platform)
             robot_body.add_geom(
-                type=mjtGeom.mjGEOM_BOX,
+                type=mj.mjtGeom.mjGEOM_BOX,
                 size=[x / 2 for x in robot_config.base_size],
                 pos=[0, 0, base_height / 2],
                 material=material_name,

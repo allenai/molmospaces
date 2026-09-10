@@ -14,6 +14,8 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation as R
 
+from molmo_spaces.env.data_views import MlSpacesBody
+
 if TYPE_CHECKING:
     from molmo_spaces.configs.camera_configs import (
         CameraSystemConfig,
@@ -25,6 +27,8 @@ if TYPE_CHECKING:
     from molmo_spaces.env.env import CPUMujocoEnv
 
 log = logging.getLogger(__name__)
+
+DEFAULT_FOV: float = 45.0
 
 
 class Camera:
@@ -51,21 +55,19 @@ class Camera:
         )
         self.fov: float = fov
 
+        self.visibility_constraints: dict[str, float] | None = None
+
     def update_pose(self, env: CPUMujocoEnv) -> bool:
         """Update camera pose. Returns True if pose changed, False otherwise."""
         return False  # by default cameras don't update
 
     def get_pose(self) -> NDArray[np.float32]:
-        """
-        return 4x4 pose
-        """
-        # Validate and normalize camera vectors
         forward_norm = np.linalg.norm(self.forward)
         up_norm = np.linalg.norm(self.up)
 
         if forward_norm < 1e-6 or up_norm < 1e-6:
             print(
-                f"Warning: Camera '{self.camera_name}' has degenerate vectors (forward_norm={forward_norm}, up_norm={up_norm})"
+                f"Warning: Camera '{self.name}' has degenerate vectors (forward_norm={forward_norm}, up_norm={up_norm})"
             )
             return np.eye(4, 4, dtype=np.float32)
 
@@ -75,7 +77,7 @@ class Camera:
 
         right_norm = np.linalg.norm(right)
         if right_norm < 1e-6:
-            print(f"Warning: Camera '{self.self}' has collinear forward/up vectors")
+            print(f"Warning: Camera '{self.name}' has collinear forward/up vectors")
             return np.eye(4, 4, dtype=np.float32)
 
         right = right / right_norm
@@ -84,7 +86,7 @@ class Camera:
         up = np.cross(right, forward)
 
         # Create cam2world matrix (standard camera convention)
-        world2cam = np.eye(4)
+        world2cam = np.eye(4, dtype=np.float32)
         world2cam[:3, 0] = right  # X-axis (right)
         world2cam[:3, 1] = -up  # Y-axis (up)
         world2cam[:3, 2] = forward  # Z-axis - camera looks down negative Z
@@ -142,7 +144,7 @@ class RobotMountedCamera(Camera):
         self._last_reference_pose: NDArray[np.float32] | None = None
         self._active_reference_body_name: str | None = None
 
-    def _find_reference_body(self, env: CPUMujocoEnv) -> tuple[object | None, str | None]:
+    def _find_reference_body(self, env: CPUMujocoEnv) -> tuple[MlSpacesBody | None, str | None]:
         """Find the first valid reference body from the list of candidates."""
         from molmo_spaces.env.data_views import create_mlspaces_body
 
@@ -178,6 +180,9 @@ class RobotMountedCamera(Camera):
             pose_diff = np.linalg.norm(current_reference_pose - self._last_reference_pose)
             if pose_diff < 1e-6:  # No significant change
                 return False
+
+        if self._active_reference_body_name is None:
+            return False
 
         # Reference pose has changed, recalculate camera pose
         if self.camera_quaternion is not None:
@@ -486,15 +491,18 @@ class CameraManager:
                 reference_body_names=camera_config.reference_body_names,
                 camera_offset=camera_offset,
                 camera_quaternion=camera_quaternion,
-                camera_fov=camera_config.fov,
+                camera_fov=camera_config.fov if camera_config.fov is not None else DEFAULT_FOV,
             )
         else:
+            # TODO(wilbert): seems the 'lookat_offset' could technically be None. For some reason
+            # we were checking if it was not None, but the typings required it not to be, so for
+            # now instead of asserting or just assumming it's not None will silence the warning
             self.add_robot_mounted_camera(
                 env,
                 camera_name=camera_config.name,
                 reference_body_names=camera_config.reference_body_names,
                 camera_offset=camera_offset,
-                lookat_offset=lookat_offset,
+                lookat_offset=lookat_offset,  # pyright: ignore[reportArgumentType] # ty: ignore
                 up_axis=camera_config.up_axis,
             )
 
@@ -536,7 +544,8 @@ class CameraManager:
                 f"[CAMERA SETUP] Orientation noise not yet implemented for '{camera_config.name}'"
             )
 
-        self.add_camera(camera_config.name, pos, forward, up, camera_config.fov)
+        cam_fov = camera_config.fov if camera_config.fov is not None else DEFAULT_FOV
+        self.add_camera(camera_config.name, pos, forward, up, cam_fov)
 
         # Store visibility constraints on the camera object for later use during robot placement
         if camera_config.visibility_constraints is not None:
@@ -559,7 +568,7 @@ class CameraManager:
         """
 
         # Randomized camera - need to sample a position
-        camera_fov = camera_config.fov
+        camera_fov = camera_config.fov if camera_config.fov is not None else DEFAULT_FOV
         if camera_config.fov_range is not None:
             camera_fov = np.random.uniform(camera_config.fov_range[0], camera_config.fov_range[1])
 
@@ -704,7 +713,12 @@ class CameraManager:
                 return
 
         # Failed to meet constraints - use best attempt if allowed
-        if camera_config.allow_relaxed_constraints and best_pos is not None:
+        if (
+            camera_config.allow_relaxed_constraints
+            and best_pos is not None
+            and best_up is not None
+            and best_forward is not None
+        ):
             self.add_camera(camera_config.name, best_pos, best_forward, best_up, camera_fov)
             log.warning(
                 f"[CAMERA SETUP] Set up exocentric camera '{camera_config.name}' with relaxed constraints "
@@ -832,9 +846,9 @@ class CameraManager:
         camera_relative_pos: np.ndarray,
         rpy: np.ndarray,
         reference_body_name: str,
-        lookat_target: np.ndarray = None,
-        lookat_body_name: str = None,
-        camera_up: np.ndarray = None,
+        lookat_target: np.ndarray | None = None,
+        lookat_body_name: str | None = None,
+        camera_up: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Create camera position and orientation vectors using enhanced lookat approach.
@@ -903,7 +917,7 @@ class CameraManager:
         env,
         reference_body_name: str,
         camera_offset: np.ndarray,
-        lookat_offset: np.ndarray = None,
+        lookat_offset: np.ndarray | None = None,
         up_axis: str = "z",
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """

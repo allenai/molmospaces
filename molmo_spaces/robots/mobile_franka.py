@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import logging
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-import mujoco
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjSpec, mjtGeom
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.controllers.abstract import Controller
 from molmo_spaces.controllers.joint_pos import JointPosController
@@ -16,8 +18,7 @@ from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematic
 from molmo_spaces.robots.abstract import Robot
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-    from molmo_spaces.configs.robot_configs import MobileFrankaRobotConfig
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig, MobileFrankaRobotConfig
 
 
 log = logging.getLogger(__name__)
@@ -26,27 +27,28 @@ log = logging.getLogger(__name__)
 class MobileFrankaRobot(Robot):
     def __init__(
         self,
-        mj_data: MjData,
-        config: "MlSpacesExpConfig",
+        mj_data: mj.MjData,
+        config: BaseRobotConfig,
     ) -> None:
         super().__init__(mj_data, config)
-        self._robot_view = config.robot_config.robot_view_factory(
-            mj_data, config.robot_config.robot_namespace
-        )
-        self._kinematics = MlSpacesKinematics(config.robot_config)
 
-        self._parallel_kinematics = SimpleWarpKinematics(config.robot_config)
+        assert config.robot_view_factory, (
+            "Something went wrong, 'robot_view_factory' shouldn't be None"
+        )
+        self._robot_view = config.robot_view_factory(mj_data, config.robot_namespace)
+        self._kinematics = MlSpacesKinematics(config)
+
+        self._parallel_kinematics = SimpleWarpKinematics(config)
         arm_controller_cls = (
             JointPosController
-            if config.robot_config.command_mode == {}
-            or config.robot_config.command_mode["arm"] == "joint_position"
+            if config.command_mode == {} or config.command_mode["arm"] == "joint_position"
             else JointRelPosController
         )
         base_controller_cls: type[Controller] = {
             "holo_joint_planar_position": JointPosController,
             "holo_joint_rel_planar_position": JointRelPosController,
-        }[config.robot_config.command_mode["base"]]
-        self._controllers = {
+        }[config.command_mode["base"]]
+        self._controllers: dict[str, Controller] = {
             "base": base_controller_cls(self._robot_view.get_move_group("base")),
             "arm": arm_controller_cls(self._robot_view.get_move_group("arm")),
             "gripper": JointPosController(self._robot_view.get_move_group("gripper")),
@@ -54,7 +56,7 @@ class MobileFrankaRobot(Robot):
 
     @property
     def namespace(self):
-        return self.exp_config.robot_config.robot_namespace
+        return self.config.robot_namespace
 
     @property
     def robot_view(self):
@@ -81,9 +83,9 @@ class MobileFrankaRobot(Robot):
         return ["arm"]
 
     def reset(self) -> None:
-        for mg_id, default_pos in self.exp_config.robot_config.init_qpos.items():
+        for mg_id, default_pos in self.config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
-                self._robot_view.get_move_group(mg_id).joint_pos = default_pos
+                self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
     @staticmethod
     def robot_model_root_name() -> str:
@@ -92,11 +94,11 @@ class MobileFrankaRobot(Robot):
     @classmethod
     def create_robot_base_material(
         cls,
-        robot_config: "MobileFrankaRobotConfig",
-        spec: MjSpec,
+        robot_config: MobileFrankaRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         randomize_base_texture: bool,
-    ) -> None:
+    ) -> str:  # LOL(wilbert): lololol, why were we returning None when we actually return str xD
         texture_dir = robot_config.get_robot_dir() / "assets" / "base_textures"
         assert texture_dir.is_dir(), f"Texture directory {texture_dir} does not exist"
         texture_path: Path | None = None
@@ -113,22 +115,24 @@ class MobileFrankaRobot(Robot):
         texture_name = f"{prefix}robot_base_texture"
         spec.add_texture(
             name=texture_name,
-            type=mujoco.mjtTexture.mjTEXTURE_CUBE,
+            type=mj.mjtTexture.mjTEXTURE_CUBE,
             file=str(texture_path),
         )
         log.debug(f"Successfully created texture from {texture_path}")
 
         material_name = f"{prefix}robot_base_material"
         robot_base_mat = spec.add_material(name=material_name)
-        robot_base_mat.textures[mujoco.mjtTextureRole.mjTEXROLE_RGB] = texture_name
+        robot_base_mat.textures[mj.mjtTextureRole.mjTEXROLE_RGB] = texture_name
         log.debug(f"Successfully created material {material_name}")
         return material_name
 
+    # TODO(wilbert): uhmm, this part should be moved to a regular free function, or a factory fcn
+    # that is registered via metaclasses when creating the robot class
     @classmethod
-    def add_robot_to_scene(
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride]
         cls,
-        robot_config: "MobileFrankaRobotConfig",
-        spec: MjSpec,
+        robot_config: MobileFrankaRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
@@ -138,21 +142,19 @@ class MobileFrankaRobot(Robot):
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int
         ):
-            act = spec.add_actuator()
-            act.name = f"{prefix}{name}"
-            act.target = f"{prefix}base_site"
-            act.refsite = f"{prefix}world"
-            act.ctrlrange = np.array([-ctrlrange, ctrlrange])
+            act = spec.add_actuator(
+                name=f"{prefix}{name}",
+                target=f"{prefix}base_site",
+                refsite=f"{prefix}world",
+                ctrlrange=[-ctrlrange, ctrlrange],
+                trntype=mj.mjtTrn.mjTRN_SITE,
+                biastype=mj.mjtBias.mjBIAS_AFFINE,
+                gear=[1 if i == gear_idx else 0 for i in range(6)],
+            )
             act.gainprm[0] = gainprm
             act.biasprm[: len(biasprm)] = biasprm
-            act.trntype = mujoco.mjtTrn.mjTRN_SITE
-            act.biastype = mujoco.mjtBias.mjBIAS_AFFINE
-            gear = [0] * 6
-            gear[gear_idx] = 1
-            act.gear = gear
             return act
 
-        robot_config = cast("MobileFrankaRobotConfig", robot_config)
         pos = pos + [0.005] if len(pos) == 2 else pos
 
         material_name = cls.create_robot_base_material(
@@ -176,7 +178,7 @@ class MobileFrankaRobot(Robot):
 
         # Add base geometry (wooden platform)
         robot_body.add_geom(
-            type=mjtGeom.mjGEOM_BOX,
+            type=mj.mjtGeom.mjGEOM_BOX,
             size=[x / 2 for x in robot_config.base_size],
             pos=[0, 0, base_height / 2],
             material=material_name,
@@ -200,7 +202,7 @@ class MobileFrankaRobot(Robot):
             jnt_axis[gear_idx] = 1
             jnt_axis = init_rot.inv().apply(jnt_axis)
             robot_body.add_joint(
-                type=mujoco.mjtJoint.mjJNT_SLIDE,
+                type=mj.mjtJoint.mjJNT_SLIDE,
                 name=f"{prefix}{jnt_name}",
                 axis=jnt_axis,
                 range=[-params["ctrlrange"], params["ctrlrange"]],
@@ -217,7 +219,7 @@ class MobileFrankaRobot(Robot):
 
         theta_act_params = robot_config.base_control_params["base_theta_act"]
         robot_body.add_joint(
-            type=mujoco.mjtJoint.mjJNT_HINGE,
+            type=mj.mjtJoint.mjJNT_HINGE,
             name=f"{prefix}base_theta",
             axis=[0, 0, 1],
             ref=init_yaw,
@@ -225,8 +227,8 @@ class MobileFrankaRobot(Robot):
         theta_act = spec.add_actuator(
             name=f"{prefix}base_theta_act",
             target=f"{prefix}base_theta",
-            trntype=mujoco.mjtTrn.mjTRN_JOINT,
-            biastype=mujoco.mjtBias.mjBIAS_AFFINE,
+            trntype=mj.mjtTrn.mjTRN_JOINT,
+            biastype=mj.mjtBias.mjBIAS_AFFINE,
         )
         theta_act.gainprm[0] = theta_act_params["kp"]
         theta_act.biasprm[1] = -theta_act_params["kp"]
@@ -250,7 +252,7 @@ if __name__ == "__main__":
     house_xml_path = houses["val"][0]["base"]
     install_scene_with_objects_and_grasps_from_path(house_xml_path)
 
-    spec = MjSpec.from_file(house_xml_path)
+    spec = mj.MjSpec.from_file(house_xml_path)
 
     robot_config = MobileFrankaRobotConfig(base_size=[0.5, 0.5, 0.75])
     robot_config.init_qpos["base"] = [6.8, 9.75, np.radians(90.0)]
@@ -265,14 +267,17 @@ if __name__ == "__main__":
     MobileFrankaRobot.apply_control_overrides(spec, robot_config)
 
     model = spec.compile()
-    data = MjData(model)
+    data = mj.MjData(model)
+
+    assert robot_config.robot_view_factory is not None
     view = robot_config.robot_view_factory(data, robot_config.robot_namespace)
 
-    view.set_qpos_dict(robot_config.init_qpos)
-    mujoco.mj_forward(model, data)
+    init_qpos = {key: np.array(val) for key, val in robot_config.init_qpos.items()}
+    view.set_qpos_dict(init_qpos)
+    mj.mj_forward(model, data)
     for mg_id in view.move_group_ids():
         mg = view.get_move_group(mg_id)
         mg.ctrl = mg.noop_ctrl
-    mujoco.mj_forward(model, data)
+    mj.mj_forward(model, data)
 
     mujoco.viewer.launch(model, data)

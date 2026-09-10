@@ -8,6 +8,7 @@ for use in the data generation pipeline.
 import math
 from functools import cache
 from pathlib import Path
+from typing import Any
 
 from molmo_spaces.configs import BasePolicyConfig, BaseRobotConfig
 from molmo_spaces.configs.base_open_task_configs import ClosingBaseConfig, OpeningBaseConfig
@@ -20,6 +21,7 @@ from molmo_spaces.configs.base_pick_and_place_configs import (
 from molmo_spaces.configs.base_pick_and_place_next_to_configs import PickAndPlaceNextToDataGenConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
+    CameraSystemConfig,
     FrankaDroidCameraSystem,
     FrankaEasyRandomizedDroidCameraSystem,
     FrankaGoProD405D455CameraSystem,
@@ -41,6 +43,7 @@ from molmo_spaces.configs.robot_configs import (
     RBY1MOpenCloseConfig,
 )
 from molmo_spaces.configs.task_sampler_configs import (
+    BaseMujocoTaskSamplerConfig,
     OpenTaskSamplerConfig,
     PickAndPlaceColorTaskSamplerConfig,
     PickAndPlaceNextToTaskSamplerConfig,
@@ -70,7 +73,7 @@ class FrankaPickDroidDataGenConfig(PickBaseConfig):
     """Data generation config for Franka pick task with DROID-style fixed cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_droid_v1"
 
     @property
@@ -83,9 +86,9 @@ class FrankaPickGoProD405D455DataGenConfig(PickBaseConfig):
     """Data generation config for Franka pick task with GoPro D405 cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaGoProD405D455CameraSystem = FrankaGoProD405D455CameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaGoProD405D455CameraSystem()
     num_workers: int = 4
-    task_horizon: int = 150
+    task_horizon: int | None = 150
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_go_pro_d405_v1"
 
     @property
@@ -98,7 +101,7 @@ class FrankaPickRandomizedDataGenConfig(PickBaseConfig):
     """Data generation config for Franka pick task with randomized exocentric cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaRandomizedD405D455CameraSystem = FrankaRandomizedD405D455CameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaRandomizedD405D455CameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_randomized_v1"
 
     @property
@@ -109,14 +112,14 @@ class FrankaPickRandomizedDataGenConfig(PickBaseConfig):
 @register_config("RUMPickDataGenConfig")
 class RUMPickDataGenConfig(PickBaseConfig):
     scene_dataset: str = "holodeck-objaverse"
-    robot_config: FloatingRUMRobotConfig = FloatingRUMRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaRandomizedD405D455CameraSystem(
+    robot_config: BaseRobotConfig = FloatingRUMRobotConfig()
+    camera_config: CameraSystemConfig | None = FrankaRandomizedD405D455CameraSystem(
         img_resolution=(960, 720)
     )
-    task_sampler_config: RUMPickTaskSamplerConfig = RUMPickTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = RUMPickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler, robot_object_z_offset=0
     )
-    policy_config: PickPlannerPolicyConfig = PickPlannerPolicyConfig()
+    policy_config: BasePolicyConfig = PickPlannerPolicyConfig()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "rum_pick_v1"
 
     @property
@@ -127,7 +130,7 @@ class RUMPickDataGenConfig(PickBaseConfig):
 @register_config("FrankaPickAndPlaceDataGenConfig")
 class FrankaPickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaRandomizedDroidCameraSystem = FrankaRandomizedDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaRandomizedDroidCameraSystem()
     policy_dt_ms: float = 66.0  # ~15hz
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_randomized_v1"
 
@@ -139,7 +142,7 @@ class FrankaPickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
 @register_config("FrankaPickAndPlaceEasyDataGenConfig")
 class FrankaPickAndPlaceEasyDataGenConfig(PickAndPlaceDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaEasyRandomizedDroidCameraSystem = FrankaEasyRandomizedDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaEasyRandomizedDroidCameraSystem()
     policy_dt_ms: float = 66.0  # ~15hz
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_randomized_easy_v1"
@@ -153,7 +156,7 @@ class FrankaPickAndPlaceEasyDataGenConfig(PickAndPlaceDataGenConfig):
 @register_config("FrankaPickAndPlaceDroidDataGenConfig")
 class FrankaPickAndPlaceDroidDataGenConfig(PickAndPlaceDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_droid_v1"
 
     @property
@@ -164,7 +167,7 @@ class FrankaPickAndPlaceDroidDataGenConfig(PickAndPlaceDataGenConfig):
 @register_config("FrankaPickAndPlaceGoProD405D455DataGenConfig")
 class FrankaPickAndPlaceGoProD405D455DataGenConfig(PickAndPlaceDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaGoProD405D455CameraSystem = FrankaGoProD405D455CameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaGoProD405D455CameraSystem()
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_go_pro_d405_v1"
     )
@@ -177,7 +180,7 @@ class FrankaPickAndPlaceGoProD405D455DataGenConfig(PickAndPlaceDataGenConfig):
 @register_config("FrankaPickAndPlaceNextToDataGenConfig")
 class FrankaPickAndPlaceNextToDataGenConfig(PickAndPlaceNextToDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaRandomizedD405D455CameraSystem = FrankaRandomizedD405D455CameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaRandomizedD405D455CameraSystem()
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_next_to_randomized_v1"
     )
@@ -190,7 +193,7 @@ class FrankaPickAndPlaceNextToDataGenConfig(PickAndPlaceNextToDataGenConfig):
 @register_config("FrankaPickAndPlaceNextToDroidDataGenConfig")
 class FrankaPickAndPlaceNextToDroidDataGenConfig(PickAndPlaceNextToDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_next_to_droid_v1"
     )
@@ -205,9 +208,9 @@ class FrankaPickAndPlaceColorDataGenConfig(PickAndPlaceColorDataGenConfig):
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_colors_randomized_v1"
     )
-    wandb_project: str = "molmo-spaces-data-generation"
-    robot_config: FrankaRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaRandomizedD405D455CameraSystem = FrankaRandomizedD405D455CameraSystem()
+    wandb_project: str | None = "molmo-spaces-data-generation"
+    robot_config: BaseRobotConfig = FrankaRobotConfig()
+    camera_config: CameraSystemConfig | None = FrankaRandomizedD405D455CameraSystem()
 
     @property
     def tag(self) -> str:
@@ -219,9 +222,9 @@ class FrankaPickAndPlaceColorDroidDataGenConfig(PickAndPlaceColorDataGenConfig):
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_colors_droid_randomized_v1"
     )
-    wandb_project: str = "molmo-spaces-data-generation"
-    robot_config: FrankaRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    wandb_project: str | None = "molmo-spaces-data-generation"
+    robot_config: BaseRobotConfig = FrankaRobotConfig()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
 
     @property
     def tag(self) -> str:
@@ -235,7 +238,7 @@ class FrankaOpenDataGenConfig(OpeningBaseConfig):
     scene_dataset: str = "ithor"  # Name of the scene dataset to load
     data_split: str = "train"  # Data split to use
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
@@ -252,10 +255,10 @@ class FrankaOpenDataGenConfig(OpeningBaseConfig):
 @register_config("RBY1OpenDataGenConfig")
 class RBY1OpenDataGenConfig(OpeningBaseConfig):
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "rby1_open_v1"
-    wandb_project: str = "mujoco-thor-data-generation"
-    robot_config: RBY1MOpenCloseConfig = RBY1MOpenCloseConfig()
+    wandb_project: str | None = "mujoco-thor-data-generation"
+    robot_config: BaseRobotConfig = RBY1MOpenCloseConfig()
     policy_config: BasePolicyConfig = CuroboOpenClosePlannerPolicyConfig()
-    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    camera_config: CameraSystemConfig | None = RBY1GoProD455CameraSystem()
     task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
@@ -265,7 +268,7 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
     scene_dataset: str = "ithor"  # Name of the scene dataset to load
     task_horizon: int | None = 200  # Maximum number of steps per episode (if None, no time limit)
     use_passive_viewer: bool = False
-    seed: int = None
+    seed: int | None = None
     filter_for_successful_trajectories: bool = True
     policy_dt_ms: float = 100.0  # Default policy time step
     ctrl_dt_ms: float = 20.0  # Default control time step
@@ -275,7 +278,7 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
     def tag(self) -> str:
         return "rby1_open_datagen"
 
-    def _init_policy_config(self) -> CuroboPickAndPlacePlannerPolicyConfig:
+    def _init_policy_config(self) -> BasePolicyConfig:
         from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
         from molmo_spaces.policy.solvers.object_manipulation.curobo_open_close_planner_policy import (
             CuroboOpenClosePlannerPolicy,
@@ -307,8 +310,9 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
             right_curobo_planner_config=right_curobo_planner_config,
         )
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any) -> None:
+        super().model_post_init(_context)
+
         self.policy_config = self._init_policy_config()
         self.task_config.task_success_threshold = 0.67
         self.task_sampler_config.randomize_textures = True
@@ -319,16 +323,16 @@ class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
     seed: int | None = None  # 75133535  # 4821697
     viewer_cam_dict: dict = {"camera": "robot_0/camera_follower"}
     use_passive_viewer: bool = False
-    task_horizon: int | None = 400  # Maximum number of steps per episode (if None, no time limit)
+    task_horizon: int | None = 400
     filter_for_successful_trajectories: bool = True
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "rby1_pick_and_place_v1"
-    wandb_project: str = "mujoco-thor-data-generation"
-    policy_dt_ms: float = 100.0  # Default policy time step
-    ctrl_dt_ms: float = 20.0  # Default control time step
-    sim_dt_ms: float = 4.0  # Default simulation time step
+    wandb_project: str | None = "mujoco-thor-data-generation"
+    policy_dt_ms: float = 100.0
+    ctrl_dt_ms: float = 20.0
+    sim_dt_ms: float = 4.0
 
-    robot_config: RBY1MConfig = RBY1MConfig()
-    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    robot_config: BaseRobotConfig = RBY1MConfig()
+    camera_config: CameraSystemConfig | None = RBY1GoProD455CameraSystem()
     policy_config: CuroboPickAndPlacePlannerPolicyConfig | None = None
 
     def _init_policy_config(self) -> CuroboPickAndPlacePlannerPolicyConfig:
@@ -364,8 +368,9 @@ class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
             enable_collision_avoidance=True,
         )
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any) -> None:
+        super().model_post_init(_context)
+
         try:
             self.policy_config = self._init_policy_config()
         except RuntimeError as e:
@@ -377,7 +382,7 @@ class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
                 print(
                     f"Warning: Skipping policy config initialization due to missing GPU: {error_msg}"
                 )
-                self.policy_config = None
+                self.policy_config = None  # pyright: ignore[reportIncompatibleVariableOverride]
             else:
                 raise
         self.robot_config.init_qpos["head"][1] = 0.6
@@ -404,8 +409,8 @@ class RBY1PickDataGenConfig(PickBaseConfig):
     ctrl_dt_ms: float = 20.0  # Default control time step
     sim_dt_ms: float = 4.0  # Default simulation time step
 
-    robot_config: RBY1MConfig = RBY1MConfig()
-    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    robot_config: BaseRobotConfig = RBY1MConfig()
+    camera_config: CameraSystemConfig | None = RBY1GoProD455CameraSystem()
     policy_config: CuroboPickAndPlacePlannerPolicyConfig | None = None
 
     def _init_policy_config(self) -> CuroboPickAndPlacePlannerPolicyConfig:
@@ -441,8 +446,8 @@ class RBY1PickDataGenConfig(PickBaseConfig):
             enable_collision_avoidance=True,
         )
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any) -> None:
+        super().model_post_init(_context)
         try:
             self.policy_config = self._init_policy_config()
         except RuntimeError as e:
@@ -454,13 +459,15 @@ class RBY1PickDataGenConfig(PickBaseConfig):
                 print(
                     f"Warning: Skipping policy config initialization due to missing GPU: {error_msg}"
                 )
-                self.policy_config = None
+                self.policy_config = None  # pyright: ignore[reportIncompatibleVariableOverride]
             else:
                 raise
         self.robot_config.init_qpos["head"][1] = 0.6
-        self.task_sampler_config.robot_safety_radius = 0.35
-        self.task_sampler_config.max_robot_to_obj_dist = 0.5
-        self.task_sampler_config.object_placement_radius_range = (0.1, 0.5)
+
+        if isinstance(self.task_sampler_config, OpenTaskSamplerConfig):
+            self.task_sampler_config.robot_safety_radius = 0.35
+            self.task_sampler_config.max_robot_to_obj_dist = 0.5
+            self.task_sampler_config.object_placement_radius_range = (0.1, 0.5)
 
     @property
     def tag(self) -> str:
@@ -471,15 +478,15 @@ class RBY1PickDataGenConfig(PickBaseConfig):
 class FrankaCloseDataGenConfig(ClosingBaseConfig):
     """Data generation config for Franka open task."""
 
-    scene_dataset: str = "ithor"  # Name of the scene dataset to load
-    data_split: str = "train"  # Data split to use
+    scene_dataset: str = "ithor"
+    data_split: str = "train"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0.5,  # 0.67 for close task, 0 for open task
     )
-    task_horizon: int | None = 200  # Maximum number of steps per episode (if None, no time limit)
+    task_horizon: int | None = 200
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "close_v1"
 
     @property
@@ -492,8 +499,8 @@ class FrankaPickAndPlaceGoProD405D455DataGenConfigDebug(FrankaPickAndPlaceDroidD
     """Data generation config for Franka pick and place task with GoPro D405 cameras - deterministic version."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaGoProD405D455CameraSystem = FrankaGoProD405D455CameraSystem()
-    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaGoProD405D455CameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         samples_per_house=10,
         max_tasks=100,
@@ -501,7 +508,7 @@ class FrankaPickAndPlaceGoProD405D455DataGenConfigDebug(FrankaPickAndPlaceDroidD
         house_inds=[2],
     )
     num_workers: int = 1
-    task_horizon: int = 100
+    task_horizon: int | None = 100
     use_wandb: bool = False
     log_level: str = "debug"
     filter_for_successful_trajectories: bool = False
@@ -519,7 +526,7 @@ class FrankaPickOmniCamConfig(PickBaseConfig):
     """Data generation config for Franka pick task with Omni-directional cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_omni_v1"
 
     @property
@@ -532,10 +539,10 @@ class FrankaPickOmniCamAblationConfig(FrankaPickOmniCamConfig):
     """Data generation config for Franka pick task with Omni-directional cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_omni_v1_cam_ablation"
 
-    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler,
         added_pickup_objects=None,  # will get set after instantiation
         # num_added_pickups=30, these are defaults
@@ -547,9 +554,13 @@ class FrankaPickOmniCamAblationConfig(FrankaPickOmniCamConfig):
     def _get_valid_pickupable_obja_uids() -> list[str]:
         return get_valid_pickupable_obja_uids()
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
-        if self.task_sampler_config.added_pickup_objects is None:
+    def model_post_init(self, _context: Any) -> None:
+        super().model_post_init(_context)
+
+        if (
+            isinstance(self.task_sampler_config, PickTaskSamplerConfig)
+            and self.task_sampler_config.added_pickup_objects is None
+        ):
             self.task_sampler_config.added_pickup_objects = self._get_valid_pickupable_obja_uids()
 
     @property
@@ -562,7 +573,7 @@ class FrankaPickAndPlaceOmniCamConfig(PickAndPlaceDataGenConfig):
     """Data generation config for Franka pick task with Omni-directional cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_omni_v1"
     log_level: str = "info"
 
@@ -577,7 +588,7 @@ class FrankaPickAndPlaceNextToOmniCamConfig(PickAndPlaceNextToDataGenConfig):
     """Data generation config for Franka pick task with Omni-directional cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     output_dir: Path = (
         ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_next_to_omni_v1"
     )
@@ -594,7 +605,7 @@ class FrankaPickAndPlaceColorOmniCamConfig(PickAndPlaceColorDataGenConfig):
     """Data generation config for Franka pick task with Omni-directional cameras."""
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pick_and_place_color_omni_v1"
     log_level: str = "info"
 
@@ -613,8 +624,8 @@ class FrankaPickDroidMiniBench(PickBaseConfig):
     scene_dataset: str = "procthor-10k"
     data_split: str = "val"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler,
         samples_per_house=40,
         house_inds=list(range(101)),
@@ -631,7 +642,7 @@ class FrankaPickandPlaceDroidMiniBench(PickAndPlaceDataGenConfig):
     scene_dataset: str = "procthor-10k"
     data_split: str = "val"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         pickup_types=PICK_AND_PLACE_OBJECTS,
@@ -650,8 +661,8 @@ class FrankaPickDroidBench(PickBaseConfig):
     scene_dataset: str = "procthor-objaverse"
     data_split: str = "val"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
-    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler,
         samples_per_house=40,
         house_inds=list(range(101)),
@@ -668,7 +679,7 @@ class FrankaPickandPlaceDroidBench(PickAndPlaceDataGenConfig):
     scene_dataset: str = "procthor-objaverse"
     data_split: str = "val"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         pickup_types=PICK_AND_PLACE_OBJECTS,
@@ -685,7 +696,7 @@ class FrankaPickandPlaceDroidBench(PickAndPlaceDataGenConfig):
 @register_config("FrankaPickandPlaceNextToDroidBench")
 class FrankaPickandPlaceNextToDroidBench(PickAndPlaceNextToDataGenConfig):
     scene_dataset: str = "procthor-objaverse"
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
     output_dir: Path = ASSETS_DIR / "benchmark" / "pick_and_place_next_to_obja_v1"
 
     @property
@@ -701,7 +712,7 @@ class FrankaPickandPlaceColorDroidBench(PickAndPlaceColorDataGenConfig):
     scene_dataset: str = "procthor-objaverse"
 
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
 
     @property
     def tag(self) -> str:
@@ -717,7 +728,7 @@ class FrankaOpenHardBench(OpeningBaseConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig(
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
@@ -743,7 +754,7 @@ class FrankaCloseHardBench(ClosingBaseConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig(
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0.5,  # 0.67 for close task, 0 for open task
@@ -766,8 +777,8 @@ class FrankaPickHardBench(PickBaseConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig(
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler,
         robot_object_z_offset_random_min=-0.25,
         robot_object_z_offset_random_max=0.25,
@@ -788,7 +799,7 @@ class FrankaPickandPlaceHardBench(PickAndPlaceDataGenConfig):
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
 
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         robot_object_z_offset_random_min=-0.25,
@@ -809,8 +820,8 @@ class FrankaPickandPlaceNextToHardBench(PickAndPlaceNextToDataGenConfig):
     robot_config: BaseRobotConfig = FrankaRobotConfig(
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceNextToTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceNextToTaskSamplerConfig(
         task_sampler_class=PickAndPlaceNextToTaskSampler,
         robot_object_z_offset_random_min=-0.25,
         robot_object_z_offset_random_max=0.25,
@@ -831,8 +842,8 @@ class FrankaPickandPlaceColorHardBench(PickAndPlaceColorDataGenConfig):
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
 
-    camera_config: FrankaOmniPurposeCameraSystem = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: PickAndPlaceColorTaskSamplerConfig = PickAndPlaceColorTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceColorTaskSamplerConfig(
         task_sampler_class=PickAndPlaceColorTaskSampler,
         robot_object_z_offset_random_min=-0.25,
         robot_object_z_offset_random_max=0.25,
@@ -848,8 +859,8 @@ class FrankaPickandPlaceColorHardBench(PickAndPlaceColorDataGenConfig):
 @register_config("MultiPnPTask")
 class RUMPickAndPlaceMultiDataGenConfig(PickAndPlaceDataGenConfig):
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pnpmulti_V1"
-    wandb_project: str = "mujoco-thor-data-generation"
-    robot_config: FloatingRUMRobotConfig = FloatingRUMRobotConfig()
+    wandb_project: str | None = "mujoco-thor-data-generation"
+    robot_config: BaseRobotConfig = FloatingRUMRobotConfig()
     task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceMultiTaskSampler,
         pickup_types=None,
@@ -859,10 +870,12 @@ class RUMPickAndPlaceMultiDataGenConfig(PickAndPlaceDataGenConfig):
         check_robot_placement_visibility=False,
     )
 
-    camera_config: FrankaDroidCameraSystem = FrankaRandomizedD405D455CameraSystem(
+    # TODO(wilbert): uhmm, was this crashing? it must have been bc it's passing some arguments to
+    # the constructor that are not valid
+    camera_config: CameraSystemConfig | None = FrankaRandomizedD405D455CameraSystem(
         img_resolution=(960, 720),
-        visibility_constraints=None,
-        allow_relaxed_constraints=True,
+        # visibility_constraints=None,
+        # allow_relaxed_constraints=True,
     )
 
     @property
@@ -880,8 +893,8 @@ class FrankaPickBatchTestConfig(PickBaseConfig):
 
     num_workers: int = 2
     robot_config: BaseRobotConfig = FrankaRobotConfig()
-    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
-    task_sampler_config: PickTaskSamplerConfig = PickTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickTaskSamplerConfig(
         task_sampler_class=PickTaskSampler,
         house_inds=[7],
         samples_per_house=12,
