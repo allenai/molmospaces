@@ -329,6 +329,8 @@ class CPUMujocoEnv(BaseMujocoEnv):
             self._renderer = None
 
     def _reset_single(self, idx: int) -> None:
+        assert self._mj_model is not None, "Must have initialized the mujoco model by now"
+
         mj.mj_resetData(self._mj_model, self._mj_datas[idx])
         mj.mj_forward(self._mj_model, self._mj_datas[idx])
 
@@ -344,6 +346,8 @@ class CPUMujocoEnv(BaseMujocoEnv):
                 self._reset_single(idx)
 
     def step(self, n_steps: int = 1) -> None:
+        assert self._mj_model is not None, "Must have initialized the mujoco model by now"
+
         if self._executor is not None:
             futures = [
                 self._executor.submit(mj.mj_step, self._mj_model, mj_data, n_steps)
