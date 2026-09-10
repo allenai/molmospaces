@@ -21,7 +21,6 @@ class JointVelController(Controller):
         super().__init__(robot_move_group)
 
         self.robot_config = robot_config
-        # TODO:
         self.euler_dt = self.robot_config.delta_t  # Time step for euler integration
 
         self.ctrl_dim = robot_move_group.n_actuators
@@ -30,24 +29,23 @@ class JointVelController(Controller):
         self._stationary = True
         self._target = np.zeros(self.ctrl_dim)  # Initially zero vel targets
 
-        # TODO: Check if the move_group's actuators support this control type
+        self._validate_actuators()
 
         self.reset()
 
     @property
-    def stationary(self):
+    def stationary(self) -> bool:
         """Returns whether the controller is in stationary mode"""
         return self._stationary
 
     @property
-    def target(self):
+    def target(self) -> np.ndarray:
         """Returns the current target joint velocities"""
         return self._target
 
-    def set_target(self, target_joint_velocities) -> None:
-        """Set the target joint velocities for the controller"""
-        self._stationary = False  # Exit stationary mode when target is provided
-        self._target = target_joint_velocities.copy()
+    def set_target(self, target: np.ndarray) -> None:
+        self._stationary = False
+        self._target = target.copy()
 
     def set_to_stationary(self) -> None:
         """
@@ -59,7 +57,7 @@ class JointVelController(Controller):
         self._stationary = True
         self._target = np.zeros(self.ctrl_dim)
 
-    def compute_ctrl_inputs(self):
+    def compute_ctrl_inputs(self) -> np.ndarray:
         """
         Compute the control inputs based on the current state and the target set by the user.
 
@@ -74,5 +72,9 @@ class JointVelController(Controller):
         return ctrl_inputs
 
     def reset(self) -> None:
-        """Reset the controller to its initial state, clearing any internal state or targets"""
-        self.set_to_stationary()  # Explicit reset to stationary mode
+        self.set_to_stationary()
+
+    def _validate_actuators(self) -> None:
+        # TODO(wilbert): implement this part once the joint_ids and actuator_ids are exposed
+        # in the base MoveGroup, not in the SingleActuated one
+        pass

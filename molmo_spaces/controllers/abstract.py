@@ -24,25 +24,24 @@ class Controller:
 
     @property
     @abc.abstractmethod
-    def target(self):
+    def target(self) -> np.ndarray:
         """The target state of the controller, set by the user of the controller."""
         pass
 
     @property
     @abc.abstractmethod
-    def stationary(self):
+    def stationary(self) -> bool:
         """Whether the controller is set to hold the robot stationary, for e.g.
         when the robot has to be stopped at a certain position and not drift."""
 
     @abc.abstractmethod
-    def set_target(self, target):
+    def set_target(self, target: np.ndarray) -> None:
         """
         Set the target state of the controller.
 
         Args:
             target: The target state to be set, e.g. a joint position, base velocity, or any other state.
         """
-        pass
 
     def set_to_stationary(self) -> None:
         """
@@ -51,7 +50,6 @@ class Controller:
         This is useful when the robot needs to be stopped at a certain position and not drift.
         NOTE: If the controller is already stationary, it does not change the target.
         """
-        pass
 
     @abc.abstractmethod
     def compute_ctrl_inputs(self) -> np.ndarray:
@@ -61,12 +59,10 @@ class Controller:
         Returns:
             The control inputs to be applied to the robot actuators, eg. positions, torques etc.
         """
-        pass
 
     @abc.abstractmethod
-    def reset(self):
+    def reset(self) -> None:
         """Reset the controller to its initial state, clearing any internal state or targets."""
-        pass
 
 
 class AbstractPositionController(Controller):
@@ -80,4 +76,3 @@ class AbstractPositionController(Controller):
         """
         The target absolute position of the controller, set by the user of the controller.
         """
-        pass

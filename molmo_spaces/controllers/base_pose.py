@@ -20,19 +20,20 @@ class BasePoseController(Controller, ABC):
     def __init__(self, robot_move_group: RobotBaseGroup) -> None:
         super().__init__(robot_move_group)
 
+        assert isinstance(self.robot_move_group, RobotBaseGroup)
+
         self.ctrl_dim = robot_move_group.n_actuators
         self.ctrl_range = robot_move_group.ctrl_limits
 
         self._stationary = True
-        self._target = self.robot_move_group.pose.copy()  # Initial target pose is current base pose
+        self._target = self.robot_move_group.pose.copy()
 
-        # TODO: Check if the move_group's actuators support this control type
+        self._validate_actuators()
 
         self.reset()
 
     @property
-    def stationary(self):
-        """Whether the controller is in stationary mode"""
+    def stationary(self) -> bool:
         return self._stationary
 
     @property
@@ -40,11 +41,10 @@ class BasePoseController(Controller, ABC):
         """The target pose for the controller"""
         return self._target
 
-    def set_target(self, target_base_pose) -> None:
+    def set_target(self, target: np.ndarray) -> None:
         """Set the target pose for the controller"""
-        self._stationary = False  # Exit stationary mode when target is provided
-
-        self._target = target_base_pose.copy()
+        self._stationary = False
+        self._target = target.copy()
 
     def set_to_stationary(self) -> None:
         """
@@ -52,7 +52,8 @@ class BasePoseController(Controller, ABC):
         robot stationary.
         This is useful when the robot needs to be stopped at a certain position and not drift.
         """
-        # Set to stationary mode and set target to current base pose to hold it stationary
+        assert isinstance(self.robot_move_group, RobotBaseGroup)
+
         self._stationary = True
         current_base_pose = self.robot_move_group.pose
         self._target = current_base_pose.copy()
@@ -64,15 +65,13 @@ class BasePoseController(Controller, ABC):
         Returns:
             The control inputs to be applied to the robot actuators, in this case: positions
         """
-        # velocity control inputs: compute base velocities to achieve target pose
-        ctrl_inputs = self.compute_base_velocities(self._target)
-        # Clip to control limits
-        ctrl_inputs = np.clip(ctrl_inputs, self.ctrl_range[:, 0], self.ctrl_range[:, 1])
 
+        ctrl_inputs = self.compute_base_velocities(self._target)
+        ctrl_inputs = np.clip(ctrl_inputs, self.ctrl_range[:, 0], self.ctrl_range[:, 1])
         return ctrl_inputs
 
     @abstractmethod
-    def compute_base_velocities(self, target_base_pose):
+    def compute_base_velocities(self, target_base_pose: np.ndarray) -> np.ndarray:
         """
         Abstract method to compute base velocities to achieve the target pose.
         Must be implemented by subclasses.
@@ -81,8 +80,12 @@ class BasePoseController(Controller, ABC):
         pass
 
     def reset(self) -> None:
-        """Reset the controller to its initial state, clearing any internal state or targets"""
-        self.set_to_stationary()  # Explicit reset to stationary mode
+        self.set_to_stationary()
+
+    def _validate_actuators(self) -> None:
+        # TODO(wilbert): implement this part once the joint_ids and actuator_ids are exposed
+        # in the base MoveGroup, not in the SingleActuated one
+        pass
 
 
 class DiffDriveBasePoseController(BasePoseController):
@@ -110,10 +113,11 @@ class DiffDriveBasePoseController(BasePoseController):
         Returns:
             np.ndarray: [left_wheel_velocity, right_wheel_velocity]
         """
-        # TODO: Test this controller
-        # TODO: Handle case where base_pose frame is not in the center of the wheels
+        # TODO(anyone): Test this controller
+        # TODO(anyone): Handle case where base_pose frame is not in the center of the wheels
 
-        # Current pose
+        assert isinstance(self.robot_move_group, RobotBaseGroup)
+
         current_pose = self.robot_move_group.pose  # [x, y, theta]
         x, y, theta = current_pose
         x_t, y_t, theta_t = target_base_pose
@@ -123,8 +127,7 @@ class DiffDriveBasePoseController(BasePoseController):
         dy = y_t - y
 
         # Transform error to robot frame
-        error_x = np.cos(theta) * dx + np.sin(theta) * dy
-        -np.sin(theta) * dx + np.cos(theta) * dy
+        error_x = np.cos(theta) * dx + np.sin(theta) * dy - np.sin(theta) * dx + np.cos(theta) * dy
         error_theta = np.arctan2(np.sin(theta_t - theta), np.cos(theta_t - theta))
 
         # Proportional gains
@@ -190,10 +193,11 @@ class SwerveBasePoseController(BasePoseController):
                     o-------------o
                    rl              rr
         """
-        # TODO: Test this controller
-        # TODO: Handle case where base_pose frame is not in the center of the wheels
+        # TODO(anyone): Test this controller
+        # TODO(anyone): Handle case where base_pose frame is not in the center of the wheels
 
-        # Current pose
+        assert isinstance(self.robot_move_group, RobotBaseGroup)
+
         current_pose = self.robot_move_group.pose  # [x, y, theta]
         x, y, theta = current_pose
         x_t, y_t, theta_t = target_base_pose

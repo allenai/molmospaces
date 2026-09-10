@@ -1,17 +1,18 @@
 """
-This module defines the core abstractions for representing and controlling robots in MuJoCo.
+This module defines the core abstractions for representing and controlling robots in mj.
 The architecture is based on a hierarchical structure where a RobotView contains multiple MoveGroups,
 each representing an atomic collection of joints and actuators.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from typing import Literal, NoReturn, Optional, TypeAlias
+from typing import Literal, NoReturn, TypeAlias
 
-import mujoco
+import mujoco as mj
 import numpy as np
-from mujoco import MjData
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.utils.linalg_utils import (
@@ -36,11 +37,11 @@ class MoveGroup(ABC):
 
     def __init__(
         self,
-        mj_data: MjData,
+        mj_data: mj.MjData,
         joint_ids: list[int],
         actuator_ids: list[int],
         root_body_id: int,
-        robot_base_group: Optional["RobotBaseGroup"] = None,
+        robot_base_group: RobotBaseGroup | None = None,
     ) -> None:
         """Initialize a MoveGroup.
 
@@ -53,20 +54,21 @@ class MoveGroup(ABC):
         """
         self.mj_model = mj_data.model
         self.mj_data = mj_data
-        self._name: str | None = None
+
         self._joint_ids = joint_ids
         self._robot_base_group = robot_base_group
         self._root_body_id = root_body_id
+        self._name: str | None = None
 
         self._joint_posadr: list[int] = []
         self._joint_veladr: list[int] = []
         for i in joint_ids:
             n_pos_dim = 1
             n_vel_dim = 1
-            if self.mj_model.jnt_type[i] == mujoco.mjtJoint.mjJNT_FREE:
+            if self.mj_model.jnt_type[i] == mj.mjtJoint.mjJNT_FREE:
                 n_pos_dim = 7
                 n_vel_dim = 6
-            elif self.mj_model.jnt_type[i] == mujoco.mjtJoint.mjJNT_BALL:
+            elif self.mj_model.jnt_type[i] == mj.mjtJoint.mjJNT_BALL:
                 n_pos_dim = 4
                 n_vel_dim = 3
             self._joint_posadr.extend(
@@ -136,9 +138,9 @@ class MoveGroup(ABC):
 
         i = 0
         for jnt_id in self._joint_ids:
-            if self.mj_model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_FREE:
+            if self.mj_model.jnt_type[jnt_id] == mj.mjtJoint.mjJNT_FREE:
                 i += 7
-            elif self.mj_model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_BALL:
+            elif self.mj_model.jnt_type[jnt_id] == mj.mjtJoint.mjJNT_BALL:
                 i += 4
             else:
                 if self.mj_model.jnt_limited[jnt_id]:
@@ -204,7 +206,7 @@ class MoveGroup(ABC):
         i = 0
         j = 0
         for jnt_id in self._joint_ids:
-            if self.mj_model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_FREE:
+            if self.mj_model.jnt_type[jnt_id] == mj.mjtJoint.mjJNT_FREE:
                 trf = pos_quat_to_pose_mat(self.joint_pos[i : i + 3], self.joint_pos[i + 3 : i + 7])
                 twist = joint_vel[j : j + 6]
                 delta_trf = twist_to_transform(twist[:3], twist[3:])
@@ -212,7 +214,7 @@ class MoveGroup(ABC):
                 new_jp[i : i + 3], new_jp[i + 3 : i + 7] = pose_mat_to_pos_quat(trf)
                 i += 7
                 j += 6
-            elif self.mj_model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_BALL:
+            elif self.mj_model.jnt_type[jnt_id] == mj.mjtJoint.mjJNT_BALL:
                 rotmat = R.from_quat(self.joint_pos[i : i + 4], scalar_first=True).as_matrix()
                 twist = joint_vel[j : j + 3]
                 delta_rotmat = R.from_rotvec(twist).as_matrix()
@@ -281,7 +283,7 @@ class MoveGroup(ABC):
         Returns:
             A 6xN numpy array where N is the number of degrees of freedom in the model.
 
-        See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
+        See: https://mj.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
         raise NotImplementedError
 
@@ -325,7 +327,7 @@ class MJCFFrameMixin(ABC):
         Returns:
             A 6xN numpy array where N is the number of degrees of freedom in the model.
 
-        See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
+        See: https://mj.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
         assert isinstance(self, MoveGroup), (
             f"{self.__class__.__name__} must be used with a MoveGroup"
@@ -333,9 +335,9 @@ class MJCFFrameMixin(ABC):
 
         J = np.zeros((6, self.mj_model.nv))
         if self.leaf_frame_type == "site":
-            mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self.leaf_frame_id)
+            mj.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self.leaf_frame_id)
         elif self.leaf_frame_type == "body":
-            mujoco.mj_jacBody(self.mj_model, self.mj_data, J[:3], J[3:], self.leaf_frame_id)
+            mj.mj_jacBody(self.mj_model, self.mj_data, J[:3], J[3:], self.leaf_frame_id)
         else:
             raise ValueError(f"Invalid leaf frame type: {self.leaf_frame_type}")
         return J
@@ -412,7 +414,7 @@ class RobotBaseGroup(MoveGroup):
     """
 
     def __init__(
-        self, mj_data: MjData, joint_ids: list[int], actuator_ids: list[int], root_body_id: int
+        self, mj_data: mj.MjData, joint_ids: list[int], actuator_ids: list[int], root_body_id: int
     ):
         """Initialize a RobotBase.
 
@@ -466,7 +468,7 @@ class FreeJointRobotBaseGroup(RobotBaseGroup):
 
     def __init__(
         self,
-        mj_data: MjData,
+        mj_data: mj.MjData,
         base_joint_id: int,
         joint_ids: list[int],
         actuator_ids: list[int],
@@ -483,7 +485,7 @@ class FreeJointRobotBaseGroup(RobotBaseGroup):
         """
         base_body_id = mj_data.model.jnt_bodyid[base_joint_id]
         super().__init__(mj_data, [base_joint_id] + joint_ids, actuator_ids, base_body_id)
-        assert self.mj_model.jnt_type[base_joint_id] == mujoco.mjtJoint.mjJNT_FREE
+        assert self.mj_model.jnt_type[base_joint_id] == mj.mjtJoint.mjJNT_FREE
         self._base_joint_id = base_joint_id
         self._floating = floating
 
@@ -513,7 +515,7 @@ class FreeJointRobotBaseGroup(RobotBaseGroup):
     def get_jacobian(self) -> np.ndarray:
         body_id = self.mj_model.jnt_bodyid[self._base_joint_id]
         J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacBody(self.mj_model, self.mj_data, J[:3], J[3:], body_id)
+        mj.mj_jacBody(self.mj_model, self.mj_data, J[:3], J[3:], body_id)
         return J
 
 
@@ -525,7 +527,7 @@ class HoloJointsRobotBaseGroup(RobotBaseGroup, SimplyActuatedMoveGroup):
 
     def __init__(
         self,
-        mj_data: MjData,
+        mj_data: mj.MjData,
         world_site_id: int,
         holo_base_site_id: int,
         joint_ids: list[int],
@@ -547,9 +549,9 @@ class HoloJointsRobotBaseGroup(RobotBaseGroup, SimplyActuatedMoveGroup):
 
         assert len(joint_ids) == 3, "HoloJointsRobotBaseGroup must have 3 joints (x, y, theta)"
         assert all(
-            self.mj_model.jnt_type[jid] == mujoco.mjtJoint.mjJNT_SLIDE for jid in joint_ids[:2]
+            self.mj_model.jnt_type[jid] == mj.mjtJoint.mjJNT_SLIDE for jid in joint_ids[:2]
         ), "x, y joints must be slide joints"
-        assert self.mj_model.jnt_type[joint_ids[2]] == mujoco.mjtJoint.mjJNT_HINGE, (
+        assert self.mj_model.jnt_type[joint_ids[2]] == mj.mjtJoint.mjJNT_HINGE, (
             "theta joint must be hinge"
         )
         assert len(actuator_ids) == 3, (
@@ -607,14 +609,14 @@ class HoloJointsRobotBaseGroup(RobotBaseGroup, SimplyActuatedMoveGroup):
 
     def get_jacobian(self) -> np.ndarray:
         J = np.zeros((6, self.mj_model.nv))
-        mujoco.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._holo_base_site_id)
+        mj.mj_jacSite(self.mj_model, self.mj_data, J[:3], J[3:], self._holo_base_site_id)
         return J
 
 
 class MocapRobotBaseGroup(RobotBaseGroup):
     """A RobotBase that uses a mocap body to represent its pose."""
 
-    def __init__(self, mj_data: MjData, robot_base_body_id: int):
+    def __init__(self, mj_data: mj.MjData, robot_base_body_id: int):
         """Initialize a MocapRobotBase.
 
         Args:
@@ -656,7 +658,7 @@ class ImmobileRobotBaseGroup(RobotBaseGroup):
     If a scene is badly constructed and the robot base is not a mocap body, this might be necessary.
     """
 
-    def __init__(self, mj_data: MjData, robot_base_body_id: int) -> None:
+    def __init__(self, mj_data: mj.MjData, robot_base_body_id: int) -> None:
         """Initialize a ImmobileRobotBase.
 
         Args:
@@ -690,7 +692,7 @@ class RobotView(ABC):
     and handles the coordination between different parts of the robot.
     """
 
-    def __init__(self, mj_data: MjData, move_groups: dict[str, MoveGroup]) -> None:
+    def __init__(self, mj_data: mj.MjData, move_groups: dict[str, MoveGroup]) -> None:
         """Initialize a RobotView.
 
         Args:
@@ -815,7 +817,7 @@ class RobotView(ABC):
             The (6, N) jacobian of the move group, where N is the total number of degrees
             of freedom of the input move groups.
 
-        See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
+        See: https://mj.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
         J = self._move_groups[move_group_id].get_jacobian()
         qveladr: list[int] = []
@@ -826,13 +828,12 @@ class RobotView(ABC):
             # don't allow non-floating robot bases to move vertically, or pitch/roll
             if isinstance(mg, FreeJointRobotBaseGroup) and not mg.floating:
                 for jnt_id in mg._joint_ids:
-                    if self.mj_model.jnt_type[jnt_id] == mujoco.mjtJoint.mjJNT_FREE:
+                    if self.mj_model.jnt_type[jnt_id] == mj.mjtJoint.mjJNT_FREE:
                         dofadrs = self.mj_model.jnt_dofadr[jnt_id] + np.array([2, 3, 4])
                         J[:, dofadrs] = 0.0
         J = J[:, qveladr]
         return J
 
 
-RobotViewFactory: TypeAlias = Callable[
-    [MjData, str], RobotView
-]  # factory function that creates a RobotView from a MjData and a robot namespace
+RobotViewFactory: TypeAlias = Callable[[mj.MjData, str], RobotView]
+"""Factory function that creates a RobotView from a MjData and a robot namespace"""

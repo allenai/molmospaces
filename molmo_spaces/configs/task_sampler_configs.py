@@ -100,11 +100,11 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over
-    samples_per_house: int = 2  # number of tasks to sample per house before advancing
+    samples_per_house: int | None = 2  # number of tasks to sample per house before advancing
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
     # Receptacle selection
-    receptacle_types: list[str] = tuple(RECEPTACLE_TYPES_THOR)
+    receptacle_types: list[str] = RECEPTACLE_TYPES_THOR
     # Resolved at runtime
     receptacle_name: str | None = None
     placement_volume_name: str | None = None
@@ -244,7 +244,9 @@ class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
 class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     """Configuration for RBY1 door opening task sampler."""
 
-    task_sampler_class: type = None  # Will be set by importing module to avoid circular imports
+    task_sampler_class: type | None = (
+        None  # Will be set by importing module to avoid circular imports
+    )
     sim_settle_timesteps: int = 500
     verbose: bool = False  # Whether to print verbose debug info
     fixed_door_name: str | None = None  # e.g., "door|2|8_Doorway_Double_7_doorway_door_7"
@@ -258,7 +260,7 @@ class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
         range(0, 22)
     )  # List of thor house indices to iterate through (first 20 for demo)
     scene_xml_paths: list[str] | None = None
-    samples_per_house: int = 1  # Number of tasks per house
+    samples_per_house: int | None = 1  # Number of tasks per house
     task_batch_size: int = 1
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
