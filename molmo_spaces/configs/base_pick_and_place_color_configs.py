@@ -10,13 +10,11 @@ from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
     PickAndPlaceColorTaskSamplerConfig,
 )
-from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.pick_and_place_color_task import PickAndPlaceColorTask
 from molmo_spaces.tasks.pick_and_place_color_task_sampler import PickAndPlaceColorTaskSampler
 
 
-@register_config("PickAndPlaceColorDataGenConfig")
 class PickAndPlaceColorDataGenConfig(PickBaseConfig):
     task_type: str = "pick_and_place_color"
     num_workers: int = 1
