@@ -9,13 +9,11 @@ from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
     PickAndPlaceNextToTaskSamplerConfig,
 )
-from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.tasks.pick_and_place_next_to_task import PickAndPlaceNextToTask
 from molmo_spaces.tasks.pick_and_place_next_to_task_sampler import PickAndPlaceNextToTaskSampler
 from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 
 
-@register_config("PickAndPlaceNextToDataGenConfig")
 class PickAndPlaceNextToDataGenConfig(PickBaseConfig):
     task_type: str = "pick_and_place_next_to"
     num_workers: int = 1
