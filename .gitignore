@@ -53,3 +53,13 @@ mlspaces_tests/**/test_data
 # pytest
 .pytest_cache/
 __pycache__/
+
+debug.log
+scripts.sh
+.nltk*
+
+# local eval/analysis artifacts
+eval_output/
+wandb/
+scripts/paper_plots/*.pdf
+scripts/paper_plots/*.png

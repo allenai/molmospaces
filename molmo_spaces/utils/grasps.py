@@ -6,6 +6,7 @@ New registrations will not be visible until the caches are cleared.
 """
 
 import inspect
+import json
 import logging
 import random
 import zipfile
@@ -242,11 +243,49 @@ def flip_grasps(grasps: np.ndarray) -> np.ndarray:
     return grasps @ flip
 
 
+def filter_semantically_good_grasps(uid: str, grasps: np.ndarray) -> np.ndarray:
+    """
+    Keep only the grasps marked "semantically good" for a given object.
+
+    Classifications are produced by ``scripts/mlspaces_commonsense/classify_grasps.py`` and are indexed
+    positionally against the object's full (unsampled) grasp array. If no classification
+    file exists for the object, all grasps are returned unchanged.
+
+    Args:
+        uid: The asset ID of the object
+        grasps: A numpy array of shape (N, 4, 4) of grasp poses
+
+    Returns:
+        The subset of ``grasps`` marked semantically good.
+    """
+    classification_path = ASSETS_DIR / f"grasps/droid/{uid}/{uid}_grasp_classifications.json"
+    if not classification_path.exists():
+        log.warning(f"[SEMANTIC GRASP] No classification file for {uid}, using all grasps")
+        return grasps
+
+    with open(classification_path, "r") as f:
+        classifications = json.load(f)
+    good_map = classifications.get("semantically_good_grasp", {})
+    good_mask = np.array(
+        [good_map.get(str(i), False) for i in range(len(grasps))],
+        dtype=bool,
+    )
+    n_before = len(grasps)
+    grasps = grasps[good_mask]
+    log.info(
+        f"[SEMANTIC GRASP] Filtered to {len(grasps)}/{n_before} semantically good grasps for {uid}"
+    )
+    if len(grasps) == 0:
+        raise ValueError(f"No semantically good grasps for {uid} (had {n_before} total grasps)")
+    return grasps
+
+
 def get_pickup_grasps(
     env: CPUMujocoEnv,
     obj: MlSpacesObject,
     include_flipped: bool = True,
     grasp_libraries: list[str] | None = None,
+    semantically_good_only: bool = False,
 ) -> np.ndarray:
     """
     Load the first available pickup grasps for a given object in the world frame.
@@ -256,6 +295,8 @@ def get_pickup_grasps(
         obj: The object
         include_flipped: Whether to include flipped grasps
         grasp_libraries: The grasp libraries to use (defaults to all available libraries for the object)
+        semantically_good_only: Restrict to grasps marked semantically good (see
+            :func:`filter_semantically_good_grasps`). Used by the ``semantic_grasp_pick`` task.
 
     Returns:
         A numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
@@ -272,6 +313,9 @@ def get_pickup_grasps(
     grasps = load_pickup_grasps(asset_id, grasp_libraries, num_grasps=int(1e6))
     if len(grasps) == 0:
         raise ValueError(f"No grasps found for {obj.name}")
+
+    if semantically_good_only:
+        grasps = filter_semantically_good_grasps(asset_id, grasps)
 
     grasps_world = obj.pose @ grasps
     if include_flipped:
