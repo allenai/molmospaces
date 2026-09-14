@@ -199,7 +199,6 @@ class MlSpacesKinematics:
             max_iter: Maximum number of iterations
             damping: Damping factor for the damped least squares solution
             dt: Time step for velocity integration
-
         Returns:
             Dictionary mapping move group IDs to their joint positions if successful, None if failed
 
@@ -221,6 +220,7 @@ class MlSpacesKinematics:
 
         succ = False
         move_group = self._robot_view.get_move_group(move_group_id)
+
         for i in range(max_iter):
             mj.mj_fwdPosition(self._mj_model, self._mj_data)
             mj.mj_sensorPos(self._mj_model, self._mj_data)
@@ -241,6 +241,14 @@ class MlSpacesKinematics:
                 break
 
             J: np.ndarray = self._robot_view.get_jacobian(move_group_id, unlocked_move_group_ids)
+            # Damped least squares: q_dot = J^T @ (J @ J^T + damping*I)^-1 @ err.
+            # Was a *weighted* DLS (Winv = diag(1/move_group_weights)) until that
+            # option was removed. No caller ever passed weights, so Winv was always
+            # the identity and this is the same solve -- though not bit-identical to
+            # the old `J @ J_scaled.T` spelling: with both operands the same array
+            # numpy takes a symmetric BLAS path that rounds differently (~1e-15 in
+            # the product), which only matters in the rank-deficient case warned
+            # about just below.
             if (JJT_det := np.linalg.det(J @ J.T)) < 1e-20:
                 log.warning(
                     f"[MlSpacesKinematics][{self._robot_view.name}] IK Jacobian is rank deficient! det(JJ^T)={JJT_det:.0e}"

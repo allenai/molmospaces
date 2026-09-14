@@ -643,7 +643,7 @@ def test_grasps_for_scene(
     from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
     from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
     from mujoco import MjSpec
-    from molmo_spaces.utils.grasp_sample import add_grasp_collision_bodies
+    from molmo_spaces.env.scene.spec_ops import add_grasp_probes
     from molmo_spaces.configs.policy_configs import ObjectManipulationPlannerPolicyConfig
 
     # Get grasp geometry parameters from policy config defaults
@@ -660,7 +660,7 @@ def test_grasps_for_scene(
 
     # Add grasp collision bodies for collision checking
     # Only need as many as batch_size since we check in batches
-    add_grasp_collision_bodies(
+    add_grasp_probes(
         spec,
         collision_batch_size,  # Only need as many as batch size
         grasp_width,

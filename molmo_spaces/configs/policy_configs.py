@@ -2,29 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.planner.astar_planner import AStarPlannerConfig
+from molmo_spaces.planner.curobo_planner_config import CuroboPlannerConfig
 from molmo_spaces.policy.base_policy import BasePolicy, PolicyFactory
 from molmo_spaces.utils.function_utils import make_lenient
-
-# Import CuroboPlannerConfig if available (requires GPU), otherwise create a stub
-try:
-    from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
-except (ImportError, RuntimeError):
-    # Create a stub class when CuRobo isn't available (e.g., on non-GPU nodes)
-    # This allows Pydantic to resolve forward references during config validation
-    if TYPE_CHECKING:
-        from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
-    else:
-
-        class CuroboPlannerConfig(Config):
-            """Stub for CuroboPlannerConfig when CuRobo is not available."""
-
-            pass
 
 
 class BasePolicyConfig(Config):
@@ -82,7 +68,24 @@ class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):
 
     # grasp sampling configuration (collision checking)
     filter_colliding_grasps: bool = True
-    grasp_collision_batch_size: int = 128
+    # Grasp-collision probes added to the scene (spec_ops.
+    # add_grasp_probe_bodies). Each one tests a candidate grasp, so a batch of N
+    # checks N grasps per mj_kinematics+mj_collision pass -- but every probe is a
+    # freejointed body that costs DOF on EVERY sim step thereafter.
+    #
+    # Measured on procthor-10k-val/val_0 with the G1 (4k geoms, MuJoCo 3.11):
+    #     N=1    mj_step 0.322 ms   512-grasp check 165.7 ms
+    #     N=128  mj_step 0.474 ms   512-grasp check  36.9 ms
+    # so a batch costs +0.152 ms/step and saves 128.8 ms/check -- break-even at
+    # ~850 sim steps per grasp check. Batching wins by only ~4.5x, not 128x,
+    # because each pass re-collides the whole scene.
+    #
+    # Default 1: rollout workloads (datagen episodes, the interactive shell, the
+    # FetchMan parity run) simulate thousands of steps per grasp check and sit
+    # far past that break-even, and one probe is also what gold's scene has.
+    # Raise it for reset-heavy sweeps that check many grasps and barely
+    # simulate -- grasp-library filtering, placement validation, house sweeps.
+    grasp_collision_batch_size: int = 1
     grasp_collision_max_grasps: int = 512
     grasp_width: float = 0.08
     grasp_length: float = 0.05
@@ -425,6 +428,68 @@ class AStarNavToObjPolicyConfig(NavToObjPlannerPolicyConfig):
 
             self.policy_cls = AStarSmoothPlannerPolicy
             self.policy_factory = AStarSmoothPlannerPolicy
+
+
+class FetchManBasePlannerPolicyConfig(NavToObjPlannerPolicyConfig):
+    """Configuration for FetchManBasePlannerPolicy -- a port of g1_molmo's
+    navigation policy (molmospaces/agents/policy.py in the g1_molmo reference
+    repo). Unlike AStarPlannerPolicy, which pre-bakes an explicit
+    rotate-then-drive waypoint schedule at plan time, this recomputes a
+    [vx, vy, yaw_rate] base velocity command from the robot's live pose every
+    step (see FetchManBasePlannerPolicy._update_nav_command)."""
+
+    policy_cls: type = None
+
+    # Grid A* (ported from g1_molmo's _astar/_coarsen_and_dist)
+    planner_config: AStarPlannerConfig = AStarPlannerConfig()
+    downscale: int = 4  # Coarsening factor for the A* search grid
+    wall_radius: int = 10  # Distance (in coarse cells) at which the wall-clearance cost reaches 0
+    wall_gain: float = 6.0
+    wall_exp: float = 2.0
+    simplify_clearance: int = 6  # Px clearance required for a line-of-sight path shortcut
+
+    # Live waypoint-following control law (ported from g1_molmo's _update_nav_command)
+    waypoint_reach: float = 0.10  # Distance to advance to the next non-final waypoint
+    # See FetchmanPickPlannerPolicyConfig's final_reach comment: raised from
+    # g1_molmo's 0.05 to clear the effective minimum turning radius imposed by
+    # G1Robot's velocity deadband/floor (min_speed/drive_max_turn) -- 0.05
+    # left the robot orbiting the goal forever instead of ever arriving.
+    final_reach: float = 0.3  # Distance to consider the final waypoint reached
+    turn_kp: float = 2.0  # Proportional gain, heading error -> yaw rate
+    max_turn: float = 1.0  # Max yaw rate (rad/s) while driving
+    face_turn: float = 1.2  # Max yaw rate (rad/s) during the terminal face-the-target turn
+    # Loosened from g1_molmo's 0.1/0.25 rad, which sit below the WBC's ~15deg
+    # yaw-tracking ceiling: the heading error never settled and the turn/drive
+    # branches hunted indefinitely ~0.3m short of the goal.
+    face_tol: float = 0.35  # ~20deg -- heading error tolerance to end the terminal facing turn
+    face_wp_tol: float = 0.524  # 30deg -- heading error above which translation is suppressed
+    speed: float = 0.4  # Cruise linear speed (m/s)
+    min_speed: float = 0.15  # Minimum linear speed while still short of a non-final waypoint
+    brake_dist: float = 0.70  # Distance from the goal at which the smoothstep brake engages
+    stop_pad: float = 0.04  # Extra margin added to final_reach to absorb walking inertia
+    # Tighter yaw-rate cap while translating (max_turn/face_turn are for
+    # in-place turns): the WBC's gait stalls to a crawl under a forward speed
+    # plus a yaw_rate near max_turn.
+    drive_max_turn: float = 0.3
+
+    plan_max_retries: int = 3  # Number of alternate target candidates to try if planning fails
+
+    # FetchManBasePlannerPolicyPort only: walk to a grasping standoff on this
+    # annulus around the object (g1_pick_policy.sample_standoff_pose) instead
+    # of NavGoalSampler's goal, so a following `pick` grasps without walking.
+    standoff_radius_range: tuple[float, float] | None = None
+    standoff_map_extra_inflation: float = 0.125  # planning-map inflation, as the pick's
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy import (
+                FetchManBasePlannerPolicy,
+            )
+
+            self.policy_cls = FetchManBasePlannerPolicy
+            self.policy_factory = FetchManBasePlannerPolicy
 
 
 class DummyPolicyConfig(BasePolicyConfig):

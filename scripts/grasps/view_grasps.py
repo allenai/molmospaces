@@ -18,8 +18,8 @@ from molmo_spaces.utils.lazy_loading_utils import (
     install_scene_from_path,
     install_scene_from_source_index,
 )
+from molmo_spaces.env.scene.spec_ops import add_grasp_probes
 from molmo_spaces.utils.grasp_sample import (
-    add_grasp_collision_bodies,
     get_noncolliding_grasp_mask,
 )
 from molmo_spaces.utils.grasps import (
@@ -656,7 +656,7 @@ if __name__ == "__main__":
             total_grasps += len(joint_info) * number_of_grasp_per_object
 
         # Use same parameters as visual geometries
-        add_grasp_collision_bodies(
+        add_grasp_probes(
             spec,
             args.collision_batch_size,  # Only need as many as batch size
             grasp_width,

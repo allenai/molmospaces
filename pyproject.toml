@@ -34,6 +34,10 @@ dependencies = [
     "hidapi",
     "imageio[ffmpeg]",
     "lxml>=5.0.0",
+    # mink>=1.0 declares mujoco>=3.8.1, which conflicts with this project's
+    # mujoco-warp/mujoco-mjx pin (~3.5.0); pip's resolver doesn't enforce that at
+    # runtime, and mink's actual API surface used here works fine against 3.5.0.
+    "mink",
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
@@ -45,6 +49,7 @@ dependencies = [
     "numpy-quaternion~=2024.0.10",
     "nvidia-ml-py",
     "omegaconf>=2.3.0",
+    "onnxruntime>=1.18.0",
     "open_clip_torch~=3.2.0",
     "opencv-python",
     "pandas>=2.3.1",
@@ -152,6 +157,9 @@ generate-houses = "molmo_spaces.housegen.exporter:main"
 
 [tool.setuptools.packages.find]
 where = ["./"]
+# `fetchman` is deliberately absent: it is the FetchMan reference port, a leaf
+# nothing in molmo_spaces imports, and its scripts expect a g1_molmo checkout
+# most installs do not have. See fetchman/README.md.
 include = ["molmo_spaces*"]
 exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 
@@ -211,6 +219,7 @@ target-version = "py311"
 line-length = 100
 exclude = [
  "scripts/",
+ "fetchman/scripts/",
  "tests/",
  "mlspaces_tests/scenes/",
 ]

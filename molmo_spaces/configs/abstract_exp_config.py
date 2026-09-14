@@ -72,6 +72,12 @@ class MlSpacesExpConfig(Config, ABC):
 
     collision_free_pose_limit: int = 3
 
+    # Also write each house's episodes in the LeRobot layout, alongside the h5
+    # (see utils/lerobot_save_utils.py). Both formats come from the same
+    # prepared episodes and the same mp4s, so this costs a parquet write and a
+    # video copy -- no second rollout, no re-encode.
+    save_lerobot: bool = False
+
     # Scene configuration  -------------------
 
     scene_dataset: str

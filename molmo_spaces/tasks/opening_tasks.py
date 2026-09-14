@@ -40,7 +40,8 @@ class OpeningTask(PickTask):
 
     def get_task_description(self) -> str:
         pickup_obj_name = self.config.task_config.referral_expressions["pickup_obj_name"]
-        return f"Open the {pickup_obj_name}"
+        verb = "Open" if self.config.task_type == "open" else "Close"
+        return f"{verb} the {pickup_obj_name}"
 
     def _get_articulation_objects(self):
         articulation_objects = []
