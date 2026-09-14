@@ -7,6 +7,13 @@ on:
   pull_request:
     branches:
       - main
+      # main_public mirrors allenai/molmospaces' own main (see
+      # sync-upstream.yaml). The G1 merge PR (#2) targets it, and without it
+      # listed here `pull_request` never matches that PR's base, so no CI job is
+      # created at all -- the only check reported is the GitGuardian app scan,
+      # which runs independently of workflow triggers and so goes green without
+      # anything having been built.
+      - main_public
   workflow_dispatch:
 
 concurrency:

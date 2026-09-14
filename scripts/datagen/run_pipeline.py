@@ -9,6 +9,7 @@ import numpy as np
 
 import molmo_spaces.configs.policy_configs_baselines  # noqa: F401
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+from molmo_spaces.configs.base_motion_config import BaseMotionBaseConfig
 from molmo_spaces.configs.base_nav_to_obj_config import NavToObjBaseConfig
 from molmo_spaces.configs.base_open_task_configs import OpeningBaseConfig, ClosingBaseConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
@@ -23,11 +24,13 @@ from molmo_spaces.configs.camera_configs import (
     BimanualYamCameraSystem,
     FrankaDroidCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
+    G1CameraSystem,
     RBY1GoProD455CameraSystem,
     I2rtYamCameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
     AStarNavToObjPolicyConfig,
+    FetchManBasePlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
     PickAndPlaceNextToPlannerPolicyConfig,
     PickAndPlacePlannerPolicyConfig,
@@ -44,11 +47,12 @@ from molmo_spaces.configs.robot_configs import (
     BimanualYamRobotConfig,
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
+    G1Config,
     I2rtYamRobotConfig,
     RBY1Config,
     ActionNoiseConfig,
 )
-from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, log_data_versions
 from molmo_spaces.configs.base_packing_configs import PackingDataGenConfig
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDroidDataGenConfig,
@@ -58,12 +62,12 @@ from molmo_spaces.data_generation.config.object_manipulation_datagen_configs imp
     FrankaPickAndPlaceNextToDroidDataGenConfig,
 )
 from molmo_spaces.data_generation.config_registry import get_config_class
-from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner
+from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner, setup_viewer
+from molmo_spaces.tasks.interactive_shell_task_sampler import INTERACTIVE_SHELL_SAMPLERS
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.utils.profiler_utils import Profiler
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("websockets").setLevel(logging.WARNING)
 
 
@@ -164,19 +168,24 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     elif task_type == "nav_to_obj":
         datagen_cfg = NavToObjBaseConfig()
         datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
+    elif task_type == "base_motion":
+        datagen_cfg = BaseMotionBaseConfig()
+        datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
     else:
         raise ValueError(f"Invalid task type: {task_type}")
 
     datagen_cfg.seed = args.seed
-    datagen_cfg.scene_dataset = args.scene_dataset  # ithor, procthor-10k, procthor-objaverse
-    datagen_cfg.data_split = args.data_split  # train or test
+    # ithor, procthor-10k, procthor-objaverse
+    datagen_cfg.scene_dataset = getattr(args, "scene_dataset", "ithor")
+    datagen_cfg.data_split = getattr(args, "data_split", "train")  # train or test
     datagen_cfg.task_type = task_type
 
     datagen_cfg.task_horizon = 300
-    if args.target_types:
-        datagen_cfg.task_sampler_config.pickup_types = args.target_types.split(",")
-    datagen_cfg.task_sampler_config.samples_per_house = (
-        args.samples_per_house
+    target_types = getattr(args, "target_types", None)
+    if target_types:
+        datagen_cfg.task_sampler_config.pickup_types = target_types.split(",")
+    datagen_cfg.task_sampler_config.samples_per_house = getattr(
+        args, "samples_per_house", 4
     )  # overwrite with scene samples
 
     # randomize scene
@@ -199,12 +208,13 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.frozen_config_path = Path(args.eval)
         datagen_cfg.seed = 42
 
-    if args.house_inds is None:
+    house_inds = getattr(args, "house_inds", 1)
+    if house_inds is None:
         datagen_cfg.task_sampler_config.house_inds = None  # list(range(0,20))  # default is (0,20)
-    elif isinstance(args.house_inds, int):
-        datagen_cfg.task_sampler_config.house_inds = [args.house_inds]
-    elif isinstance(args.house_inds, (list, tuple)):
-        datagen_cfg.task_sampler_config.house_inds = args.house_inds
+    elif isinstance(house_inds, int):
+        datagen_cfg.task_sampler_config.house_inds = [house_inds]
+    elif isinstance(house_inds, (list, tuple)):
+        datagen_cfg.task_sampler_config.house_inds = house_inds
     else:
         raise ValueError()
 
@@ -228,6 +238,41 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.camera_config = RBY1GoProD455CameraSystem()
         datagen_cfg.task_sampler_config.base_pose_sampling_radius_range = (3.0, 10.0)
         datagen_cfg.task_sampler_config.robot_safety_radius = 0.35
+    elif robot == "g1":
+        datagen_cfg.robot_config = G1Config()
+        datagen_cfg.camera_config = G1CameraSystem()
+        datagen_cfg.task_sampler_config.robot_safety_radius = 0.35
+        # G1Config.physics_timestep forces mj_model.opt.timestep to 5ms, which the
+        # 2.0ms ctrl_dt_ms default is not divisible by -- BaseMujocoTask.__init__
+        # raises before the first step. Same values, same reason, as
+        # InteractiveShellG1DataGenConfig; policy_dt_ms is set below to 500 or 40,
+        # both multiples of 5, so model_post_init's assertion still holds.
+        datagen_cfg.ctrl_dt_ms = 5.0
+        datagen_cfg.sim_dt_ms = 5.0
+        if isinstance(datagen_cfg.policy_config, AStarNavToObjPolicyConfig):
+            if datagen_cfg.robot_config.use_holo_base:
+                # AStar's rotate-then-drive waypoint schedule works with the holo
+                # base's direct [x,y,theta] mocap-weld target, but LegsWaistController
+                # converges markedly slower (see G1RobotView.is_close_to's higher
+                # default threshold, for the same reason): widen waypoint
+                # spacing/retries so segments are long enough to actually cruise
+                # instead of stop-and-reconverging every short segment. Mirrors
+                # InteractiveShellTask.nav_to()'s identical override.
+                datagen_cfg.policy_config = AStarNavToObjPolicyConfig(
+                    plan_fail_after_waypoint_steps=50,
+                    plan_max_retries=5,
+                    path_max_inter_waypoint_dist=1.0,
+                    path_max_inter_waypoint_angle=np.radians(30),
+                )
+            else:
+                # WBC mode (the default): G1Robot.update_control only reads a
+                # "base_velocity" [vx, vy, yaw_rate] action -- AStar's pre-baked
+                # waypoint schedule doesn't produce that, no matter how it's
+                # tuned. FetchManBasePlannerPolicy (a live per-step velocity-
+                # command controller, ported from g1_molmo) does, and is the
+                # default InteractiveShellTask.nav_to() already picks for this
+                # exact case (robot_config.name == "g1" and not use_holo_base).
+                datagen_cfg.policy_config = FetchManBasePlannerPolicyConfig()
     elif robot == "yam":
         datagen_cfg.robot_config = I2rtYamRobotConfig()
         datagen_cfg.camera_config = I2rtYamCameraSystem()
@@ -281,6 +326,29 @@ def get_output_dir(args, exp_config):
     return output_dir
 
 
+def run_interactive_shell(exp_config: MlSpacesExpConfig, commands: list[str] | None = None) -> None:
+    """Sample one task and hand off to InteractiveShellTask.run_shell().
+
+    Unlike ParallelRolloutRunner.run(), this never steps a policy in a loop -
+    the human drives the robot live via nav_to/pick/pick_and_place/etc.
+    """
+    task_sampler_class = exp_config.task_sampler_config.task_sampler_class
+    task_sampler = task_sampler_class(exp_config)
+    task_sampler.reset()
+
+    task = task_sampler.sample_task()
+    task.reset()
+
+    viewer = setup_viewer(exp_config, task, policy=None, current_viewer=None)
+    task.viewer = viewer
+
+    task.list_objects()
+    task.run_shell(commands=commands)
+
+    if viewer is not None:
+        viewer.close()
+
+
 def main(args: argparse.ArgumentParser) -> None:
     if args.eval:  # 1) load an benchmark config
         log.info(f"Loading pre-saved config from {args.eval}. This will override other settings.")
@@ -291,12 +359,33 @@ def main(args: argparse.ArgumentParser) -> None:
         exp_config.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)  # for eval
     elif args.config:  # 2) load an experiment config
         exp_config = get_config_class(args.config)()
+        exp_config.seed = args.seed
+        # Only override the config's own values when the user explicitly passed
+        # these flags (they default to argparse.SUPPRESS so unset ones are absent
+        # from `args` and don't clobber the named config's scene_dataset/etc.).
+        if hasattr(args, "scene_dataset"):
+            exp_config.scene_dataset = args.scene_dataset
+        if hasattr(args, "data_split"):
+            exp_config.data_split = args.data_split
+        if hasattr(args, "house_inds"):
+            house_inds = args.house_inds
+            if isinstance(house_inds, int):
+                house_inds = [house_inds]
+            exp_config.task_sampler_config.house_inds = house_inds
+        if hasattr(args, "target_types") and args.target_types:
+            exp_config.task_sampler_config.pickup_types = args.target_types.split(",")
+        if hasattr(args, "samples_per_house"):
+            exp_config.task_sampler_config.samples_per_house = args.samples_per_house
     else:  # 3) create config from arguments
         exp_config = setup_config(args)
 
     # overload some config values
     exp_config.num_workers = 1
     exp_config.use_passive_viewer = args.viewer
+
+    if issubclass(exp_config.task_sampler_config.task_sampler_class, INTERACTIVE_SHELL_SAMPLERS):
+        run_interactive_shell(exp_config, commands=args.command)
+        return
 
     # Overload robot
     if args.robot == "rum" or args.policy == "rum":
@@ -334,7 +423,19 @@ if __name__ == "__main__":
     args.add_argument("--config", type=str, default=None, help="Load a fixed config")
     args.add_argument("--viewer", action="store_true", help="single step")
     args.add_argument(
-        "--robot", type=str, default="droid", help="franka, droid, rum, rby1, yam, or bimanual_yam"
+        "--command",
+        action="append",
+        default=None,
+        metavar="STATEMENT",
+        help="InteractiveShell only: run STATEMENT (e.g. 'nav_to(object=\"apple_...\")') "
+        "before dropping into the shell prompt. Repeatable, runs in order; results stay "
+        "bound in the shell namespace (e.g. 'result = nav_to(...)').",
+    )
+    args.add_argument(
+        "--robot",
+        type=str,
+        default="droid",
+        help="franka, droid, rum, rby1, g1, yam, or bimanual_yam",
     )
     args.add_argument(
         "--policy",
@@ -345,21 +446,43 @@ if __name__ == "__main__":
     )
 
     # Arguments below ONLY used for policy from scratch (no eval or config given)
-    args.add_argument("--task_type", type=str, default="pick", help="pick or open")
+    args.add_argument(
+        "--task_type",
+        type=str,
+        default="pick",
+        help=(
+            "pick, open, close, pick_and_place, pick_and_place_color, "
+            "pick_and_place_next_to, packing, nav_to_obj, or base_motion"
+        ),
+    )
     args.add_argument("--single_step", action="store_true", help="single step")
+    # These default to SUPPRESS (rather than a concrete value) so that when
+    # combined with --config, only explicitly-passed flags override the named
+    # config's values; setup_config() (used when neither --eval nor --config is
+    # given) falls back to the same defaults via getattr(args, name, default).
     args.add_argument(
         "--scene_dataset",
         type=str,
-        default="ithor",
-        help="ithor, procthor-10k, procthor-objaverse, procthor-100k-debug",
+        default=argparse.SUPPRESS,
+        help="ithor, procthor-10k, procthor-objaverse, procthor-100k-debug (default: ithor)",
     )
-    args.add_argument("--data_split", type=str, default="train", help="train or test")
-    args.add_argument("--house_inds", type=int, default=1, help="house indices")
+    args.add_argument(
+        "--data_split",
+        type=str,
+        default=argparse.SUPPRESS,
+        help="train or test (default: train)",
+    )
+    args.add_argument(
+        "--house_inds", type=int, default=argparse.SUPPRESS, help="house indices (default: 1)"
+    )
     args.add_argument(
         "--target_types", type=str, default=None, help="comma separated list of target types"
     )
     args.add_argument(
-        "--samples_per_house", type=int, default=4, help="number of samples per house"
+        "--samples_per_house",
+        type=int,
+        default=argparse.SUPPRESS,
+        help="number of samples per house (default: 4)",
     )
     args.add_argument(
         "--filter_for_successful_trajectories",
@@ -372,5 +495,14 @@ if __name__ == "__main__":
     args.add_argument("--randomize_scene", type=bool, default=False, help="randomize scene all")
     args.add_argument("--seed", type=int, default=2, help="random seed")
     args.add_argument("--run_name_prefix", type=str, default="", help="prefix for run name")
+    args.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="logging verbosity",
+    )
     args = args.parse_args()
+    logging.basicConfig(level=args.log_level)
+    log_data_versions()
     main(args)
