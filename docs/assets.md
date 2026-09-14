@@ -221,3 +221,36 @@ The most general way to access license info is to provide an archive identifier.
 print_license_info("scenes", "ithor", "--list_all")
 ```
 Note that invoking this command will attempt to download and install all scenes to access the corresponding metadata.
+
+## License policy filtering (datagen and inspection)
+
+Datagen can exclude non-commercial Objaverse assets and block RLBench scenes using a
+license policy. Evaluation and benchmark replay do **not** expose this flag and always
+load assets exactly as specified in benchmarks.
+
+```bash
+# Datagen only (scripts/datagen/run_pipeline.py)
+python scripts/datagen/run_pipeline.py --license-policy commercial_safe ...
+```
+
+For distributed or cluster jobs, you can set the same policy via environment variable
+(when the CLI flag is omitted and the config field is still the default `none`):
+
+```bash
+export MLSPACES_LICENSE_POLICY=commercial_safe
+python scripts/datagen/run_pipeline.py --config FrankaPickDroidDataGenConfig ...
+```
+
+Precedence: explicit `--license-policy` (or a non-`none` value on
+`task_sampler_config.license_policy`) overrides `MLSPACES_LICENSE_POLICY`; the env
+var applies when neither is set. Default remains unfiltered (`none`).
+
+When `commercial_safe` is active:
+
+- Non-commercial Objaverse objects (`by-nc`, `by-nc-sa`) are filtered from sampling,
+  UID pools, semantic search, and lazy installs.
+- Embedded NC scene objects are stripped from the compiled `MjSpec` before simulation.
+- RLBench scenes are rejected at startup.
+
+Inspection helpers accept the same policy via `get_license_policy()` / optional parameters
+on `ObjectRetriever`, `locate_uid_package`, and `print_license_info(..., license_policy=...)`.

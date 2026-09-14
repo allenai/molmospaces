@@ -741,7 +741,41 @@ def get_robot_path(robot_name) -> Path:
     return ROBOTS_DIR / robot_name
 
 
-def print_license_info(data_type, data_source, asset_or_tar_id=None):
+def get_license_policy():
+    """Return the active runtime license policy (default: no filtering)."""
+    from molmo_spaces.utils.license_policy import get_license_policy as _get
+
+    return _get()
+
+
+def set_license_policy(policy):
+    """Set the active runtime license policy for this context (datagen worker / inspection)."""
+    from molmo_spaces.utils.license_policy import set_license_policy as _set
+
+    _set(policy)
+
+
+def parse_license_policy(value):
+    from molmo_spaces.utils.license_policy import parse_license_policy as _parse
+
+    return _parse(value)
+
+
+def resolve_license_policy(explicit=None, *, config_policy=None):
+    from molmo_spaces.utils.license_policy import resolve_license_policy as _resolve
+
+    return _resolve(explicit, config_policy=config_policy)
+
+
+def __getattr__(name):
+    if name == "LicensePolicy":
+        from molmo_spaces.utils.license_policy import LicensePolicy
+
+        return LicensePolicy
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def print_license_info(data_type, data_source, asset_or_tar_id=None, license_policy=None):
     from molmo_spaces.utils.license_utils import list_asset_identifiers, resolve_license
 
     if asset_or_tar_id is None and data_type != "robots":
@@ -750,7 +784,10 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
         )
 
     if asset_or_tar_id == "--list_all":
-        print(f"Possible identifiers: {sorted(list_asset_identifiers(data_type, data_source))}")
+        policy = parse_license_policy(license_policy) if license_policy else None
+        print(
+            f"Possible identifiers: {sorted(list_asset_identifiers(data_type, data_source, policy))}"
+        )
         return
 
     try:
@@ -759,7 +796,8 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
     except ValueError as e:
         import random
 
-        identifiers = list_asset_identifiers(data_type, data_source)
+        policy = parse_license_policy(license_policy) if license_policy else None
+        identifiers = list_asset_identifiers(data_type, data_source, policy)
         formatted = "\n".join(sorted(random.choices(identifiers, k=min(len(identifiers), 10))))
         print(e)
         print(f"Possible identifiers:\n{formatted}{'...' if len(identifiers) > 10 else ''}")

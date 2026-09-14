@@ -1190,7 +1190,10 @@ def get_valid_receptacle_uids() -> dict[str, dict]:
             if anno.get("receptacle", False):
                 valid_uids[uid] = anno
 
-    return valid_uids
+    from molmo_spaces.utils.license_policy import filter_uids
+
+    allowed = set(filter_uids(valid_uids.keys()))
+    return {uid: valid_uids[uid] for uid in allowed}
 
 
 # ---------------------------------------------------------------------------
@@ -1315,7 +1318,9 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
             uid_list = [line.strip() for line in f if line.strip()]
         if debug:
             print(f"\n=== Loaded {len(uid_list)} pickupable UIDs from cache ===\n")
-        return uid_list
+        from molmo_spaces.utils.license_policy import filter_uids
+
+        return filter_uids(uid_list)
 
     from molmo_spaces.utils.grasps import has_valid_pickup_grasps
     from molmo_spaces.utils.object_metadata import ObjectMeta
@@ -1343,7 +1348,9 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
 
         print()
 
-    return list(valid_uids.keys())
+    from molmo_spaces.utils.license_policy import filter_uids
+
+    return filter_uids(list(valid_uids.keys()))
 
 
 def get_valid_pickupable_obja_uids_excluding_benchmark(debug: bool = False) -> list[str]:

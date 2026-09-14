@@ -9,8 +9,15 @@ from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
     DATA_TYPE_TO_SOURCE_TO_VERSION,
     USER_ASSET_LIBRARIES,
+    get_license_policy,
     get_resource_manager,
     get_scenes_root,
+)
+from molmo_spaces.utils.license_policy import (
+    LicensePolicy,
+    is_object_allowed,
+    is_scene_source_allowed,
+    require_objaverse_license_known,
 )
 
 
@@ -87,6 +94,26 @@ def find_object_paths(xml_path, exclude_thor=True):
                     yield source, rel_asset
 
 
+def _object_uid_from_rel_asset(rel_asset: Path) -> str:
+    if rel_asset.suffix == ".xml":
+        return rel_asset.stem
+    return rel_asset.name.split(".")[0]
+
+
+def _guard_objaverse_for_install(uid: str, source: str, policy: LicensePolicy) -> None:
+    if policy != LicensePolicy.NONE and source == "objaverse":
+        require_objaverse_license_known(uid)
+
+
+def _is_object_install_allowed(uid: str, source: str, policy: LicensePolicy | None = None) -> bool:
+    if source == "thor":
+        return True
+    if policy is None:
+        policy = get_license_policy()
+    _guard_objaverse_for_install(uid, source, policy)
+    return is_object_allowed(uid, policy)
+
+
 def find_model_paths(xml_path):
     """Yield ``(scene_source, rel_asset)`` for model files referenced by a scene MJCF.
 
@@ -156,9 +183,13 @@ def install_objects_for_scene(xml_path, exclude_thor=True):
     if "objaverse" not in DATA_TYPE_TO_SOURCE_TO_VERSION["objects"]:
         return {}
 
+    policy = get_license_policy()
     source_to_archives = {}
 
     for source, rel_asset in find_object_paths(xml_path, exclude_thor=exclude_thor):
+        uid = _object_uid_from_rel_asset(rel_asset)
+        if not _is_object_install_allowed(uid, source, policy):
+            continue
         archives = get_resource_manager().find_archives("objects", source, [rel_asset])
         if source not in source_to_archives:
             source_to_archives[source] = archives
@@ -169,7 +200,8 @@ def install_objects_for_scene(xml_path, exclude_thor=True):
         source: list(set(archives)) for source, archives in source_to_archives.items()
     }
 
-    get_resource_manager().install_packages("objects", source_to_archives)
+    if source_to_archives:
+        get_resource_manager().install_packages("objects", source_to_archives)
 
     return source_to_archives
 
@@ -183,15 +215,20 @@ def install_grasps_for_scene(xml_path, grasp_source="droid_objaverse", exclude_t
     if grasp_source not in DATA_TYPE_TO_SOURCE_TO_VERSION["grasps"]:
         return {}
 
+    policy = get_license_policy()
     source_to_archives = {grasp_source: set()}
 
-    for _source, rel_asset in find_object_paths(xml_path, exclude_thor=exclude_thor):
+    for obj_source, rel_asset in find_object_paths(xml_path, exclude_thor=exclude_thor):
+        uid = _object_uid_from_rel_asset(rel_asset)
+        if not _is_object_install_allowed(uid, obj_source, policy):
+            continue
         for substr in split_query_tokens(rel_asset.name):
             source_to_archives[grasp_source].update(
                 get_resource_manager().index_lookup("grasps", grasp_source, substr)
             )
 
-    get_resource_manager().install_packages("grasps", source_to_archives)
+    if source_to_archives[grasp_source]:
+        get_resource_manager().install_packages("grasps", source_to_archives)
 
     return source_to_archives
 
@@ -221,6 +258,7 @@ def get_thor_uid_to_xmls() -> dict[str, Path]:
 def locate_uid_package(
     uid: str,
     extension: str = "xml",
+    license_policy: LicensePolicy | None = None,
 ) -> tuple[str, str | None, Path] | tuple[None, None, None]:
     """
     Locate the package containing the given object UID.
@@ -241,6 +279,11 @@ def locate_uid_package(
         base = (ASSETS_DIR / "objects" / "thor").resolve()
         xml_path = thor_uid_to_xmls[uid]
         return "thor", None, add_install_prefixes("objects", "thor", xml_path.relative_to(base))
+
+    if license_policy is None:
+        license_policy = get_license_policy()
+    if not is_object_allowed(uid, license_policy):
+        return None, None, None
 
     file_name = f"{uid}.{extension}"
 
@@ -282,6 +325,9 @@ def install_uid(uid, grasp_source="droid_objaverse"):
     source, package, xml_path = locate_uid_package(uid)
 
     if source is None:
+        policy = get_license_policy()
+        if policy != LicensePolicy.NONE and not is_object_allowed(uid, policy):
+            raise ValueError(f"{uid} is blocked by the active license policy ({policy})")
         raise ValueError(
             f"{uid} not found in object sources {sorted(DATA_TYPE_TO_SOURCE_TO_VERSION['objects'].keys())}"
         )
@@ -290,6 +336,7 @@ def install_uid(uid, grasp_source="droid_objaverse"):
         return xml_path
 
     if source != "thor":
+        _guard_objaverse_for_install(uid, source, get_license_policy())
         get_resource_manager().install_packages("objects", {source: [package]})
 
         # Install grasps (on-demand for objaverse)
@@ -311,6 +358,10 @@ def install_scene_with_objects_and_grasps_from_path(
 
     scene_source = Path(xml_path).relative_to(get_scenes_root()).parts[0]
     if scene_source == "rlbench":
+        if not is_scene_source_allowed(scene_source):
+            raise ValueError(
+                f"RLBench scenes cannot be loaded under license policy {get_license_policy()!r}"
+            )
         return {"scenes": {**install_rlbench_models(xml_path)}}
 
     type_to_source_to_archives = {
