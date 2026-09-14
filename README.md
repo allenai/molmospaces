@@ -30,7 +30,6 @@
 ### Updates
 - **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
 - **[2026/06/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
-- **[2026/06/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
 - **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) is a repository containing standalone third party policy implementations. If you use MolmoSpaces to make a policy (planner-based, learning-based, etc.) please contribute!
 - **[2026/06/12]** 🔥 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, with significantly better usability, included tutorials, and more! Check out the changelog for more information.
 - **[2026/03/24]** 🔥 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for scripted planners, data generation, and benchmark creation.
