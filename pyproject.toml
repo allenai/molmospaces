@@ -1,6 +1,6 @@
 [project]
 name = "molmo-spaces"
-version = "0.2.0"
+version = "0.2.9"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 description = "Large scale assets and benchmarks for vision language policies"
