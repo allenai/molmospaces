@@ -314,7 +314,22 @@ class NavToObjTaskSampler(BaseMujocoTaskSampler):
             # log.info(f"Scene objects (no candidates): {[obj.name for obj in all_objects]}")
             raise HouseInvalidForTask("No nav candidates found in the scene")
 
-        return candidates
+        filtered = []
+        scene_metadata = env.current_scene_metadata
+        for nav_obj in candidates:
+            asset_uid = None
+            if scene_metadata is not None:
+                asset_uid = (
+                    scene_metadata.get("objects", {}).get(nav_obj.name, {}).get("asset_id", None)
+                )
+            if asset_uid and self.is_license_blocked(asset_uid):
+                continue
+            filtered.append(nav_obj)
+
+        if not filtered:
+            raise HouseInvalidForTask("No license-allowed nav candidates found in the scene")
+
+        return filtered
 
     def _sample_and_place_robot(self, env: CPUMujocoEnv) -> None:
         """Sample a nav object, place robot using occupancy map, and return sampled params.

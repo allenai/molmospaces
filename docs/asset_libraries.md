@@ -145,6 +145,10 @@ xml_path = install_uid("0000c32fde7f45efb8d14e8ba737d50c")
 it locates the UID, downloads/extracts the containing archive if necessary,
 installs the corresponding grasps, and returns the path to the object MJCF.
 
+When a non-default license policy is active (see [assets.md](assets.md)),
+`locate_uid_package` returns `(None, None, None)` for blocked Objaverse UIDs and
+`install_uid` raises with a clear error.
+
 ## Grasp libraries
 
 A **grasp library** is a collection of precomputed stable grasp poses, keyed by

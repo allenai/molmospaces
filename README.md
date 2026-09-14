@@ -357,6 +357,10 @@ The XML files have been modified from the original versions provided by the foll
 - [mujoco_menagerie / unitree_g1](https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_g1) - Copyright (c) 2016-2023 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")
 - [Microsoft-Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) - Copyright (c) 2020 Microsoft
 
+We also redistribute different types of data and artifacts from other sources, including:
+- [GR00T WholeBodyControl model weights](https://github.com/NVlabs/GR00T-WholeBodyControl) - Bundled with the G1 robot as ONNX whole-body control policies (`robots/g1/policies/groot_balance.onnx`, `groot_walk.onnx`). Licensed by NVIDIA Corporation under the [NVIDIA Open Model License](https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/LICENSE).
+- [RLBench scenes](https://github.com/stepjam/RLBench) - Custom proprietary/non-commercial research license (with BSD-licensed components) by Imperial College of Science, Technology and Medicine, (“Imperial College London”), which in turn includes models supplied from turbosquid.com, cgtrader.com, free3d.com, thingiverse.com, and cadnav.com.
+
 ## Citing
 
 ```

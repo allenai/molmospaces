@@ -9,6 +9,12 @@ from molmospaces_resources import SourceInfo
 
 from molmo_spaces.molmo_spaces_constants import get_resource_manager
 from molmo_spaces.utils.lazy_loading_utils import find_object_paths, install_scene_from_source_index
+from molmo_spaces.utils.license_policy import (
+    LicensePolicy,
+    filter_uids,
+    get_license_policy,
+    is_scene_source_allowed,
+)
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
 ROBOT_LICENSE = {}
@@ -35,6 +41,8 @@ def resolve_license(data_type, data_source, identifier):
         return resolve_grasps_license(data_source, identifier)
     if data_type == "robots":
         return resolve_robot_license(data_source, identifier or data_source)
+    if data_type == "textures":
+        return resolve_texture_license(data_source, identifier)
 
     raise ValueError(f"Non-valid {data_type=}")
 
@@ -50,14 +58,28 @@ def list_rlbench_scene_identifiers() -> list[str]:
     return sorted(scenes)
 
 
-def list_asset_identifiers(data_type: str, data_source: str) -> list[str]:
+def list_asset_identifiers(
+    data_type: str, data_source: str, license_policy: LicensePolicy | None = None
+) -> list[str]:
     if data_type == "scenes" and data_source == "rlbench":
-        return list_rlbench_scene_identifiers()
+        identifiers = list_rlbench_scene_identifiers()
+    else:
+        identifiers = [
+            archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
+            for archive in get_resource_manager().find_all_packages_for_source(
+                data_type, data_source
+            )
+        ]
 
-    return [
-        archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
-        for archive in get_resource_manager().find_all_packages_for_source(data_type, data_source)
-    ]
+    if license_policy is None:
+        license_policy = get_license_policy()
+    if license_policy == LicensePolicy.NONE:
+        return identifiers
+    if data_type == "scenes" and not is_scene_source_allowed(data_source, license_policy):
+        return []
+    if data_type == "objects" and data_source == "objaverse":
+        return filter_uids(identifiers, license_policy)
+    return identifiers
 
 
 def validate_identifier(data_type, source, identifier):
@@ -207,6 +229,31 @@ def resolve_object_license(data_source, identifier):
     return cur_license
 
 
+def resolve_texture_license(data_source, identifier):
+    if data_source == "fetchman":
+        pack_id = validate_identifier("textures", data_source, identifier)
+        return {
+            "data_type": "textures",
+            "data_source": data_source,
+            "asset_id": pack_id,
+            **DEFAULT_LICENSE,
+            "attribution": ATTRIBUTION_TEMPLATE.format(assets="Scene texture(s)"),
+            "scope": (
+                "Curated PNG scene textures organized by THOR material category "
+                "(Wall, Floor, CounterTop, Table, Doorway) for FetchMan/G1 experiments."
+            ),
+            "relationship_to_assets": "derived_subset",
+            "source_asset_licenses": (
+                "These textures are a curated subset of THOR scene textures and are "
+                f"licensed under the same terms as THOR object assets ({DEFAULT_LICENSE['license']})."
+            ),
+        }
+
+    raise ValueError(
+        f"Can't determine license for `textures` with {data_source=} and {identifier=}"
+    )
+
+
 def scene_path_resolve(
     source: str, idx: int, source_to_archives: dict[str, Collection[str]]
 ) -> Path:
@@ -285,21 +332,49 @@ def resolve_scene_license(data_source, identifier):
             )
 
         rlbench_license = {
-            "license": "Custom proprietary research license (with BSD-licensed components)-NC",
-            "creator_name": "Dyson Robotics Lab + UROP, Imperial College London",
+            "license": "Custom research/non-commercial software license (excluding BSD components)",
+            "creator_name": "Imperial College of Science, Technology and Medicine (Imperial College London)",
             "license_url": "https://github.com/stepjam/RLBench/blob/master/LICENSE",
             "source": "https://github.com/stepjam/RLBench",
+            "commercial_use": False,
+            "asset_provenance_note": (
+                "RLBench states that some included models may originate from "
+                "turbosquid.com, cgtrader.com, free3d.com, thingiverse.com, "
+                "and/or cadnav.com."
+            ),
             "downloaded": "2026",
         }
+
         scene_license = {
             "data_type": "scenes",
             "data_source": data_source,
             "asset_id": str(identifier),
             **rlbench_license,
-            "attribution": f"Scenes by the {rlbench_license['creator_name']},"
-            f" licensed under {rlbench_license['license'].replace('-', ' ')}.",
-            "scope": "Scene composition, layout, objects, textures, and metadata.",
+            "attribution": (
+                f"RLBench scenes by {rlbench_license['creator_name']}. "
+                "The RLBench software is provided under the RLBench Software "
+                "Licence Agreement (excluding BSD components). RLBench states "
+                "that some included models may originate from third-party sites; "
+                "the repository does not provide per-asset provenance or licensing "
+                "information for those models."
+            ),
+            "license_scope": (
+                "RLBench source/software and RLBench-authored material to the "
+                "extent of rights granted by the RLBench license; embedded "
+                "third-party assets may be subject to separate terms."
+            ),
+            "scope": (
+                "The RLBench repository acknowledges that some included models "
+                "may originate from third-party sites including TurboSquid, "
+                "CGTrader, Free3D, Thingiverse, and CADNav. The repository does "
+                "not appear to provide per-asset provenance or licensing "
+                "information. Accordingly, the RLBench license should not be "
+                "interpreted as establishing the licensing status or redistribution "
+                "rights of individual third-party models, textures, or other "
+                "embedded assets."
+            ),
         }
+
         return scene_license
 
     if isinstance(identifier, str):
@@ -510,6 +585,22 @@ def resolve_robot_license(data_source, identifier):
             "license": "BSD-3-Clause License",
             "uri": "https://github.com/google-deepmind/mujoco_menagerie/blob/main/unitree_g1/LICENSE",
             "downloaded": "2026",
+            "scope": "G1 robot MJCF, meshes, and MuJoCo model assets.",
+            "companion_asset_licenses": (
+                "Bundled ONNX whole-body control policy weights under robots/g1/policies/ "
+                "are independently licensed; see policy_weights below."
+            ),
+            "policy_weights": {
+                "scope": "Whole-body control ONNX policy weights (groot_balance.onnx, groot_walk.onnx).",
+                "creator_username": "NVIDIA Corporation",
+                "attribution": (
+                    "Licensed by NVIDIA Corporation under the NVIDIA Open Model License."
+                ),
+                "source": "NVlabs/GR00T-WholeBodyControl",
+                "license": "NVIDIA Open Model License",
+                "uri": "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/LICENSE",
+                "downloaded": "2026",
+            },
         }
     elif "rocketbox" in data_source:
         cur_license = {

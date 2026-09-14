@@ -263,6 +263,18 @@ class ObjectMeta:
         return list(get_db().keys())
 
     @staticmethod
+    def is_commercial_use_allowed(asset_id: str) -> bool:
+        from molmo_spaces.utils.license_policy import NON_COMMERCIAL_OBJAVERSE_LICENSES
+
+        anno = ObjectMeta.annotation(asset_id)
+        if anno is None or not anno.get("isObjaverse"):
+            return True
+        lic = (anno.get("license_info") or {}).get("license")
+        if not lic:
+            return False
+        return lic not in NON_COMMERCIAL_OBJAVERSE_LICENSES
+
+    @staticmethod
     def annotation(asset_ids: str | list[str] | None = None) -> list[dict | None] | dict | None:
         container = get_db()
 

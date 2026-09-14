@@ -119,7 +119,10 @@ def get_valid_pickupable_uids(
             om._object_name_to_possible_type_names = {}
             om._object_name_and_context_to_source_to_natural_names = {}
 
-    return valid_uids
+    from molmo_spaces.utils.license_policy import filter_uids
+
+    allowed = set(filter_uids(valid_uids.keys()))
+    return {uid: valid_uids[uid] for uid in allowed}
 
 
 def _get_cached_valid_pickupables(
@@ -912,6 +915,10 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if asset_uid and self.is_asset_blacklisted(asset_uid):
                 log.debug(f"Skipping {pickup_obj.name} (uid={asset_uid}) - blacklisted")
                 blacklisted_count += 1
+                continue
+
+            if asset_uid and self.is_license_blocked(asset_uid):
+                log.debug(f"Skipping {pickup_obj.name} (uid={asset_uid}) - license blocked")
                 continue
 
             if self.config.task_sampler_config.filter_for_grasps:
