@@ -1,3 +1,4 @@
+import contextlib
 import gc
 import logging
 from abc import ABC, abstractmethod
@@ -12,7 +13,7 @@ import numpy as np
 from mujoco import MjData, MjModel
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.camera_manager import CameraManager
+from molmo_spaces.env.camera_manager import Camera, CameraManager
 from molmo_spaces.env.data_views import (
     Door,
     MlSpacesArticulationObject,
@@ -24,11 +25,16 @@ from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
-from molmo_spaces.utils.scene_maps import ProcTHORMap, iTHORMap, sample_around_point
+from molmo_spaces.utils.scene_maps import (
+    ProcTHORMap,
+    iTHORMap,
+    sample_around_point,
+)
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+    from molmo_spaces.configs.task_sampler_configs import OccupancyMapImpl
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -38,6 +44,18 @@ HAS_FILAMENT: bool = getattr(mujoco, "mjRENDERER", "classic") == "filament"
 
 class BaseMujocoEnv(ABC):
     object_managers: list["ObjectManager"]
+
+    # Which occupancy-map implementation get_occupancy_map() returns; see
+    # configs/task_sampler_configs.OccupancyMapImpl, which owns the set of
+    # valid values (spelled here as its plain string value only because
+    # importing configs at module scope is circular -- see get_occupancy_map).
+    # Task samplers set it from BaseMujocoTaskSamplerConfig.occupancy_map_impl,
+    # and only G1/FetchMan experiments set it to anything but the default.
+    occupancy_map_impl: "OccupancyMapImpl | str" = "thor"
+
+    # How many maps get_occupancy_map() caches; task samplers set it from
+    # BaseMujocoTaskSamplerConfig.occupancy_map_cache_size.
+    occupancy_map_cache_size: int = 4
 
     def __init__(self, exp_config: "MlSpacesExpConfig", mj_model: MjModel = None) -> None:
         self._mj_model = mj_model
@@ -160,10 +178,13 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self,
         exp_config: "MlSpacesExpConfig",
         robot_factory: Callable[[MjData], Robot],
-        mj_model: MjModel,
-        mj_base_scene_path: str,
+        mj_model: MjModel | None,
+        mj_base_scene_path: str | None,
         parallelize: bool = True,
     ) -> None:
+        """`mj_model=None` constructs the env without a scene; the owner then
+        installs one with `_initialize_with_model` (fetchman's
+        G1CPUMujocoEnv compiles its scenes itself and reloads them in place)."""
         super().__init__(exp_config, mj_model)
 
         # Store configuration for scene loading
@@ -180,42 +201,84 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
         self.camera_manager = CameraManager()
         self._renderer: MjAbstractRenderer | None = None
+        # Per-(height, width) plain mujoco.Renderer pool, used by the MJCF
+        # camera path (see render_rgb_frame) and by FisheyeRenderer, which is
+        # written against mujoco.Renderer's update_scene/render/scene API.
+        # Separate from `self._renderer` on purpose: that one is the project's
+        # MjOpenGL/MjFilament renderer and is what the free-camera
+        # `_render_frame` path draws with. Closed and rebuilt on scene load.
+        self._renderers: dict[tuple[int, int], mujoco.Renderer] = {}
 
         self.object_managers = []
 
         # Cached occupancy map for robot placement (expensive to create)
         self._cached_thormap = None
         self._cached_thormap_key = None  # (model_path, agent_radius, px_per_m)
+        # Occupancy maps live here, keyed (impl, model_path, agent_radius,
+        # px_per_m) so a task can hold e.g. a "thor" map for placement and an
+        # "aabb" one for a FetchMan policy, at different radii, without either
+        # evicting the other. Bounded and ordered: oldest out first.
         self._occupancy_maps: OrderedDict = OrderedDict()
         self.occupancy_map_impl = exp_config.task_sampler_config.occupancy_map_impl
         self.occupancy_map_cache_size = exp_config.task_sampler_config.occupancy_map_cache_size
 
-        self._initialize_with_model(mj_model, mj_base_scene_path)
+        if mj_model is not None:
+            self._initialize_with_model(mj_model, mj_base_scene_path)
 
-    def _initialize_with_model(self, mj_model: MjModel, mj_base_scene_path: str) -> None:
-        """Initialize the environment with a MuJoCo model."""
-        # Clean up old renderer if it exists (important for GPU texture cleanup when loading new scenes)
+    def _initialize_with_model(
+        self,
+        mj_model: MjModel,
+        mj_base_scene_path: str,
+        mj_datas: Sequence[MjData] | None = None,
+        scene_metadata: dict | None = None,
+    ) -> None:
+        """Initialize (or re-initialize) the environment with a MuJoCo model.
+
+        By default one fresh MjData per batch element is created, forwarded and
+        settled for `sim_settle_timesteps`. `mj_datas` instead adopts existing
+        data objects as they are -- no forward, no settle -- for an owner whose
+        scene already built them and whose reset sequencing is its own
+        (fetchman's Scene/G1TaskSampler, which reproduce the reference
+        stack's settle bit-exactly and cannot afford extra physics steps).
+        `scene_metadata` likewise takes precedence over reading the scene's
+        metadata file.
+        """
+        # Clean up old renderers if they exist (important for GPU texture
+        # cleanup when loading new scenes -- an unclosed framebuffer leaks on
+        # the render GPU on every reload).
         if self._renderer is not None:
             self._renderer.close()
             self._renderer = None
+        self._close_renderers()
+        if self._executor is not None:
+            self._executor.shutdown(wait=True)
+            self._executor = None
 
-        # Invalidate cached thormap when scene changes
+        # Invalidate cached occupancy maps when scene changes
         self._cached_thormap = None
         self._cached_thormap_key = None
+        self._occupancy_maps = OrderedDict()
 
         # scenes
         self._mj_model = mj_model
         self._mj_base_scene_path = mj_base_scene_path
-        self._scene_metadata = get_scene_metadata(mj_base_scene_path)
+        self._scene_metadata = (
+            scene_metadata if scene_metadata is not None else get_scene_metadata(mj_base_scene_path)
+        )
 
         # data for each batch
-        self._mj_datas = [MjData(mj_model) for _ in range(self._n_batch)]
-        for mj_data in self._mj_datas:
-            mujoco.mj_forward(mj_model, mj_data)
-            for _ in range(
-                self.config.task_sampler_config.sim_settle_timesteps
-            ):  # let objects settle
-                mujoco.mj_step(mj_model, mj_data)
+        if mj_datas is not None:
+            if len(mj_datas) != self._n_batch:
+                raise ValueError(f"expected {self._n_batch} MjData objects, got {len(mj_datas)}")
+            self._mj_datas = list(mj_datas)
+        else:
+            self._mj_datas = [MjData(mj_model) for _ in range(self._n_batch)]
+            for mj_data in self._mj_datas:
+                mujoco.mj_forward(mj_model, mj_data)
+                for _ in range(
+                    self.config.task_sampler_config.sim_settle_timesteps
+                ):  # let objects settle
+                    mujoco.mj_step(mj_model, mj_data)
         self._robots = tuple(self._robot_factory(mj_data) for mj_data in self._mj_datas)
 
         # Initialize the single renderer
@@ -225,23 +288,86 @@ class CPUMujocoEnv(BaseMujocoEnv):
             width, height = self.config.camera_config.img_resolution
         else:
             width, height = (640, 480)  # Default resolution
-        if HAS_FILAMENT:
-            log.info("Using MuJoCo renderer: filament")
-            self._renderer = MjFilamentRenderer(model=self.mj_model, width=width, height=height)
-        else:
-            log.info("Using MuJoCo renderer: classic")
-            self._renderer = MjOpenGLRenderer(model=self.mj_model, width=width, height=height)
+        self._renderer = self._create_renderer(width, height)
 
         if self._parallelize and self._n_batch > 1:
             self._executor = ThreadPoolExecutor(max_workers=self._n_batch)
         else:
             self._executor = None
 
-        # For now, instantiate a new ObjectManager per data
+        # For now, instantiate a new ObjectManager per data. A previous scene's
+        # managers reference its dead MjData, so they go first.
         from molmo_spaces.env.object_manager import ObjectManager
 
-        for idx in range(len(self._mj_datas)):
-            self.object_managers.append(ObjectManager(self, idx))
+        for om in self.object_managers:
+            om.clear()
+        self.object_managers = [ObjectManager(self, idx) for idx in range(len(self._mj_datas))]
+
+    def _create_renderer(self, width: int, height: int) -> "MjAbstractRenderer | None":
+        """The renderer `_render_frame` draws with. A subclass that renders
+        through another path (G1CPUMujocoEnv's per-camera mujoco.Renderer pool
+        and fisheye composite) returns None here and overrides the render_*
+        methods."""
+        if HAS_FILAMENT:
+            log.info("Using MuJoCo renderer: filament")
+            return MjFilamentRenderer(model=self.mj_model, width=width, height=height)
+        log.info("Using MuJoCo renderer: classic")
+        return MjOpenGLRenderer(model=self.mj_model, width=width, height=height)
+
+    # ---- plain mujoco.Renderer pool (MJCF camera + fisheye path) ----
+
+    def _ensure_renderer(self, height: int, width: int) -> mujoco.Renderer:
+        """A `mujoco.Renderer` for this exact output size, created on first use
+        and kept for the life of the scene. Sized renderers are pooled rather
+        than resized because a fisheye composite needs a square tile-sized one
+        while the observation images need an output-sized one, and both are
+        drawn on every step."""
+        key = (int(height), int(width))
+        renderer = self._renderers.get(key)
+        if renderer is None:
+            renderer = mujoco.Renderer(self.current_model, key[0], key[1])
+            self._renderers[key] = renderer
+        return renderer
+
+    def _close_renderers(self) -> None:
+        for renderer in getattr(self, "_renderers", {}).values():
+            with contextlib.suppress(Exception):
+                renderer.close()
+        if hasattr(self, "_renderers"):
+            self._renderers.clear()
+
+    def _render_size(self) -> tuple[int, int]:
+        """Default (height, width) for rendered observation images. Note that
+        `img_resolution` is (width, height)."""
+        if self.config.camera_config is not None:
+            width, height = self.config.camera_config.img_resolution
+        else:
+            width, height = (640, 480)
+        return int(height), int(width)
+
+    def _mjcf_scene_option(self, camera: Camera) -> mujoco.MjvOption:
+        """Scene options for rendering through `camera`'s MJCF camera: MuJoCo's
+        defaults with the camera config's `geomgroup_overrides` applied."""
+        opt = mujoco.MjvOption()
+        mujoco.mjv_defaultOption(opt)
+        overrides = getattr(camera.mjcf.config, "geomgroup_overrides", None)
+        for group, enabled in (overrides or {}).items():
+            opt.geomgroup[int(group)] = int(enabled)
+        return opt
+
+    def fisheye_renderer(
+        self, camera_name: str, output_h: int | None = None, output_w: int | None = None
+    ):
+        """The cubemap FisheyeRenderer for a fisheye MJCF camera, at the
+        observation image size unless another is given. Built (and cached on
+        the camera) by CameraManager from the camera config's own lens
+        parameters; returned rather than rendered with, because callers also
+        read and perturb its intrinsics (K/D)."""
+        if output_h is None or output_w is None:
+            default_h, default_w = self._render_size()
+            output_h = default_h if output_h is None else output_h
+            output_w = default_w if output_w is None else output_w
+        return self.camera_manager.fisheye_renderer(self, camera_name, int(output_h), int(output_w))
 
     @property
     def mj_datas(self) -> Sequence[MjData]:
@@ -300,15 +426,59 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self.mj_model.vis.global_.fovy = prev_fov  # set global fov back
         return frame
 
-    def render_rgb_frame(self, camera_name: str) -> np.ndarray:
-        """Renders an RGB frame from the perspective of the specified camera."""
+    def render_rgb_frame(
+        self, camera_name: str, height: int | None = None, width: int | None = None
+    ) -> np.ndarray:
+        """Renders an RGB frame from the perspective of the specified camera.
+
+        Two paths. A camera whose config sets `render_via_mjcf` (and every
+        fisheye camera) is drawn through the model's own camera id -- a fisheye
+        as its cubemap composite, anything else as a plain render at the
+        requested size. Every other camera goes through `_render_frame`, which
+        points a free camera at the tracked `Camera` pose; that is the path
+        that reflects CameraManager's setup-time mounting noise, so it stays
+        the default. See MjcfCameraConfig.render_via_mjcf.
+        """
         if camera_name not in self.camera_manager.registry:
             raise KeyError(f"Camera '{camera_name}' not found in registry.")
 
         camera = self.camera_manager.registry[camera_name]
+        if self._renders_via_mjcf(camera):
+            return self._render_mjcf_frame(camera, height, width)
         return self._render_frame(
             camera.pos, camera.forward, camera.up, camera.fov, segmentation=False
         )
+
+    @staticmethod
+    def _renders_via_mjcf(camera: Camera) -> bool:
+        """Whether `render_rgb_frame` draws this camera through its MJCF camera
+        id. A fisheye has no free-camera equivalent, so it always does."""
+        if camera.mjcf is None:
+            return False
+        return camera.mjcf.is_fisheye or getattr(camera.mjcf.config, "render_via_mjcf", False)
+
+    def _render_mjcf_frame(
+        self, camera: Camera, height: int | None = None, width: int | None = None
+    ) -> np.ndarray:
+        """Render through `camera`'s MJCF camera id, at the observation image
+        size unless another is given."""
+        default_h, default_w = self._render_size()
+        out_h = default_h if height is None else int(height)
+        out_w = default_w if width is None else int(width)
+        opt = self._mjcf_scene_option(camera)
+
+        if camera.mjcf.is_fisheye:
+            fisheye = self.fisheye_renderer(camera.name, out_h, out_w)
+            # The tiles are square and rendered at the lens' own tile size, not
+            # at the output size; the composite is what comes out at (out_h, out_w).
+            renderer = self._ensure_renderer(fisheye.tile_size, fisheye.tile_size)
+            return fisheye.render(self.current_data, renderer, scene_option=opt)
+
+        renderer = self._ensure_renderer(out_h, out_w)
+        renderer.update_scene(self.current_data, camera.mjcf.camera_id, opt)
+        # Copied: mujoco.Renderer.render() hands back its own reusable buffer,
+        # which the next render through this pooled renderer overwrites.
+        return renderer.render().copy()
 
     def render_depth_frame(self, camera_name: str) -> np.ndarray:
         """Renders a depth frame from the perspective of the specified camera.
@@ -1145,6 +1315,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
 
         # Clean up camera renderers
         self.cleanup_rendering()
+        self._close_renderers()
 
         # add garbage collection to ensure all resources are released
         gc.collect()

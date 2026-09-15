@@ -12,6 +12,8 @@ import numpy as np
 from PIL import Image
 from skimage.metrics import structural_similarity as ssim
 
+from molmo_spaces.utils.save_utils import byte_array_to_string
+
 log = logging.getLogger(__name__)
 
 
@@ -1081,3 +1083,137 @@ def verify_video_fps(dir: Path, expected_fps: float):
         assert np.isclose(fps, expected_fps, atol=1e-2), (
             f"Expected {vid_file} to be {expected_fps} fps, got {fps}"
         )
+
+
+def _lerobot_episode_frames(lerobot_root: Path):
+    """Read a LeRobot dataset's per-episode parquet tables, keyed by episode index."""
+    import pyarrow.parquet as pq
+
+    info = json.loads((lerobot_root / "meta" / "info.json").read_text())
+    episodes = [
+        json.loads(line)
+        for line in (lerobot_root / "meta" / "episodes.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    tasks = {
+        row["task_index"]: row["task"]
+        for row in (
+            json.loads(line)
+            for line in (lerobot_root / "meta" / "tasks.jsonl").read_text().splitlines()
+            if line.strip()
+        )
+    }
+
+    frames = {}
+    for episode in episodes:
+        idx = episode["episode_index"]
+        path = lerobot_root / info["data_path"].format(
+            episode_chunk=idx // info["chunks_size"], episode_index=idx
+        )
+        assert path.is_file(), f"LeRobot episode parquet missing: {path}"
+        frames[idx] = pq.read_table(path).to_pydict()
+    return info, episodes, tasks, frames
+
+
+def compare_lerobot_to_h5(lerobot_root: Path, h5_file: h5py.File, atol=1e-5, label="h5"):
+    """Assert a LeRobot dataset carries the same episodes as an h5 trajectory file.
+
+    The two formats are written from one set of prepared episodes, so this is an
+    equality check, not a similarity one: same episode count, same lengths, same
+    per-timestep state/action numbers (the h5 keeps them JSON-encoded, LeRobot
+    unpacks them into flat float32 vectors), same task strings, same rewards,
+    and one copied video per camera.
+
+    Args:
+        lerobot_root: Dataset root written by save_trajectories_lerobot.
+        h5_file: Open h5py.File to compare against.
+        atol: Absolute tolerance for the numeric columns.
+        label: Name for the h5 side in assertion messages.
+    """
+    assert lerobot_root.is_dir(), f"LeRobot dataset missing: {lerobot_root}"
+    info, episodes, tasks, frames = _lerobot_episode_frames(lerobot_root)
+
+    assert info["codebase_version"] == "v2.1", (
+        f"Unexpected LeRobot codebase_version {info['codebase_version']!r}"
+    )
+
+    h5_trajs = sorted(k for k in h5_file if k.startswith("traj_"))
+    assert len(episodes) == len(h5_trajs), (
+        f"Episode count mismatch: LeRobot has {len(episodes)}, {label} has {len(h5_trajs)}"
+    )
+
+    total_frames = 0
+    for episode in episodes:
+        idx = episode["episode_index"]
+        traj = h5_file[f"traj_{idx}"]
+        table = frames[idx]
+
+        h5_qpos = [json.loads(byte_array_to_string(row)) for row in traj["obs/agent/qpos"][:]]
+        assert episode["length"] == len(h5_qpos), (
+            f"traj_{idx}: length {episode['length']} vs {label} {len(h5_qpos)}"
+        )
+        total_frames += episode["length"]
+
+        expected_state = np.array(
+            [np.concatenate([np.ravel(e[k]) for k in sorted(e)]) for e in h5_qpos],
+            dtype=np.float32,
+        )
+        actual_state = np.array(table["observation.state"], dtype=np.float32)
+        assert actual_state.shape == expected_state.shape, (
+            f"traj_{idx}: observation.state shape {actual_state.shape} vs {expected_state.shape}"
+        )
+        np.testing.assert_allclose(
+            actual_state, expected_state, atol=atol, err_msg=f"traj_{idx}: observation.state"
+        )
+
+        if "actions/joint_pos" in traj:
+            h5_actions = [
+                json.loads(byte_array_to_string(row)) for row in traj["actions/joint_pos"][:]
+            ]
+            expected_action = np.array(
+                [np.concatenate([np.ravel(e[k]) for k in sorted(e)]) for e in h5_actions],
+                dtype=np.float32,
+            )[: episode["length"]]
+            actual_action = np.array(table["action"], dtype=np.float32)
+            np.testing.assert_allclose(
+                actual_action, expected_action, atol=atol, err_msg=f"traj_{idx}: action"
+            )
+
+        if "rewards" in traj:
+            np.testing.assert_allclose(
+                np.array(table["next.reward"], dtype=np.float32),
+                np.asarray(traj["rewards"][:], dtype=np.float32)[: episode["length"]],
+                atol=atol,
+                err_msg=f"traj_{idx}: next.reward",
+            )
+
+        expected_task = json.loads(
+            traj["obs_scene"][()].decode("utf-8")
+            if isinstance(traj["obs_scene"][()], bytes)
+            else traj["obs_scene"][()]
+        ).get("task_description", "")
+        assert tasks[table["task_index"][0]] == expected_task, (
+            f"traj_{idx}: task {tasks[table['task_index'][0]]!r} vs {label} {expected_task!r}"
+        )
+
+        # frame_index/index must stay contiguous or LeRobot's loader mis-slices.
+        assert table["frame_index"] == list(range(episode["length"])), (
+            f"traj_{idx}: frame_index is not 0..{episode['length'] - 1}"
+        )
+
+    assert info["total_frames"] == total_frames, (
+        f"info.json total_frames {info['total_frames']} != {total_frames} summed over episodes"
+    )
+
+    video_keys = [k for k, v in info["features"].items() if v["dtype"] == "video"]
+    assert video_keys, "LeRobot dataset declares no video features"
+    for episode in episodes:
+        idx = episode["episode_index"]
+        for video_key in video_keys:
+            path = lerobot_root / info["video_path"].format(
+                episode_chunk=idx // info["chunks_size"], video_key=video_key, episode_index=idx
+            )
+            assert path.is_file(), f"traj_{idx}: missing LeRobot video {path}"
+            assert len(decord.VideoReader(str(path))) == episode["length"], (
+                f"traj_{idx}: {video_key} frame count != episode length {episode['length']}"
+            )

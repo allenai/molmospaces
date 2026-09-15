@@ -7,7 +7,7 @@ from collections.abc import Collection
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import mujoco
 import numpy as np
@@ -728,24 +728,97 @@ class ObjectManager:
 
         return sorted(results, key=lambda x: x.name)
 
+    def get_object_joints(
+        self,
+        object_or_name_or_id: ObjectOrNameOrIdType,
+        *,
+        source: Literal["metadata", "model"] = "metadata",
+        scope: Literal["subtree", "rootid", "all"] = "subtree",
+        joint_types: Collection[int] | None = None,
+        exclude_free: bool = True,
+    ) -> tuple[list[str], list[int], list[str], list[int]]:
+        """Enumerate an object's joints, cached per argument combination.
+
+        The single entry point for every joint scan on an object; the various
+        historical variants are the argument combinations named below.
+
+        source: "metadata" walks the scene metadata's `name_map.joints` (so only
+            mapped joints, in the map's order, with THOR names filled in);
+            "model" walks every joint in joint-id order and returns "" for the
+            THOR names.
+        scope/joint_types/exclude_free: see MlSpacesObject.collect_joints.
+
+        Returns (joint_xml_names, joint_ids, joint_thor_names, joint_body_ids),
+        all the same length.
+        """
+        cache_in_use = self._model_cache
+        oname = self.get_object_name(object_or_name_or_id)
+        cache_key = (
+            "object_joints__"
+            f"{source}__{scope}__"
+            f"{None if joint_types is None else sorted(int(t) for t in joint_types)}__"
+            f"{exclude_free}"
+        )
+
+        if cache_key not in cache_in_use[oname]:
+            result: tuple[list[str], list[int], list[str], list[int]] = ([], [], [], [])
+            jmap: dict[str, str] | None = None
+            if source == "metadata":
+                jmap = (self.object_metadata(oname).get("name_map") or {}).get("joints") or {}
+
+            # No mapped joints at all: skip the body lookup entirely, as the
+            # pre-merge get_articulation_joints did.
+            if jmap or source == "model":
+                # Deliberately NOT get_object_body_id: that builds an
+                # MlSpacesObject, and get_object_by_name asks
+                # is_object_articulable -- i.e. asks us -- before it can pick
+                # the class. Same id, no cycle.
+                root_body_id = int(self.model.body(oname).id)
+                result = MlSpacesObject.collect_joints(
+                    self.model,
+                    root_body_id,
+                    joint_name_map=jmap,
+                    scope=(
+                        {root_body_id, *self.descendants(root_body_id)}
+                        if scope == "subtree"
+                        else scope
+                    ),
+                    joint_types=joint_types,
+                    exclude_free=exclude_free,
+                )
+
+            if self._caching_enabled:
+                cache_in_use[oname][cache_key] = result
+            else:
+                cache_in_use.pop(oname, None)
+                return result
+
+        return cache_in_use[oname][cache_key]
+
+    def get_articulation_joints(
+        self, object_or_name_or_id: ObjectOrNameOrIdType
+    ) -> tuple[list[str], list[int], list[str], list[int]]:
+        """For a top-level object, enumerate every non-free joint in its subtree
+        whose xml name maps to a THOR joint name in the scene metadata's
+        `name_map.joints`. Returns (joint_xml_names, joint_ids, joint_thor_names,
+        joint_body_ids), all the same length -- empty for non-articulated objects.
+        """
+        return self.get_object_joints(object_or_name_or_id)
+
     def is_object_articulable(self, object_name: str) -> bool:
         """
         If it has at least one hinge or slide joint, return True
         else return False
         """
-        body_id = self.model.body(object_name).id
-
-        # go through all joints
-        for joint_id in range(self.model.njnt):
-            # if root body is same as the body_id, then joint is part of object
-            if self.model.body(self.model.joint(joint_id).bodyid[0]).rootid[0] == body_id:
-                if self.model.joint(joint_id).type in [
-                    mujoco.mjtJoint.mjJNT_HINGE,
-                    mujoco.mjtJoint.mjJNT_SLIDE,
-                ]:
-                    return True
-
-        return False
+        return bool(
+            self.get_object_joints(
+                object_name,
+                source="model",
+                scope="rootid",
+                joint_types=(mujoco.mjtJoint.mjJNT_HINGE, mujoco.mjtJoint.mjJNT_SLIDE),
+                exclude_free=False,
+            )[1]
+        )
 
     def get_object_by_name(self, object_name: str) -> MlSpacesObject | None:
         """Return the top-level object with the specified name, or None if not found."""
@@ -988,7 +1061,10 @@ class ObjectManager:
                             for tt in self.get_possible_object_types(aname):
                                 if tt == "room":
                                     return aname
-                        raise ValueError("BUG? Floor has no room ancestor")
+                        # Scenes without room-level geometry (e.g. iTHOR floor plans,
+                        # which are single-room and have no "room_"-prefixed bodies)
+                        # have no room ancestor to find - there's just the one room.
+                        return None
 
                 # else: keep searching
                 return dfs(support_name)
@@ -1009,13 +1085,13 @@ class ObjectManager:
         obj = self.get_object(object_or_name_or_id)
         name = obj.name
         category = self.get_annotation_category(obj)
-        synset = self.get_annotation_synset(obj)
-        pos = obj.position
         support = self.get_support_below(obj, receptacle_types)
         room = self.infer_room_name(obj, receptacle_types)
-        on_str = f"on {support}" if support else "on <unknown>"
-        room_str = f"in {room}" if room else "in <unknown>"
-        return f"{name} (category={category} synset={synset}) center=({pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}) {on_str}, {room_str}"
+        if support and support != room:
+            loc_str = f"on {support} ({room})" if room else f"on {support}"
+        else:
+            loc_str = f"in {room}" if room else "in <unknown>"
+        return f"{name} [{category}] {loc_str}"
 
     @staticmethod
     def prefilter_with_clip(

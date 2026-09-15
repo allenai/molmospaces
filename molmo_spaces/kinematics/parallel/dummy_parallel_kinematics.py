@@ -79,6 +79,7 @@ class DummyParallelKinematics(ParallelKinematics):
                     eps=success_eps,
                     max_iter=max_iter,
                     dt=dt,
+                    **kwargs,
                 )
             )
         success = np.array([jp_dict is not None for jp_dict in ret])

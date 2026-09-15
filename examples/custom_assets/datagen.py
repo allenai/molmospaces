@@ -4,7 +4,6 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.configs import PickTaskSamplerConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
     FrankaDroidCameraSystem,
@@ -12,6 +11,7 @@ from molmo_spaces.configs.camera_configs import (
 from molmo_spaces.configs.robot_configs import (
     FrankaRobotConfig,
 )
+from molmo_spaces.configs.task_sampler_configs import PickTaskSamplerConfig
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
