@@ -82,7 +82,7 @@ class BaseMujocoTaskSamplerConfig(Config):
     enable_texture_randomization: bool = False
     house_variant: str = "ceiling"
 
-    # When not NONE, filter non-commercial Objaverse assets and block RLBench scenes.
+    # When not NONE, filter non-commercial Objaverse assets.
     license_policy: LicensePolicy = LicensePolicy.NONE
 
 
