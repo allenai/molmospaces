@@ -426,8 +426,8 @@ def house_processing_worker(
                 # class method and use it here. Like, just use a free function for this, don't
                 # see yet why use classes at all
                 assert runner_class is not None, "Must pass a valid 'runner_class' type here"
-                assert isinstance(runner_class, ParallelRolloutRunner), (
-                    "Given 'runner_class' must be of valid type"
+                assert hasattr(runner_class, "process_single_house"), (
+                    "Must have 'process_single_house' func"
                 )
 
                 # Process this work item
@@ -908,8 +908,8 @@ class ParallelRolloutRunner:
             return 0, 0, False
 
         assert runner_class is not None, "Must pass a valid 'runner_class' type here"
-        assert isinstance(runner_class, ParallelRolloutRunner), (
-            "Given 'runner_class' must be of valid type"
+        assert hasattr(runner_class, "load_episodes_for_house"), (
+            "Given 'runner_class' must have 'load_episodes_for_house' func"
         )
 
         # Load episodes using hook - allows subclasses to load from different scene datasets
