@@ -1,6 +1,6 @@
 [project]
 name = "molmo-spaces"
-version = "0.2.0"
+version = "0.2.9"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 description = "Large scale assets and benchmarks for vision language policies"
@@ -70,7 +70,7 @@ dependencies = [
     "wandb>=0.18.10",
     "websockets",
     "pytest", # note (yejin): moved from dev deps since needed in Docker builds
-    "molmospaces-resources==0.0.2",
+    "molmospaces-resources==0.0.3a2",
     "packaging~=26.2",
 ]
 [project.optional-dependencies]
@@ -157,6 +157,15 @@ exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
     "resources/asset_id_to_object_type.json",
     "resources/material_to_textures.json",
     "resources/base_scene.xml",
+]
+
+[tool.pytest.ini_options]
+# `mlspaces_tests/scenes` is mostly standalone analysis and visualisation
+# scripts, but it collects cleanly now and contributes four real tests, so it is
+# no longer excluded. See mlspaces_tests/scenes/README.md.
+norecursedirs = [".git", "*.egg-info", "build", "dist"]
+markers = [
+    "slow: takes minutes of physics stepping; deselect with -m 'not slow'",
 ]
 
 [tool.ruff]

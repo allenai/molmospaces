@@ -11,16 +11,17 @@ from typing import Any, Literal
 
 import mujoco as mj
 import numpy as np
-from p_tqdm import p_uimap
 from test_utils import (
     collect_warnings,
     get_articulation_tests_results_info,
     get_fail_info_articulation_force_test,
     get_object_categories_failed_articulation_test,
+    p_uimap,
     sort_results_articulation_force_test_by_scene_number,
 )
 from tqdm import tqdm
 
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.env.arena.scene_tweaks import (
     is_body_com_within_box_site,
     is_body_within_site_in_freespace,
@@ -30,9 +31,11 @@ ROOT_DIR = Path(__file__).parent.parent.parent
 DEFAULT_HOUSES_FOLDER_WEKA = (
     "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}"
 )
-DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
+# Local scenes come from the resource manager's asset tree, not a
+# repo-relative `assets/`; ASSETS_DIR honours $MLSPACES_ASSETS_DIR.
+DEFAULT_HOUSES_FOLDER_LOCAL = str(ASSETS_DIR / "scenes" / "{dataset}-{split}")
 DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
-DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = str(ASSETS_DIR / "scenes" / "ithor")
 
 results_filepath_TEMPLATE = "history_articulation_force_test_{dataset}_{split}_{identifier}.json"
 INFO_BODIES_WITHIN_SITES_PATH_TEMPLATE = (

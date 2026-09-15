@@ -80,7 +80,7 @@ class I2rtYamRobot(Robot):
     # TODO(wilbert): uhmm, this part should be moved to a regular free function, or a factory fcn
     # that is registered via metaclasses when creating the robot class
     @classmethod
-    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride]
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride] # ty: ignore[invalid-method-override]
         cls,
         robot_config: I2rtYamRobotConfig,
         spec: mj.MjSpec,

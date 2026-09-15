@@ -1,8 +1,31 @@
 """GPU-accelerated fisheye lens distortion warping for camera images.
 
-This module provides functions to apply fisheye distortion to images and videos,
-simulating the effect of wide-angle GoPro cameras. The warping is GPU-accelerated
-using PyTorch and uses a radial distortion model with parameters k1, k2, k3, k4.
+DEPRECATED as a renderer -- use utils/fisheye_cubemap.py instead. Do not point a
+new camera at this module; `FisheyeImpl.WARPING` exists only so configs that
+already name it keep loading.
+
+This module applies fisheye distortion to images and videos, simulating a
+wide-angle GoPro, by resampling one finished pinhole frame through a radial
+k1..k4 model (PyTorch, GPU-accelerated). Two properties of that approach are
+what retire it, both measured by
+mlspaces_tests/component_tests/compare_fisheye_renderers.py with the two paths
+held to one lens, one +/-60 deg cone, one 240x240 output and one render budget:
+
+  * It cannot add detail it was not given. Every output pixel comes from a
+    single finite-resolution pinhole, so the periphery is stretched from a
+    handful of source pixels. Variance of Laplacian 1070 here vs 5476 for the
+    cubemap (5.1x), centre->edge 631/560/989/1406 vs 2183/3463/5538/6960 -- and
+    it is not even cheaper, at 6.24 +/- 0.36 ms/frame vs the cubemap's
+    5.90 +/- 0.36 on equal pixels.
+  * It cannot reach a real fisheye's field of view. The forward map
+    r * (1 + k1 r^2 + k2 r^4 + k3 r^6 + k4 r^8) stops being monotone past
+    r ~ 1.649, so no source resolution or FOV pushes the output past a
+    68.26 deg half-angle. The G1 head lens is 72.8 deg.
+
+What does *not* have a cubemap replacement is post-processing real footage:
+`apply_fisheye_warping_to_video_file` distorts an existing image or video, which
+is a different job from rendering a simulated lens. That is the one reason this
+module is still here.
 """
 
 import math

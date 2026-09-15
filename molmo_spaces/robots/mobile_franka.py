@@ -44,10 +44,18 @@ class MobileFrankaRobot(Robot):
             if config.command_mode == {} or config.command_mode["arm"] == "joint_position"
             else JointRelPosController
         )
-        base_controller_cls: type[Controller] = {
+
+        BASE_CONTROLLER_CLS_OPTIONS = {
             "holo_joint_planar_position": JointPosController,
             "holo_joint_rel_planar_position": JointRelPosController,
-        }[config.command_mode["base"]]
+        }
+
+        cmd_mode = config.command_mode["base"]
+        assert cmd_mode and cmd_mode in BASE_CONTROLLER_CLS_OPTIONS, (
+            f"Must pass a valid command mode, but got {cmd_mode}"
+        )
+        base_controller_cls = BASE_CONTROLLER_CLS_OPTIONS[cmd_mode]
+
         self._controllers: dict[str, Controller] = {
             "base": base_controller_cls(self._robot_view.get_move_group("base")),
             "arm": arm_controller_cls(self._robot_view.get_move_group("arm")),
@@ -129,7 +137,7 @@ class MobileFrankaRobot(Robot):
     # TODO(wilbert): uhmm, this part should be moved to a regular free function, or a factory fcn
     # that is registered via metaclasses when creating the robot class
     @classmethod
-    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride]
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride] # ty: ignore[invalid-method-override]
         cls,
         robot_config: MobileFrankaRobotConfig,
         spec: mj.MjSpec,
@@ -239,7 +247,7 @@ class MobileFrankaRobot(Robot):
 
 
 if __name__ == "__main__":
-    import mujoco.viewer
+    import mujoco.viewer  # ty: ignore
     from scipy.spatial.transform import Rotation as R
 
     from molmo_spaces.configs.robot_configs import MobileFrankaRobotConfig

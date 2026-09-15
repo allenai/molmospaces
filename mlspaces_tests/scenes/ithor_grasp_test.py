@@ -44,9 +44,8 @@ from scipy.spatial.transform import Rotation as R
 # Add the parent directory to the path to import from molmo_spaces
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from molmo_spaces.data_generation.recorder import RGBRecorder
-from molmo_spaces.editor.constants import ALL_PICKUP_TYPES_THOR
-from molmo_spaces.editor.thor_model_editor import ThorMjModelEditor
+from molmo_spaces.utils.constants.object_constants import ALL_PICKUP_TYPES_THOR
+from thor_scene_builder import ThorSceneBuilder
 from molmo_spaces.env.arena.arena_utils import load_env_with_objects
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.utils.scene_maps import ProcTHORMap, iTHORMap
@@ -199,29 +198,12 @@ class GraspTestEnvironment:
 
     def setup_recorders(self, save_images: bool = False) -> None:
         self.renderer = MjOpenGLRenderer(model=self.model, device_id=None)  # device_id)
-        self.recorders = [
-            # RGBRecorder(
-            #    period_ms=100,
-            #    camera_name="robot_0/follower",  # "robot_0/egocentric", # rum specific
-            #    renderer=self.renderer,
-            #    save_video=True,
-            #    save_images=save_images,
-            # ),
-            # RGBRecorder(
-            #    period_ms=100,
-            #    camera_name="robot_0/egocentric",  # "robot_0/egocentric", # rum specific
-            #    renderer=self.renderer,
-            #    save_video=True,
-            #    save_images=save_images,
-            # ),
-            RGBRecorder(
-                period_ms=100,
-                camera_name="robot_0/wrist_camera",  # "robot_0/egocentric", # rum specific
-                renderer=self.renderer,
-                save_video=True,
-                save_images=save_images,
-            ),
-        ]
+        # Debug video capture used to run through `RGBRecorder`, which no longer
+        # exists in molmo_spaces. It only ever wrote failure videos under
+        # `debug/grasp_test_videos/` -- the results below come from
+        # `is_grasped`/`is_picked`, which are pure physics -- so it is gone
+        # rather than reimplemented.
+        self.recorders = []
 
         self.save_dir = f"debug/grasp_test_videos/{DATE_TIME}/{os.path.basename(self.scene_path)}"
 
@@ -938,7 +920,7 @@ def add_robot_to_scene(
     pos = random_free_point
     pos[2] = 0.45
 
-    editor = ThorMjModelEditor.from_xml_path(scene)
+    editor = ThorSceneBuilder.from_xml_path(scene)
     editor.set_options()
     editor.set_size(size=5000)
     editor.set_compiler()

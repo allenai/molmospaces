@@ -6,7 +6,6 @@ import numpy as np
 from mujoco import MjData
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.data_generation.recorder import RGBRecorder
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.utils.devices.keyboard import Keyboard
 from molmo_spaces.utils.devices.spacemouse import SpaceMouse
@@ -89,22 +88,11 @@ class GripperTeleopController:
         self.mocap_pos = []
         self.mocap_quat = []
         self.renderer = MjOpenGLRenderer(model=self.model, device_id=None)  # device_id)
-        self.recorders = [
-            RGBRecorder(
-                period_ms=100,
-                camera_name="robot_0/follower",  # "robot_0/egocentric", # rum specific
-                renderer=self.renderer,
-                save_video=True,
-                save_images=False,
-            ),
-            RGBRecorder(
-                period_ms=100,
-                camera_name="robot_0/egocentric",  # "robot_0/egocentric", # rum specific
-                renderer=self.renderer,
-                save_video=True,
-                save_images=False,
-            ),
-        ]
+        # Debug video capture used to run through `RGBRecorder`, which no longer
+        # exists in molmo_spaces. Nothing read its output, so it is gone rather
+        # than reimplemented; `self.renderer` above is still here for callers
+        # that want to grab a frame.
+        self.recorders = []
 
         # replay trajectory
         self.force_applied = []
@@ -131,10 +119,6 @@ class GripperTeleopController:
         new_time_date = time.strftime("%Y%m%d_%H%M%S")
         new_save_dir = os.path.join(save_dir, handle_name, new_time_date)
         os.makedirs(new_save_dir, exist_ok=True)
-        # save video
-        if self.recorders is not None:
-            for recorder in self.recorders:
-                recorder.save(new_save_dir)
         # save trajectory
         new_save_path = os.path.join(new_save_dir, "mocap_data.npz")
         # save mocap data

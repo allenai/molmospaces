@@ -28,6 +28,7 @@
 
 ---
 ### Updates
+- **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
 - **[2026/06/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
 - **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) is a repository containing standalone third party policy implementations. If you use MolmoSpaces to make a policy (planner-based, learning-based, etc.) please contribute!
 - **[2026/06/12]** 🔥 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, with significantly better usability, included tutorials, and more! Check out the changelog for more information.
@@ -41,6 +42,22 @@
 ## Installation
 
 Installing `molmospaces` is easy!
+
+### Pre-built wheels
+
+You can get the latest wheels from [PyPI](https://pypi.org/project/molmo-spaces/):
+
+> [!WARNING]
+> Use version 0.2.9, as it's the stable version used for all bencmarks and leaderboard
+
+```bash
+# If using uv as package manager
+uv pip install molmo-spaces==0.2.9
+# If using other package manager (conda, etc)
+pip install molmo-spaces==0.2.9
+```
+
+### From Source
 
 First, clone the project.
 

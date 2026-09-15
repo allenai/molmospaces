@@ -195,7 +195,7 @@ class PickAndPlaceTask(BaseMujocoTask):
             tilt_displacement = np.arccos(cos_tilt)
 
             # Check that the robot has released the object (no robot-object contact).
-            robot_root_body_id = self._env.current_robot.robot_view.base.root_body_id
+            robot_root_body_id = self._env.current_robot.robot_view.root_body_id
             robot_contact = False
             for c in data.contact:
                 root_body1 = data.model.body_rootid[data.model.geom_bodyid[c.geom1]]

@@ -1,9 +1,26 @@
 """Task sampler configuration classes for MolmoSpaces experiments."""
 
 import math
+from enum import StrEnum
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.utils.constants.object_constants import RECEPTACLE_TYPES_THOR
+
+
+class OccupancyMapImpl(StrEnum):
+    """Which occupancy-map implementation an env hands back from
+    get_occupancy_map().
+
+    THOR  utils/scene_maps.ProcTHORMap / iTHORMap -- molmo_spaces' own, the
+          default for every task and robot. has a room map
+          (room_ids_to_name, get_free_points_by_room, room-scoped label_at).
+    AABB  utils/scene_maps_aabb.AABBMap -- from the FetchMan (g1_molmo) repo.
+          Mostly 99% similar to THORMap, slighlty more permissive in floor labeling
+          and slighly faster.
+    """
+
+    THOR = "thor"
+    AABB = "aabb"
 
 
 class BaseMujocoTaskSamplerConfig(Config):
@@ -26,6 +43,19 @@ class BaseMujocoTaskSamplerConfig(Config):
     randomize_textures_all: bool = False  # Whether to randomize the textures of the scene
     randomize_robot_textures: bool = False  # Whether to randomize the textures of the robot
     randomize_dynamics: bool = False  # Whether to randomize the dynamics of the scene
+
+    # Which occupancy-map implementation this experiment's env should serve
+    # from get_occupancy_map(). Leave it at the default for everything except
+    # G1/FetchMan experiments -- the two grids disagree cell for cell, so
+    # switching silently changes which cells a robot considers standable.
+    occupancy_map_impl: OccupancyMapImpl = OccupancyMapImpl.THOR
+
+    # How many (impl, scene, agent_radius, px_per_m) maps one env keeps in
+    # memory. Both impls coexist in that cache, so a task/task sampler can hold
+    # one of each -- and several radii -- without evicting one another. Four
+    # covers the usual "placement map + policy nav map, per impl" pattern while
+    # bounding a ~8MB-per-map footprint.
+    occupancy_map_cache_size: int = 4
 
     # Failure recovery parameters (used by ParallelRolloutRunner)
     max_allowed_sequential_task_sampler_failures: int = 10

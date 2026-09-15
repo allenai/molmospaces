@@ -39,7 +39,12 @@ def find_object_base_name_in_scene(model, object_type="egg") -> tuple[int, str]:
     raise ValueError(f"Object {object_type} not found in scene")
 
 
-def test_grasp_batch(args: Tuple[str, str, List[int], int, str, bool, str, bool]) -> Dict[str, int]:
+def run_grasp_batch(args: Tuple[str, str, List[int], int, str, bool, str, bool]) -> Dict[str, int]:
+    """Worker for `pool.map` below -- not a pytest test.
+
+    It was called `test_grasp_batch`, so pytest collected it on name alone and
+    then failed looking for an `args` fixture.
+    """
     """
     Test a batch of grasps in a worker process.
 
@@ -217,7 +222,7 @@ def run_scene(
     n_failed = 0
 
     with Pool(processes=num_workers) as pool:
-        results = pool.map(test_grasp_batch, batch_args)
+        results = pool.map(run_grasp_batch, batch_args)
 
     # Aggregate results
     for result in results:

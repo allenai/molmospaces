@@ -1,6 +1,7 @@
 import re
 from collections import defaultdict
 from collections.abc import Collection
+from itertools import chain
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +37,27 @@ def resolve_license(data_type, data_source, identifier):
         return resolve_robot_license(data_source, identifier or data_source)
 
     raise ValueError(f"Non-valid {data_type=}")
+
+
+def list_rlbench_scene_identifiers() -> list[str]:
+    """Return RLBench task/scene names (e.g. ``banana``, ``open_door``)."""
+    scene_info = get_resource_manager().source_info("scenes", "rlbench", recursive=True)
+    scenes: set[str] = set()
+    for path in chain.from_iterable(scene_info["archive_to_relative_paths"].values()):
+        p = Path(path)
+        if len(p.parts) >= 3 and p.parts[0] == "scenes" and p.name == "scene.xml":
+            scenes.add(p.parts[1])
+    return sorted(scenes)
+
+
+def list_asset_identifiers(data_type: str, data_source: str) -> list[str]:
+    if data_type == "scenes" and data_source == "rlbench":
+        return list_rlbench_scene_identifiers()
+
+    return [
+        archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
+        for archive in get_resource_manager().find_all_packages_for_source(data_type, data_source)
+    ]
 
 
 def validate_identifier(data_type, source, identifier):
@@ -252,6 +274,33 @@ def scene_includes(scene_path):
 
 def resolve_scene_license(data_source, identifier):
     original_identifier = identifier
+
+    if data_source in ["rlbench"]:
+        scene_name = str(identifier)
+        valid_scenes = list_rlbench_scene_identifiers()
+        if scene_name not in valid_scenes:
+            raise ValueError(
+                f"{identifier=} is not in {data_source=} (scenes). "
+                f"Valid scene names: {valid_scenes}"
+            )
+
+        rlbench_license = {
+            "license": "Custom proprietary research license (with BSD-licensed components)-NC",
+            "creator_name": "Dyson Robotics Lab + UROP, Imperial College London",
+            "license_url": "https://github.com/stepjam/RLBench/blob/master/LICENSE",
+            "source": "https://github.com/stepjam/RLBench",
+            "downloaded": "2026",
+        }
+        scene_license = {
+            "data_type": "scenes",
+            "data_source": data_source,
+            "asset_id": str(identifier),
+            **rlbench_license,
+            "attribution": f"Scenes by the {rlbench_license['creator_name']},"
+            f" licensed under {rlbench_license['license'].replace('-', ' ')}.",
+            "scope": "Scene composition, layout, objects, textures, and metadata.",
+        }
+        return scene_license
 
     if isinstance(identifier, str):
         match = re.search(r"\d+", identifier)

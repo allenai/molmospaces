@@ -13,7 +13,7 @@ from gripper_teleop import GripperTeleopController
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
-from molmo_spaces.editor.thor_model_editor import ThorMjModelEditor
+from thor_scene_builder import ThorSceneBuilder
 from molmo_spaces.env.arena.arena_utils import load_env_with_objects
 from molmo_spaces.utils.profiler_utils import Profiler
 from molmo_spaces.utils.scene_maps import iTHORMap
@@ -693,7 +693,7 @@ def add_gripper_to_scene(
     else:
         raise ValueError(f"Invalid gripper type: {GRIPPER_TYPE}")
 
-    editor = ThorMjModelEditor.from_xml_path(scene_path)
+    editor = ThorSceneBuilder.from_xml_path(scene_path)
     editor.set_options()
     editor.set_size(size=5000)
     editor.set_compiler()

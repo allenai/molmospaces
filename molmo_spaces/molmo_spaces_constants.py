@@ -96,8 +96,10 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "floating_robotiq": "20260208_retry4",
         "franka_fr3": "20260303",
         "i2rt_yam": "20260223",
-        "g1": "20260802",
-        "humans_rocketbox": "20260812",
+        "g1": "20260815",
+        "humans_rocketbox_articulated": "20260817",
+        "humans_rocketbox_skinned": "20260817",
+        "humans_rocketbox_static": "20260817",
     },
     scenes={
         "ithor": "20251217_with_occupancy",
@@ -109,6 +111,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "holodeck-objaverse-val": "20251217_with_occupancy",
         "procthor-objaverse-train": "20251205_with_occupancy",
         "procthor-objaverse-val": "20251205_with_occupancy",
+        "rlbench": "20260817",
     },
     objects={
         "thor": "20251117",
@@ -132,6 +135,9 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
     benchmarks={
         "molmospaces-bench-v1": "20260408",
         "molmospaces-bench-v2": "20260415",
+    },
+    textures={
+        "fetchman": "20260817",
     },
 )
 
@@ -242,7 +248,7 @@ def get_resource_manager(
         use_global = False
 
     if _RESOURCE_MANAGER is None or not use_global:
-        MIN_VERSION = "0.0.2"
+        MIN_VERSION = "0.0.3a2"
         if Version(version("molmospaces-resources")) < Version(MIN_VERSION):
             raise ImportError(
                 f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>), e.g., by reinstalling/updating molmospaces"
@@ -259,6 +265,9 @@ def get_resource_manager(
             else:
                 to_install = {}
                 for scene_source in data_type_to_source_to_version["scenes"]:
+                    if scene_source in ["rlbench"]:
+                        continue
+
                     source_packages = manager.find_all_packages_for_source("scenes", scene_source)
                     if len(source_packages) < 10:
                         # Fully install small scene datasets
@@ -269,6 +278,9 @@ def get_resource_manager(
 
                     if packages:
                         to_install[scene_source] = packages
+
+                if "rlbench" in DATA_TYPE_TO_SOURCE_TO_VERSION["scenes"]:
+                    to_install["rlbench"] = ["rlbench_bundle.tar.zst"]
 
                 if to_install:
                     manager.install_packages("scenes", to_install)
@@ -730,15 +742,7 @@ def get_robot_path(robot_name) -> Path:
 
 
 def print_license_info(data_type, data_source, asset_or_tar_id=None):
-    from molmo_spaces.utils.license_utils import resolve_license
-
-    def get_identifiers():
-        return [
-            archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
-            for archive in get_resource_manager().find_all_packages_for_source(
-                data_type, data_source
-            )
-        ]
+    from molmo_spaces.utils.license_utils import list_asset_identifiers, resolve_license
 
     if asset_or_tar_id is None and data_type != "robots":
         raise ValueError(
@@ -746,7 +750,7 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
         )
 
     if asset_or_tar_id == "--list_all":
-        print(f"Possible identifiers: {sorted(get_identifiers())}")
+        print(f"Possible identifiers: {sorted(list_asset_identifiers(data_type, data_source))}")
         return
 
     try:
@@ -755,10 +759,10 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
     except ValueError as e:
         import random
 
-        archives = get_identifiers()
-        formatted = "\n".join(sorted(random.choices(archives, k=min(len(archives), 10))))
+        identifiers = list_asset_identifiers(data_type, data_source)
+        formatted = "\n".join(sorted(random.choices(identifiers, k=min(len(identifiers), 10))))
         print(e)
-        print(f"Possible identifiers:\n{formatted}{'...' if len(archives) > 10 else ''}")
+        print(f"Possible identifiers:\n{formatted}{'...' if len(identifiers) > 10 else ''}")
 
 
 if __name__ == "__main__":
