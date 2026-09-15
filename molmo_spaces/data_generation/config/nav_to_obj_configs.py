@@ -6,13 +6,17 @@ for use in the data generation pipeline.
 """
 
 from pathlib import Path
+from typing import Any
 
 from molmo_spaces.configs import BasePolicyConfig, BaseRobotConfig
 from molmo_spaces.configs.base_nav_to_obj_config import NavToObjBaseConfig
-from molmo_spaces.configs.camera_configs import RBY1MjcfCameraSystem
+from molmo_spaces.configs.camera_configs import CameraSystemConfig, RBY1MjcfCameraSystem
 from molmo_spaces.configs.policy_configs import AStarNavToObjPolicyConfig
 from molmo_spaces.configs.robot_configs import RBY1Config
-from molmo_spaces.configs.task_sampler_configs import NavToObjTaskSamplerConfig
+from molmo_spaces.configs.task_sampler_configs import (
+    BaseMujocoTaskSamplerConfig,
+    NavToObjTaskSamplerConfig,
+)
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.nav_task_sampler import NavToObjTaskSampler
@@ -24,11 +28,11 @@ class NavToObjDataGenConfig(NavToObjBaseConfig):
 
     task_type: str = "nav_to_obj"
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "nav_to_obj_v1"
-    wandb_project: str = "molmo-spaces-data-generation"
+    wandb_project: str | None = "molmo-spaces-data-generation"
     robot_config: BaseRobotConfig = RBY1Config()
     policy_config: BasePolicyConfig = AStarNavToObjPolicyConfig()
-    camera_config: RBY1MjcfCameraSystem = RBY1MjcfCameraSystem()
-    task_sampler_config: NavToObjTaskSamplerConfig = NavToObjTaskSamplerConfig(
+    camera_config: CameraSystemConfig | None = RBY1MjcfCameraSystem()
+    task_sampler_config: BaseMujocoTaskSamplerConfig = NavToObjTaskSamplerConfig(
         task_sampler_class=NavToObjTaskSampler,
         pickup_types=None,
         # pickup_types=[
@@ -59,9 +63,9 @@ class NavToObjDataGenConfig(NavToObjBaseConfig):
         filter_for_successful_trajectories=True,
     )
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Initialize and validate configuration after Pydantic model initialization"""
-        super().model_post_init(__context)
+        super().model_post_init(_context)
 
         if not self.task_sampler_config.house_inds:
             self.task_sampler_config.house_inds = list(range(4))

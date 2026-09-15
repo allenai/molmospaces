@@ -42,6 +42,7 @@ from molmo_spaces.configs.robot_configs import (
     RBY1MConfig,
     RBY1MOpenCloseConfig,
 )
+from molmo_spaces.configs.task_configs import OpeningTaskConfig
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
     OpenTaskSamplerConfig,
@@ -239,7 +240,7 @@ class FrankaOpenDataGenConfig(OpeningBaseConfig):
     data_split: str = "train"  # Data split to use
     robot_config: BaseRobotConfig = FrankaRobotConfig()
     camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
     )
@@ -259,7 +260,7 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
     robot_config: BaseRobotConfig = RBY1MOpenCloseConfig()
     policy_config: BasePolicyConfig = CuroboOpenClosePlannerPolicyConfig()
     camera_config: CameraSystemConfig | None = RBY1GoProD455CameraSystem()
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
         robot_safety_radius=0.2,
@@ -314,8 +315,10 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
         super().model_post_init(_context)
 
         self.policy_config = self._init_policy_config()
-        self.task_config.task_success_threshold = 0.67
         self.task_sampler_config.randomize_textures = True
+
+        if isinstance(self.task_config, OpeningTaskConfig):
+            self.task_config.task_success_threshold = 0.67
 
 
 @register_config("RBY1PickAndPlaceDataGenConfig")
@@ -386,11 +389,15 @@ class RBY1PickAndPlaceDataGenConfig(PickAndPlaceDataGenConfig):
             else:
                 raise
         self.robot_config.init_qpos["head"][1] = 0.6
-        self.task_sampler_config.robot_safety_radius = 0.35
-        self.task_sampler_config.max_robot_to_obj_dist = 0.5
-        self.task_sampler_config.object_placement_radius_range = (0.1, 0.5)
-        self.task_sampler_config.min_object_to_receptacle_dist = 0.05
-        self.task_sampler_config.max_robot_to_place_receptacle_dist = 0.5
+        # TODO(wilbert): the fix could be to use these entries only if it's instance of a
+        # 'PickTaskSamplerConfig', but seems isinstance() could break something, so for now
+        # will just suppress the warnings T_T. It will crash anyway if the user gives the wrong
+        # config LOLOLOLOL T_T'
+        self.task_sampler_config.robot_safety_radius = 0.35  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
+        self.task_sampler_config.max_robot_to_obj_dist = 0.5  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
+        self.task_sampler_config.object_placement_radius_range = (0.1, 0.5)  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
+        self.task_sampler_config.min_object_to_receptacle_dist = 0.05  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
+        self.task_sampler_config.max_robot_to_place_receptacle_dist = 0.5  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
     @property
     def tag(self) -> str:
@@ -482,7 +489,7 @@ class FrankaCloseDataGenConfig(ClosingBaseConfig):
     data_split: str = "train"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
     camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0.5,  # 0.67 for close task, 0 for open task
     )
@@ -643,7 +650,7 @@ class FrankaPickandPlaceDroidMiniBench(PickAndPlaceDataGenConfig):
     data_split: str = "val"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
     camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         pickup_types=PICK_AND_PLACE_OBJECTS,
         samples_per_house=40,
@@ -680,7 +687,7 @@ class FrankaPickandPlaceDroidBench(PickAndPlaceDataGenConfig):
     data_split: str = "val"
     robot_config: BaseRobotConfig = FrankaRobotConfig()
     camera_config: CameraSystemConfig | None = FrankaDroidCameraSystem()
-    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         pickup_types=PICK_AND_PLACE_OBJECTS,
         samples_per_house=40,
@@ -729,7 +736,7 @@ class FrankaOpenHardBench(OpeningBaseConfig):
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
     camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0.67 for close task, 0 for open task
         robot_object_z_offset_random_min=-0.25,
@@ -755,7 +762,7 @@ class FrankaCloseHardBench(ClosingBaseConfig):
         init_qpos_noise_range={"arm": [0.26] * 6 + [math.pi / 2]}
     )
     camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0.5,  # 0.67 for close task, 0 for open task
         robot_object_z_offset_random_min=-0.25,
@@ -800,7 +807,7 @@ class FrankaPickandPlaceHardBench(PickAndPlaceDataGenConfig):
     )
 
     camera_config: CameraSystemConfig | None = FrankaOmniPurposeCameraSystem()
-    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
         robot_object_z_offset_random_min=-0.25,
         robot_object_z_offset_random_max=0.25,
@@ -861,7 +868,7 @@ class RUMPickAndPlaceMultiDataGenConfig(PickAndPlaceDataGenConfig):
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "pnpmulti_V1"
     wandb_project: str | None = "mujoco-thor-data-generation"
     robot_config: BaseRobotConfig = FloatingRUMRobotConfig()
-    task_sampler_config: PickAndPlaceTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceMultiTaskSampler,
         pickup_types=None,
         samples_per_house=20,

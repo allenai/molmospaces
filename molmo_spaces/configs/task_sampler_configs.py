@@ -342,7 +342,7 @@ class NavToObjTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     house_inds: (
         list[int] | None
     ) = []  # list(range(0, 20))  # List of thor house indices to iterate through (first 20 for demo)
-    samples_per_house: int = 1  # Number of tasks per house
+    samples_per_house: int | None = 1  # Number of tasks per house
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
     robot_safety_radius: float = 0.3  # Radius around robot to avoid collisions

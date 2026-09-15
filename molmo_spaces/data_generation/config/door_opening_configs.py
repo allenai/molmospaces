@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-from molmo_spaces.configs.camera_configs import RBY1GoProD455CameraSystem
+from molmo_spaces.configs.camera_configs import CameraSystemConfig, RBY1GoProD455CameraSystem
 from molmo_spaces.configs.policy_configs import (
     DoorOpeningPolicyConfig,
 )
-from molmo_spaces.configs.robot_configs import RBY1MConfig
-from molmo_spaces.configs.task_configs import DoorOpeningTaskConfig
+from molmo_spaces.configs.robot_configs import BaseRobotConfig, RBY1MConfig
+from molmo_spaces.configs.task_configs import AllTaskConfigs, DoorOpeningTaskConfig
 from molmo_spaces.configs.task_sampler_configs import (
+    BaseMujocoTaskSamplerConfig,
     DoorOpeningTaskSamplerConfig,
 )
 from molmo_spaces.data_generation.config_registry import register_config
@@ -42,7 +44,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
     policy_dt_ms: float = 100.0  # Default policy time step
     ctrl_dt_ms: float = 20.0  # Default control time step
     sim_dt_ms: float = 4.0  # Default simulation time step
-    task_horizon: int = 400  # Maximum number of steps per episode
+    task_horizon: int | None = 400  # Maximum number of steps per episode
 
     # --- Data generation settings ---
     num_workers: int = 1  # Number of parallel worker processes for data generation
@@ -53,24 +55,24 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
     )  # Directory to save generated data
     use_wandb: bool = False  # Whether to use Weights & Biases logging
     wandb_name: str | None = None  # Weights & Biases run name
-    wandb_project: str = "molmo-spaces-data-generation"  # Weights & Biases project name
+    wandb_project: str | None = "molmo-spaces-data-generation"  # Weights & Biases project name
 
     # --- ProcTHOR dataset configuration ---
     scene_dataset: str = "procthor-10k"  # Name of the scene dataset to load
     data_split: str = "train"  # Data split to use
     # Robot configuration (imported from robot_configs.py)
-    robot_config: RBY1MConfig = RBY1MConfig()
+    robot_config: BaseRobotConfig = RBY1MConfig()
 
     # Camera configuration (imported from camera_configs.py)
-    camera_config: RBY1GoProD455CameraSystem = RBY1GoProD455CameraSystem()
+    camera_config: CameraSystemConfig | None = RBY1GoProD455CameraSystem()
 
     # Task sampler configuration (imported from task_sampler_configs.py)
-    task_sampler_config: DoorOpeningTaskSamplerConfig = DoorOpeningTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = DoorOpeningTaskSamplerConfig(
         task_sampler_class=DoorOpeningTaskSampler
     )
 
     # Task configuration (imported from task_configs.py)
-    task_config: DoorOpeningTaskConfig = DoorOpeningTaskConfig(task_cls=DoorOpeningTask)
+    task_config: AllTaskConfigs = DoorOpeningTaskConfig(task_cls=DoorOpeningTask)
 
     # Policy configuration (imported from policy_configs.py)
     # Will be initialized in model_post_init
@@ -113,9 +115,9 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
             right_curobo_planner_config=right_curobo_planner_config,
         )
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Initialize policy config after Pydantic model initialization"""
-        super().model_post_init(__context)
+        super().model_post_init(_context)
         # Set up policy config with dynamically computed planner configs
         # Skip if no GPU available (e.g., when launching jobs from manager)
         try:
@@ -129,7 +131,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
                 print(
                     f"Warning: Skipping policy config initialization due to missing GPU: {error_msg}"
                 )
-                self.policy_config = None
+                self.policy_config = None  # pyright: ignore[reportIncompatibleVariableOverride]
             else:
                 raise
 
@@ -156,13 +158,14 @@ class DoorOpeningDebugConfig(DoorOpeningDataGenConfig):
     output_dir: Path = (
         ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR / "experiment_output" / "door_opening_debug"
     )
-    task_horizon: int = 1000
+    task_horizon: int | None = 1000
 
-    task_sampler_config: DoorOpeningTaskSamplerConfig = DoorOpeningTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = DoorOpeningTaskSamplerConfig(
         task_sampler_class=DoorOpeningTaskSampler,
         samples_per_house=1,
         house_inds=[22],
     )
 
+    @property
     def tag(self) -> str:
         return "rby1_door_opening_debug"
