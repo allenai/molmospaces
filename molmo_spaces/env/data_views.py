@@ -1,7 +1,6 @@
 import warnings
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import NoReturn
 
 import mujoco
 import numpy as np
@@ -34,23 +33,19 @@ class MlSpacesObjectAbstract(ABC):
 
     @property
     @abstractmethod
-    def position(self) -> np.ndarray:
-        raise NotImplementedError
+    def position(self) -> np.ndarray: ...
 
     @position.setter
     @abstractmethod
-    def position(self, position: np.ndarray) -> NoReturn:
-        raise NotImplementedError
+    def position(self, position: np.ndarray) -> None: ...
 
     @property
     @abstractmethod
-    def quat(self) -> np.ndarray:
-        raise NotImplementedError
+    def quat(self) -> np.ndarray: ...
 
     @quat.setter
     @abstractmethod
-    def quat(self, quat: np.ndarray) -> NoReturn:
-        raise NotImplementedError
+    def quat(self, quat: np.ndarray) -> None: ...
 
 
 class MlSpacesBody(MlSpacesObjectAbstract):
@@ -127,7 +122,7 @@ class MlSpacesImmovableBody(MlSpacesBody):
         return self.mj_data.xpos[self.body_id].copy()
 
     @position.setter
-    def position(self, position: np.ndarray) -> NoReturn:
+    def position(self, position: np.ndarray) -> None:
         raise ValueError(f"Body {self.name} is not movable!")
 
     @property
@@ -135,7 +130,7 @@ class MlSpacesImmovableBody(MlSpacesBody):
         return self.mj_data.xquat[self.body_id].copy()
 
     @quat.setter
-    def quat(self, quat: np.ndarray) -> NoReturn:
+    def quat(self, quat: np.ndarray) -> None:
         raise ValueError(f"Body {self.name} is not movable!")
 
 
@@ -198,7 +193,7 @@ class MlSpacesCamera(MlSpacesObjectAbstract):
         return self.mj_data.cam_xpos[self.camera_id].copy()
 
     @position.setter
-    def position(self, position: np.ndarray) -> NoReturn:
+    def position(self, position: np.ndarray) -> None:
         raise ValueError(f"Camera {self.name} is not movable!")
 
     @property
@@ -208,7 +203,7 @@ class MlSpacesCamera(MlSpacesObjectAbstract):
         )
 
     @quat.setter
-    def quat(self, quat: np.ndarray) -> NoReturn:
+    def quat(self, quat: np.ndarray) -> None:
         raise ValueError(f"Camera {self.name} is not movable!")
 
 
@@ -285,6 +280,7 @@ class MlSpacesObject(MlSpacesBody):
             aabb_size = self.mj_model.bvh_aabb[self.bvh_root][3:6]
             self._aabb_size = np.ceil(aabb_size / 0.001) * 0.001  # round float to mm
 
+        assert self._aabb_size is not None, "AABB size must have been valid by now"
         return self._aabb_size
 
     @property
@@ -295,10 +291,16 @@ class MlSpacesObject(MlSpacesBody):
     def center_of_mass(self):
         return self._center_of_mass_ref + self.position
 
+    # TODO(wilbert): seems the position getter is modified here, but the docs say that we should
+    # also modify the setter. Pyright is giving us a warning here, but will just keep it for now
+    # bc it could break otherwise (this one doesn't define a valid setter then)
     @property
     def position(self):
         return self.mj_data.xpos[self.body_id].copy()
 
+    # TODO(wilbert): seems the quat getter is modified here, but the docs say that we should
+    # also modify the setter. Pyright is giving us a warning here, but will just keep it for now
+    # bc it could break otherwise (this one doesn't define a valid setter then)
     @property
     def quat(self):
         return self.mj_data.xquat[self.body_id].copy()
@@ -798,6 +800,10 @@ class Door(MlSpacesArticulationObject):
         # Extract 2D position
         point_2d = point[:2] if len(point) >= 2 else point
 
+        # TODO(wilbert): what we return in get_swing_arc_circle should be either a TypedDict or
+        # a dataclass, bc right now we're returning just a dict with a union of values, so the
+        # type checkers can't actually resolve it and complains (for the 'center' variable)
+
         # Check if point is within circle
-        dist_from_center = np.linalg.norm(point_2d - center[:2])
+        dist_from_center = np.linalg.norm(point_2d - center[:2])  # pyright: ignore[reportIndexIssue] # ty: ignore
         return (dist_from_center <= radius).item()

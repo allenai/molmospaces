@@ -1,22 +1,31 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
-import mujoco
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjSpec
 
 from molmo_spaces.controllers.abstract import Controller
-from molmo_spaces.env.rby1_sensors import RBY1GraspStateSensor
-from molmo_spaces.robots.abstract import Robot
-
-if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-    from molmo_spaces.configs.robot_configs import BaseRobotConfig
 from molmo_spaces.controllers.base_pose import DiffDriveBasePoseController
 from molmo_spaces.controllers.joint_pos import JointPosController
 from molmo_spaces.controllers.joint_rel_pos import JointRelPosController
 from molmo_spaces.controllers.torso_height import TorsoHeightJointPosController
+from molmo_spaces.env.rby1_sensors import RBY1GraspStateSensor
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
+from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
+
+if TYPE_CHECKING:
+    from molmo_spaces.configs.robot_configs import BaseRobotConfig
+
+# TODO(wilbert): seems we have got to some messy OOP stuff here, and we have properties that are
+# subclassed in some views, but not friendly or safe to use bc the base ones are the ones that we
+# use as specification for views and robots classes. I think we could consider the following:
+# - Making all these data oriented instead so we don't use any OOP stuff (or as minimal as possible)
+# - Change the abstractions subclass hierarchies to make safe
+#
+# For now we're just disabling the typing errors for two of these such issues and assume that the
+# that our current datagen and benchmarks are wiring everything correctly (I hope LOL)
 
 
 class RBY1(Robot):
@@ -33,22 +42,21 @@ class RBY1(Robot):
 
     """
 
-    def __init__(self, mj_data: MjData, exp_config: "MlSpacesExpConfig") -> None:
-        """
-        Args:
-            exp_config: Experiment configuration params
-            mj_data: MuJoCo data structure containing the current simulation state
-        """
-        super().__init__(mj_data, exp_config)
+    def __init__(self, mj_data: mj.MjData, config: BaseRobotConfig) -> None:
+        super().__init__(mj_data, config)
 
-        self._namespace = self.exp_config.robot_config.robot_namespace
-        self._use_holo_base = self.exp_config.robot_config.use_holo_base
+        assert config.robot_view_factory, (
+            "Something went wrong, 'robot_view_factory' shouldn't be None"
+        )
 
-        # Create the robot view:
+        self._namespace = self.config.robot_namespace
+
+        # TODO(wilbert): uhmmm, make sure we change the design of these configs and views to not
+        # have to be forced to use getattr
+        self._use_holo_base = getattr(self.config, "use_holo_base")  # noqa: B009
+
         self._robot_view = RBY1RobotView(mj_data, self.namespace, holo_base=self._use_holo_base)
-
-        # Create kinematic solver:
-        self._kinematics = MlSpacesKinematics(self.exp_config.robot_config)
+        self._kinematics = MlSpacesKinematics(self.config)
 
         # Create controllers:
 
@@ -62,14 +70,14 @@ class RBY1(Robot):
             "ee_position",
             "ee_velocity",
         ]
-        if self.exp_config.robot_config.command_mode["arm"] is not None:
-            assert self.exp_config.robot_config.command_mode["arm"] in self.arm_command_modes, (
-                f"Arm command mode {self.exp_config.robot_config.command_mode['arm']} not in {self.arm_command_modes}"
+        if self.config.command_mode["arm"] is not None:
+            assert self.config.command_mode["arm"] in self.arm_command_modes, (
+                f"Arm command mode {self.config.command_mode['arm']} not in {self.arm_command_modes}"
             )
         self.arm_command_mode = (
             "joint_position"
-            if not self.exp_config.robot_config.command_mode["arm"]
-            else self.exp_config.robot_config.command_mode["arm"]
+            if not self.config.command_mode["arm"]
+            else self.config.command_mode["arm"]
         )
         if self.arm_command_mode == "joint_rel_position":
             left_arm_controller = JointRelPosController(self.robot_view.get_move_group("left_arm"))
@@ -90,16 +98,14 @@ class RBY1(Robot):
             "joint_rel_position",
             "joint_velocity",
         ]
-        if self.exp_config.robot_config.command_mode["gripper"] is not None:
-            assert (
-                self.exp_config.robot_config.command_mode["gripper"] in self.gripper_command_modes
-            ), (
-                f"Gripper command mode {self.exp_config.robot_config.command_mode['gripper']} not in {self.gripper_command_modes}"
+        if self.config.command_mode["gripper"] is not None:
+            assert self.config.command_mode["gripper"] in self.gripper_command_modes, (
+                f"Gripper command mode {self.config.command_mode['gripper']} not in {self.gripper_command_modes}"
             )
         self.gripper_command_mode = (
             "joint_position"
-            if not self.exp_config.robot_config.command_mode["gripper"]
-            else self.exp_config.robot_config.command_mode["gripper"]
+            if not self.config.command_mode["gripper"]
+            else self.config.command_mode["gripper"]
         )
         if self.gripper_command_mode == "joint_rel_position":
             left_gripper_controller = JointRelPosController(
@@ -130,18 +136,19 @@ class RBY1(Robot):
             "holo_joint_planar_position",
             "holo_joint_rel_planar_position",
         ]
-        if self.exp_config.robot_config.command_mode["base"] is not None:
-            assert self.exp_config.robot_config.command_mode["base"] in self.base_command_modes, (
-                f"Base command mode {self.exp_config.robot_config.command_mode['base']} not in {self.base_command_modes}"
+        if self.config.command_mode["base"] is not None:
+            assert self.config.command_mode["base"] in self.base_command_modes, (
+                f"Base command mode {self.config.command_mode['base']} not in {self.base_command_modes}"
             )
         self.base_command_mode = (
             "planar_position"
-            if not self.exp_config.robot_config.command_mode["base"]
-            else self.exp_config.robot_config.command_mode["base"]
+            if not self.config.command_mode["base"]
+            else self.config.command_mode["base"]
         )
         if self.base_command_mode == "planar_position":
             base_controller = DiffDriveBasePoseController(
-                self.exp_config.robot_config, self.robot_view.get_move_group("base")
+                self.config,
+                self.robot_view.get_move_group("base"),  # pyright: ignore[reportArgumentType]
             )
         elif self.base_command_mode == "holo_joint_rel_planar_position":
             base_controller = JointRelPosController(self.robot_view.get_move_group("base"))
@@ -153,7 +160,7 @@ class RBY1(Robot):
             )
 
         # Head is fixed - no head actions are supported
-        self.head_command_mode = self.exp_config.robot_config.command_mode.get("head")
+        self.head_command_mode = self.config.command_mode.get("head")
         assert self.head_command_mode is None, (
             "RBY1 head actuation is disabled. The head is fixed at init_qpos['head'] with optional "
             "randomization via init_qpos_noise_range['head']. "
@@ -163,8 +170,7 @@ class RBY1(Robot):
         # Torso command modes
         self.torso_command_modes = ["joint_position", "height"]
         self.torso_command_mode = (
-            self.exp_config.robot_config.command_mode.get("torso", "joint_position")
-            or "joint_position"
+            self.config.command_mode.get("torso", "joint_position") or "joint_position"
         )
         assert self.torso_command_mode in self.torso_command_modes, (
             f"Torso command mode {self.torso_command_mode} not in {self.torso_command_modes}"
@@ -176,7 +182,7 @@ class RBY1(Robot):
         else:
             torso_controller = JointPosController(self.robot_view.get_move_group("torso"))
 
-        self._controllers = {
+        self._controllers: dict[str, Controller] = {
             "base": base_controller,
             "torso": torso_controller,
             "left_arm": left_arm_controller,
@@ -218,10 +224,7 @@ class RBY1(Robot):
         """RBY1 has two independent arms - each gets independent noise."""
         return ["left_arm", "right_arm"]
 
-    def _apply_base_noise(
-        self,
-        commanded_base_pos: np.ndarray,
-    ) -> np.ndarray:
+    def _apply_base_noise(self, commanded_base_pos: np.ndarray) -> np.ndarray:
         """Apply planar noise to base commands (x, y, theta).
 
         The noise model:
@@ -235,7 +238,8 @@ class RBY1(Robot):
         Returns:
             Noisy base position [x, y, theta]
         """
-        noise_config = self.exp_config.robot_config.action_noise_config
+        noise_config = self.config.action_noise_config
+        assert noise_config is not None, "Something wen't wrong, 'noise_config' shouldn't be None"
 
         # Get current base position (x, y, theta)
         base_mg = self.robot_view.get_move_group("base")
@@ -292,8 +296,11 @@ class RBY1(Robot):
         Returns:
             Modified action dict with noise added
         """
-        noise_config = self.exp_config.robot_config.action_noise_config
-        if not noise_config.enabled:
+        # TODO(wilbert): seems noise_config is not used at all for this part of rby1 code, we could
+        # remove it instead of having to check, but for now will just assert and remove it in a
+        # later commit
+        noise_config = self.config.action_noise_config
+        if noise_config and not noise_config.enabled:
             return action
 
         # Apply arm noise via parent class
@@ -314,12 +321,12 @@ class RBY1(Robot):
         Returns:
             np.ndarray: 4x4 transformation matrix for the robot base pose in world frame
         """
-        return self.robot_view.get_move_group("base").pose
+        return self.robot_view.get_move_group("base").pose  # pyright: ignore[reportAttributeAccessIssue]
 
     def reset(self) -> None:
         """Reset the robot to its initial state."""
 
-        init_qpos_dict = self.exp_config.robot_config.init_qpos
+        init_qpos_dict = {key: np.array(val) for key, val in self.config.init_qpos.items()}
         self.set_joint_pos(init_qpos_dict)
 
         # reset controllers
@@ -357,7 +364,7 @@ class RBY1(Robot):
         return "robot_0/base"
 
     @classmethod
-    def apply_control_overrides(cls, spec: MjSpec, robot_config: "BaseRobotConfig"):
+    def apply_control_overrides(cls, spec: mj.MjSpec, robot_config: BaseRobotConfig):
         # the model root name already includes the hardcoded namespace
         tmp_robot_config = robot_config.model_copy(deep=True)
         tmp_robot_config.robot_namespace = ""
@@ -366,8 +373,8 @@ class RBY1(Robot):
     @classmethod
     def add_robot_to_scene(
         cls,
-        robot_config: "BaseRobotConfig",
-        spec: MjSpec,
+        robot_config: BaseRobotConfig,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
@@ -416,21 +423,20 @@ class RBY1(Robot):
         def add_slider_act(
             name: str, ctrlrange: float, gainprm: float, biasprm: list[float], gear_idx: int
         ):
-            act = spec.add_actuator()
-            act.name = f"{prefix}{name}"
-            act.target = f"{prefix}base_site"
-            act.refsite = f"{prefix}world"
-            act.ctrlrange = np.array([-ctrlrange, ctrlrange])
+            act = spec.add_actuator(
+                name=f"{prefix}{name}",
+                target=f"{prefix}base_site",
+                refsite=f"{prefix}world",
+                ctrlrange=[-ctrlrange, ctrlrange],
+                gear=[1 if i == gear_idx else 0 for i in range(6)],
+                biastype=mj.mjtBias.mjBIAS_AFFINE,
+                trntype=mj.mjtTrn.mjTRN_SITE,
+            )
             act.gainprm[0] = gainprm
             act.biasprm[: len(biasprm)] = biasprm
-            act.trntype = mujoco.mjtTrn.mjTRN_SITE
-            act.biastype = mujoco.mjtBias.mjBIAS_AFFINE
-            gear = [0] * 6
-            gear[gear_idx] = 1
-            act.gear = gear
             return act
 
-        if robot_config.use_holo_base:
+        if getattr(robot_config, "use_holo_base"):  # noqa: B009
             spec.worldbody.add_site(name=f"{prefix}world", pos=[0, 0, 0.005], quat=[1, 0, 0, 0])
             add_slider_act("base_x_act", 25, 25000, [0, -25000, 0.5], 0)
             add_slider_act("base_y_act", 25, 25000, [0, -25000, 0.5], 1)

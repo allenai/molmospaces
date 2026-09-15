@@ -261,9 +261,9 @@ class EvalExocentricCameraConfig(FixedExocentricCameraConfig):
     """
 
     # Override parent required fields with None defaults (resolved at runtime)
-    pos: list[float] | None = None
-    forward: list[float] | None = None
-    up: list[float] | None = None
+    pos: list[float] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    forward: list[float] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    up: list[float] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
 
     # Spherical perturbation ranges (around the reference shoulder-mount pose)
     azimuth_range: tuple[float, float] | None = None  # radians, symmetric around ref azimuth
@@ -283,16 +283,6 @@ class EvalExocentricCameraConfig(FixedExocentricCameraConfig):
     camera_quaternion: list[float] = [-0.3633, -0.1241, 0.4263, 0.8191]
 
 
-AllCameraTypes: TypeAlias = (
-    MjcfCameraConfig
-    | RobotMountedCameraConfig
-    | FixedExocentricCameraConfig
-    | RandomizedExocentricCameraConfig
-    | EvalRobotMountedCameraConfig
-    | EvalExocentricCameraConfig
-)
-
-
 class CameraSystemConfig(Config):
     """Complete camera system configuration.
 
@@ -304,7 +294,7 @@ class CameraSystemConfig(Config):
     img_resolution: tuple[int, int] = (640, 480)  # (width, height)
 
     # Individual camera specifications
-    cameras: list[AllCameraTypes] = []
+    cameras: list[CameraConfig] = []
 
     def add_camera(self, camera_spec: CameraConfig) -> None:
         """Add a camera specification to the system."""
@@ -322,7 +312,7 @@ class RBY1MjcfCameraSystem(CameraSystemConfig):
     """Camera system using RBY1's built-in MJCF cameras."""
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         MjcfCameraConfig(
             name="head_camera",
             mjcf_name="head_camera",
@@ -371,7 +361,7 @@ class RBY1GoProD455CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (1024, 576)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Head camera - GoPro analogue (4:3, VFOV ~94deg for wide mode)
         # Crop to 768x576 in post-processing to get 4:3 aspect ratio
         MjcfCameraConfig(
@@ -418,7 +408,7 @@ class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -471,7 +461,7 @@ class FrankaDroidCameraSystem(CameraSystemConfig):
         640,
         368,
     )  # 16:9 aspect ratio and divisible by 16px for video encoding
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera (with depth for D405 simulation)
         MjcfCameraConfig(
             name="wrist_camera",
@@ -504,7 +494,7 @@ class FrankaEasyRandomizedDroidCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -555,7 +545,7 @@ class FrankaOmniPurposeCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera_zed_mini",
@@ -635,7 +625,7 @@ class FrankaRandomizedDroidCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -702,7 +692,7 @@ class FrankaGoProD405D455CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # D405-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -759,7 +749,7 @@ class FrankaGoProD405RandomizedCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # D405-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -813,7 +803,7 @@ class FrankaRobotiq2f85CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Robotiq 2f85-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -849,7 +839,7 @@ class I2rtYamCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Robotiq 2f85-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -881,7 +871,7 @@ class BimanualYamCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Left wrist camera (defined in yam.xml, attached to left_link_6)
         MjcfCameraConfig(
             name="left_wrist_camera",
@@ -935,8 +925,15 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
 
     img_resolution: tuple[int, int] = (640, 368)
 
+    # TODO(wilbert): uhmmm, for this part make the internal type either a dataclass or a typeddict
+    # LOL(wilbert): This pydantic stuff is very janky
     ref_level_ranges: ClassVar[
-        list[tuple[float, dict[str, dict[str, float | tuple[float, ...]]]]]
+        list[
+            tuple[
+                float,
+                dict[str, dict[str, float | tuple[float, ...] | tuple[tuple[float, ...], ...]]],
+            ]
+        ]
     ] = [
         (
             0.0,
@@ -1031,7 +1028,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
     ]
 
     # Calibrated (level 0) camera specs only; no randomization params.
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist camera
         MjcfCameraConfig(
             name="wrist_camera",

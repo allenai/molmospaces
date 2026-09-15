@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -21,7 +21,7 @@ except (ImportError, RuntimeError):
         from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
     else:
 
-        class CuroboPlannerConfig(Config):  # type: ignore
+        class CuroboPlannerConfig(Config):
             """Stub for CuroboPlannerConfig when CuRobo is not available."""
 
             pass
@@ -30,23 +30,22 @@ except (ImportError, RuntimeError):
 class BasePolicyConfig(Config):
     """Base configuration for policies."""
 
-    policy_cls: type[BasePolicy]
-    policy_factory: PolicyFactory
-    """
-    Factory function to create the policy instance from a config and task, can be same as ``policy_cls``.
-    """
-    policy_type: str  # Type of the policy, e.g., "planner", "teleop", "learned", etc.
+    policy_cls: type[BasePolicy] | None
+
+    policy_factory: PolicyFactory | None
+    """Factory function to create the policy instance from a config and task, can be same as ``policy_cls``"""
+
+    policy_type: str
+    """Type of the policy, e.g., "planner", "teleop", "learned", etc."""
+
     force_enable_depth: bool = False
-    """
-    If true, require all cameras to record depth.
-    In eval the cameras will be overridden, otherwise it will just require the camera system config to enable depth.
-    """
+    """Whether or not to require all cameras to record depth"""
 
 
 class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):
     """Configuration for Franka pick planner policy."""
 
-    policy_cls: type = None  # Will be set by importing module to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "planner"
 
@@ -141,7 +140,7 @@ class OpenClosePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 
 
 class PickPlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     postgrasp_z_offset: float = 0.08  # Height above object for postgrasp
 
     def model_post_init(self, __context) -> None:
@@ -157,7 +156,7 @@ class PickPlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 
 
 class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     move_settle_time: float = 0.5
 
     def model_post_init(self, __context) -> None:
@@ -173,7 +172,7 @@ class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 
 
 class CuroboOpenClosePlannerPolicyConfig(OpenClosePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     right_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     left_planner_joint_ranges: dict[
@@ -219,7 +218,7 @@ class CuroboOpenClosePlannerPolicyConfig(OpenClosePlannerPolicyConfig):
 
 
 class CuroboPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     right_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     left_planner_joint_ranges: dict[
@@ -264,9 +263,9 @@ class CuroboPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
 
 
 class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_next_to_planner_policy import (
             PickAndPlaceNextToPlannerPolicy,
@@ -277,9 +276,9 @@ class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
 
 
 class PickAndPlaceColorPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_color_planner_policy import (
             PickAndPlaceColorPlannerPolicy,
@@ -292,7 +291,7 @@ class PickAndPlaceColorPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
 class DoorOpeningPolicyConfig(BasePolicyConfig):
     """Configuration for RBY1 door opening planner policy."""
 
-    policy_cls: type = None  # Will be set by importing module to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "planner"
 
@@ -367,7 +366,7 @@ class DoorOpeningPolicyConfig(BasePolicyConfig):
 class NavToObjPlannerPolicyConfig(BasePolicyConfig):
     """Base configuration for navigation to object planner policies."""
 
-    policy_cls: type = None  # Will be set by importing module to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "planner"
 
@@ -382,7 +381,7 @@ class NavToObjPlannerPolicyConfig(BasePolicyConfig):
 class AStarNavToObjPolicyConfig(NavToObjPlannerPolicyConfig):
     """Configuration for A* navigation policy (discrete grid-based planner)."""
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
 
     # A* planner configuration
     planner_config: AStarPlannerConfig = AStarPlannerConfig()
@@ -432,7 +431,7 @@ class DummyPolicyConfig(BasePolicyConfig):
     """Policy config that uses DummyPolicy for testing."""
 
     policy_type: str = "dummy"
-    policy_cls: type = None  # Set in model_post_init
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
 
     def model_post_init(self, __context) -> None:
@@ -447,13 +446,13 @@ class DummyPolicyConfig(BasePolicyConfig):
 class BrownianMotionPolicyConfig(BasePolicyConfig):
     """Policy that applies Gaussian noise increments over noop control, resulting in Brownian motion."""
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "dummy"
     std: float = 0.1
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any) -> None:
+        super().model_post_init(_context)
         if self.policy_cls is None:
             from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy
 

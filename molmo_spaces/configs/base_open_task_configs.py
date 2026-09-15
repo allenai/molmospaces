@@ -1,7 +1,8 @@
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.policy_configs import BasePolicyConfig, OpenClosePlannerPolicyConfig
-from molmo_spaces.configs.task_configs import OpeningTaskConfig
+from molmo_spaces.configs.task_configs import AllTaskConfigs, OpeningTaskConfig
 from molmo_spaces.configs.task_sampler_configs import (
+    BaseMujocoTaskSamplerConfig,
     OpenTaskSamplerConfig,
 )
 from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
@@ -14,13 +15,13 @@ class OpeningBaseConfig(PickBaseConfig):
     task_type: str = "open"
 
     # Task sampler configuration (imported from task_sampler_configs.py)
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0,  # 0 for open task
     )
 
     # Task configuration (imported from task_configs.py)
-    task_config: OpeningTaskConfig = OpeningTaskConfig(
+    task_config: AllTaskConfigs = OpeningTaskConfig(
         task_cls=OpeningTask,
         task_success_threshold=0.15,  # low for now, due to placement/IK constraints, should be ~0.66
         joint_index=0,
@@ -38,13 +39,13 @@ class ClosingBaseConfig(PickBaseConfig):
     task_type: str = "close"
 
     # Task sampler configuration (imported from task_sampler_configs.py)
-    task_sampler_config: OpenTaskSamplerConfig = OpenTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = OpenTaskSamplerConfig(
         task_sampler_class=OpenTaskSampler,
         target_initial_state_open_percentage=0.5,  # 0.67 for close task
     )
 
     # Task configuration (imported from task_configs.py)
-    task_config: OpeningTaskConfig = OpeningTaskConfig(
+    task_config: AllTaskConfigs = OpeningTaskConfig(
         task_cls=OpeningTask,
         task_success_threshold=0.85,  # For closing Task, 0.33
         joint_index=0,

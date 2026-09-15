@@ -18,11 +18,10 @@ class JointPosController(AbstractPositionController):
         self.ctrl_range = robot_move_group.ctrl_limits
 
         self._stationary = True
-        self.target = (
-            self.robot_move_group.joint_pos
-        )  # Initial pos target is current joint positions
+        self._target = self.robot_move_group.joint_pos
 
-        # TODO: Check if the move_group's actuators support this control type
+        self._validate_actuators()
+
         self.reset()
 
     @property
@@ -38,15 +37,12 @@ class JointPosController(AbstractPositionController):
         return self._target.copy()
 
     @property
-    def stationary(self):
-        """Returns whether the controller is in stationary mode"""
+    def stationary(self) -> bool:
         return self._stationary
 
-    def set_target(self, target_joint_positions) -> None:
-        """Set the target joint positions for the controller"""
-        self._stationary = False  # Exit stationary mode when target is provided
-
-        self.target = np.clip(target_joint_positions, self.ctrl_range[:, 0], self.ctrl_range[:, 1])
+    def set_target(self, target: np.ndarray) -> None:
+        self._stationary = False
+        self.target = np.clip(target, self.ctrl_range[:, 0], self.ctrl_range[:, 1])
 
     def set_to_stationary(self) -> None:
         """
@@ -71,3 +67,8 @@ class JointPosController(AbstractPositionController):
     def reset(self) -> None:
         """Reset the controller to its initial state, clearing any internal state or targets"""
         self.set_to_stationary()  # Explicit reset to stationary mode
+
+    def _validate_actuators(self) -> None:
+        # TODO(wilbert): implement this part once the joint_ids and actuator_ids are exposed
+        # in the base MoveGroup, not in the SingleActuated one
+        pass

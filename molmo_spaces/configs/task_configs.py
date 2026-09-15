@@ -133,7 +133,7 @@ class DoorOpeningTaskConfig(BaseMujocoTaskConfig):
     tasks sampled by the task sampler.
     """
 
-    task_cls: type = None  # Will be set by importing module to avoid circular imports
+    task_cls: type | None = None  # Will be set by importing module to avoid circular imports
 
     # --- DoorOpening-specific task parameters ---
     door_body_name: str | None = None  # e.g., "door|2|8_Doorway_Double_7_doorway_door_7"

@@ -45,7 +45,7 @@ def setup_env():
 @pytest.fixture(scope="module")
 def rum_open_config():
     """Create test-specific config instance for RUM open (shared across all tests)."""
-    config = RUMOpenTestConfig()
+    config = RUMOpenTestConfig(output_dir=TEST_OUTPUT_DIR)
     # Test overrides
     config.use_passive_viewer = False
     config.profile = True
@@ -112,7 +112,7 @@ def rum_open_policy_results(rum_open_config, rum_open_task):
 @pytest.fixture(scope="module")
 def rum_close_config():
     """Create test-specific config instance for RUM close (shared across all tests)."""
-    config = RUMCloseTestConfig()
+    config = RUMCloseTestConfig(output_dir=TEST_OUTPUT_DIR)
     # Test overrides
     config.use_passive_viewer = False
     config.profile = True
@@ -223,6 +223,7 @@ def test_rum_open_task_sampler(rum_open_config, rum_open_task_sampler, rum_open_
     assert hasattr(rum_open_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
+    assert rum_open_task.config.camera_config is not None
     assert rum_open_task.config.camera_config.img_resolution == (624, 352)
     assert rum_open_task.config.ctrl_dt_ms == 2.0  # Uses default control timestep from base config
 
@@ -379,6 +380,7 @@ def test_rum_close_task_sampler(rum_close_config, rum_close_task_sampler, rum_cl
     assert hasattr(rum_close_task, "sensor_suite"), "Task should have sensor_suite attribute"
 
     # Verify task configuration matches expected values from config
+    assert rum_close_task.config.camera_config is not None
     assert rum_close_task.config.camera_config.img_resolution == (624, 352)
     assert rum_close_task.config.ctrl_dt_ms == 2.0  # Uses default control timestep from base config
 
@@ -471,8 +473,7 @@ def test_rum_close_integration(rum_close_config):
 
     runner = ParallelRolloutRunner(rum_close_config)
 
-    # Run the pipeline
-    success_count, total_count = runner.run()
+    _, total_count = runner.run()
     assert total_count == 1, f"Expected to run 1 task, ran {total_count}"
     assert rum_close_config.output_dir.is_dir()
     for idx in rum_close_config.task_sampler_config.house_inds:
