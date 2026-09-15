@@ -42,7 +42,6 @@ from molmo_spaces.configs.robot_configs import (
     RBY1MConfig,
     RBY1MOpenCloseConfig,
 )
-from molmo_spaces.configs.task_configs import OpeningTaskConfig
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
     OpenTaskSamplerConfig,
@@ -317,8 +316,14 @@ class RBY1OpenDataGenConfig(OpeningBaseConfig):
         self.policy_config = self._init_policy_config()
         self.task_sampler_config.randomize_textures = True
 
-        if isinstance(self.task_config, OpeningTaskConfig):
-            self.task_config.task_success_threshold = 0.67
+        # TODO(wilbert): seems I'm missing something with the inheritance hierarchy of the pydantic
+        # configs, bc the isinstance() check is not landing here when we get a subclass of OpeningTaskConfig.
+        # Will just suppress the warning for now, but this can break if we pass the wrong config
+        # (we can't use the subclass for the typing in pydantic for it to make the runtime check
+        # because it messes up the typing system. The runtime check might work, but the type checker
+        # always complains bc we shouldn't modify the type of the entry, unless there's an option
+        # to tell it to actually do this, like for vanilla dataclasses)
+        self.task_config.task_success_threshold = 0.67  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
 
 @register_config("RBY1PickAndPlaceDataGenConfig")
