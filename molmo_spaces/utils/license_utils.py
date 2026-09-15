@@ -1,7 +1,6 @@
 import re
 from collections import defaultdict
 from collections.abc import Collection
-from itertools import chain
 from pathlib import Path
 from typing import Any
 
@@ -47,29 +46,15 @@ def resolve_license(data_type, data_source, identifier):
     raise ValueError(f"Non-valid {data_type=}")
 
 
-def list_rlbench_scene_identifiers() -> list[str]:
-    """Return RLBench task/scene names (e.g. ``banana``, ``open_door``)."""
-    scene_info = get_resource_manager().source_info("scenes", "rlbench", recursive=True)
-    scenes: set[str] = set()
-    for path in chain.from_iterable(scene_info["archive_to_relative_paths"].values()):
-        p = Path(path)
-        if len(p.parts) >= 3 and p.parts[0] == "scenes" and p.name == "scene.xml":
-            scenes.add(p.parts[1])
-    return sorted(scenes)
-
-
 def list_asset_identifiers(
     data_type: str, data_source: str, license_policy: LicensePolicy | None = None
 ) -> list[str]:
-    if data_type == "scenes" and data_source == "rlbench":
-        identifiers = list_rlbench_scene_identifiers()
-    else:
-        identifiers = [
-            archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
-            for archive in get_resource_manager().find_all_packages_for_source(
-                data_type, data_source
-            )
-        ]
+    identifiers = [
+        archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
+        for archive in get_resource_manager().find_all_packages_for_source(
+            data_type, data_source
+        )
+    ]
 
     if license_policy is None:
         license_policy = get_license_policy()
@@ -321,61 +306,6 @@ def scene_includes(scene_path):
 
 def resolve_scene_license(data_source, identifier):
     original_identifier = identifier
-
-    if data_source in ["rlbench"]:
-        scene_name = str(identifier)
-        valid_scenes = list_rlbench_scene_identifiers()
-        if scene_name not in valid_scenes:
-            raise ValueError(
-                f"{identifier=} is not in {data_source=} (scenes). "
-                f"Valid scene names: {valid_scenes}"
-            )
-
-        rlbench_license = {
-            "license": "Custom research/non-commercial software license (excluding BSD components)",
-            "creator_name": "Imperial College of Science, Technology and Medicine (Imperial College London)",
-            "license_url": "https://github.com/stepjam/RLBench/blob/master/LICENSE",
-            "source": "https://github.com/stepjam/RLBench",
-            "commercial_use": False,
-            "asset_provenance_note": (
-                "RLBench states that some included models may originate from "
-                "turbosquid.com, cgtrader.com, free3d.com, thingiverse.com, "
-                "and/or cadnav.com."
-            ),
-            "downloaded": "2026",
-        }
-
-        scene_license = {
-            "data_type": "scenes",
-            "data_source": data_source,
-            "asset_id": str(identifier),
-            **rlbench_license,
-            "attribution": (
-                f"RLBench scenes by {rlbench_license['creator_name']}. "
-                "The RLBench software is provided under the RLBench Software "
-                "Licence Agreement (excluding BSD components). RLBench states "
-                "that some included models may originate from third-party sites; "
-                "the repository does not provide per-asset provenance or licensing "
-                "information for those models."
-            ),
-            "license_scope": (
-                "RLBench source/software and RLBench-authored material to the "
-                "extent of rights granted by the RLBench license; embedded "
-                "third-party assets may be subject to separate terms."
-            ),
-            "scope": (
-                "The RLBench repository acknowledges that some included models "
-                "may originate from third-party sites including TurboSquid, "
-                "CGTrader, Free3D, Thingiverse, and CADNav. The repository does "
-                "not appear to provide per-asset provenance or licensing "
-                "information. Accordingly, the RLBench license should not be "
-                "interpreted as establishing the licensing status or redistribution "
-                "rights of individual third-party models, textures, or other "
-                "embedded assets."
-            ),
-        }
-
-        return scene_license
 
     if isinstance(identifier, str):
         match = re.search(r"\d+", identifier)

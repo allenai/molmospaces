@@ -224,9 +224,9 @@ Note that invoking this command will attempt to download and install all scenes 
 
 ## License policy filtering (datagen and inspection)
 
-Datagen can exclude non-commercial Objaverse assets and block RLBench scenes using a
-license policy. Evaluation and benchmark replay do **not** expose this flag and always
-load assets exactly as specified in benchmarks.
+Datagen can exclude non-commercial Objaverse assets using a license policy. Evaluation
+and benchmark replay do **not** expose this flag and always load assets exactly as
+specified in benchmarks.
 
 ```bash
 # Datagen only (scripts/datagen/run_pipeline.py)
@@ -250,7 +250,6 @@ When `commercial_safe` is active:
 - Non-commercial Objaverse objects (`by-nc`, `by-nc-sa`) are filtered from sampling,
   UID pools, semantic search, and lazy installs.
 - Embedded NC scene objects are stripped from the compiled `MjSpec` before simulation.
-- RLBench scenes are rejected at startup.
 
 Inspection helpers accept the same policy via `get_license_policy()` / optional parameters
 on `ObjectRetriever`, `locate_uid_package`, and `print_license_info(..., license_policy=...)`.

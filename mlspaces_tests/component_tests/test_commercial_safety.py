@@ -151,13 +151,6 @@ def test_real_metadata_marks_nc_uid_blocked(license_test_assets):
     assert ObjectMeta.is_commercial_use_allowed(license_test_assets.nc_uid) is False
 
 
-def test_list_asset_identifiers_rlbench_commercial_safe():
-    none_ids = list_asset_identifiers("scenes", "rlbench", LicensePolicy.NONE)
-    safe_ids = list_asset_identifiers("scenes", "rlbench", LicensePolicy.COMMERCIAL_SAFE)
-    assert len(none_ids) > 0
-    assert safe_ids == []
-
-
 @pytest.mark.parametrize(
     "policy,nc_listed",
     [

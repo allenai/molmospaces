@@ -69,16 +69,13 @@ def test_filter_uids_commercial_safe(monkeypatch):
     assert filtered == ["a", "b"]
 
 
-def test_is_scene_source_allowed_rlbench():
+def test_is_scene_source_allowed_commercial_safe():
     assert is_scene_source_allowed("ithor", LicensePolicy.COMMERCIAL_SAFE)
-    assert not is_scene_source_allowed("rlbench", LicensePolicy.COMMERCIAL_SAFE)
-    assert is_scene_source_allowed("rlbench", LicensePolicy.NONE)
+    assert is_scene_source_allowed("procthor-10k-train", LicensePolicy.COMMERCIAL_SAFE)
 
 
 def test_validate_datagen_license_policy():
     validate_datagen_license_policy("ithor", LicensePolicy.COMMERCIAL_SAFE)
-    with pytest.raises(ValueError, match="rlbench"):
-        validate_datagen_license_policy("rlbench", LicensePolicy.COMMERCIAL_SAFE)
 
 
 def test_is_object_allowed_respects_none():
