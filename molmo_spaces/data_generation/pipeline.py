@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 import logging
 import multiprocessing as mp
@@ -13,8 +15,6 @@ from pathlib import Path
 from typing import Any
 
 import mujoco
-
-# import mujoco.viewer
 import psutil
 import torch
 import wandb
@@ -73,7 +73,7 @@ def get_detailed_memory_info():
 
 
 def setup_house_dirs(
-    exp_config: "MlSpacesExpConfig",
+    exp_config: MlSpacesExpConfig,
     house_id: int,
     batch_num: int | None = None,
     total_batches: int | None = None,
@@ -106,11 +106,11 @@ def setup_house_dirs(
 
 
 def setup_policy(
-    exp_config: "MlSpacesExpConfig",
-    task: "BaseMujocoTask",
-    preloaded_policy: "BasePolicy | None",
-    datagen_profiler: "DatagenProfiler | None",
-) -> "BasePolicy":
+    exp_config: MlSpacesExpConfig,
+    task: BaseMujocoTask,
+    preloaded_policy: BasePolicy | None,
+    datagen_profiler: DatagenProfiler | None,
+) -> BasePolicy:
     """
     Create or return policy for episode.
 
@@ -129,6 +129,7 @@ def setup_policy(
     if preloaded_policy is not None:
         policy = preloaded_policy
     else:
+        assert exp_config.policy_config.policy_factory is not None
         policy = exp_config.policy_config.policy_factory(exp_config, task)
 
     task.register_policy(policy)
@@ -140,9 +141,9 @@ def setup_policy(
 
 
 def setup_viewer(
-    exp_config: "MlSpacesExpConfig",
-    task: "BaseMujocoTask",
-    policy: "BasePolicy",
+    exp_config: MlSpacesExpConfig,
+    task: BaseMujocoTask,
+    policy: BasePolicy,
     current_viewer,
 ):
     """
@@ -162,7 +163,7 @@ def setup_viewer(
         if viewer is not None:
             viewer.close()
             viewer = None
-        import mujoco.viewer
+        import mujoco.viewer  # ty: ignore
 
         viewer = mujoco.viewer.launch_passive(
             task.env.mj_datas[task.env.current_batch_index].model,
@@ -175,7 +176,9 @@ def setup_viewer(
             )
             viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
         viewer.opt.sitegroup[0] = False
-    task.viewer = viewer
+
+    # TODO(wilbert): this looks iffy, will just suppress the warning for now
+    task.viewer = viewer  # pyright: ignore[reportAttributeAccessIssue]
     return viewer
 
 
@@ -183,9 +186,9 @@ def save_house_trajectories(
     worker_logger,
     house_raw_histories: list,
     house_output_dir: Path,
-    exp_config: "MlSpacesExpConfig",
+    exp_config: MlSpacesExpConfig,
     batch_suffix: str,
-    datagen_profiler: "DatagenProfiler | None" = None,
+    datagen_profiler: DatagenProfiler | None = None,
     batch_num: int | None = None,
     total_batches: int | None = None,
 ) -> None:
@@ -225,7 +228,7 @@ def save_house_trajectories(
                 episode_info["history"],
                 episode_info["sensor_suite"],
                 fps=exp_config.fps,
-                save_dir=house_output_dir,
+                save_dir=house_output_dir.as_posix(),
                 episode_idx=idx,
                 save_file_suffix=batch_suffix,
             )
@@ -243,7 +246,7 @@ def save_house_trajectories(
             datagen_profiler.start("save_trajectories")
         save_trajectories(
             house_trajectory_data,
-            save_dir=house_output_dir,
+            save_dir=house_output_dir.as_posix(),
             fps=exp_config.fps,
             save_file_suffix=batch_suffix,
             save_mp4s=True,
@@ -271,7 +274,7 @@ def cleanup_episode_resources(
     task,
     policy,
     task_sampler,
-    preloaded_policy: "BasePolicy | None",
+    preloaded_policy: BasePolicy | None,
     close_task_sampler: bool = False,
 ) -> None:
     """
@@ -389,6 +392,7 @@ def house_processing_worker(
 
     # Normal datagen: create task sampler once for this worker (persists across all houses)
     # This allows the worker to track object diversity and other state across houses
+    assert exp_config.task_sampler_config.task_sampler_class is not None
     task_sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
     # Set profiler on task sampler for sub-timing within sample_task
     task_sampler.set_datagen_profiler(datagen_profiler)
@@ -416,6 +420,14 @@ def house_processing_worker(
                     f"Worker {worker_id} starting house {current_house_id} "
                     f"batch {batch_num}/{total_batches} ({batch_samples} episodes) "
                     f"(item {item_idx}/{len(work_items)})"
+                )
+
+                # WTF(wilbert): we are passing the cls as input to the runner, just to grab the
+                # class method and use it here. Like, just use a free function for this, don't
+                # see yet why use classes at all
+                assert runner_class is not None, "Must pass a valid 'runner_class' type here"
+                assert isinstance(runner_class, ParallelRolloutRunner), (
+                    "Given 'runner_class' must be of valid type"
                 )
 
                 # Process this work item
@@ -530,13 +542,24 @@ class ParallelRolloutRunner:
                     range(len(exp_config.task_sampler_config.scene_xml_paths))
                 )
             else:
+                # TODO(wilbert): uhmm, the returned stuff in 'mapping' is not validated, in theory
+                # it could break if we get a tuple of dicts instead of a single dict (like being
+                # expected here). For now will just suppress the warning
+
                 # For normal datagen: use all houses from scene mapping
                 mapping = get_scenes(exp_config.scene_dataset, exp_config.data_split)
                 self.house_indices = [
-                    k for k, v in mapping[exp_config.data_split].items() if v is not None
+                    k
+                    for k, v in mapping[exp_config.data_split].items()  # pyright: ignore[reportArgumentType,reportCallIssue] # ty: ignore
+                    if v is not None
                 ]
 
         self.total_houses = len(self.house_indices)
+
+        # WTF(wilbert): uhmm, why make it optional if we will eventually always require it?. Like,
+        # at this point even why would you use pydantic if you won't actually enforce it's types
+        # at runtime T_T
+        assert self.samples_per_house is not None, "Must provide a valid 'sampler_per_house' in cfg"
 
         # Build (house_id, batch_samples, batch_num, total_batches) work items
         episodes_per_batch = exp_config.task_sampler_config.episodes_per_batch
@@ -581,7 +604,8 @@ class ParallelRolloutRunner:
 
         # Logging & Profiling
         init_logging(
-            human_log_level=exp_config.log_level, log_file=exp_config.output_dir / "running_log.log"
+            human_log_level=exp_config.log_level,
+            log_file=(exp_config.output_dir / "running_log.log").as_posix(),
         )
         self.logger = get_logger()
         self.profiler = exp_config.profiler
@@ -635,6 +659,11 @@ class ParallelRolloutRunner:
                 - episode_specs: List of saved configs or None values
                 - task_sampler_to_use: Task sampler for sampling tasks
         """
+        # WTF(wilbert): uhmmm, same issue here, samplers_per_house shouldn't be optional then, right?
+        assert exp_config.task_sampler_config.samples_per_house is not None, (
+            "Must provide a valid 'samplers_per_house' param in the cfg"
+        )
+
         # Datagen mode: generate None list for fresh sampling
         max_multiplier = exp_config.task_sampler_config.max_total_attempts_multiplier
         num_samples = exp_config.task_sampler_config.samples_per_house * max_multiplier
@@ -651,7 +680,7 @@ class ParallelRolloutRunner:
 
     @staticmethod
     def should_stop_early(
-        num_collected: int, samples_per_house: int, exp_config: "MlSpacesExpConfig | None" = None
+        num_collected: int, samples_per_house: int, exp_config: MlSpacesExpConfig | None = None
     ) -> bool:
         """Whether to stop before processing all episodes (e.g., enough successes)."""
         return num_collected >= samples_per_house
@@ -878,6 +907,11 @@ class ParallelRolloutRunner:
             )
             return 0, 0, False
 
+        assert runner_class is not None, "Must pass a valid 'runner_class' type here"
+        assert isinstance(runner_class, ParallelRolloutRunner), (
+            "Given 'runner_class' must be of valid type"
+        )
+
         # Load episodes using hook - allows subclasses to load from different scene datasets
         episode_specs, shared_task_sampler = runner_class.load_episodes_for_house(
             exp_config, house_id, batch_suffix, task_sampler, worker_logger
@@ -1021,6 +1055,12 @@ class ParallelRolloutRunner:
 
                 # Rollout phase (only if task sampling succeeded)
                 if task is not None and not house_invalid and not task_sampling_failed:
+                    # Extract object name for logging if available
+                    object_name = "unknown"
+                    if hasattr(task, "config") and hasattr(task.config, "task_config"):
+                        if hasattr(task.config.task_config, "pickup_obj_name"):
+                            object_name = task.config.task_config.pickup_obj_name  # pyright: ignore[reportAttributeAccessIssue]
+
                     try:
                         # Setup policy and viewer
                         policy = setup_policy(
@@ -1046,12 +1086,6 @@ class ParallelRolloutRunner:
                         )
 
                         num_sequential_rollout_failures = 0
-
-                        # Extract object name for logging if available
-                        object_name = "unknown"
-                        if hasattr(task, "config") and hasattr(task.config, "task_config"):
-                            if hasattr(task.config.task_config, "pickup_obj_name"):
-                                object_name = task.config.task_config.pickup_obj_name
 
                         worker_logger.info(
                             f"Worker {worker_id} house {house_id} episode {episode_idx} "
