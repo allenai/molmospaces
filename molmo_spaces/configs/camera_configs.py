@@ -4,7 +4,6 @@ from enum import StrEnum
 
 import logging
 from abc import ABC
-from enum import StrEnum
 from typing import ClassVar, TypeAlias, TypeVar
 
 import numpy as np
@@ -77,31 +76,6 @@ class CameraConfig(Config, ABC):
     # Can use special keys like "__gripper__" or "__task_objects__" (resolved at placement time)
     # If specified, these constraints will be checked during robot placement when enabled
     visibility_constraints: dict[str, float] | None = None
-
-
-class FisheyeImpl(StrEnum):
-    """Which implementation renders a warped camera's image; see
-    CameraConfig.fisheye_impl. Ignored unless the camera sets is_warped.
-
-    CUBEMAP  utils/fisheye_cubemap.py. Composites five wide tile cameras through
-             an OpenCV fisheye model calibrated on the real lens. Needs the five
-             tile cameras present in the MJCF, which is its only real cost. Use
-             this for any new warped camera. The G1 head is the only one today;
-             see FisheyeMjcfCameraConfig.
-    WARPING  DEPRECATED -- utils/fisheye_warping.py. Post-distorts one pinhole
-             render with a radial k1..k4 model. Do not use for new cameras.
-
-    At matched lens, FOV and render budget CUBEMAP is 5.1x sharper (variance of
-    Laplacian 5476 vs 1070), marginally faster (5.90 vs 6.24 ms/frame), and
-    reaches the G1 head lens's 72.8 deg half-FOV, which WARPING's k1..k4
-    polynomial caps at 68.26 deg (mlspaces_tests/component_tests/
-    compare_fisheye_renderers.py). WARPING stays the default only so existing
-    configs keep their recorded behaviour; nothing renders through it today.
-    """
-
-    CUBEMAP = "cubemap"
-    # Deprecated; see the class docstring. Kept so existing configs still load.
-    WARPING = "warping"
 
 
 class MjcfCameraConfig(CameraConfig):
