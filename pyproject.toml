@@ -34,14 +34,16 @@ dependencies = [
     "hidapi",
     "imageio[ffmpeg]",
     "lxml>=5.0.0",
-    # mink>=1.0 declares mujoco>=3.8.1, which conflicts with this project's
-    # mujoco-warp/mujoco-mjx pin (~3.5.0); pip's resolver doesn't enforce that at
-    # runtime, and mink's actual API surface used here works fine against 3.5.0.
+    # mink>=1.0 declares mujoco>=3.8.1, so it pulls mujoco forward. mujoco-warp
+    # tracks MuJoCo's own version and reads enum members that MuJoCo moves
+    # between releases (mjENBL_MULTICCD became mjDSBL_MULTICCD), so it fails at
+    # import against a mujoco it does not match -- keep the two on the same
+    # minor, hence the floor below.
     "mink",
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
-    "mujoco-warp",
+    "mujoco-warp>=3.11",  # must match the installed mujoco minor (see mink above)
     "warp-lang",
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
