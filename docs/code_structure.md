@@ -83,7 +83,6 @@ molmo_spaces/
 │   ├── rby1_kinematics.py         # RBY1-specific kinematics
 │   └── stretch_kinematics.py
 ├── planner/                        # Motion planning
-│   ├── robot_specific/            # Robot-specific planners
 │   ├── abstract.py                # Base planner interface
 │   ├── astar_planner.py           # A* path planner (navigation)
 │   ├── curobo_planner.py          # CuRobo integration
