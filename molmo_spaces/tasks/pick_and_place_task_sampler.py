@@ -88,6 +88,10 @@ class PickAndPlaceReceptacleTaskSampler(AbstractPickAndPlaceObjectTargetTaskSamp
                 valid_uids = sorted(
                     [uid for uid, anno in all_valid.items() if valid_receptacle(anno)]
                 )
+                # _get_cached_valid_receptacles() is a process-wide, policy-independent
+                # cache, so apply the license policy here -- as the typed branch below
+                # does -- where the policy is resolved.
+                valid_uids = filter_uids(valid_uids)
                 self._receptacle_cache[cache_key] = {uid: all_valid[uid] for uid in valid_uids}
             valid_uids = sorted(self._receptacle_cache[cache_key].keys())
         else:

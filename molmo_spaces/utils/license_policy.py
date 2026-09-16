@@ -11,6 +11,7 @@ import hashlib
 import os
 from contextvars import ContextVar
 from enum import StrEnum
+from functools import cache
 
 NON_COMMERCIAL_OBJAVERSE_LICENSES = frozenset({"by-nc", "by-nc-sa"})
 
@@ -67,6 +68,7 @@ def resolve_license_policy(
     return LicensePolicy.NONE
 
 
+@cache
 def license_blocked_body_keys() -> frozenset[str]:
     """NC Objaverse UIDs plus MD5 hashes for fast scene-body lookup."""
     blocked = non_commercial_objaverse_uids()
@@ -125,14 +127,22 @@ def filter_uids(uids, policy: LicensePolicy | None = None) -> list[str]:
     return [uid for uid in uids if is_object_allowed(uid, policy)]
 
 
+#: Task sampler config fields holding explicit object UID pools that the license
+#: policy filters. Only fields that contain UIDs belong here: synset/category pools
+#: such as ``pickup_types`` are filtered downstream, when they are resolved to UIDs.
+#: Not every config declares every field (e.g. ``added_pickup_objects`` only exists
+#: on ``PickTaskSamplerConfig`` and its subclasses), so missing fields are skipped.
+LICENSE_FILTERED_UID_FIELDS = ("added_pickup_objects",)
+
+
 def apply_license_policy_to_task_sampler_config(task_sampler_config, policy: LicensePolicy) -> None:
     """Filter config UID pools after the effective policy has been resolved."""
     if policy == LicensePolicy.NONE:
         return
-    if task_sampler_config.added_pickup_objects:
-        task_sampler_config.added_pickup_objects = filter_uids(
-            task_sampler_config.added_pickup_objects, policy
-        )
+    for field in LICENSE_FILTERED_UID_FIELDS:
+        uids = getattr(task_sampler_config, field, None)
+        if uids:
+            setattr(task_sampler_config, field, filter_uids(uids, policy))
 
 
 def is_scene_source_allowed(scene_dataset: str, policy: LicensePolicy | None = None) -> bool:

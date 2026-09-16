@@ -93,10 +93,21 @@ def find_object_paths(xml_path, exclude_thor=True):
                     yield source, rel_asset
 
 
-def _object_uid_from_rel_asset(rel_asset: Path) -> str:
+def _object_uid_from_rel_asset(rel_asset: Path) -> str | None:
+    """Recover the object UID from a path relative to ``source_dir("objects", source)``.
+
+    Object packages are laid out as ``<uid>/<uid>_visual.obj``, ``<uid>/<uid>.xml``, etc.,
+    so the UID is the leading directory. Note that the file names themselves are not
+    UIDs: they carry ``_visual`` / ``_colliderN`` suffixes.
+
+    Returns None when no UID can be determined, which callers must treat as "unknown"
+    rather than "allowed".
+    """
+    if len(rel_asset.parts) > 1:
+        return rel_asset.parts[0]
     if rel_asset.suffix == ".xml":
         return rel_asset.stem
-    return rel_asset.name.split(".")[0]
+    return None
 
 
 def _guard_objaverse_for_install(uid: str, source: str, policy: LicensePolicy) -> None:
@@ -104,11 +115,21 @@ def _guard_objaverse_for_install(uid: str, source: str, policy: LicensePolicy) -
         require_objaverse_license_known(uid)
 
 
-def _is_object_install_allowed(uid: str, source: str, policy: LicensePolicy | None = None) -> bool:
+def _is_object_install_allowed(
+    uid: str | None, source: str, policy: LicensePolicy | None = None
+) -> bool:
     if source == "thor":
         return True
     if policy is None:
         policy = get_license_policy()
+    if policy == LicensePolicy.NONE:
+        return True
+    if uid is None:
+        # Fail closed: a policy is active but we cannot identify the asset.
+        raise ValueError(
+            f"Could not determine the object UID for a {source!r} asset; "
+            f"cannot check it against license policy {policy}"
+        )
     _guard_objaverse_for_install(uid, source, policy)
     return is_object_allowed(uid, policy)
 

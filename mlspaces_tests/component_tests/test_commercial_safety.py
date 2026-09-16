@@ -110,26 +110,43 @@ def license_test_assets() -> LicenseTestAssets:
 
 @pytest.fixture(scope="session")
 def receptacle_uid_sets(license_test_assets):
-    from molmo_spaces.utils import synset_utils
+    """Receptacle UIDs before and after the point-of-use license filter.
 
-    set_license_policy(LicensePolicy.NONE)
-    none_ids = set(synset_utils.get_valid_receptacle_uids())
-    set_license_policy(LicensePolicy.COMMERCIAL_SAFE)
-    safe_ids = set(synset_utils.get_valid_receptacle_uids())
-    set_license_policy(LicensePolicy.NONE)
+    ``get_valid_receptacle_uids`` is deliberately policy-independent (callers cache
+    it process-wide, possibly before the policy is resolved); the pick-and-place
+    sampler applies ``filter_uids`` when it selects receptacles, so that is what we
+    exercise here.
+    """
+    from molmo_spaces.utils import synset_utils
+    from molmo_spaces.utils.license_policy import filter_uids
+
+    all_uids = list(synset_utils.get_valid_receptacle_uids())
+    none_ids = set(filter_uids(all_uids, LicensePolicy.NONE))
+    safe_ids = set(filter_uids(all_uids, LicensePolicy.COMMERCIAL_SAFE))
     return none_ids, safe_ids
 
 
 @pytest.fixture(scope="session")
 def pickupable_uid_sets(license_test_assets):
-    from molmo_spaces.utils import synset_utils
+    """Pickupable UIDs before and after the task-sampler-config license gate.
 
-    set_license_policy(LicensePolicy.NONE)
-    none_ids = set(synset_utils.get_valid_pickupable_obja_uids())
-    set_license_policy(LicensePolicy.COMMERCIAL_SAFE)
-    safe_ids = set(synset_utils.get_valid_pickupable_obja_uids())
-    set_license_policy(LicensePolicy.NONE)
-    return none_ids, safe_ids
+    ``get_valid_pickupable_obja_uids`` is deliberately policy-independent (it is
+    computed and cached before the policy is resolved); the filtering happens in
+    ``apply_license_policy_to_task_sampler_config``, so that is what we exercise.
+    """
+    from molmo_spaces.configs.task_sampler_configs import PickTaskSamplerConfig
+    from molmo_spaces.utils import synset_utils
+    from molmo_spaces.utils.license_policy import apply_license_policy_to_task_sampler_config
+
+    all_uids = list(synset_utils.get_valid_pickupable_obja_uids())
+
+    none_config = PickTaskSamplerConfig(added_pickup_objects=list(all_uids))
+    apply_license_policy_to_task_sampler_config(none_config, LicensePolicy.NONE)
+
+    safe_config = PickTaskSamplerConfig(added_pickup_objects=list(all_uids))
+    apply_license_policy_to_task_sampler_config(safe_config, LicensePolicy.COMMERCIAL_SAFE)
+
+    return set(none_config.added_pickup_objects), set(safe_config.added_pickup_objects)
 
 
 @pytest.fixture(scope="session")
@@ -227,10 +244,17 @@ def test_install_objects_for_scene_skips_real_nc(
     def track_install(data_type, source_to_archives):
         installed.update(source_to_archives)
 
+    # Mirror the real layout that find_object_paths yields: paths relative to
+    # source_dir("objects", <source>), i.e. <uid>/<uid>_visual.obj -- never a bare
+    # <uid>.xml. A UID parsed off the file name would be "<uid>_visual" and would
+    # silently pass the license check.
     monkeypatch.setattr(
         lazy_loading_utils,
         "find_object_paths",
-        lambda xml_path, exclude_thor=True: [("objaverse", Path(f"{nc_uid}.xml"))],
+        lambda xml_path, exclude_thor=True: [
+            ("objaverse", Path(nc_uid) / f"{nc_uid}_visual.obj"),
+            ("objaverse", Path(nc_uid) / f"{nc_uid}.xml"),
+        ],
     )
     monkeypatch.setattr(
         real_rm,
