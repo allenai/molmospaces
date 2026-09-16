@@ -4,8 +4,8 @@ from pathlib import Path
 
 import mujoco
 
-from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.env.data_views import SceneObject
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.robots.g1 import PREFIX as ROBOT_PREFIX
 from molmo_spaces.utils.scene_maps_aabb import AABBMap
@@ -160,9 +160,7 @@ class Scene:
                     continue
                 self.scene_geom_ids[cat].append(gid)
         self.grasp_probe_body_id = self.model.body(spec_ops.grasp_probe_body_name(0)).id
-        self.grasp_probe_qposadr = self.model.joint(
-            spec_ops.grasp_probe_joint_name(0)
-        ).qposadr[0]
+        self.grasp_probe_qposadr = self.model.joint(spec_ops.grasp_probe_joint_name(0)).qposadr[0]
         # Set by G1Env right after construction (needs self.data to exist first,
         # per ObjectManager's own `env.mj_datas[batch_idx]` construction). Object
         # views below are derived lazily through it -- no eager per-body scan.

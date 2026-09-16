@@ -8,9 +8,9 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.profiler_utils import Timer
 
@@ -25,8 +25,7 @@ def get_noncolliding_grasp_mask(
 ) -> np.ndarray:
     n_grasps = len(grasp_poses_world)
     grasp_bodies = [
-        create_mlspaces_body(mj_data, spec_ops.grasp_probe_body_name(i))
-        for i in range(batch_size)
+        create_mlspaces_body(mj_data, spec_ops.grasp_probe_body_name(i)) for i in range(batch_size)
     ]
     start_poses = [body.pose.copy() for body in grasp_bodies]
     grasp_body_ids = set(body.body_id for body in grasp_bodies)
