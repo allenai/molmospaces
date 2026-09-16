@@ -34,16 +34,17 @@ dependencies = [
     "hidapi",
     "imageio[ffmpeg]",
     "lxml>=5.0.0",
-    # mink>=1.0 declares mujoco>=3.8.1, so it pulls mujoco forward. mujoco-warp
-    # tracks MuJoCo's own version and reads enum members that MuJoCo moves
-    # between releases (mjENBL_MULTICCD became mjDSBL_MULTICCD), so it fails at
-    # import against a mujoco it does not match -- keep the two on the same
-    # minor, hence the floor below.
+    # mink>=1.0 declares mujoco>=3.8.1, so it can pull mujoco forward.
     "mink",
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
-    "mujoco-warp>=3.11",  # must match the installed mujoco minor (see mink above)
+    # mujoco-warp tracks MuJoCo's own version and reads enum members that MuJoCo
+    # moves between releases (mjENBL_MULTICCD became mjDSBL_MULTICCD), so it
+    # fails at import against a mujoco it does not match. mujoco's own version is
+    # pinned per extra below, so the matching mujoco-warp minor is pinned there
+    # too; this floor only rules out the pre-3.x releases.
+    "mujoco-warp>=3.5",
     "warp-lang",
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
@@ -112,9 +113,11 @@ curobo = [
 ]
 mujoco = [
     "mujoco~=3.5.0",
+    "mujoco-warp~=3.5.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-filament = [
     "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco-warp~=3.7.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 docs = [
     "mkdocs>=1.6.0",
