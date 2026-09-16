@@ -317,6 +317,29 @@ def holonomic_cmd(xy, yaw, wp, face_xy, speed, stop_dist, brake_dist, turn_kp):
     return np.array([spd * lx / ln, spd * ly / ln, ang], dtype=np.float32)
 
 
+def make_standoff_filter(occ, obj):
+    """Is a robot standing here in the same room as the object? -- the standoff
+    samplers' filter against candidate poses that are free, on the annulus and
+    walkable-to, but separated from the object by a wall.
+
+    Being free, on the annulus and in the robot's own free component does not
+    rule that out: the annulus around an object standing against a wall
+    straddles the wall, so the cheapest candidate can be a cell in the room the
+    robot is already in, one wall away from the object, which the robot then
+    happily walks to and can reach nothing from.
+
+    Returns None -- no filtering -- when the map has no room lookup (only
+    AABBMap implements one; see `AABBMap.room_of`), carries no rooms for this
+    scene, or finds none for this object.
+    """
+    if not callable(getattr(occ, "room_of", None)) or occ.room_map is None:
+        return None
+    tgt_xy = np.asarray(obj.position, dtype=np.float64)[:2]
+    if not occ.room_of(tgt_xy):
+        return None
+    return lambda xy: occ.same_room(xy, tgt_xy)
+
+
 def sample_standoff_pose(
     occ,
     nav_occ,
@@ -328,11 +351,16 @@ def sample_standoff_pose(
     attempts=25,
     here_yaw=None,
     min_dist_from_here=0.0,
+    in_target_room=None,
 ):
     """A standing pose to grasp `tgt_xy` from: a free cell of `occ` on the
     [r_min, r_max] annulus, facing the target, in the same free component of
     `nav_occ` as `here_xy`. g1_molmo's `_sample_goal_pose` without its
     per-candidate sim checks. Returns (xy, yaw) or (None, None).
+
+    `in_target_room(xy) -> bool` (see `make_standoff_filter`) additionally
+    requires each candidate to be in the same room as the target. Leave it None
+    to keep the unfiltered sampling.
     """
     tgt = np.asarray(tgt_xy, dtype=np.float64)[:2]
     if not occ.any_free_in_annulus(tgt, r_min, r_max):
@@ -362,6 +390,8 @@ def sample_standoff_pose(
             bearing = (np.arctan2(d[1], d[0]) - here_yaw + np.pi) % (2 * np.pi) - np.pi
             cost += HEADING_WEIGHT * abs(float(bearing))
         if cost >= best_cost or not nav_occ.same_free_component(here, xy):
+            continue
+        if in_target_room is not None and not in_target_room(xy):
             continue
         best, best_cost = xy, cost
     if best is None:
@@ -2043,6 +2073,7 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             attempts=self.policy_config.goal_sampling_attempts,
             here_yaw=None if retry else float(self._agent._yaw()),
             min_dist_from_here=0.15 if retry else 0.0,
+            in_target_room=make_standoff_filter(occ, obj),
         )
 
     def _build_info(self) -> dict:

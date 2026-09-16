@@ -22,6 +22,7 @@ from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 impo
     _simplify_path,
     goal_in_forward_cone,
     holonomic_cmd,
+    make_standoff_filter,
     prune_waypoints,
     sample_standoff_pose,
     trace_log,
@@ -71,25 +72,42 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
         if cfg.standoff_radius_range is not None:
             occ, nav_occ = self._standoff_maps()
             r_min, r_max = cfg.standoff_radius_range
+            in_target_room = make_standoff_filter(occ, self.target_object)
             # Same seeding as G1PickPlannerPolicy.reset, so nav_to and a
             # following pick agree on what "the" standoff sample is.
             rng = np.random.default_rng(getattr(self.task, "episode_seed", 0) or 0)
+            tgt_xy = np.asarray(self.target_object.position[:2], dtype=np.float64)
             goal_xy, _ = sample_standoff_pose(
                 occ,
                 nav_occ,
-                np.asarray(self.target_object.position[:2], dtype=np.float64),
+                tgt_xy,
                 self._xy(),
                 r_min,
                 r_max,
                 rng,
                 here_yaw=self._yaw(),
+                in_target_room=in_target_room,
             )
             if goal_xy is None:
-                log.info(
-                    "[FetchManBasePort PLAN FAIL] no reachable standoff pose on the "
-                    f"{r_min:.2f}-{r_max:.2f}m annulus around {self.target_object.name!r}"
+                # A big object (a bed, a sofa) swallows its own annulus: every
+                # cell 0.45-0.58m from its center is inside its footprint. Get
+                # as close as the map allows instead of failing the episode.
+                goal_xy = self._closest_reachable_xy(
+                    occ, nav_occ, tgt_xy, self._xy(), in_target_room=in_target_room
                 )
-                return None, None
+                if goal_xy is None:
+                    log.info(
+                        "[FetchManBasePort PLAN FAIL] no reachable standoff pose on the "
+                        f"{r_min:.2f}-{r_max:.2f}m annulus around {self.target_object.name!r}, "
+                        "and no reachable free cell near it either"
+                    )
+                    return None, None
+                log.info(
+                    "[FetchManBasePort] no free standoff on the "
+                    f"{r_min:.2f}-{r_max:.2f}m annulus around {self.target_object.name!r}; "
+                    f"walking to the closest reachable pose instead "
+                    f"({float(np.linalg.norm(goal_xy - tgt_xy)):.2f}m from it)"
+                )
             return goal_xy, nav_occ
 
         self.nav_goal_sampler.set_target(self.target_object)
@@ -103,6 +121,56 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
             log.info("[FetchManBasePort PLAN FAIL] NavGoalSampler found no valid goal position")
             return None, None
         return np.asarray(target_pos_quat[0][:2], dtype=np.float64), self.nav_planner.map
+
+    @staticmethod
+    def _closest_reachable_xy(
+        occ,
+        nav_occ,
+        tgt_xy,
+        here_xy,
+        max_radius_m: float = 6.0,
+        in_target_room=None,
+        room_budget: int = 500,
+    ) -> np.ndarray | None:
+        """The free cell of `occ` closest to `tgt_xy` that A* can reach from
+        `here_xy` -- i.e. one in the same connected component of the dilated
+        planning map `nav_occ`. Returns an xy, or None if the robot's component
+        has no free cell within `max_radius_m` of the target.
+
+        With `in_target_room`, the closest of the nearest `room_budget` such
+        cells that is also in the target's room (see `make_standoff_filter`) --
+        otherwise this fallback can hand back a cell one wall away from the
+        object, the same way the annulus sampler could.
+        """
+        labels = nav_occ._free_labels()
+        here_label = nav_occ.nearest_free_label(np.asarray(here_xy, dtype=np.float64))
+        if here_label == 0:
+            return None
+        r0, c0 = (int(v) for v in occ._world_to_px(tgt_xy))
+        h, w = occ.occupancy.shape
+        rad = int(np.ceil(max_radius_m * occ.px_per_m))
+        rlo, rhi = max(0, r0 - rad), min(h, r0 + rad + 1)
+        clo, chi = max(0, c0 - rad), min(w, c0 + rad + 1)
+        if rlo >= rhi or clo >= chi:
+            return None
+        # Standing pose must be free on the grasp map AND reachable on the
+        # (more inflated) planning map, which is what `labels` encodes.
+        ok = occ.occupancy[rlo:rhi, clo:chi] & (labels[rlo:rhi, clo:chi] == here_label)
+        rs, cs = np.nonzero(ok)
+        if rs.size == 0:
+            return None
+        d2 = (rs + rlo - r0) ** 2 + (cs + clo - c0) ** 2
+        order = np.argsort(d2)
+
+        def cell_xy(i):
+            return (occ.map_to_world @ np.array([rs[i] + rlo, cs[i] + clo, 1.0]))[:2]
+
+        if in_target_room is not None:
+            for i in order[:room_budget]:
+                xy = cell_xy(int(i))
+                if in_target_room(xy):
+                    return xy
+        return cell_xy(int(order[0]))
 
     def _plan_path(self) -> bool:
         """As the base class, but A*/simplify through pick_planner_policy_g1's copies,

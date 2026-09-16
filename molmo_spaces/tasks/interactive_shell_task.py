@@ -10,7 +10,7 @@ Known-good sequence (G1, InteractiveShellG1 config, house 1)::
 
     PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --config InteractiveShellG1 --viewer --house_inds 1
 
-    >>> nav_to("right", dist=.3)
+    >>> nav_to("right", dist=.3)   # or "left"/"forward(s)"/"backward(s)"
     >>> pick("~bowl")
 
 The side-step puts the bowl in front of the right hand at a workable standoff;
@@ -18,6 +18,10 @@ The side-step puts the bowl in front of the right hand at a workable standoff;
 and retries from a fresh standoff on a miss. `nav_to(B)` with the exact bowl
 name followed by `pick(B)` also works; note that `~bowl` resolves to the
 *nearest* "bowl"-labelled object, which from the spawn is the place receptacle.
+
+`nav_to` also reaches doors and windows (`nav_to("~door")`), which the
+ObjectManager classes as structural and so hides from every other candidate
+list; see `InteractiveShellTask.NAV_STRUCTURAL_TYPES`.
 """
 
 import atexit
@@ -35,6 +39,7 @@ from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.env.abstract_sensors import SensorSuite
 from molmo_spaces.env.env import BaseMujocoEnv
 from molmo_spaces.env.sensors import get_core_sensors
+from molmo_spaces.policy.solvers.navigation.astar_planner_policy import split_by_max_dist
 from molmo_spaces.tasks.task import BaseMujocoTask
 
 log = logging.getLogger(__name__)
@@ -44,7 +49,9 @@ log = logging.getLogger(__name__)
 # convention: rotating "forward" by +90deg yaw lands on "left").
 _NAV_DIRECTIONS = {
     "forward": (1.0, 0.0),
+    "forwards": (1.0, 0.0),
     "backward": (-1.0, 0.0),
+    "backwards": (-1.0, 0.0),
     "left": (0.0, 1.0),
     "right": (0.0, -1.0),
 }
@@ -107,6 +114,12 @@ class InteractiveShellTask(BaseMujocoTask):
     across calls, so skills can be chained interactively.
     """
 
+    # Categories that ObjectManager.STRUCTURAL_TYPES hides from
+    # list_top_level_objects() -- and so from every sampler's candidate pool --
+    # but that are still worth walking up to from the shell. Structural targets
+    # are nav-only: they have no free joint, so pick/place never sees them.
+    NAV_STRUCTURAL_TYPES = frozenset({"door", "doorway", "doorframe", "window"})
+
     def __init__(self, env: BaseMujocoEnv, exp_config: MlSpacesExpConfig) -> None:
         super().__init__(env, exp_config)
         # Cached occupancy map for nav_to()'s A* planner; built on first use.
@@ -125,6 +138,14 @@ class InteractiveShellTask(BaseMujocoTask):
         # per this many seconds of simulated time; set to 0.0 for every tick.
         self.collision_check_interval: float = 1.0
         self._last_collision_check: float = -np.inf
+        # Direct-drive commands (nav_to(direction), rotate, noop, grasp/release)
+        # poll the sensor suite once per policy tick and append the step to the
+        # task's caches, exactly as a planner rollout does -- their trajectories
+        # are then BC training data on the same footing as a planned skill's.
+        # Set False for an exploratory session where the sensor cost isn't worth it.
+        self.record_direct_drive: bool = True
+        # Observation from the last recorded direct-drive tick, for inspection.
+        self.last_observation: list[dict[str, Any]] | None = None
 
     def _create_sensor_suite_from_config(self, exp_config: MlSpacesExpConfig) -> SensorSuite:
         return SensorSuite(get_core_sensors(exp_config))
@@ -140,7 +161,9 @@ class InteractiveShellTask(BaseMujocoTask):
 
     # -- Object discovery --
 
-    def list_objects(self, limit: int = 200, dist: float | None = None) -> list[str]:
+    def list_objects(
+        self, limit: int = 200, dist: float | None = None, structural: bool = True
+    ) -> list[str]:
         """Print and return a human-readable summary of interactable objects in the scene.
 
         Args:
@@ -148,27 +171,60 @@ class InteractiveShellTask(BaseMujocoTask):
             dist: If given, only report objects whose center is within `dist` meters
                 of the robot base, closest first, with the distance appended to each
                 line. Otherwise all objects are reported, ordered by name.
+            structural: Also report the nav-only structural targets (doors,
+                doorframes, windows) that `nav_to` can reach but no other skill
+                can act on; they are suffixed "(nav-only)".
         """
         om = self._env.object_managers[self._env.current_batch_index]
+        nav_only = self._nav_structural_objects(om) if structural else []
+        nav_only_names = {obj.name for obj in nav_only}
+
+        def summarize(name: str) -> str:
+            line = om.object_summary_str(name, receptacle_types=[])
+            return f"{line} (nav-only)" if name in nav_only_names else line
 
         if dist is None:
             summaries = om.summarize_top_level_bodies(receptacle_types=[], limit=limit)
+            summaries += [summarize(obj.name) for obj in nav_only][: max(0, limit - len(summaries))]
         else:
             robot_pos = self._env.current_robot.robot_view.base.pose[:3, 3]
             near: list[tuple[float, str]] = []
-            for obj in om.list_top_level_objects():
+            for obj in om.list_top_level_objects() + nav_only:
                 d = float(np.linalg.norm(np.asarray(obj.position[:3]) - robot_pos))
                 if d <= dist:
                     near.append((d, obj.name))
             near.sort()
-            summaries = [
-                f"{om.object_summary_str(name, receptacle_types=[])} [{d:.2f}m]"
-                for d, name in near[:limit]
-            ]
+            summaries = [f"{summarize(name)} [{d:.2f}m]" for d, name in near[:limit]]
 
         for line in summaries:
             print(line)
         return summaries
+
+    def _nav_structural_objects(self, om: Any) -> list[Any]:
+        """Top-level bodies that `list_top_level_objects()` drops as structural
+        but whose category is in `NAV_STRUCTURAL_TYPES`, e.g. the
+        `doorway_<hash>_...` bodies ProcTHOR emits for doors and doorframes.
+
+        Kept separate from the ObjectManager's own listing so the samplers'
+        candidate pools are unaffected -- this only widens what the shell will
+        resolve a name against.
+        """
+        objs: list[Any] = []
+        for b in om.top_level_bodies():
+            name = om.get_object_name(b)
+            if not name or om.is_excluded(name) or not om.is_structural(name):
+                continue
+            if om.category_from_name(name) not in self.NAV_STRUCTURAL_TYPES:
+                continue
+            try:
+                objs.append(om.get_object_by_name(name))
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                # Same tolerance as ObjectManager.summarize_top_level_bodies:
+                # a body that won't build into an object is skipped, not fatal.
+                log.debug(f"Skipping structural nav candidate {name!r}: {e}")
+        return sorted(objs, key=lambda o: o.name)
 
     def _resolve_object_name(self, name: str) -> str:
         """Resolve a short or approximate `name` ("tomato") to an exact object
@@ -191,7 +247,9 @@ class InteractiveShellTask(BaseMujocoTask):
         except KeyError:
             pass
 
-        candidates = om.list_top_level_objects()
+        # Doors et al are structural, so they never reach list_top_level_objects();
+        # add them back here or "door" can only ever fuzzy-match furniture.
+        candidates = om.list_top_level_objects() + self._nav_structural_objects(om)
         if not candidates:
             raise ValueError(f"Unknown object {name!r}. Call list_objects() to see valid names.")
 
@@ -692,7 +750,7 @@ class InteractiveShellTask(BaseMujocoTask):
         for _ in range(ticks):
             # Only the gripper groups are commanded; everything else falls back
             # to its own "hold current state" behavior (see noop()).
-            self._apply_action(dict(targets))
+            self._step_and_record(dict(targets))
             self._warn_new_collisions()
             if self.viewer is not None:
                 self.viewer.sync()
@@ -738,6 +796,143 @@ class InteractiveShellTask(BaseMujocoTask):
         robot_view = self._env.current_robot.robot_view
         return pose_mat_to_7d(robot_view.base.pose).tolist()
 
+    def _step_and_record(self, action: dict[str, Any]) -> None:
+        """One policy tick: apply `action`, then poll the sensor suite and
+        append the step to the task's caches.
+
+        These are the same two calls `BaseMujocoTask.step` makes, minus its
+        terminal gate (the shell's episode never ends and its horizon is
+        meaningless). Direct-drive commands therefore observe at one tick per
+        action, the same cadence `ParallelRolloutRunner` gets from a planner
+        that emits one action per step -- so their trajectories can be mixed
+        with planned ones in a BC dataset.
+        """
+        self._apply_action(action)
+        if self.record_direct_drive:
+            self.last_observation = self._observe_and_cache()[0]
+
+    def _nav_planner_name(self, nav_only: bool = False) -> str:
+        """Which base planner `nav_to(object)` drives this robot with. Also
+        tells the direct-drive moves whose velocity law they should match."""
+        if (
+            self.config.robot_config.name == "g1"
+            and not self.config.robot_config.use_holo_base
+            and not nav_only
+        ):
+            return "fetchman"
+        return "astar"
+
+    def _astar_nav_policy_config(self):
+        """The A* nav config `nav_to(object)` uses on this robot -- and so the
+        source of the waypoint spacing the direct-drive moves chunk with."""
+        from molmo_spaces.configs.policy_configs import AStarNavToObjPolicyConfig
+
+        if self.config.robot_config.name == "g1":
+            # G1's WBC converges on a waypoint in 15-40 steps, so the default
+            # 10-step "no progress" replan fires too early, and the default
+            # 0.25m/10deg waypoint spacing never lets it reach cruising speed.
+            return AStarNavToObjPolicyConfig(
+                plan_fail_after_waypoint_steps=50,
+                plan_max_retries=5,
+                path_max_inter_waypoint_dist=1.0,
+                path_max_inter_waypoint_angle=np.radians(30),
+            )
+        return AStarNavToObjPolicyConfig()
+
+    def _direct_drive_pacing(self, speed: float | None = None) -> tuple[float, float | None]:
+        """(waypoint spacing in metres, pure-pursuit lead in metres or None)
+        for a straight direct-drive base move -- how `nav_to(direction)` paces
+        itself to walk like `nav_to(object)` does on this robot.
+
+        Where fetchman drives the base (G1 in WBC mode) the object path walks at
+        a fixed cruise speed, so the direction step does too: a fine waypoint
+        chain consumed as a carrot held `speed` metres ahead. That distance is
+        the speed because G1 bridges an absolute `base` waypoint to the WBC as a
+        velocity equal to the position error itself
+        (`G1Robot.waypoint_to_velocity_target`, unit gain, 1s time constant), so
+        a carrot `speed` metres out commands exactly `speed` m/s -- and stays
+        well clear of that bridge's 0.08m deadband, below which the robot simply
+        does not walk. Pacing by waypoint spacing alone stalls there.
+
+        Otherwise the object path is A*, which paces the base purely by how far
+        apart its waypoints are, so the direction step chunks its segment at
+        that same spacing and holds each waypoint until the base arrives.
+
+        An explicit `speed` (m/s) forces the carrot form on any robot.
+        """
+        dt_s = self.config.policy_dt_ms / 1000.0
+        if speed is None and self._nav_planner_name() == "fetchman":
+            from molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy_port import (
+                FetchManBasePlannerPolicyPort,
+            )
+
+            speed = float(FetchManBasePlannerPolicyPort.SPEED)
+        if speed is not None:
+            return max(speed * dt_s, 1e-3), speed
+        return self._astar_nav_policy_config().path_max_inter_waypoint_dist, None
+
+    def _drive_base_waypoints(
+        self,
+        waypoints: np.ndarray,
+        label: str,
+        threshold: float = 0.1,
+        max_ticks: int | None = None,
+        lead: float | None = None,
+    ) -> bool:
+        """Command `waypoints` (N x [x, y, yaw], world frame) to the base in
+        order, one policy tick each, and drive the last one to convergence.
+
+        This is the shared execution half of both `nav_to` paths: the same
+        `{"base": [x, y, yaw]}` action interface, the same
+        `robot_view.is_close_to` arrival test, the same per-tick observation
+        recording, and the same chain-of-waypoints pacing an
+        `AStarPlannerPolicy` plan gets (see `split_by_max_dist`). Only the
+        planning half differs -- A*/fetchman route around obstacles, a
+        direct-drive move goes straight.
+
+        `lead`: with a fine waypoint chain, advance to keep the commanded
+        waypoint this far ahead of the base, i.e. pure pursuit with a fixed
+        carrot distance. Without it, a waypoint is held until the base reaches
+        it, which is what the A* plan's own coarse waypoints do.
+        """
+        robot_view = self._env.current_robot.robot_view
+        if max_ticks is None:
+            max_ticks = 150 + len(waypoints)
+        last = len(waypoints) - 1
+        idx = 0
+        ticks = 0
+
+        while ticks < max_ticks:
+            if lead is None:
+                while idx < last and robot_view.is_close_to(
+                    ["base"], waypoints[idx], threshold=threshold
+                ):
+                    idx += 1
+            else:
+                xy = robot_view.base.pose[:2, 3]
+                while idx < last and float(np.linalg.norm(waypoints[idx][:2] - xy)) < lead:
+                    idx += 1
+            if idx == last and robot_view.is_close_to(
+                ["base"], waypoints[last], threshold=threshold
+            ):
+                break
+
+            self._step_and_record({"base": waypoints[idx]})
+            self._warn_new_collisions()
+            if self.viewer is not None:
+                self.viewer.sync()
+            ticks += 1
+            if ticks % 10 == 0:
+                pose = robot_view.base.pose
+                log.debug(
+                    f"[{label}] tick={ticks} waypoint={idx + 1}/{len(waypoints)} "
+                    f"pos=({pose[0, 3]:.3f},{pose[1, 3]:.3f}) "
+                    f"dist_remaining={robot_view.distance_to(['base'], waypoints[last]):.4f}"
+                )
+
+        self._warn_new_collisions(rebaseline=True)
+        return bool(robot_view.is_close_to(["base"], waypoints[last], threshold=threshold))
+
     def _run_subtask(
         self,
         sub_task: BaseMujocoTask,
@@ -768,7 +963,7 @@ class InteractiveShellTask(BaseMujocoTask):
         if settle_time_s > 0 and not success:
             # An empty action holds every controller's last target (see noop).
             for _ in range(max(1, round(settle_time_s * 1000.0 / self.config.policy_dt_ms))):
-                self._apply_action({})
+                self._step_and_record({})
                 if self.viewer is not None:
                     self.viewer.sync()
             success = bool(sub_task.judge_success())
@@ -785,38 +980,47 @@ class InteractiveShellTask(BaseMujocoTask):
 
     # -- Skills --
 
-    def nav_to(self, object: str, planner: str | None = None, dist: float = 0.25) -> bool:
+    def nav_to(
+        self,
+        object: str,
+        planner: str | None = None,
+        dist: float = 0.25,
+        speed: float | None = None,
+    ) -> bool:
         """Navigate the base to `object`, or step `dist` meters if `object` is
-        "forward"/"backward"/"left"/"right".
+        a direction: "forward"/"forwards", "backward"/"backwards", "left" or
+        "right" (`speed` in m/s caps the step's pace; it defaults to the pace of
+        whichever planner drives this robot, and is ignored for an object goal).
+
+        `object` may also name a nav-only structural target -- a door, doorframe
+        or window (see `NAV_STRUCTURAL_TYPES`); those always walk with "astar".
 
         planner: "fetchman" (the g1_molmo-ported velocity controller, default
             for G1 in WBC mode, the only robot that consumes its command) or
-            "astar" (default for every other robot).
+            "astar" (default for every other robot, and for structural targets).
         """
-        if object in _NAV_DIRECTIONS:
-            return self._nav_to_direction(object, dist)
+        if isinstance(object, str) and object.lower() in _NAV_DIRECTIONS:
+            return self._nav_to_direction(object.lower(), dist, speed=speed)
 
-        from molmo_spaces.configs.policy_configs import (
-            AStarNavToObjPolicyConfig,
-            FetchManBasePlannerPolicyConfig,
-        )
+        from molmo_spaces.configs.policy_configs import FetchManBasePlannerPolicyConfig
         from molmo_spaces.configs.task_configs import NavToObjTaskConfig
         from molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy_port import (
             FetchManBasePlannerPolicyPort,
         )
         from molmo_spaces.tasks.nav_task import NavToObjTask
 
+        object = self._resolve_object_name(object)
+
+        om = self._env.object_managers[self._env.current_batch_index]
+        # A door or window is wall-embedded and ungraspable, so fetchman's
+        # grasping standoff is the wrong goal for it; ProcTHORMap already clears
+        # the open-door path, so A* can plan straight into the opening.
+        nav_only = om.is_structural(object)
+
         if planner is None:
-            planner = (
-                "fetchman"
-                if self.config.robot_config.name == "g1"
-                and not self.config.robot_config.use_holo_base
-                else "astar"
-            )
+            planner = self._nav_planner_name(nav_only=nav_only)
         if planner not in ("astar", "fetchman"):
             raise ValueError(f"Unknown planner {planner!r}, expected 'astar' or 'fetchman'")
-
-        object = self._resolve_object_name(object)
 
         if self.occupancy_map is None:
             log.info("Building occupancy map for navigation (first nav_to() call)...")
@@ -845,25 +1049,21 @@ class InteractiveShellTask(BaseMujocoTask):
                 policy_factory=FetchManBasePlannerPolicyPort,
                 standoff_radius_range=standoff,
             )
-        elif self.config.robot_config.name == "g1":
-            # G1's WBC converges on a waypoint in 15-40 steps, so the default
-            # 10-step "no progress" replan fires too early, and the default
-            # 0.25m/10deg waypoint spacing never lets it reach cruising speed.
-            nav_config.policy_config = AStarNavToObjPolicyConfig(
-                plan_fail_after_waypoint_steps=50,
-                plan_max_retries=5,
-                path_max_inter_waypoint_dist=1.0,
-                path_max_inter_waypoint_angle=np.radians(30),
-            )
         else:
-            nav_config.policy_config = AStarNavToObjPolicyConfig()
+            nav_config.policy_config = self._astar_nav_policy_config()
         # The fetchman planner walks to a grasping standoff and then turns to
         # face the object, so its rollout runs to the planner's own done action
         # and success is judged where it actually stops: within the standoff
         # annulus (plus the brake's stop pad) of the object. The A* planner has
         # no such terminal phase and keeps the "within 0.5m" early exit.
         if planner == "fetchman":
-            succ_pos_threshold = standoff[1] + 0.15
+            # Distance is judged to the object's origin, so a large object (a
+            # bed) is "reached" from much further out than a mug: add its
+            # horizontal half-diagonal, which is also roughly how far the
+            # planner's closest-reachable fallback has to stop short.
+            target_obj = om.get_object_by_name(object)
+            half = np.asarray(target_obj.aabb_size[:2], dtype=np.float64)
+            succ_pos_threshold = standoff[1] + 0.15 + float(np.linalg.norm(half))
             end_on_success = False
         else:
             succ_pos_threshold = 0.5
@@ -883,9 +1083,7 @@ class InteractiveShellTask(BaseMujocoTask):
         )
 
         robot_view = self._env.current_robot.robot_view
-        target_obj = self._env.object_managers[self._env.current_batch_index].get_object_by_name(
-            object
-        )
+        target_obj = om.get_object_by_name(object)
         distance = float(
             np.linalg.norm(np.asarray(target_obj.position[:2]) - robot_view.base.pose[:2, 3])
         )
@@ -894,75 +1092,70 @@ class InteractiveShellTask(BaseMujocoTask):
         return success
 
     def _nav_to_direction(
-        self, direction: str, dist: float, max_ticks: int = 150, threshold: float = 0.1
+        self,
+        direction: str,
+        dist: float,
+        max_ticks: int | None = None,
+        threshold: float = 0.1,
+        speed: float | None = None,
     ) -> bool:
-        """Step `dist` meters along `direction` in the base frame, heading
-        fixed. Direct drive, no path planning, like rotate()."""
-        from scipy.spatial.transform import Rotation as R
+        """Step `dist` meters along `direction` in the base frame, heading fixed.
 
-        robot_view = self._env.current_robot.robot_view
-        pose = robot_view.base.pose
-        x, y = pose[0, 3], pose[1, 3]
-        yaw = R.from_matrix(pose[:3, :3]).as_euler("xyz")[2]
+        Straight line, no path planning -- but chunked into the same kind of
+        waypoint chain `nav_to(object)`'s A* plan is, executed by the same
+        `_drive_base_waypoints`, and paced to whichever planner would drive
+        this robot (see `_direct_drive_pacing`; `speed` in m/s overrides). So a
+        hand-driven step walks at the same speed as a planned one and records
+        the same per-tick observations.
+
+        Routing this through the planner policies themselves is not on: the
+        fetchman law turns to face each waypoint before walking to it (and its
+        holonomic hop is capped at a ~20deg bearing, because the WBC went
+        unstable on sideways commands), which would turn a 0.3m side-step into
+        turn-walk-turn.
+        """
+        x, y, yaw = self._base_xy_yaw()
         local_dx, local_dy = _NAV_DIRECTIONS[direction]
         world_dx = local_dx * np.cos(yaw) - local_dy * np.sin(yaw)
         world_dy = local_dx * np.sin(yaw) + local_dy * np.cos(yaw)
-        target = np.array([x + dist * world_dx, y + dist * world_dy, yaw])
+        start_xy = np.array([x, y])
+        target_xy = start_xy + dist * np.array([world_dx, world_dy])
 
-        for i in range(max_ticks):
-            if robot_view.is_close_to(["base"], target, threshold=threshold):
-                break
-            self._apply_action({"base": target})
-            self._warn_new_collisions()
-            if self.viewer is not None:
-                self.viewer.sync()
-            if i % 10 == 0:
-                p = robot_view.base.pose
-                dist_remaining = robot_view.distance_to(["base"], target)
-                log.debug(
-                    f"[nav_to:{direction}] i={i} pos=({p[0, 3]:.3f},{p[1, 3]:.3f}) "
-                    f"dist_remaining={dist_remaining:.4f}"
-                )
+        step_dist, lead = self._direct_drive_pacing(speed)
+        # The same segment-chunking AStarPlannerPolicy applies to its own path.
+        xys = split_by_max_dist(np.stack([start_xy, target_xy]), step_dist)
+        waypoints = np.concatenate([xys, np.full((len(xys), 1), yaw)], axis=1)
 
-        self._warn_new_collisions(rebaseline=True)
-        success = robot_view.is_close_to(["base"], target, threshold=threshold)
+        success = self._drive_base_waypoints(
+            waypoints,
+            label=f"nav_to:{direction}",
+            threshold=threshold,
+            max_ticks=max_ticks,
+            lead=lead,
+        )
         print(f"{'done' if success else 'FAILED'} - Nav {direction} {dist:.2f}m")
         return success
 
-    def rotate(self, angle_deg: float, max_ticks: int = 150, threshold: float = 0.1) -> bool:
+    def rotate(
+        self, angle_deg: float, max_ticks: int | None = None, threshold: float = 0.1
+    ) -> bool:
         """Rotate the robot base in place by `angle_deg` degrees (+ccw), holding x/y fixed.
 
         Bypasses nav_to()'s A* path planning entirely, driving the same "base"
         action interface (robot.update_control({"base": [x, y, theta]})) directly
         with a target heading only -- isolates whether the underlying base/WBC
         controller can turn in place at all, independent of path planning/replanning.
+        Deliberately a single waypoint rather than the slerped chain a plan would
+        use, so the raw controller is what's under test; execution and per-tick
+        observation recording are shared with every other base move
+        (`_drive_base_waypoints`).
         """
-        from scipy.spatial.transform import Rotation as R
+        x, y, current_yaw = self._base_xy_yaw()
+        target = np.array([[x, y, current_yaw + np.radians(angle_deg)]])
 
-        robot_view = self._env.current_robot.robot_view
-        pose = robot_view.base.pose
-        x, y = pose[0, 3], pose[1, 3]
-        current_yaw = R.from_matrix(pose[:3, :3]).as_euler("xyz")[2]
-        target = np.array([x, y, current_yaw + np.radians(angle_deg)])
-
-        for i in range(max_ticks):
-            if robot_view.is_close_to(["base"], target, threshold=threshold):
-                break
-            self._apply_action({"base": target})
-            self._warn_new_collisions()
-            if self.viewer is not None:
-                self.viewer.sync()
-            if i % 10 == 0:
-                p = robot_view.base.pose
-                yaw = R.from_matrix(p[:3, :3]).as_euler("xyz")[2]
-                dist = robot_view.distance_to(["base"], target)
-                log.debug(
-                    f"[rotate] i={i} yaw_deg={np.degrees(yaw):.2f} "
-                    f"pos=({p[0, 3]:.3f},{p[1, 3]:.3f}) dist={dist:.4f}"
-                )
-
-        self._warn_new_collisions(rebaseline=True)
-        success = robot_view.is_close_to(["base"], target, threshold=threshold)
+        success = self._drive_base_waypoints(
+            target, label="rotate", threshold=threshold, max_ticks=max_ticks
+        )
         print(f"{'done' if success else 'FAILED'} - Rotate by {angle_deg:.1f} deg")
         return success
 
@@ -970,7 +1163,7 @@ class InteractiveShellTask(BaseMujocoTask):
         """Step `ticks` policy steps with an empty action: every controller
         holds its current state (G1's WBC keeps balancing). Lets the robot settle."""
         for _ in range(ticks):
-            self._apply_action({})
+            self._step_and_record({})
             self._warn_new_collisions()
             if self.viewer is not None:
                 self.viewer.sync()
@@ -1165,9 +1358,10 @@ class InteractiveShellTask(BaseMujocoTask):
                 "",
                 "Interactive robot shell. Available commands:",
                 " skills:",
-                "  nav_to(object=name)                    - navigate to an object",
-                "  nav_to(object=dir, dist=.25)           - step dist meters in the base frame;",
-                "                                           dir is 'forward'/'backward'/'left'/'right'",
+                "  nav_to(object=name)                    - navigate to an object, or to a door/window",
+                "  nav_to(object=dir, dist=.25)           - step dist meters in the base frame, at the",
+                "                                           same pace as a planned nav; dir is",
+                "                                           'forward(s)'/'backward(s)'/'left'/'right'",
                 "  rotate(angle_deg)                      - rotate the base in place (+ccw), no path planning",
                 "  noop(ticks=50)                         - hold current position/pose, do nothing",
                 "  pick(object=name, max_attempts=3)      - pick up and lift an object, retrying",
@@ -1178,7 +1372,8 @@ class InteractiveShellTask(BaseMujocoTask):
                 "  grasp() / release()                    - close/open the gripper in place, no reaching",
                 "  teleport(object=name, dist=1.0)        - place the base near an object, no walking",
                 " inspection:",
-                "  list_objects()                         - list interactable objects in the scene",
+                "  list_objects()                         - list interactable objects in the scene,",
+                "                                           plus nav-only doors/windows",
                 "  list_objects(dist=1.0)                 - only objects within 1m of the robot, closest first",
                 "  where()                                - base pose, gripper pose, grasp state",
                 "  whereis(object=name)                   - object pos + distance/bearing from base and gripper",
@@ -1266,6 +1461,11 @@ class InteractiveShellTask(BaseMujocoTask):
         enable_g1_trace()
 
         namespace = dict(globals(), **locals())
+        # Printed here, not handed to code.interact(), which writes its banner
+        # to stderr -- so under a pipe it landed out of order with everything
+        # the seeded commands print to stdout (a startup list_objects() looked
+        # like it had never run).
+        print(banner)
         for cmd in commands or []:
             print(f">>> {cmd}")
             exec(cmd, namespace)
@@ -1273,7 +1473,7 @@ class InteractiveShellTask(BaseMujocoTask):
         save_history = _setup_readline_history(namespace)
 
         try:
-            code.interact(banner=banner, local=namespace)
+            code.interact(banner="", local=namespace)
         except (SystemExit, KeyboardInterrupt):
             # exit()/quit() raise SystemExit, but when a passive viewer is attached
             # its background render thread can post a KeyboardInterrupt to the main

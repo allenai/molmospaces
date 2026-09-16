@@ -47,6 +47,47 @@ Some TODOs:
 """
 
 
+def split_by_max_dist(waypoints: np.ndarray, max_dist: float) -> np.ndarray:
+    """Split the segment `waypoints` (shape (2, 2)) into a chain of waypoints no
+    more than `max_dist` apart, excluding the start point.
+
+    Module level because the interactive shell's direct-drive moves chunk their
+    straight-line segments with this same function, so a hand-driven step and a
+    planned path command the base at the same spacing (and so at the same speed).
+    """
+    assert waypoints.shape == (2, 2)
+
+    direction = waypoints[-1] - waypoints[0]
+
+    dist = np.linalg.norm(direction)
+    num_points = int(np.ceil(dist / max_dist))
+    if num_points <= 1:
+        return waypoints[1:]
+
+    stops = np.linspace(0, 1, num_points + 1)[1:]
+    return waypoints[:1] + direction[None, :] * stops[:, None]
+
+
+def split_by_max_angle(angles: np.ndarray, max_angle: float) -> np.ndarray:
+    """Slerp `angles` (shape (2, 1)) into a chain of yaws no more than
+    `max_angle` apart, excluding the start angle. See `split_by_max_dist`."""
+    assert angles.shape == (2, 1)
+
+    angle = float(abs(normalize_ang_error(angles[1] - angles[0])).squeeze())
+    num_points = int(np.ceil(angle / max_angle))
+    if num_points <= 1:
+        # Enforce always at least one orientation correction
+        return angles[1:]
+
+    steps = np.linspace(0, 1, num_points + 1)[1:]
+    r0 = R.from_euler("z", angles[0], degrees=False)
+    r1 = R.from_euler("z", angles[1], degrees=False)
+    rots = Slerp([0, 1], R.concatenate([r0, r1]))(steps)
+    new_angles = rots.as_euler("xyz", degrees=False)[:, 2:]
+
+    return new_angles
+
+
 class AStarPlannerPolicy(PlannerPolicy):
     def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         super().__init__(config, task)
@@ -217,34 +258,10 @@ class AStarPlannerPolicy(PlannerPolicy):
         return np.concatenate([waypoints[: last_out + 1], intersection[None, :]])
 
     def max_dist_waypoints(self, waypoints: np.ndarray) -> np.ndarray:
-        assert waypoints.shape == (2, 2)
-
-        direction = waypoints[-1] - waypoints[0]
-
-        dist = np.linalg.norm(direction)
-        num_points = int(np.ceil(dist / self.config.policy_config.path_max_inter_waypoint_dist))
-        if num_points <= 1:
-            return waypoints[1:]
-
-        stops = np.linspace(0, 1, num_points + 1)[1:]
-        return waypoints[:1] + direction[None, :] * stops[:, None]
+        return split_by_max_dist(waypoints, self.config.policy_config.path_max_inter_waypoint_dist)
 
     def max_angle_waypoints(self, angles: np.ndarray) -> np.ndarray:
-        assert angles.shape == (2, 1)
-
-        angle = float(abs(normalize_ang_error(angles[1] - angles[0])).squeeze())
-        num_points = int(np.ceil(angle / self.config.policy_config.path_max_inter_waypoint_angle))
-        if num_points <= 1:
-            # Enofrce always at least one orientation correction
-            return angles[1:]
-
-        steps = np.linspace(0, 1, num_points + 1)[1:]
-        r0 = R.from_euler("z", angles[0], degrees=False)
-        r1 = R.from_euler("z", angles[1], degrees=False)
-        rots = Slerp([0, 1], R.concatenate([r0, r1]))(steps)
-        new_angles = rots.as_euler("xyz", degrees=False)[:, 2:]
-
-        return new_angles
+        return split_by_max_angle(angles, self.config.policy_config.path_max_inter_waypoint_angle)
 
     def interpolate_waypoints(self, waypoints: np.ndarray) -> np.ndarray:
         """

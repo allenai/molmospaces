@@ -347,7 +347,6 @@ def run_interactive_shell(exp_config: MlSpacesExpConfig, commands: list[str] | N
     viewer = setup_viewer(exp_config, task, policy=None, current_viewer=None)
     task.viewer = viewer
 
-    task.list_objects()
     task.run_shell(commands=commands)
 
     if viewer is not None:
