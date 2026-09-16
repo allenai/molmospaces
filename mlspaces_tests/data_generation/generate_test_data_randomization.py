@@ -20,8 +20,8 @@ import numpy as np
 from mujoco import MjData, MjModel
 
 from mlspaces_tests.data_generation.config import RandomizationTestConfig
-from molmo_spaces.env.arena.arena_utils import get_all_bodies_with_joints_as_mlspaces_objects
-from molmo_spaces.env.arena.randomization.texture import setup_empty_materials
+from molmo_spaces.env.randomization.texture import setup_empty_materials
+from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mlspaces_objects
 from molmo_spaces.molmo_spaces_constants import get_scenes
 
 RANDOMIZED_TEST_DATA_DIR = Path(__file__).resolve().parent / "test_data" / "test_randomized_data"
@@ -361,9 +361,9 @@ def randomize_scene(
     seed: int = None,
 ) -> None:
     """Randomize the scene."""
-    from molmo_spaces.env.arena.randomization.dynamics import DynamicsRandomizer
-    from molmo_spaces.env.arena.randomization.lighting import LightingRandomizer
-    from molmo_spaces.env.arena.randomization.texture import TextureRandomizer
+    from molmo_spaces.env.randomization.dynamics import DynamicsRandomizer
+    from molmo_spaces.env.randomization.lighting import LightingRandomizer
+    from molmo_spaces.env.randomization.texture import TextureRandomizer
 
     # Create random state from seed
     if seed is not None:

@@ -390,6 +390,19 @@ def house_processing_worker(
     # Track sequential irrecoverable failures at worker level
     num_sequential_irrecoverable_failures = 0
 
+    from molmo_spaces.molmo_spaces_constants import set_license_policy
+    from molmo_spaces.utils.license_policy import (
+        apply_license_policy_to_task_sampler_config,
+        resolve_license_policy,
+        validate_datagen_license_policy,
+    )
+
+    policy = resolve_license_policy(config_policy=exp_config.task_sampler_config.license_policy)
+    exp_config.task_sampler_config.license_policy = policy
+    set_license_policy(policy)
+    apply_license_policy_to_task_sampler_config(exp_config.task_sampler_config, policy)
+    validate_datagen_license_policy(exp_config.scene_dataset, policy)
+
     # Normal datagen: create task sampler once for this worker (persists across all houses)
     # This allows the worker to track object diversity and other state across houses
     assert exp_config.task_sampler_config.task_sampler_class is not None

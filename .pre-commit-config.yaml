@@ -46,3 +46,12 @@ repos:
         types_or: [python, pyi]
         require_serial: true
         pass_filenames: true
+
+  - repo: local
+    hooks:
+      - id: check-ruff-version-sync
+        name: check ruff version is in sync with pyproject.toml
+        entry: python scripts/check_ruff_version_sync.py
+        language: system
+        files: ^(pyproject\.toml|\.pre-commit-config\.yaml)$
+        pass_filenames: false

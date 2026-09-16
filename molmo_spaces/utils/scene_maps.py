@@ -84,6 +84,40 @@ def _delete_blacklisted_bodies(spec: mj.MjSpec) -> int:
     return len(bodies_to_delete)
 
 
+def _delete_license_blocked_bodies(spec: mujoco.MjSpec) -> int:
+    """Delete bodies whose asset UIDs are blocked by the active license policy."""
+    from molmo_spaces.molmo_spaces_constants import get_license_policy
+    from molmo_spaces.tasks.task_sampler import extract_asset_uid_from_object_name
+    from molmo_spaces.utils.license_policy import LicensePolicy, license_blocked_body_keys
+
+    if get_license_policy() == LicensePolicy.NONE:
+        return 0
+
+    blocked_keys = license_blocked_body_keys()
+    if not blocked_keys:
+        return 0
+
+    bodies_to_delete = []
+
+    def collect_blocked_bodies(body_spec: mujoco.MjsBody) -> None:
+        uid_key = extract_asset_uid_from_object_name(body_spec.name or "")
+        if uid_key and uid_key in blocked_keys:
+            bodies_to_delete.append(body_spec)
+        for child_body in body_spec.bodies:
+            collect_blocked_bodies(child_body)
+
+    collect_blocked_bodies(spec.worldbody)
+
+    for body in bodies_to_delete:
+        log.debug(f"Deleting license-blocked body: {body.name}")
+        spec.delete(body)
+
+    if bodies_to_delete:
+        log.info(f"Deleted {len(bodies_to_delete)} license-blocked bodies from scene")
+
+    return len(bodies_to_delete)
+
+
 def _handle_compile_error_and_blacklist(error: Exception) -> None:
     """Parse MuJoCo compile error and add problematic asset to static blacklist.
 

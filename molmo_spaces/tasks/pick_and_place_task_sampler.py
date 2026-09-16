@@ -15,6 +15,7 @@ from molmo_spaces.tasks.pick_and_place_object_target_task_sampler import (
 from molmo_spaces.tasks.task_sampler_errors import ObjectPlacementError
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
 from molmo_spaces.utils.lazy_loading_utils import install_uid
+from molmo_spaces.utils.license_policy import filter_uids
 from molmo_spaces.utils.mj_model_and_data_utils import body_base_pos
 from molmo_spaces.utils.mujoco_scene_utils import place_object_near
 from molmo_spaces.utils.object_metadata import ObjectMeta
@@ -87,6 +88,10 @@ class PickAndPlaceReceptacleTaskSampler(AbstractPickAndPlaceObjectTargetTaskSamp
                 valid_uids = sorted(
                     [uid for uid, anno in all_valid.items() if valid_receptacle(anno)]
                 )
+                # _get_cached_valid_receptacles() is a process-wide, policy-independent
+                # cache, so apply the license policy here -- as the typed branch below
+                # does -- where the policy is resolved.
+                valid_uids = filter_uids(valid_uids)
                 self._receptacle_cache[cache_key] = {uid: all_valid[uid] for uid in valid_uids}
             valid_uids = sorted(self._receptacle_cache[cache_key].keys())
         else:
@@ -105,6 +110,7 @@ class PickAndPlaceReceptacleTaskSampler(AbstractPickAndPlaceObjectTargetTaskSamp
 
                     valid_uids = ObjectManager.prefilter_with_clip(cache_key, valid_uids)
 
+                    valid_uids = filter_uids(valid_uids)
                     self._receptacle_cache[cache_key] = {
                         uid: uid_to_anno[uid] for uid in valid_uids
                     }

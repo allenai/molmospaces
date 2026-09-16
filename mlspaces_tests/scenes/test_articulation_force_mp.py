@@ -22,7 +22,7 @@ from test_utils import (
 from tqdm import tqdm
 
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
-from molmo_spaces.env.arena.scene_tweaks import (
+from molmo_spaces.env.scene.containment import (
     is_body_com_within_box_site,
     is_body_within_site_in_freespace,
 )

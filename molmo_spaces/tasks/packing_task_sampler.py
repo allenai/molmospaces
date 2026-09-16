@@ -38,6 +38,7 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
         task_sampler_config = self.config.task_sampler_config
 
         box_uids = task_sampler_config.box_uids or DEFAULT_BOX_UIDS
+        # THOR Box_* assets only (commercial-safe CC-BY-4.0); no Objaverse path here.
         uid = np.random.choice(box_uids)
         box_xml = install_uid(uid)
 

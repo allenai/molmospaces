@@ -1,7 +1,7 @@
 import mujoco
 
-from molmo_spaces.env.arena.procthor_types import RandomizePhysicalProperties
 from molmo_spaces.env.data_views import MlSpacesArticulationObject
+from molmo_spaces.env.scene.thor.physical_properties import RandomizePhysicalProperties
 
 CABINET = RandomizePhysicalProperties()
 CABINET.randomize_friction = True

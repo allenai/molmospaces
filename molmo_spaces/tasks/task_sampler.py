@@ -22,11 +22,11 @@ import torch
 from mujoco import MjData, MjSpec
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-from molmo_spaces.env.arena.arena_utils import get_all_bodies_with_joints_as_mlspaces_objects
-from molmo_spaces.env.arena.randomization.dynamics import DynamicsRandomizer
-from molmo_spaces.env.arena.randomization.lighting import LightingRandomizer
-from molmo_spaces.env.arena.randomization.texture import TextureRandomizer
 from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
+from molmo_spaces.env.randomization.dynamics import DynamicsRandomizer
+from molmo_spaces.env.randomization.lighting import LightingRandomizer
+from molmo_spaces.env.randomization.texture import TextureRandomizer
+from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mlspaces_objects
 
 # Dataset helpers for house index mapping
 from molmo_spaces.molmo_spaces_constants import (
@@ -365,6 +365,16 @@ class BaseMujocoTaskSampler:
             return True
         return uid_hash in self._dynamic_blacklist
 
+    def is_license_blocked(self, asset_uid: str) -> bool:
+        from molmo_spaces.molmo_spaces_constants import get_license_policy
+        from molmo_spaces.utils.license_policy import LicensePolicy, is_object_allowed
+
+        if get_license_policy() == LicensePolicy.NONE:
+            return False
+        if not asset_uid:
+            return False
+        return not is_object_allowed(asset_uid, get_license_policy())
+
     def report_asset_failure(self, asset_uid: str, reason: str = "") -> bool:
         """Report a failure for an asset, potentially adding it to the dynamic blacklist.
 
@@ -631,9 +641,13 @@ class BaseMujocoTaskSampler:
             self._datagen_profiler.start("compile_mujoco")
 
         # Delete blacklisted bodies before compilation to prevent mass/inertia errors
-        from molmo_spaces.utils.scene_maps import _delete_blacklisted_bodies
+        from molmo_spaces.utils.scene_maps import (
+            _delete_blacklisted_bodies,
+            _delete_license_blocked_bodies,
+        )
 
         _delete_blacklisted_bodies(spec)
+        _delete_license_blocked_bodies(spec)
 
         # Compile and return the model
         try:
@@ -694,7 +708,7 @@ class BaseMujocoTaskSampler:
             num_materials: Maximum number of empty materials/textures to create. Actual number is based on
                           visual geom count with a safety buffer.
         """
-        from molmo_spaces.env.arena.randomization.texture import (
+        from molmo_spaces.env.randomization.texture import (
             setup_empty_materials,
         )
 

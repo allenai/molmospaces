@@ -69,7 +69,7 @@ from molmo_spaces.utils.lazy_loading_utils import (
     install_scene_with_objects_and_grasps_from_path,
     install_scene_from_path,
 )
-from molmo_spaces.env.arena.scene_tweaks import (
+from molmo_spaces.env.scene.containment import (
     is_body_within_any_site,
     is_body_within_site_in_freespace,
 )

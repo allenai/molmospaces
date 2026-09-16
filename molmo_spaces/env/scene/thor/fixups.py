@@ -3,16 +3,16 @@ from pathlib import Path
 
 import mujoco as mj
 
-from molmo_spaces.env.arena.bathroom import ShowerDoor
-from molmo_spaces.env.arena.cabinet import Cabinet
-from molmo_spaces.env.arena.drawer import Drawer
-from molmo_spaces.env.arena.kitchen import Dishwasher, Oven, Stoveknob
-from molmo_spaces.env.arena.scene_tweaks import (
+from molmo_spaces.env.data_views import MlSpacesArticulationObject, MlSpacesObject
+from molmo_spaces.env.scene.containment import (
     is_body_com_within_box_site,
     is_body_within_any_site,
     is_body_within_site_in_freespace,
 )
-from molmo_spaces.env.data_views import MlSpacesArticulationObject, MlSpacesObject
+from molmo_spaces.env.scene.thor.bathroom import ShowerDoor
+from molmo_spaces.env.scene.thor.cabinet import Cabinet
+from molmo_spaces.env.scene.thor.drawer import Drawer
+from molmo_spaces.env.scene.thor.kitchen import Dishwasher, Oven, Stoveknob
 
 iTHOR_CATEGORIES = ["Cabinet", "Drawer", "ShowerDoor", "Oven", "Dishwasher", "StoveKnob"]
 DEFAULT_Z_OFFSET_OBJS_WITHIN_SITES = 0.025

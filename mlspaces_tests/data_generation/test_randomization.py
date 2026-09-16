@@ -27,10 +27,10 @@ from skimage.metrics import structural_similarity as ssim
 
 from mlspaces_tests.data_generation.config import RandomizationTestConfig
 from mlspaces_tests.data_generation.generate_test_data_randomization import add_test_camera
-from molmo_spaces.env.arena.arena_utils import get_all_bodies_with_joints_as_mlspaces_objects
-from molmo_spaces.env.arena.randomization.dynamics import DynamicsRandomizer
-from molmo_spaces.env.arena.randomization.lighting import LightingRandomizer
-from molmo_spaces.env.arena.randomization.texture import TextureRandomizer, setup_empty_materials
+from molmo_spaces.env.randomization.dynamics import DynamicsRandomizer
+from molmo_spaces.env.randomization.lighting import LightingRandomizer
+from molmo_spaces.env.randomization.texture import TextureRandomizer, setup_empty_materials
+from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mlspaces_objects
 from molmo_spaces.molmo_spaces_constants import get_resource_manager, get_scenes
 from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata

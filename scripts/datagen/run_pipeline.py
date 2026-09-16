@@ -48,7 +48,11 @@ from molmo_spaces.configs.robot_configs import (
     RBY1Config,
     ActionNoiseConfig,
 )
-from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.molmo_spaces_constants import (
+    ASSETS_DIR,
+    resolve_license_policy,
+    set_license_policy,
+)
 from molmo_spaces.configs.base_packing_configs import PackingDataGenConfig
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDroidDataGenConfig,
@@ -294,6 +298,16 @@ def main(args: argparse.ArgumentParser) -> None:
     else:  # 3) create config from arguments
         exp_config = setup_config(args)
 
+    policy = resolve_license_policy(
+        explicit=getattr(args, "license_policy", None),
+        config_policy=exp_config.task_sampler_config.license_policy,
+    )
+    exp_config.task_sampler_config.license_policy = policy
+    set_license_policy(policy)
+    from molmo_spaces.utils.license_policy import apply_license_policy_to_task_sampler_config
+
+    apply_license_policy_to_task_sampler_config(exp_config.task_sampler_config, policy)
+
     # overload some config values
     exp_config.num_workers = 1
     exp_config.use_passive_viewer = args.viewer
@@ -372,5 +386,13 @@ if __name__ == "__main__":
     args.add_argument("--randomize_scene", type=bool, default=False, help="randomize scene all")
     args.add_argument("--seed", type=int, default=2, help="random seed")
     args.add_argument("--run_name_prefix", type=str, default="", help="prefix for run name")
+    args.add_argument(
+        "--license-policy",
+        dest="license_policy",
+        type=str,
+        default=None,
+        choices=["none", "commercial_safe"],
+        help="Filter non-commercial assets during datagen (not used for eval)",
+    )
     args = args.parse_args()
     main(args)

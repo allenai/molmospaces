@@ -5,6 +5,7 @@ from enum import StrEnum
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.utils.constants.object_constants import RECEPTACLE_TYPES_THOR
+from molmo_spaces.utils.license_policy import LicensePolicy
 
 
 class OccupancyMapImpl(StrEnum):
@@ -80,6 +81,9 @@ class BaseMujocoTaskSamplerConfig(Config):
     # Scene configuration
     enable_texture_randomization: bool = False
     house_variant: str = "ceiling"
+
+    # When not NONE, filter non-commercial Objaverse assets.
+    license_policy: LicensePolicy = LicensePolicy.NONE
 
 
 class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
