@@ -29,3 +29,12 @@ repos:
   - id: ruff-check
     args: [--fix, --exit-non-zero-on-fix]
   - id: ruff-format
+
+- repo: local
+  hooks:
+  - id: check-ruff-version-sync
+    name: check ruff version is in sync with pyproject.toml
+    entry: python scripts/check_ruff_version_sync.py
+    language: system
+    files: ^(pyproject\.toml|\.pre-commit-config\.yaml)$
+    pass_filenames: false
