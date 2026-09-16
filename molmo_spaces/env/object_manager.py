@@ -252,13 +252,17 @@ class ObjectManager:
         if isinstance(object_or_name_or_id, MlSpacesObject):
             return object_or_name_or_id
 
-        return self.get_object_by_name(self.get_object_name(object_or_name_or_id))
+        mls_object = self.get_object_by_name(self.get_object_name(object_or_name_or_id))
+        assert mls_object is not None, f"Object '{object_or_name_or_id}' not found"
+
+        return mls_object
 
     def get_object_body_id(self, object_or_name_or_id: ObjectOrNameOrIdType) -> int:
         if isinstance(object_or_name_or_id, str):
-            object_body_id = self.get_object_by_name(
-                self.get_object_name(object_or_name_or_id)
-            ).body_id
+            mls_object = self.get_object_by_name(self.get_object_name(object_or_name_or_id))
+            assert mls_object is not None, f"Object of id '{object_or_name_or_id}' not found"
+
+            object_body_id = mls_object.body_id
         elif isinstance(object_or_name_or_id, MlSpacesObject):
             object_body_id = object_or_name_or_id.body_id
         else:
@@ -337,14 +341,12 @@ class ObjectManager:
         self,
         context_objects: Collection[ObjectOrNameOrIdType],
     ) -> list[str]:
-        annotated_synsets = sorted(
-            {
-                self.get_annotation_synset(object_or_name_or_id)
-                for object_or_name_or_id in context_objects
-            }
-            - {None}
-        )
+        annotation_set = set()
+        for object_or_name_or_id in context_objects:
+            if annotation_synset := self.get_annotation_synset(object_or_name_or_id):
+                annotation_set.add(annotation_synset)
 
+        annotated_synsets = sorted(annotation_set)
         if not annotated_synsets:
             return []
 
@@ -359,13 +361,14 @@ class ObjectManager:
         return sorted(extended_synsets)
 
     def default_object_context_synsets(self, target: ObjectOrNameOrIdType) -> set[str]:
-        all_hypernyms = generate_all_hypernyms_with_exclusions(self.get_annotation_synset(target))
-        if all_hypernyms:
-            object_hypernyms = cast(
-                set[str],
-                {hyp.name() for hyp in all_hypernyms},
-            )
-            return object_hypernyms
+        if annotation_synset := self.get_annotation_synset(target):
+            all_hypernyms = generate_all_hypernyms_with_exclusions(annotation_synset)
+            if all_hypernyms:
+                object_hypernyms = cast(
+                    set[str],
+                    {hyp.name() for hyp in all_hypernyms},
+                )
+                return object_hypernyms
 
         return set()
 
@@ -423,7 +426,8 @@ class ObjectManager:
         if len(name.strip()) == 0:
             metadata = self.object_metadata(object_name)
             asset_id = metadata["asset_id"]
-            name = ObjectMeta.annotation(asset_id)["category"].lower()
+            # TODO(wilbert): here as well my boi, have to validate list[dict], dict, and None
+            name = ObjectMeta.annotation(asset_id)["category"].lower()  # pyright: ignore # ty: ignore
 
             # remove digits
             name = re.sub(r"\d+", "", name).strip()
@@ -440,16 +444,17 @@ class ObjectManager:
         res = []
         seen_versions = set()
 
-        for lemma in get_wordnet().synset(synset).lemma_names():
-            space = normalize_expression(lemma).strip()
-            # lower = space.replace(" ", "")
-            # snake = space.replace(" ", "_")
+        if synset_obj := get_wordnet().synset(synset):
+            for lemma in synset_obj.lemma_names():
+                space = normalize_expression(lemma).strip()
+                # lower = space.replace(" ", "")
+                # snake = space.replace(" ", "_")
 
-            # for version in [lower, snake, space]:
-            for version in [space]:
-                if version not in seen_versions:
-                    res.append(version)
-                    seen_versions.add(version)
+                # for version in [lower, snake, space]:
+                for version in [space]:
+                    if version not in seen_versions:
+                        res.append(version)
+                        seen_versions.add(version)
 
         return res
 
@@ -518,8 +523,10 @@ class ObjectManager:
 
         maybe_asset_id = self.object_metadata(object_or_name_or_id).get("asset_id")
         if maybe_asset_id:
+            # TODO(wilbert): same here my boi, this part has to be properly validated. Have to check
+            # with Jordi here, for now will just suppress the warning
             from_short_descriptions = ObjectManager._name_versions_from_short_descriptions(
-                ObjectMeta.short_descriptions(maybe_asset_id)
+                ObjectMeta.short_descriptions(maybe_asset_id)  # pyright: ignore[reportArgumentType]
             )
             if from_short_descriptions:
                 source_to_names[maybe_asset_id] = from_short_descriptions
@@ -586,10 +593,11 @@ class ObjectManager:
 
     def category_from_name(self, object_or_name_or_id: ObjectOrNameOrIdType):
         name = self.get_object_name(object_or_name_or_id)
+        # TODO(wilbert): oh my boi, have to validate this xD. Will suppress warnings for now
         try:
-            return re.compile(r"^(.*?)(?=[0-9a-fA-F]{32})").match(name).group(1).strip("_").lower()
+            return re.compile(r"^(.*?)(?=[0-9a-fA-F]{32})").match(name).group(1).strip("_").lower()  # pyright: ignore[reportOptionalMemberAccess] # ty: ignore
         except AttributeError:
-            return re.compile(r"^([A-Za-z_]+)").match(name).group(1).strip("_").lower()
+            return re.compile(r"^([A-Za-z_]+)").match(name).group(1).strip("_").lower()  # pyright: ignore[reportOptionalMemberAccess] # ty: ignore
 
     def get_annotation_category(self, object_or_name_or_id: ObjectOrNameOrIdType) -> str:
         object_name = self.get_object_name(object_or_name_or_id)
@@ -601,7 +609,9 @@ class ObjectManager:
     def get_annotation_synset(self, object_or_name_or_id: ObjectOrNameOrIdType) -> str | None:
         object_meta = self.object_metadata(object_or_name_or_id)
 
-        return (ObjectMeta.annotation(object_meta.get("asset_id", "DUMMY")) or {}).get("synset")
+        # TODO(wilbert): here we might also get list[dict] instead of dict(). Will suppress for now
+        # but have to talk with Jordi to check how to handle this correctly
+        return (ObjectMeta.annotation(object_meta.get("asset_id", "DUMMY")) or {}).get("synset")  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
     def has_some_valid_identifier(
         self, object_or_name_or_id: ObjectOrNameOrIdType, valid_identifiers: Collection[str]
@@ -731,7 +741,8 @@ class ObjectManager:
                 continue
 
             if self.has_some_valid_identifier(name, object_types):
-                results.append(self.get_object_by_name(name))
+                if mls_object := self.get_object_by_name(name):
+                    results.append(mls_object)
 
         return sorted(results, key=lambda x: x.name)
 
@@ -783,7 +794,8 @@ class ObjectManager:
             name = self.get_object_name(b)
             if not name or self.is_structural(name) or self.is_excluded(name):
                 continue
-            objs.append(self.get_object_by_name(name))
+            if mls_object := self.get_object_by_name(name):
+                objs.append(mls_object)
 
         return sorted(objs, key=lambda x: x.name)
 
@@ -884,7 +896,8 @@ class ObjectManager:
                 in_xy = (xy_min[0] <= pos[0] <= xy_max[0]) and (xy_min[1] <= pos[1] <= xy_max[1])
                 above = (pos[2] >= top_z + z_above_min) and (pos[2] <= top_z + z_above_max)
                 if in_xy and above:
-                    results.append(self.get_object_by_name(name))
+                    if mls_object := self.get_object_by_name(name):
+                        results.append(mls_object)
 
             if self._caching_enabled:
                 cache_in_use[oname]["objects_on_top"] = results
@@ -1237,7 +1250,11 @@ class ObjectManager:
         model = self.model
         freejoints = np.where(model.jnt_type == mj.mjtJoint.mjJNT_FREE)[0]
         body_ids = model.jnt_bodyid[freejoints]
-        return [self.get_object_by_name(model.body(id).name) for id in body_ids]
+        free_mls_objects = []
+        for body_id in body_ids:
+            if mls_object := self.get_object_by_name(model.body(body_id).name):
+                free_mls_objects.append(mls_object)
+        return free_mls_objects
 
     def get_mobile_objects(self) -> list[MlSpacesObject]:
         """Return of list of all task relevant bodies i.e. not robots/policy objects"""
@@ -1258,7 +1275,8 @@ class ObjectManager:
             task_object = create_mlspaces_body(self.data, object_name)
             task_objects.append(task_object)
 
-        return task_objects
+        # TODO(wilbert): seems here the types returned are iffy
+        return task_objects  # ty: ignore
 
     @staticmethod
     def uid_to_annotation_for_type(object_type: str) -> dict[str, dict]:
@@ -1279,24 +1297,29 @@ class ObjectManager:
         om = ObjectManager(DummyEnv(), -1)  # type:ignore
         om.scene_metadata = {"objects": {}}
 
-        for uid, anno in ObjectMeta.annotation().items():
-            category = anno["category"]
-            name = f"{category.lower()}_{hashlib.md5(uid.encode()).hexdigest()}_0_0_0"
+        # TODO(wilbert): this part is a bit dangerous, as the .annotation() func can give not just
+        # a dict(), but a list[dict], or even None T_T. For now will just validate for None, but
+        # have to handle the case of list[dict]. Will for now just suppress the warning, as we have
+        # to properly handle the potential list[dict] case
+        if annotation := ObjectMeta.annotation():
+            for uid, anno in annotation.items():  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
+                category = anno["category"]
+                name = f"{category.lower()}_{hashlib.md5(uid.encode()).hexdigest()}_0_0_0"
 
-            om.scene_metadata["objects"][name] = {
-                "asset_id": uid,
-                "category": category,
-                "object_enum": "temp_object",
-            }
+                om.scene_metadata["objects"][name] = {  # ty: ignore
+                    "asset_id": uid,
+                    "category": category,
+                    "object_enum": "temp_object",
+                }
 
-            possible_types = om.get_possible_object_types(name)
-            if object_type in possible_types:
-                valid_uids[uid] = anno
+                possible_types = om.get_possible_object_types(name)
+                if object_type in possible_types:
+                    valid_uids[uid] = anno
 
-            # Avoid wasting memory
-            om.scene_metadata["objects"].pop(name)
-            om._object_name_to_possible_type_names = {}
-            om._object_name_and_context_to_source_to_natural_names = {}
+                # Avoid wasting memory
+                om.scene_metadata["objects"].pop(name)  # ty: ignore
+                om._object_name_to_possible_type_names = {}
+                om._object_name_and_context_to_source_to_natural_names = {}
 
         return valid_uids
 
@@ -1441,7 +1464,8 @@ class ObjectManager:
                 cache_in_use[oname]["placement_region"] = placement_region
             else:
                 cache_in_use.pop(oname, None)
-                return placement_region
+                # TODO(wilbert): uhmmm, my bois, the return type here seems wrong
+                return placement_region  # ty: ignore
 
         return cache_in_use[oname]["placement_region"]
 
@@ -1492,14 +1516,16 @@ class ObjectManager:
 
             for geom_info in geom_infos:
                 geom_id = geom_info["id"]
-                # Check if it's a collision geom (contype != 0 or conaffinity != 0)
-                if (
-                    self.model.geom(geom_id).contype != 0
-                    or self.model.geom(geom_id).conaffinity != 0
-                ):
-                    # Get AABB from model (center, size)
-                    aabb = self.model.geom_aabb[geom_id]
-                    door_bboxes.append(aabb)
+                assert isinstance(geom_id, int), (
+                    f"Something is wrong here, geom_id = '{geom_id}' is not int"
+                )
+                if 0 <= geom_id < self.model.ngeom:
+                    contype = self.model.geom_contype[geom_id].item()
+                    conaffinity = self.model.geom_conaffinity[geom_id].item()
+                    if contype != 0 or conaffinity != 0:
+                        # Get AABB from model (center, size)
+                        aabb = self.model.geom_aabb[geom_id]
+                        door_bboxes.append(aabb)
 
             if not door_bboxes:
                 door_bboxes = np.array([]).reshape(0, 6)
@@ -1558,7 +1584,9 @@ class ObjectManager:
         # Fallback: list with objects with aabbs overlapping >= 50% in xy with the bench and "just above" in z
         for geom_id in bench_geom_ids:
             # Take full body
-            bc, be = body_aabb(model, data, model.body_rootid[model.geom_bodyid[geom_id]])
+            bc, be = body_aabb(
+                model, data, model.body_rootid[model.geom_bodyid[geom_id].item()].item()
+            )
 
             # Avoid recomputing if all geom ids are part of the same body
             cur_str = f"{np.round(bc, 3).tolist() + np.round(be, 3).tolist()}"
@@ -1603,10 +1631,10 @@ class ObjectManager:
                         contactless_object_names.add(object_name)
 
         # Combine all objects in a single list
-        object_list = [
-            self.get_object_by_name(object_name)
-            for object_name in sorted(object_names | contactless_object_names)
-        ]
+        object_list = []
+        for object_name in sorted(object_names | contactless_object_names):
+            if mls_object := self.get_object_by_name(object_name):
+                object_list.append(mls_object)
 
         return object_list
 
