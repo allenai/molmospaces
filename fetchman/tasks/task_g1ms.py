@@ -11,7 +11,7 @@ import mujoco
 import numpy as np
 
 from molmo_spaces.env.abstract_sensors import SensorSuite
-from molmo_spaces.env.g1_sensors import TARGET_POINT_IN_HEAD_SENSOR, task_sensors
+from molmo_spaces.env.sensors_g1 import TARGET_POINT_IN_HEAD_SENSOR, task_sensors
 from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
     PHASE_APPROACH,
     PHASE_CLOSE,

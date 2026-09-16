@@ -494,7 +494,7 @@ class G1Robot(Robot):
     def create_robot_sensors(self):
         """Robot.create_robot_sensors: this robot's own state sensors, which
         BaseMujocoTask (and fetchman's G1Task) append to the task's suite."""
-        from molmo_spaces.env.g1_sensors import robot_sensors
+        from molmo_spaces.env.sensors_g1 import robot_sensors
 
         return robot_sensors()
 
