@@ -22,15 +22,27 @@ from molmo_spaces.molmo_spaces_constants import (
     ASSETS_DIR,
     OBJECT_LIBRARY_TO_GRASP_LIBRARIES,
     USER_GRASP_LIBRARIES,
+    get_license_policy,
 )
 from molmo_spaces.utils.lazy_loading_utils import get_user_grasp_library_index, locate_uid_package
+from molmo_spaces.utils.license_policy import LicensePolicy
 
 log = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=10000)
+def _locate_uid_package_cached(uid: str, license_policy: LicensePolicy):
+    return locate_uid_package(uid, license_policy=license_policy)
+
+
 def _locate_uid_package(uid: str):
-    return locate_uid_package(uid)
+    """Cached ``locate_uid_package`` keyed by the active license policy.
+
+    The policy is part of the cache key because lookups are policy-dependent and
+    this module caches aggressively: a lookup made before the policy is resolved
+    would otherwise pin an unfiltered result for the rest of the process.
+    """
+    return _locate_uid_package_cached(uid, get_license_policy())
 
 
 def get_grasp_libraries_for_object(uid: str) -> list[str]:

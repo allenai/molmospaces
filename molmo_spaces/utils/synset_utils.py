@@ -1176,6 +1176,11 @@ def get_valid_receptacle_uids() -> dict[str, dict]:
     """
     Get all asset UIDs that are valid receptacles based on synset filtering.
 
+    The result is *not* filtered by the active license policy: callers cache it
+    process-wide, potentially before the policy has been resolved. Apply
+    ``license_policy.filter_uids`` at the point of use instead, where the policy
+    is known.
+
     Returns:
         Dict mapping UID to annotation dict for valid receptacle assets.
     """
@@ -1190,10 +1195,7 @@ def get_valid_receptacle_uids() -> dict[str, dict]:
             if anno.get("receptacle", False):
                 valid_uids[uid] = anno
 
-    from molmo_spaces.utils.license_policy import filter_uids
-
-    allowed = set(filter_uids(valid_uids.keys()))
-    return {uid: valid_uids[uid] for uid in allowed}
+    return valid_uids
 
 
 # ---------------------------------------------------------------------------
@@ -1305,6 +1307,12 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
     Checks for cached file at VALID_PICKUPABLE_OBJA_UIDS_PATH first to avoid
     expensive computation. If not found, computes and returns the list.
 
+    The returned list is *not* filtered by the active license policy: this runs
+    during config construction, before the effective policy has been resolved, and
+    its results are cached process-wide. License filtering happens at the single
+    gate ``license_policy.apply_license_policy_to_task_sampler_config``, which runs
+    once the policy is known.
+
     Args:
         debug: If True, prints 20 random samples with their short descriptions.
 
@@ -1318,9 +1326,7 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
             uid_list = [line.strip() for line in f if line.strip()]
         if debug:
             print(f"\n=== Loaded {len(uid_list)} pickupable UIDs from cache ===\n")
-        from molmo_spaces.utils.license_policy import filter_uids
-
-        return filter_uids(uid_list)
+        return uid_list
 
     from molmo_spaces.utils.grasps import has_valid_pickup_grasps
     from molmo_spaces.utils.object_metadata import ObjectMeta
@@ -1348,9 +1354,7 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
 
         print()
 
-    from molmo_spaces.utils.license_policy import filter_uids
-
-    return filter_uids(list(valid_uids.keys()))
+    return list(valid_uids.keys())
 
 
 def get_valid_pickupable_obja_uids_excluding_benchmark(debug: bool = False) -> list[str]:
