@@ -141,7 +141,7 @@ def is_scene_source_allowed(scene_dataset: str, policy: LicensePolicy | None = N
     if policy == LicensePolicy.NONE:
         return True
     if policy == LicensePolicy.COMMERCIAL_SAFE:
-        return "rlbench" not in scene_dataset.lower()
+        return True
     raise ValueError(f"Unknown {policy=}")
 
 

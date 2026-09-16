@@ -111,7 +111,6 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "holodeck-objaverse-val": "20251217_with_occupancy",
         "procthor-objaverse-train": "20251205_with_occupancy",
         "procthor-objaverse-val": "20251205_with_occupancy",
-        "rlbench": "20260817",
     },
     objects={
         "thor": "20251117",
@@ -265,9 +264,6 @@ def get_resource_manager(
             else:
                 to_install = {}
                 for scene_source in data_type_to_source_to_version["scenes"]:
-                    if scene_source in ["rlbench"]:
-                        continue
-
                     source_packages = manager.find_all_packages_for_source("scenes", scene_source)
                     if len(source_packages) < 10:
                         # Fully install small scene datasets
@@ -278,9 +274,6 @@ def get_resource_manager(
 
                     if packages:
                         to_install[scene_source] = packages
-
-                if "rlbench" in DATA_TYPE_TO_SOURCE_TO_VERSION["scenes"]:
-                    to_install["rlbench"] = ["rlbench_bundle.tar.zst"]
 
                 if to_install:
                     manager.install_packages("scenes", to_install)
