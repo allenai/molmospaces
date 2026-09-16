@@ -475,7 +475,7 @@ class FetchManBasePlannerPolicyConfig(NavToObjPlannerPolicyConfig):
     plan_max_retries: int = 3  # Number of alternate target candidates to try if planning fails
 
     # FetchManBasePlannerPolicyPort only: walk to a grasping standoff on this
-    # annulus around the object (g1_pick_policy.sample_standoff_pose) instead
+    # annulus around the object (pick_planner_policy_g1.sample_standoff_pose) instead
     # of NavGoalSampler's goal, so a following `pick` grasps without walking.
     standoff_radius_range: tuple[float, float] | None = None
     standoff_map_extra_inflation: float = 0.125  # planning-map inflation, as the pick's

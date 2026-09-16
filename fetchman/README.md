@@ -28,7 +28,7 @@ Two things live in molmo_spaces because both stacks use them:
 | | |
 |---|---|
 | `molmo_spaces/env/scene/spec_ops.py` | gold's pre-compile MjSpec edits, shared with the native scene build |
-| `.../object_manipulation/g1_pick_policy.py` | `G1Controller` + the native `G1PickPlannerPolicy` adapter |
+| `.../object_manipulation/pick_planner_policy_g1.py` | `G1Controller` + the native `G1PickPlannerPolicy` adapter |
 
 ## Native abstractions, gold's sampling
 

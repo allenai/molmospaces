@@ -1,7 +1,7 @@
 """FetchManBasePlannerPolicyPort: FetchManBasePlannerPolicy driven by
 G1Controller's grid helpers, constants and control law, so `nav_to` walks the
 way a pick's own walk phase does. The A*/simplify helpers are imported from
-g1_pick_policy, not copied. Differences from the base class, all to match
+pick_planner_policy_g1, not copied. Differences from the base class, all to match
 G1Controller: no min_speed floor on the final brake, `_face_yaw_offset` is
 honoured, the base command bypasses G1Robot's velocity floor (see get_action),
 and the goal can be a grasping standoff (see _sample_goal).
@@ -16,7 +16,7 @@ from molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy import 
 )
 
 # The SAME function objects the pick walk phase uses -- not copies.
-from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
+from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import (
     HOLONOMIC_MAX_START_DIST,
     _astar,
     _simplify_path,
@@ -31,9 +31,9 @@ log = logging.getLogger(__name__)
 
 
 class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
-    """`FetchManBasePlannerPolicy` with g1_pick_policy's grid code and control law."""
+    """`FetchManBasePlannerPolicy` with pick_planner_policy_g1's grid code and control law."""
 
-    # G1Controller's own nav constants (g1_pick_policy.py, class body).
+    # G1Controller's own nav constants (pick_planner_policy_g1.py, class body).
     WAYPOINT_REACH = 0.10
     FINAL_REACH = 0.05
     SPEED = 0.3
@@ -105,7 +105,7 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
         return np.asarray(target_pos_quat[0][:2], dtype=np.float64), self.nav_planner.map
 
     def _plan_path(self) -> bool:
-        """As the base class, but A*/simplify through g1_pick_policy's copies,
+        """As the base class, but A*/simplify through pick_planner_policy_g1's copies,
         with an optional grasping-standoff goal (see _sample_goal)."""
         cfg = self.config.policy_config
         goal_xy, occ_map = self._sample_goal()
@@ -142,7 +142,7 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
             self._waypoints[-1] = goal_xy
         self._waypoints = prune_waypoints(self._waypoints, self._xy())
         # As G1Controller._plan_path: a short single-segment walk is driven
-        # holonomically (see g1_pick_policy.holonomic_cmd).
+        # holonomically (see pick_planner_policy_g1.holonomic_cmd).
         self._holo_final = (
             len(self._waypoints) == 1
             and float(np.linalg.norm(self._waypoints[0] - self._xy())) < HOLONOMIC_MAX_START_DIST

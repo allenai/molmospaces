@@ -145,7 +145,7 @@ def add_grasp_probes(
     geometry registers contact against it, but it never pushes anything.
 
     `gripper_probe_xml`, when the robot ships one, is attached alongside. That
-    is a different object -- a real gripper model, driven by g1_pick_policy for
+    is a different object -- a real gripper model, driven by pick_planner_policy_g1 for
     the final pre-grasp clearance check -- not another stand-in.
     """
     bodies = []

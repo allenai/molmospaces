@@ -87,11 +87,11 @@ def main():
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 
     from molmo_spaces.controllers.g1_wbc import ACTION_DIM, flat15_to_move_groups
-    from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import enable_g1_trace
+    from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import enable_g1_trace
 
     enable_g1_trace()
     from fetchman.tasks.pick_task_sampler_g1ms import make_task_sampler
-    from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import G1Controller
+    from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import G1Controller
 
     cfg = _load_env_config(args.env)
     cfg.seed = args.seed

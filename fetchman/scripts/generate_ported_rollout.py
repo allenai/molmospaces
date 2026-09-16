@@ -29,7 +29,7 @@ import numpy as np
 from molmo_spaces.controllers.g1_wbc import flat15_to_move_groups
 from fetchman.configs.bowl_fetchman import get_config
 from fetchman.tasks.pick_task_sampler_g1ms import make_task_sampler
-from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
+from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import (
     G1Controller,
     enable_g1_trace,
 )

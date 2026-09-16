@@ -50,7 +50,7 @@ def _checksum(*arrays):
 
 def collect(stack, episodes, seed):
     from molmo_spaces.controllers.g1_wbc import flat15_to_move_groups
-    from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import G1Controller
+    from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import G1Controller
 
     get_config, make_task_sampler = _load(stack)
 

@@ -108,7 +108,7 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
         # Skip PickPlannerPolicyConfig's, which would set policy_cls to PickPlannerPolicy.
         super(PickPlannerPolicyConfig, self).model_post_init(__context)
         if self.policy_cls is None:
-            from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import (
+            from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import (
                 G1PickPlannerPolicy,
             )
 

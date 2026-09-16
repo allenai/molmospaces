@@ -1259,7 +1259,9 @@ class InteractiveShellTask(BaseMujocoTask):
         env = self._env
 
         # The pick/walk trace lines are the shell's main diagnostic.
-        from molmo_spaces.policy.solvers.object_manipulation.g1_pick_policy import enable_g1_trace
+        from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import (
+            enable_g1_trace,
+        )
 
         enable_g1_trace()
 
