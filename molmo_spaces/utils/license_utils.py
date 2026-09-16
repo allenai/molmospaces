@@ -51,9 +51,7 @@ def list_asset_identifiers(
 ) -> list[str]:
     identifiers = [
         archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
-        for archive in get_resource_manager().find_all_packages_for_source(
-            data_type, data_source
-        )
+        for archive in get_resource_manager().find_all_packages_for_source(data_type, data_source)
     ]
 
     if license_policy is None:
