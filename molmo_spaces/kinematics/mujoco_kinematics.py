@@ -4,10 +4,12 @@ This solver is not parallelizable and runs on the CPU. While fairly fast,
 this is not suitable for large batches.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Literal
 
-import mujoco
+import mujoco as mj
 import numpy as np
 
 from molmo_spaces.utils.linalg_utils import (
@@ -34,15 +36,22 @@ class MlSpacesKinematics:
     making it flexible for different use cases.
     """
 
-    def __init__(self, robot_config: "BaseRobotConfig") -> None:
+    def __init__(self, robot_config: BaseRobotConfig) -> None:
         """
         Create a kinematics solver for a robot.
 
         Args:
             robot_config: The robot configuration.
         """
-        spec = mujoco.MjSpec()
-        robot_config.robot_cls.add_robot_to_scene(
+        robot_cls = robot_config.robot_cls
+        robot_view_factory = robot_config.robot_view_factory
+        assert robot_cls, f"Robot class from config of robot '{robot_config.name}' not defined"
+        assert robot_view_factory, (
+            f"Robot view factory from config of robot '{robot_config.name}' not defined"
+        )
+
+        spec = mj.MjSpec()
+        robot_cls.add_robot_to_scene(
             robot_config,
             spec,
             prefix=robot_config.robot_namespace,
@@ -52,11 +61,9 @@ class MlSpacesKinematics:
         )
 
         self._mj_model = spec.compile()
-        self._mj_data = mujoco.MjData(self._mj_model)
-        self._robot_view = robot_config.robot_view_factory(
-            self._mj_data, robot_config.robot_namespace
-        )
-        mujoco.mj_forward(self._mj_model, self._mj_data)
+        self._mj_data = mj.MjData(self._mj_model)
+        self._robot_view = robot_view_factory(self._mj_data, robot_config.robot_namespace)
+        mj.mj_forward(self._mj_model, self._mj_data)
 
     def _constrain_state(self) -> None:
         """Constrain the current state to be within the joint limits.
@@ -91,7 +98,7 @@ class MlSpacesKinematics:
         """
         self._robot_view.base.pose = base_pose
         self._robot_view.set_qpos_dict(move_group_qpos)
-        mujoco.mj_kinematics(self._mj_model, self._mj_data)
+        mj.mj_kinematics(self._mj_model, self._mj_data)
         ret = {}
         for move_group_id in self._robot_view.move_group_ids():
             move_group = self._robot_view.get_move_group(move_group_id)
@@ -212,10 +219,11 @@ class MlSpacesKinematics:
         if rel_to_base:
             pose = self._robot_view.base.pose @ pose
 
+        succ = False
         move_group = self._robot_view.get_move_group(move_group_id)
         for i in range(max_iter):
-            mujoco.mj_fwdPosition(self._mj_model, self._mj_data)
-            mujoco.mj_sensorPos(self._mj_model, self._mj_data)
+            mj.mj_fwdPosition(self._mj_model, self._mj_data)
+            mj.mj_sensorPos(self._mj_model, self._mj_data)
 
             ee_pose = relative_to_global_transform(
                 move_group.leaf_frame_to_robot, self._robot_view.base.pose
