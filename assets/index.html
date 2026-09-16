@@ -701,6 +701,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#license-policy-filtering-datagen-and-inspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License policy filtering (datagen and inspection)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1694,6 +1705,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#license-policy-filtering-datagen-and-inspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License policy filtering (datagen and inspection)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1950,6 +1972,29 @@ The pinned assets file should have the same structure as <code>DATA_TYPE_TO_SOUR
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">print_license_info</span><span class="p">(</span><span class="s2">"scenes"</span><span class="p">,</span> <span class="s2">"ithor"</span><span class="p">,</span> <span class="s2">"--list_all"</span><span class="p">)</span>
 </code></pre></div>
 Note that invoking this command will attempt to download and install all scenes to access the corresponding metadata.</p>
+<h2 id="license-policy-filtering-datagen-and-inspection">License policy filtering (datagen and inspection)<a class="headerlink" href="#license-policy-filtering-datagen-and-inspection" title="Permanent link">&para;</a></h2>
+<p>Datagen can exclude non-commercial Objaverse assets using a license policy. Evaluation
+and benchmark replay do <strong>not</strong> expose this flag and always load assets exactly as
+specified in benchmarks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Datagen only (scripts/datagen/run_pipeline.py)</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>python<span class="w"> </span>scripts/datagen/run_pipeline.py<span class="w"> </span>--license-policy<span class="w"> </span>commercial_safe<span class="w"> </span>...
+</code></pre></div>
+<p>For distributed or cluster jobs, you can set the same policy via environment variable
+(when the CLI flag is omitted and the config field is still the default <code>none</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MLSPACES_LICENSE_POLICY</span><span class="o">=</span>commercial_safe
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>python<span class="w"> </span>scripts/datagen/run_pipeline.py<span class="w"> </span>--config<span class="w"> </span>FrankaPickDroidDataGenConfig<span class="w"> </span>...
+</code></pre></div>
+<p>Precedence: explicit <code>--license-policy</code> (or a non-<code>none</code> value on
+<code>task_sampler_config.license_policy</code>) overrides <code>MLSPACES_LICENSE_POLICY</code>; the env
+var applies when neither is set. Default remains unfiltered (<code>none</code>).</p>
+<p>When <code>commercial_safe</code> is active:</p>
+<ul>
+<li>Non-commercial Objaverse objects (<code>by-nc</code>, <code>by-nc-sa</code>) are filtered from sampling,
+  UID pools, semantic search, and lazy installs.</li>
+<li>Embedded NC scene objects are stripped from the compiled <code>MjSpec</code> before simulation.</li>
+</ul>
+<p>Inspection helpers accept the same policy via <code>get_license_policy()</code> / optional parameters
+on <code>ObjectRetriever</code>, <code>locate_uid_package</code>, and <code>print_license_info(..., license_policy=...)</code>.</p>
 
 
 
@@ -1972,7 +2017,7 @@ Note that invoking this command will attempt to download and install all scenes 
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 1, 2026 07:56:48 UTC"><span class="timeago" datetime="2026-08-01T07:56:48+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 1, 2026 07:56:48 UTC">2026-08-01</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="September 16, 2026 09:14:17 UTC"><span class="timeago" datetime="2026-09-16T09:14:17+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="September 16, 2026 09:14:17 UTC">2026-09-16</span>
   </span>
 
     

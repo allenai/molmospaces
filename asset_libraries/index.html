@@ -1775,6 +1775,9 @@ the resource manager's tries, then any registered user libraries.</p>
 <p><code>install_uid</code> is the higher-level helper used by samplers and the data engine:
 it locates the UID, downloads/extracts the containing archive if necessary,
 installs the corresponding grasps, and returns the path to the object MJCF.</p>
+<p>When a non-default license policy is active (see <a href="../assets/">assets.md</a>),
+<code>locate_uid_package</code> returns <code>(None, None, None)</code> for blocked Objaverse UIDs and
+<code>install_uid</code> raises with a clear error.</p>
 <h2 id="grasp-libraries">Grasp libraries<a class="headerlink" href="#grasp-libraries" title="Permanent link">&para;</a></h2>
 <p>A <strong>grasp library</strong> is a collection of precomputed stable grasp poses, keyed by
 object UID (and, for articulated objects, by joint name). Each grasp file is an
@@ -1883,7 +1886,7 @@ in a data-generation run.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 27, 2026 18:24:41 UTC"><span class="timeago" datetime="2026-05-27T18:24:41+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 27, 2026 18:24:41 UTC">2026-05-27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="September 16, 2026 09:14:17 UTC"><span class="timeago" datetime="2026-09-16T09:14:17+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="September 16, 2026 09:14:17 UTC">2026-09-16</span>
   </span>
 
     
