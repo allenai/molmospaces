@@ -91,7 +91,7 @@ def main():
 
     enable_g1_trace()
     from fetchman.tasks.pick_task_sampler_g1ms import make_task_sampler
-    from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import G1Controller
+    from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import G1PickAgent
 
     cfg = _load_env_config(args.env)
     cfg.seed = args.seed
@@ -109,7 +109,7 @@ def main():
 
         cv2.namedWindow(CV2_WINDOW, cv2.WINDOW_NORMAL)
 
-    agent = G1Controller()
+    agent = G1PickAgent()
     # set_agent registers the policy on the task (handing it its set_task
     # reference) and setup()s it against the current scene.
     task_sampler.set_agent(agent)

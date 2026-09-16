@@ -92,7 +92,7 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     # Walk to a fresh standoff even when already inside the annulus
     # (InteractiveShellTask.pick sets it on a retry).
     force_standoff_walk: bool = False
-    # G1Controller.direct_walk: prune waypoints within reach and drive short
+    # G1PickAgent.direct_walk: prune waypoints within reach and drive short
     # forward goals holonomically instead of turn / drive / turn. Off by default
     # so the reference walk stays byte-identical to gold; the interactive shell
     # turns it on, where every in-place WBC turn costs 0.2-0.5m of drift.

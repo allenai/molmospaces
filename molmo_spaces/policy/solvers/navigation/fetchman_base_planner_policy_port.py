@@ -1,8 +1,8 @@
 """FetchManBasePlannerPolicyPort: FetchManBasePlannerPolicy driven by
-G1Controller's grid helpers, constants and control law, so `nav_to` walks the
+G1PickAgent's grid helpers, constants and control law, so `nav_to` walks the
 way a pick's own walk phase does. The A*/simplify helpers are imported from
 pick_planner_policy_g1, not copied. Differences from the base class, all to match
-G1Controller: no min_speed floor on the final brake, `_face_yaw_offset` is
+G1PickAgent: no min_speed floor on the final brake, `_face_yaw_offset` is
 honoured, the base command bypasses G1Robot's velocity floor (see get_action),
 and the goal can be a grasping standoff (see _sample_goal).
 """
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
     """`FetchManBasePlannerPolicy` with pick_planner_policy_g1's grid code and control law."""
 
-    # G1Controller's own nav constants (pick_planner_policy_g1.py, class body).
+    # G1PickAgent's own nav constants (pick_planner_policy_g1.py, class body).
     WAYPOINT_REACH = 0.10
     FINAL_REACH = 0.05
     SPEED = 0.3
@@ -116,7 +116,7 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
         self._target_xy = goal_xy
 
         # _world_to_px/map_to_world: the pair both ProcTHORMap/iTHORMap and
-        # AABBMap expose, and the one G1Controller._plan_path indexes with.
+        # AABBMap expose, and the one G1PickAgent._plan_path indexes with.
         start_rc = occ_map._world_to_px(self._xy())
         goal_rc = occ_map._world_to_px(goal_xy)
 
@@ -141,7 +141,7 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
         if self._waypoints:
             self._waypoints[-1] = goal_xy
         self._waypoints = prune_waypoints(self._waypoints, self._xy())
-        # As G1Controller._plan_path: a short single-segment walk is driven
+        # As G1PickAgent._plan_path: a short single-segment walk is driven
         # holonomically (see pick_planner_policy_g1.holonomic_cmd).
         self._holo_final = (
             len(self._waypoints) == 1
@@ -160,9 +160,9 @@ class FetchManBasePlannerPolicyPort(FetchManBasePlannerPolicy):
         return True
 
     def _update_nav_command(self):
-        """G1Controller._update_nav_command, statement for statement.
+        """G1PickAgent._update_nav_command, statement for statement.
 
-        Only the command sink differs: G1Controller writes the WBC controller's
+        Only the command sink differs: G1PickAgent writes the WBC controller's
         `_low_level._cmd` directly, while a policy emits `self._cmd` as the
         "base_velocity" action (see the base class's get_action).
         """

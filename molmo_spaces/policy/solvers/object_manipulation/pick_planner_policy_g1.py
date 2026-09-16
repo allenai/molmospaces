@@ -237,7 +237,7 @@ _PHASE_ORDER = [
 
 
 # Radius within which a waypoint is not worth walking to (see prune_waypoints).
-# 2.5x G1Controller.WAYPOINT_REACH: the controller's own 0.10m let an 11cm-
+# 2.5x G1PickAgent.WAYPOINT_REACH: the controller's own 0.10m let an 11cm-
 # behind-the-start cell survive and still cost a 120deg in-place turn.
 WAYPOINT_PRUNE_RADIUS = 0.25
 
@@ -369,7 +369,7 @@ def sample_standoff_pose(
     return best, float(np.arctan2(tgt[1] - best[1], tgt[0] - best[0]))
 
 
-class GraspPolicy:
+class GraspPlanner:
     PREGRASP_OFFSET = (0.05, 0.125)
     LIFT = 0.15
     GRIPPER_OPEN = -0.0222
@@ -463,7 +463,7 @@ class GraspPolicy:
     def _solve_ik(self, pos, rot=None, hand=None):
         """Delegates to G1Robot.kinematics (robots/g1.py) -- a
         verbatim relocation of this method's own former body onto the robot
-        object GraspPolicy.setup() was handed the same live scene model/data
+        object GraspPlanner.setup() was handed the same live scene model/data
         as (self._model/self._data ARE self._task.env.robot.model/data, not
         copies). ik_joints/col_limit/use_height are the caller-specific bits
         kinematics() takes as explicit arguments rather than owning itself.
@@ -877,7 +877,7 @@ class GraspPolicy:
         return action
 
 
-class G1Controller:
+class G1PickAgent:
     WAYPOINT_REACH = 0.10
     FINAL_REACH = 0.05
     SPEED = 0.3
@@ -933,7 +933,7 @@ class G1Controller:
 
     @property
     def _low_level(self):
-        """The WBC PD/ONNX controller (g1_wbc.G1Controller), owned by env.robot."""
+        """The WBC PD/ONNX controller (g1_wbc.G1WholeBodyController), owned by env.robot."""
         return self._task.env.robot._low_level
 
     def set_task(self, task):
@@ -1002,7 +1002,7 @@ class G1Controller:
         self._hand = "right"
         self._grasp_retries_used = 0
 
-        self._grasp_planner = GraspPolicy()
+        self._grasp_planner = GraspPlanner()
         self._grasp_planner.setup(model, data, prefix)
         # Fresh planner instance -- re-point it at the task set_task() holds
         # (setup() runs again on every scene reload, set_task() only once).
@@ -1899,7 +1899,7 @@ def get_config():
 
 
 # ---------------------------------------------------------------------------
-# molmo_spaces-native wrapper: adapts G1Controller's reference contract
+# molmo_spaces-native wrapper: adapts G1PickAgent's reference contract
 # (set_task/setup, sample_actions() -> flat-15, five G1Env attributes) to
 # policy_factory(config, task), reset(), get_action(obs) -> move-group dict.
 # The grasp logic itself is untouched and stays gold-verified.
@@ -1970,7 +1970,7 @@ class _NativeTaskView:
 
 
 class G1PickPlannerPolicy(PickPlannerPolicy):
-    """molmo_spaces planner policy over the reference `G1Controller`,
+    """molmo_spaces planner policy over the reference `G1PickAgent`,
     translating construction/reset and the action shape (flat-15 to
     move-group dict). Requires G1Config's WBC-walking mode and G1Robot.
     """
@@ -1992,9 +1992,9 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         self._robot = robot
         self._prev_external_gait_clock = robot._external_gait_clock
         robot._external_gait_clock = True
-        self._controller = G1Controller()
-        self._controller.direct_walk = bool(self.policy_config.direct_walk)
-        self._controller.setup(
+        self._agent = G1PickAgent()
+        self._agent.direct_walk = bool(self.policy_config.direct_walk)
+        self._agent.setup(
             task.env.current_model,
             task.env.current_data,
             prefix=self.config.robot_config.robot_namespace,
@@ -2036,12 +2036,12 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             occ,
             nav_occ,
             np.asarray(obj.position, dtype=np.float64)[:2],
-            np.asarray(self._controller._xy(), dtype=np.float64),
+            np.asarray(self._agent._xy(), dtype=np.float64),
             r_min,
             r_max,
             self._rng,
             attempts=self.policy_config.goal_sampling_attempts,
-            here_yaw=None if retry else float(self._controller._yaw()),
+            here_yaw=None if retry else float(self._agent._yaw()),
             min_dist_from_here=0.15 if retry else 0.0,
         )
 
@@ -2062,7 +2062,7 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         # compares against goal_xy). Inside the standoff annulus: stand here,
         # facing the object. Outside it, too far or too close: sample a
         # standoff pose and walk there first (see goal_standoff_radius_range).
-        xy = np.asarray(self._controller._xy(), dtype=np.float64)
+        xy = np.asarray(self._agent._xy(), dtype=np.float64)
         tgt_xy = np.asarray(obj.position, dtype=np.float64)[:2]
         occ, nav_occ = self._nav_maps()
         goal_xy = goal_yaw = None
@@ -2104,7 +2104,7 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             # Live map object, not a copy: _plan_path calls occupancy/_world_to_px/
             # map_to_world on it. Only the A* map is published -- the reference
             # sampler also passes an un-inflated `occupancy_map`, but nothing in
-            # G1Controller reads that key.
+            # G1PickAgent reads that key.
             "nav_occupancy_map": nav_occ,
             "pregrasp_joints": None,
         }
@@ -2123,7 +2123,7 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         target_obj = self._pickup_obj()
         seed = getattr(self.task, "episode_seed", 0) or 0
         self._rng = np.random.default_rng(seed)
-        self._controller.set_task(
+        self._agent.set_task(
             _NativeTaskView(
                 self.task,
                 target_obj,
@@ -2132,8 +2132,8 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             )
         )
         info = self._build_info()
-        self._controller.reset(info)
-        if not self._controller.has_path:
+        self._agent.reset(info)
+        if not self._agent.has_path:
             # A* found no route to the sampled standoff pose. Not fatal: the
             # controller's walk timeout (20s sim time) ends the episode in
             # PHASE_DONE, but silently standing still for 20s looks identical to
@@ -2141,7 +2141,7 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             log.warning(
                 "G1 pick: no walk path from %s to goal %s (target %s) -- "
                 "the pick will time out in the walking phase.",
-                np.round(self._controller._xy(), 3),
+                np.round(self._agent._xy(), 3),
                 np.round(info["goal_xy"], 3),
                 np.round(info["target_object_position"][:2], 3),
             )
@@ -2156,8 +2156,8 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
         Before the grasp is planned there is no grasp pose yet, so the target
         object's own pose stands in; once the planner has chosen one, publish
         that instead."""
-        pos = getattr(self._controller, "_grasp_pos", None)
-        rot = getattr(self._controller, "_grasp_rot", None)
+        pos = getattr(self._agent, "_grasp_pos", None)
+        rot = getattr(self._agent, "_grasp_rot", None)
         if pos is not None and rot is not None:
             grasp = np.eye(4)
             grasp[:3, :3] = rot
@@ -2167,8 +2167,8 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
             self.target_poses["grasp"] = np.asarray(self._pickup_obj().pose, dtype=np.float64)
 
     def get_action(self, observation):
-        flat = self._controller.sample_actions(observation)
-        if self._controller.done and getattr(self, "_last_live_flat", None) is not None:
+        flat = self._agent.sample_actions(observation)
+        if self._agent.done and getattr(self, "_last_live_flat", None) is not None:
             # PHASE_DONE's action is the idle pose (zero arm/waist, open
             # gripper). The reference never applies that tick; molmo_spaces
             # does, and the kp=2000 arm flung the grasped object. Hold the last
@@ -2214,12 +2214,12 @@ class G1PickPlannerPolicy(PickPlannerPolicy):
                 for k, v in flat15_to_move_groups(flat, gripper_mg_id).items()
             }
         )
-        if self._controller.done:
+        if self._agent.done:
             action["done"] = True
         return action
 
     def get_phase(self) -> str:
-        return self._controller.get_phase()
+        return self._agent.get_phase()
 
     def get_all_phases(self) -> dict:
-        return self._controller.get_all_phases()
+        return self._agent.get_all_phases()

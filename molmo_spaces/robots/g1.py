@@ -318,7 +318,7 @@ class G1Robot(Robot):
             # Deferred import -- controllers/g1_wbc.py imports JOINT_NAMES/
             # DEFAULT_QPOS from this module, so a module-level import here
             # would be circular.
-            from molmo_spaces.controllers.g1_wbc import G1Controller as _LowLevelController
+            from molmo_spaces.controllers.g1_wbc import G1WholeBodyController as _LowLevelController
 
             low_level = _LowLevelController()
         self._low_level = low_level
@@ -452,7 +452,7 @@ class G1Robot(Robot):
     @classmethod
     def apply_control_overrides(cls, spec, robot_config):
         """Actuator/gain configuration is done at runtime by
-        G1Controller.setup() on the compiled MjModel, so this only carries the
+        G1WholeBodyController.setup() on the compiled MjModel, so this only carries the
         spec-time fix that cannot be done later: the MJCF puts the head/mount/
         logo visual geoms on group 5, which no renderer in this codebase
         enables, so the G1 renders headless. Move them to group 2 like the rest
@@ -552,7 +552,7 @@ class G1Robot(Robot):
                 controller.set_target(target if target.size > 1 else float(target[0]))
 
     def compute_control(self) -> None:
-        """Robot.compute_control, dispatching in G1Controller.execute_action's
+        """Robot.compute_control, dispatching in G1WholeBodyController.execute_action's
         controller order (load-bearing: legs_waist torque uses the previous
         tick's _target_lower before the WBC updates it).
         """
@@ -567,7 +567,7 @@ class G1Robot(Robot):
         for controller in self._low_level._controllers:
             # A controller with no target holds its joints (native policies
             # address only the move groups they care about). legs_waist is
-            # exempt: it keeps its command on the owning G1Controller, so its
+            # exempt: it keeps its command on the owning G1WholeBodyController, so its
             # `target` is always None and skipping it would stop the balancing.
             if controller.target is None and controller.move_group.name != "legs_waist":
                 # Hold the current joint positions rather than skipping. These
@@ -599,7 +599,7 @@ class G1Robot(Robot):
 
     def set_env(self, env):
         """Wires the low-level controller to `env` (mj model opt overrides,
-        n_substeps, floor friction -- see g1_wbc.G1Controller.
+        n_substeps, floor friction -- see g1_wbc.G1WholeBodyController.
         set_env). Called by env_g1ms.py's _load_scene once `self` is
         assigned to `env.robot` (set_env reads env.robot.n_substeps, so it
         can't run from inside __init__, before that assignment exists)."""

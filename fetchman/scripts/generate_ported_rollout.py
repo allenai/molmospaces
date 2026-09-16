@@ -30,7 +30,7 @@ from molmo_spaces.controllers.g1_wbc import flat15_to_move_groups
 from fetchman.configs.bowl_fetchman import get_config
 from fetchman.tasks.pick_task_sampler_g1ms import make_task_sampler
 from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1 import (
-    G1Controller,
+    G1PickAgent,
     enable_g1_trace,
 )
 
@@ -79,7 +79,7 @@ cfg.seed = args.seed
 
 task_sampler = make_task_sampler(cfg)
 raw_env = task_sampler.env
-agent = G1Controller()
+agent = G1PickAgent()
 # set_agent registers the policy on the task (handing it its set_task
 # reference) and setup()s it against the current scene.
 task_sampler.set_agent(agent)

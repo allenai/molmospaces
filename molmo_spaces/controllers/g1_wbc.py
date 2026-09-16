@@ -1,7 +1,8 @@
 """G1's whole-body PD/ONNX low-level controller: the reference stack's
-`G1Controller`, behaviour unchanged. `WbcJointGroup`/`WbcController` are its
-own minimal joint-group and control-law holders, not robot_views' MoveGroup or
-controllers/abstract.py's Controller; converging them is still open.
+`G1Controller`, renamed here but behaviour unchanged. `WbcJointGroup`/
+`MoveGroupController` are its own minimal joint-group and control-law holders,
+one per move group, not robot_views' MoveGroup or controllers/abstract.py's
+Controller; converging them is still open.
 """
 
 from __future__ import annotations
@@ -117,7 +118,7 @@ _DEFAULT_MODELS_DIR = ASSETS_DIR / "robots" / "g1" / "policies"
 
 class WbcJointGroup:
     """Raw qpos/qvel/ctrl I/O for a named subset of G1's actuated DOFs; the
-    index arrays are G1Controller.setup()'s."""
+    index arrays are G1WholeBodyController.setup()'s."""
 
     def __init__(self, name, jqpos, jdof, act_ids):
         self.name = name
@@ -137,9 +138,9 @@ class WbcJointGroup:
                 data.ctrl[aid] = values[i]
 
 
-class WbcController:
+class MoveGroupController:
     """The control law for one WbcJointGroup (`set_target` +
-    `compute_ctrl_inputs`); G1Controller.execute_action dispatches."""
+    `compute_ctrl_inputs`); G1WholeBodyController.execute_action dispatches."""
 
     def __init__(self, move_group):
         self.move_group = move_group
@@ -166,10 +167,10 @@ class WbcController:
         self.target = None
 
 
-class LegsWaistController(WbcController):
+class LegsWaistController(MoveGroupController):
     """15-dof legs+waist PD law plus the ONNX WBC residual (one coupled law,
     hence one move group). Its state (`_cmd`, `_height_cmd`, `_target_lower`,
-    `_step_counter`, ...) lives on the owning G1Controller, which the pick
+    `_step_counter`, ...) lives on the owning G1WholeBodyController, which the pick
     policy reads and writes directly; this class owns only the math.
     """
 
@@ -255,24 +256,24 @@ class LegsWaistController(WbcController):
         return tau
 
 
-class LeftArmController(WbcController):
+class LeftArmController(MoveGroupController):
     """Left arm: zero-gain actuators (falls under gravity, per
-    G1Controller.setup's actuator_gainprm[aid,0]=0.0). Target is always 0 --
+    G1WholeBodyController.setup's actuator_gainprm[aid,0]=0.0). Target is always 0 --
     execute_action never sets a left-arm target, matching gold exactly."""
 
     def compute_ctrl_inputs(self, data, step_counter):
         return np.zeros(len(self.move_group.act_ids), dtype=np.float32)
 
 
-class RightArmController(WbcController):
+class RightArmController(MoveGroupController):
     """Right arm: plain position-actuator passthrough (PD gains baked into
-    the MJCF actuator, kp=2000/kd=60 -- see G1Controller.setup)."""
+    the MJCF actuator, kp=2000/kd=60 -- see G1WholeBodyController.setup)."""
 
     def compute_ctrl_inputs(self, data, step_counter):
         return np.asarray(self.target, dtype=np.float32)
 
 
-class RightGripperController(WbcController):
+class RightGripperController(MoveGroupController):
     """Right gripper: single tendon position-actuator passthrough."""
 
     def compute_ctrl_inputs(self, data, step_counter):
@@ -289,7 +290,7 @@ def flat15_to_move_groups(flat, gripper_mg_id: str = "right_gripper") -> dict:
     }
 
 
-class G1Controller:
+class G1WholeBodyController:
     def __init__(self, models_dir: Path | str | None = None):
         d = Path(models_dir) if models_dir is not None else _DEFAULT_MODELS_DIR
         self._stand_sess = ort.InferenceSession(
@@ -390,7 +391,7 @@ class G1Controller:
 
         # Shared WBC state -- read/written directly by agents/policy_g1ms.py's
         # subclass too (nav command, height smoothing), so these stay owned
-        # by this G1Controller instance, not by LegsWaistController (see its
+        # by this G1WholeBodyController instance, not by LegsWaistController (see its
         # docstring for why).
         self._obs_history = collections.deque(maxlen=_WBC_OBS_HISTORY)
         self._obs_buffer = np.zeros(_WBC_OBS_DIM * _WBC_OBS_HISTORY, dtype=np.float32)
