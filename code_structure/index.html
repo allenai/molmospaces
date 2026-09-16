@@ -1646,103 +1646,104 @@
 <a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>│   ├── main.py                     # Entry point for data generation
 <a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>│   └── pipeline.py                 # Parallel rollout runner
 <a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>├── env/                            # Environment abstractions
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>│   ├── arena/                      # Scene construction and randomization
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>│   │   ├── randomization/          # Domain randomization (lighting, texture, dynamics)
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>│   │   ├── arena_utils.py
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>│   │   ├── bathroom.py
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>│   │   ├── cabinet.py
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>│   │   ├── drawer.py
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>│   │   ├── kitchen.py
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>│   │   ├── procthor_types.py
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>│   │   └── scene_tweaks.py
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>│   ├── abstract_sensors.py         # Base sensor interface
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>│   ├── camera_manager.py           # Camera lifecycle management
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>│   ├── data_views.py               # Data view utilities
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>│   ├── env.py                      # MuJoCo environment wrapper
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>│   ├── mj_extensions.py            # MuJoCo API extensions
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>│   ├── object_manager.py           # Scene object management
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>│   ├── sensors.py                  # Sensor implementations
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>│   └── sensors_cameras.py          # Camera sensor implementations
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>├── evaluation/                     # Benchmark evaluation
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>│   ├── configs/                    # Evaluation configurations
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>│   ├── benchmark_schema.py         # Benchmark JSON schema
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>│   ├── eval_main.py               # Evaluation entry point
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>│   ├── json_eval_runner.py        # JSON benchmark runner
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>│   ├── policy_server.py           # Policy serving for evaluation
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>│   └── robot_eval_overrides.py    # Robot-specific eval overrides
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>├── grasp_generation/               # Grasp generation pipeline
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>│   ├── pipeline/                  # Mesh processing and grasp generation
-<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>│   ├── robotiq_gripper.py         # Robotiq gripper utilities
-<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>│   ├── run_articulable.py         # Articulated object grasps
-<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>│   └── run_rigid.py               # Rigid object grasps
-<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>├── housegen/                       # House/scene generation from JSON
-<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>│   ├── builder.py                 # Scene builder
-<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>│   ├── constants.py               # Scene generation constants
-<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>│   ├── exporter.py                # MJCF exporter
-<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>│   └── utils.py                   # Scene generation utilities
-<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>├── kinematics/                     # Kinematic solvers
-<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>│   ├── parallel/                  # GPU-parallel kinematics
-<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>│   ├── bimanual_yam_kinematics.py
-<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>│   ├── floating_rum_kinematics.py
-<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>│   ├── franka_kinematics.py
-<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>│   ├── i2rt_yam_kinematics.py
-<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>│   ├── mujoco_kinematics.py       # MuJoCo-based kinematics
-<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>│   ├── rby1_kinematics.py         # RBY1-specific kinematics
-<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>│   └── stretch_kinematics.py
-<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>├── planner/                        # Motion planning
-<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>│   ├── abstract.py                # Base planner interface
-<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>│   ├── astar_planner.py           # A* path planner (navigation)
-<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>│   ├── curobo_planner.py          # CuRobo integration
-<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>│   ├── curobo_planner_client.py   # CuRobo gRPC client
-<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>│   └── curobo_planner_server.py   # CuRobo gRPC server
-<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>├── policy/                         # Policy implementations
-<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>│   ├── learned_policy/            # Learned policies (Pi, CAP, etc.)
-<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a>│   ├── solvers/                   # Planning-based policies
-<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>│   │   ├── navigation/           # Navigation planner policies
-<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>│   │   └── object_manipulation/  # Pick, place, open/close planner policies
-<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>│   ├── base_policy.py            # Base policy interface
-<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a>│   ├── dummy_policy.py           # No-op policy for testing
-<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>│   └── random_policy.py          # Random action policy
-<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a>├── renderer/                       # Rendering backends
-<a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a>│   ├── offline_renderers/         # Domain randomization and Omniverse renderers
-<a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a>│   ├── abstract_renderer.py       # Base renderer interface
-<a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a>│   ├── filament_rendering.py      # Filament renderer
-<a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a>│   ├── opengl_context.py          # OpenGL context management
-<a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a>│   └── opengl_rendering.py        # OpenGL renderer
-<a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a>├── robots/                         # Robot implementations
-<a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a>│   ├── robot_views/               # Robot observation/action views
-<a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a>│   ├── abstract.py                # Base robot interface
-<a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a>│   ├── bimanual_yam.py
-<a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a>│   ├── floating_robotiq.py
-<a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a>│   ├── floating_rum.py
-<a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a>│   ├── franka.py
-<a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a>│   ├── i2rt_yam.py
-<a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a>│   └── rby1.py
-<a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a>├── tasks/                          # Task definitions
-<a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a>│   ├── util_samplers/             # Grasp and navgoal samplers
-<a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a>│   ├── task.py                    # Base task interface
-<a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a>│   ├── task_sampler.py            # Task sampling interface
-<a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a>│   ├── pick_task.py               # Pick task
-<a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a>│   ├── pick_and_place_task.py     # Pick-and-place task
-<a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a>│   ├── pick_and_place_color_task.py
-<a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a>│   ├── pick_and_place_next_to_task.py
-<a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a>│   ├── opening_tasks.py           # Door/drawer open/close tasks
-<a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a>│   ├── packing_task.py            # Packing task
-<a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a>│   ├── nav_task.py                # Navigation task
-<a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a>│   ├── multi_task.py              # Multi-task wrapper
-<a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a>│   ├── *_task_sampler.py          # Per-task sampler implementations
-<a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a>│   └── scene_xml_utils.py         # Scene XML construction
-<a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a>├── utils/                          # Shared utilities
-<a id="__codelineno-0-122" name="__codelineno-0-122" href="#__codelineno-0-122"></a>│   ├── constants/                 # Domain constants (cameras, objects, rooms, etc.)
-<a id="__codelineno-0-123" name="__codelineno-0-123" href="#__codelineno-0-123"></a>│   ├── devices/                   # Input devices (keyboard, spacemouse)
-<a id="__codelineno-0-124" name="__codelineno-0-124" href="#__codelineno-0-124"></a>│   ├── save_utils.py             # Trajectory saving (HDF5, video)
-<a id="__codelineno-0-125" name="__codelineno-0-125" href="#__codelineno-0-125"></a>│   ├── profiler_utils.py         # Profiling and timing
-<a id="__codelineno-0-126" name="__codelineno-0-126" href="#__codelineno-0-126"></a>│   ├── mp_logging.py             # Multiprocessing-safe logging
-<a id="__codelineno-0-127" name="__codelineno-0-127" href="#__codelineno-0-127"></a>│   ├── camera_utils.py           # Camera projection utilities
-<a id="__codelineno-0-128" name="__codelineno-0-128" href="#__codelineno-0-128"></a>│   ├── linalg_utils.py           # Linear algebra helpers
-<a id="__codelineno-0-129" name="__codelineno-0-129" href="#__codelineno-0-129"></a>│   ├── pose.py                   # Pose representations
-<a id="__codelineno-0-130" name="__codelineno-0-130" href="#__codelineno-0-130"></a>│   └── ...                       # Many more domain-specific utilities
-<a id="__codelineno-0-131" name="__codelineno-0-131" href="#__codelineno-0-131"></a>└── molmo_spaces_constants.py       # Global paths and constants
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>│   ├── scene/                      # Scene construction from MJCF
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>│   │   ├── thor/                   # iTHOR/ProcTHOR asset fixups and articulations
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>│   │   │   ├── fixups.py           # MjSpec repairs for THOR houses
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>│   │   │   ├── physical_properties.py
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>│   │   │   ├── bathroom.py
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>│   │   │   ├── cabinet.py
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>│   │   │   ├── drawer.py
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>│   │   │   └── kitchen.py
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>│   │   └── containment.py          # Body-within-site geometry predicates
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>│   ├── randomization/              # Domain randomization (lighting, texture, dynamics)
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>│   ├── abstract_sensors.py         # Base sensor interface
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>│   ├── camera_manager.py           # Camera lifecycle management
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>│   ├── data_views.py               # Data view utilities
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>│   ├── env.py                      # MuJoCo environment wrapper
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>│   ├── mj_extensions.py            # MuJoCo API extensions
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>│   ├── object_manager.py           # Scene object management
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>│   ├── sensors.py                  # Sensor implementations
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>│   └── sensors_cameras.py          # Camera sensor implementations
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>├── evaluation/                     # Benchmark evaluation
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>│   ├── configs/                    # Evaluation configurations
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>│   ├── benchmark_schema.py         # Benchmark JSON schema
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>│   ├── eval_main.py               # Evaluation entry point
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>│   ├── json_eval_runner.py        # JSON benchmark runner
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>│   ├── policy_server.py           # Policy serving for evaluation
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>│   └── robot_eval_overrides.py    # Robot-specific eval overrides
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>├── grasp_generation/               # Grasp generation pipeline
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>│   ├── pipeline/                  # Mesh processing and grasp generation
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>│   ├── robotiq_gripper.py         # Robotiq gripper utilities
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>│   ├── run_articulable.py         # Articulated object grasps
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>│   └── run_rigid.py               # Rigid object grasps
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>├── housegen/                       # House/scene generation from JSON
+<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>│   ├── builder.py                 # Scene builder
+<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>│   ├── constants.py               # Scene generation constants
+<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>│   ├── exporter.py                # MJCF exporter
+<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>│   └── utils.py                   # Scene generation utilities
+<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>├── kinematics/                     # Kinematic solvers
+<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>│   ├── parallel/                  # GPU-parallel kinematics
+<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>│   ├── bimanual_yam_kinematics.py
+<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>│   ├── floating_rum_kinematics.py
+<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>│   ├── franka_kinematics.py
+<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>│   ├── i2rt_yam_kinematics.py
+<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>│   ├── mujoco_kinematics.py       # MuJoCo-based kinematics
+<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>│   ├── rby1_kinematics.py         # RBY1-specific kinematics
+<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>│   └── stretch_kinematics.py
+<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>├── planner/                        # Motion planning
+<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>│   ├── abstract.py                # Base planner interface
+<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>│   ├── astar_planner.py           # A* path planner (navigation)
+<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>│   ├── curobo_planner.py          # CuRobo integration
+<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>│   ├── curobo_planner_client.py   # CuRobo gRPC client
+<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>│   └── curobo_planner_server.py   # CuRobo gRPC server
+<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>├── policy/                         # Policy implementations
+<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a>│   ├── learned_policy/            # Learned policies (Pi, CAP, etc.)
+<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>│   ├── solvers/                   # Planning-based policies
+<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>│   │   ├── navigation/           # Navigation planner policies
+<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>│   │   └── object_manipulation/  # Pick, place, open/close planner policies
+<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a>│   ├── base_policy.py            # Base policy interface
+<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>│   ├── dummy_policy.py           # No-op policy for testing
+<a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a>│   └── random_policy.py          # Random action policy
+<a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a>├── renderer/                       # Rendering backends
+<a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a>│   ├── offline_renderers/         # Domain randomization and Omniverse renderers
+<a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a>│   ├── abstract_renderer.py       # Base renderer interface
+<a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a>│   ├── filament_rendering.py      # Filament renderer
+<a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a>│   ├── opengl_context.py          # OpenGL context management
+<a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a>│   └── opengl_rendering.py        # OpenGL renderer
+<a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a>├── robots/                         # Robot implementations
+<a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a>│   ├── robot_views/               # Robot observation/action views
+<a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a>│   ├── abstract.py                # Base robot interface
+<a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a>│   ├── bimanual_yam.py
+<a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a>│   ├── floating_robotiq.py
+<a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a>│   ├── floating_rum.py
+<a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a>│   ├── franka.py
+<a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a>│   ├── i2rt_yam.py
+<a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a>│   └── rby1.py
+<a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a>├── tasks/                          # Task definitions
+<a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a>│   ├── util_samplers/             # Grasp and navgoal samplers
+<a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a>│   ├── task.py                    # Base task interface
+<a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a>│   ├── task_sampler.py            # Task sampling interface
+<a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a>│   ├── pick_task.py               # Pick task
+<a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a>│   ├── pick_and_place_task.py     # Pick-and-place task
+<a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a>│   ├── pick_and_place_color_task.py
+<a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a>│   ├── pick_and_place_next_to_task.py
+<a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a>│   ├── opening_tasks.py           # Door/drawer open/close tasks
+<a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a>│   ├── packing_task.py            # Packing task
+<a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a>│   ├── nav_task.py                # Navigation task
+<a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a>│   ├── multi_task.py              # Multi-task wrapper
+<a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a>│   ├── *_task_sampler.py          # Per-task sampler implementations
+<a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a>│   └── scene_xml_utils.py         # Scene XML construction
+<a id="__codelineno-0-122" name="__codelineno-0-122" href="#__codelineno-0-122"></a>├── utils/                          # Shared utilities
+<a id="__codelineno-0-123" name="__codelineno-0-123" href="#__codelineno-0-123"></a>│   ├── constants/                 # Domain constants (cameras, objects, rooms, etc.)
+<a id="__codelineno-0-124" name="__codelineno-0-124" href="#__codelineno-0-124"></a>│   ├── devices/                   # Input devices (keyboard, spacemouse)
+<a id="__codelineno-0-125" name="__codelineno-0-125" href="#__codelineno-0-125"></a>│   ├── save_utils.py             # Trajectory saving (HDF5, video)
+<a id="__codelineno-0-126" name="__codelineno-0-126" href="#__codelineno-0-126"></a>│   ├── profiler_utils.py         # Profiling and timing
+<a id="__codelineno-0-127" name="__codelineno-0-127" href="#__codelineno-0-127"></a>│   ├── mp_logging.py             # Multiprocessing-safe logging
+<a id="__codelineno-0-128" name="__codelineno-0-128" href="#__codelineno-0-128"></a>│   ├── camera_utils.py           # Camera projection utilities
+<a id="__codelineno-0-129" name="__codelineno-0-129" href="#__codelineno-0-129"></a>│   ├── linalg_utils.py           # Linear algebra helpers
+<a id="__codelineno-0-130" name="__codelineno-0-130" href="#__codelineno-0-130"></a>│   ├── pose.py                   # Pose representations
+<a id="__codelineno-0-131" name="__codelineno-0-131" href="#__codelineno-0-131"></a>│   └── ...                       # Many more domain-specific utilities
+<a id="__codelineno-0-132" name="__codelineno-0-132" href="#__codelineno-0-132"></a>└── molmo_spaces_constants.py       # Global paths and constants
 </code></pre></div>
 <h2 id="information-flow">Information Flow<a class="headerlink" href="#information-flow" title="Permanent link">&para;</a></h2>
 <h3 id="data-generation-pipeline">Data Generation Pipeline<a class="headerlink" href="#data-generation-pipeline" title="Permanent link">&para;</a></h3>
@@ -1828,7 +1829,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="September 16, 2026 08:09:38 UTC"><span class="timeago" datetime="2026-09-16T08:09:38+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="September 16, 2026 08:09:38 UTC">2026-09-16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="September 16, 2026 20:16:00 UTC"><span class="timeago" datetime="2026-09-16T20:16:00+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="September 16, 2026 20:16:00 UTC">2026-09-16</span>
   </span>
 
     
