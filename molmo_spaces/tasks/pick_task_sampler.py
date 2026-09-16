@@ -7,7 +7,6 @@ import numpy as np
 from mujoco import MjSpec, mjtGeom
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.arena.arena_utils import modify_mjmodel_thor_articulated
 from molmo_spaces.env.data_views import (
     MlSpacesArticulationObject,
     MlSpacesObject,
@@ -15,6 +14,7 @@ from molmo_spaces.env.data_views import (
 )
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.env.object_manager import Context, ObjectManager
+from molmo_spaces.env.scene.thor.fixups import modify_mjmodel_thor_articulated
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.pick_task import PickTask
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler

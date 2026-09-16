@@ -14,7 +14,7 @@ from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
 from thor_scene_builder import ThorSceneBuilder
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects
 from molmo_spaces.utils.profiler_utils import Profiler
 from molmo_spaces.utils.scene_maps import iTHORMap
 

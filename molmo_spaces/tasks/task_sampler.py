@@ -22,11 +22,11 @@ import torch
 from mujoco import MjData, MjSpec
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-from molmo_spaces.env.arena.arena_utils import get_all_bodies_with_joints_as_mlspaces_objects
-from molmo_spaces.env.arena.randomization.dynamics import DynamicsRandomizer
-from molmo_spaces.env.arena.randomization.lighting import LightingRandomizer
-from molmo_spaces.env.arena.randomization.texture import TextureRandomizer
 from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
+from molmo_spaces.env.randomization.dynamics import DynamicsRandomizer
+from molmo_spaces.env.randomization.lighting import LightingRandomizer
+from molmo_spaces.env.randomization.texture import TextureRandomizer
+from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mlspaces_objects
 
 # Dataset helpers for house index mapping
 from molmo_spaces.molmo_spaces_constants import (
@@ -704,7 +704,7 @@ class BaseMujocoTaskSampler:
             num_materials: Maximum number of empty materials/textures to create. Actual number is based on
                           visual geom count with a safety buffer.
         """
-        from molmo_spaces.env.arena.randomization.texture import (
+        from molmo_spaces.env.randomization.texture import (
             setup_empty_materials,
         )
 

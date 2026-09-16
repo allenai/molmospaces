@@ -13,9 +13,9 @@ import mujoco
 import numpy as np
 from mujoco import MjData
 
-from molmo_spaces.env.arena.randomization.dynamics import DynamicsRandomizer
-from molmo_spaces.env.arena.randomization.lighting import LightingRandomizer
-from molmo_spaces.env.arena.randomization.texture import TextureRandomizer, setup_empty_materials
+from molmo_spaces.env.randomization.dynamics import DynamicsRandomizer
+from molmo_spaces.env.randomization.lighting import LightingRandomizer
+from molmo_spaces.env.randomization.texture import TextureRandomizer, setup_empty_materials
 
 
 def test(
@@ -128,7 +128,7 @@ def test(
 
     # Create MlSpacesObject instances for dynamics randomization
     # Find all bodies with free joints or any non-fixed joints
-    from molmo_spaces.env.arena.arena_utils import get_all_bodies_with_joints_as_mlspaces_objects
+    from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mlspaces_objects
 
     test_objects = get_all_bodies_with_joints_as_mlspaces_objects(model, data)
 

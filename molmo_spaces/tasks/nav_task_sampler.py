@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 import mujoco
 import numpy as np
 
-from molmo_spaces.env.arena.arena_utils import modify_mjmodel_thor_articulated
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.env.scene.thor.fixups import modify_mjmodel_thor_articulated
 from molmo_spaces.tasks.nav_task import NavToObjTask
 from molmo_spaces.tasks.task_sampler import (
     BaseMujocoTaskSampler,

@@ -16,7 +16,7 @@ import mujoco
 import numpy as np
 import pytest
 
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.utils.constants.object_constants import ALL_ARTICULATION_TYPES_THOR
 

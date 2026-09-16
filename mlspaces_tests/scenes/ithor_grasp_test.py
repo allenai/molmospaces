@@ -46,7 +46,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from molmo_spaces.utils.constants.object_constants import ALL_PICKUP_TYPES_THOR
 from thor_scene_builder import ThorSceneBuilder
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.utils.scene_maps import ProcTHORMap, iTHORMap
 from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata

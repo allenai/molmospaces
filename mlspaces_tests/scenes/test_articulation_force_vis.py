@@ -6,7 +6,7 @@ import mujoco as mj
 import mujoco.viewer as mjviewer
 import numpy as np
 
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects_with_tweaks
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects_with_tweaks
 
 TIMESTEP = 0.002
 STARTING_FORCE = 10.0

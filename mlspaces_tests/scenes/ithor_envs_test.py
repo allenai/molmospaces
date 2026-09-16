@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from tqdm import tqdm
 
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 
 # The scenes live in the resource manager's asset tree, not in a repo-relative
