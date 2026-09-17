@@ -1,6 +1,7 @@
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy.spatial.transform import Rotation as R
+
+from molmo_spaces.utils.plotting_utils import require_pyplot
 
 GRIPPER_LENGTH = 0.125
 
@@ -192,6 +193,8 @@ def visualize_path(
     if not path or "mocap_pos" not in path or len(path["mocap_pos"]) == 0:
         print("No path data to visualize")
         return
+
+    plt = require_pyplot()
 
     # Convert to numpy arrays for easier manipulation
     # Handle case where positions might be tuples or lists

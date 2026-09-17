@@ -6,7 +6,10 @@ import os
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-import matplotlib.pyplot as plt
+# matplotlib is optional (the `visualization` extra); skip rather than fail collection.
+import pytest
+
+plt = pytest.importorskip("matplotlib.pyplot")
 import mujoco
 import numpy as np
 from gripper_teleop import GripperTeleopController

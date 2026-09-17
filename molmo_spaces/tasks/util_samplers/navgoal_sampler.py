@@ -2,13 +2,13 @@ import logging
 from typing import NoReturn
 
 import cv2
-import matplotlib.pyplot as plt
 import mujoco
 import numpy as np
 from mujoco import MjData
 
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.robots.robot_views.abstract import RobotView
+from molmo_spaces.utils.plotting_utils import require_pyplot
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 from molmo_spaces.utils.sampler_utils import UniformRandomMapSampler
 from molmo_spaces.utils.scene_maps import THORMap
@@ -220,6 +220,7 @@ class NavGoalSampler:
 
         self.vis_map = vis_map
         if self.debug:
+            plt = require_pyplot()
             log.debug(f"sampled_{pos_px}_for_target_at_{target_center_px}")
             log.debug(f"map size: {vis_map.shape}")
             plt.imshow(vis_map)

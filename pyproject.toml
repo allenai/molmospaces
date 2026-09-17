@@ -81,8 +81,11 @@ dev = [
     "ruff==0.15.0",  # keep in sync with .pre-commit-config.yaml's ruff-pre-commit rev
     "ty>=0.0.15",
 ]
-grasp = [
+visualization = [
     "matplotlib",
+]
+grasp = [
+    "molmo-spaces[visualization]",
     "meshcat",
     "python-fcl",
     "rtree",

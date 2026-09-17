@@ -6,7 +6,6 @@ import os
 import re
 
 import cv2
-import matplotlib.pyplot as plt
 import mujoco
 import numpy as np
 from mujoco import MjData, MjModel
@@ -1045,6 +1044,8 @@ class iTHORMap(ProcTHORMap):
 
 if __name__ == "__main__":
     import glob
+
+    import matplotlib.pyplot as plt
 
     from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 
