@@ -62,7 +62,6 @@ dependencies = [
     "tensorboard>=2.20.0",
     "teledex",
     "termcolor>=2.0.0",
-    "toppra>=0.6.3",
     "torch~=2.7.0", # torch 2.8.x is brand new and has some regressions vs 2.7.x - prefer to hold back for now - this installs nvidia_cuda_nvrtc_cu12-12.6.77 by default, not 12.8
     "torchvision>=0.22.0,<0.23.0",
     "tqdm>=4.65.0",
