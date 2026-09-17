@@ -51,6 +51,11 @@ _SKIP_REASONS = {
         "removed; see https://github.com/allenai/molmospaces/issues (file one "
         "if this still applies)"
     ),
+    # pynput's X11 backend probes for a real X display at import time, which
+    # headless CI runners don't have.
+    "molmo_spaces.policy.learned_policy.spacemouse_policy": (
+        "requires a real X display (pynput X11 backend)"
+    ),
 }
 
 # Whole subpackages skipped because CI never installs their extras: `grasp`
