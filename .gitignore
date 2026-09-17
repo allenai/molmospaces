@@ -53,3 +53,10 @@ mlspaces_tests/**/test_data
 # pytest
 .pytest_cache/
 __pycache__/
+
+# Coverage artifacts (pytest-cov / coverage.py)
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/

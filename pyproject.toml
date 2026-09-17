@@ -78,6 +78,7 @@ dev = [
     "mypy>=1.18.1",
     "pre-commit>=4.3.0",
     "pybind11-stubgen>=2.5.5",
+    "pytest-cov>=7.0.0",
     "pytest-split>=0.10.0",
     "ruff==0.15.0",  # keep in sync with .pre-commit-config.yaml's ruff-pre-commit rev
     "ty>=0.0.15",
@@ -164,6 +165,33 @@ exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 norecursedirs = [".git", "*.egg-info", "build", "dist"]
 markers = [
     "slow: takes minutes of physics stepping; deselect with -m 'not slow'",
+]
+
+[tool.coverage.run]
+source = ["molmo_spaces"]
+branch = true
+# CI measures coverage from several jobs at once (component tests, four
+# pytest-split data-generation groups, the curobo GPU job). `parallel` keeps each
+# run's data file distinct so they can be combined, and `relative_files` records
+# paths relative to the repo root -- without it, the runners' differing absolute
+# checkout paths look like different files and Codecov cannot merge them.
+parallel = true
+relative_files = true
+omit = [
+    # Separate simulator backends, not part of the published molmo_spaces package
+    # (see [tool.setuptools.packages.find]) and not exercised by CI.
+    "molmo_spaces_isaac/*",
+    "molmo_spaces_maniskill/*",
+    "mlspaces_tests/*",
+    "scripts/*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.ruff]
