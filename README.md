@@ -1,42 +1,38 @@
 <div align="center">
-  <h1>
-  <img src="docs/images/MolmoSpacesLogo.png" alt="MolmoSpaces Logo" width="800" style="margin-left:'auto' margin-right:'auto' display:'block'"/></br>
-  A Large-Scale Open Ecosystem for Robot Manipulation and Navigation
-  <div align="center">
-    <a href="https://arxiv.org/pdf/2602.11337" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="./docs/images/button_paper.svg"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/datasets/allenai/molmospaces" target="_blank" rel="noopener noreferrer"><img alt="Data" src="./docs/images/button_data.svg"/></a>&nbsp;&nbsp;<a href="https://allenai.github.io/molmospaces/" target="_blank" rel="noopener noreferrer"><img alt="Docs" src="./docs/images/button_docs.svg"/></a>&nbsp;&nbsp;<a href="https://molmospaces.allen.ai/" target="_blank" rel="noopener noreferrer"><img alt="Demo" src="./docs/images/button_demo.svg"/></a>&nbsp;&nbsp;<a href="https://molmospaces.allen.ai/leaderboard" target="_blank" rel="noopener noreferrer"><img alt="Leaderboard" src="./docs/images/button_leaderboard.svg"/></a>
-  </div>
-  </br>
-  &</br>
-  <img src="docs/images/MolmoBotLogo.png" alt="MolmoSpaces Logo" width="800" style="margin-left:'auto' margin-right:'auto' display:'block'"/></br>
-  Large-Scale Simulation Enables Zero-Shot Manipulation
-  <div align="center">
-    <a href="https://allenai.github.io/MolmoBot" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="./docs/images/button_website.svg"/></a>&nbsp;&nbsp;<a href="https://github.com/allenai/MolmoBot" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="./docs/images/button_code_models.svg"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/collections/allenai/molmobot-models" target="_blank" rel="noopener noreferrer"><img alt="Data" src="./docs/images/button_data_models.svg"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/datasets/allenai/MolmoBot-Data" target="_blank" rel="noopener noreferrer"><img alt="Data" src="./docs/images/button_data.svg"/></a>
-  </div>
-  </h1>
+  <p>
+    <img src="docs/images/MolmoSpacesLogo.png" alt="MolmoSpaces" width="500"/>
+    <br/>
+    <b>A Large-Scale Open Ecosystem for Robot Manipulation and Navigation</b>
+    <br/><a href="https://arxiv.org/pdf/2602.11337"><img alt="Paper" src="./docs/images/button_paper.svg"/></a>
+    <a href="https://huggingface.co/datasets/allenai/molmospaces"><img alt="Data" src="./docs/images/button_data.svg"/></a>
+    <a href="https://allenai.github.io/molmospaces/"><img alt="Docs" src="./docs/images/button_docs.svg"/></a>
+    <a href="https://molmospaces.allen.ai/"><img alt="Demo" src="./docs/images/button_demo.svg"/></a>
+    <a href="https://molmospaces.allen.ai/leaderboard"><img alt="Leaderboard" src="./docs/images/button_leaderboard.svg"/></a>
+  </p>
+  <p>
+    <img src="docs/images/MolmoBotLogoRow.png" alt="MolmoBot" height="38"/>
+    <img src="./docs/images/sep_colon.svg" alt=":"/>
+    <a href="https://allenai.github.io/MolmoBot"><img alt="MolmoBot Website" src="./docs/images/button_website.svg"/></a>
+    <a href="https://github.com/allenai/MolmoBot"><img alt="MolmoBot Code" src="./docs/images/button_code_models.svg"/></a>
+    <a href="https://huggingface.co/collections/allenai/molmobot-models"><img alt="MolmoBot Models" src="./docs/images/button_data_models.svg"/></a>
+    <a href="https://huggingface.co/datasets/allenai/MolmoBot-Data"><img alt="MolmoBot Data" src="./docs/images/button_code.svg"/></a>
+  </p>
 </div>
-
-</br>
-<br/>
 
 <div align="center">
-  <img src="docs/images/Multi_Simulator_Pan.jpg" alt="Multi-Simulator-Pan" width="1200" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
-  <br>
-  <p>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.
-  <br>
+  <img src="docs/images/Multi_Simulator_Pan.jpg" alt="MuJoCo, Isaac and ManiSkill renders of the same scene" width="1200"/>
+  <br/>
+  <sub>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.</sub>
 </div>
 
-
----
-### Updates
+## Updates
 - **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
-- **[2026/06/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
-- **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) is a repository containing standalone third party policy implementations. If you use MolmoSpaces to make a policy (planner-based, learning-based, etc.) please contribute!
-- **[2026/06/12]** 🔥 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, with significantly better usability, included tutorials, and more! Check out the changelog for more information.
-- **[2026/03/24]** 🔥 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for scripted planners, data generation, and benchmark creation.
-- **[2026/02/27]** 🔥 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
-- **[2026/02/11]** 🔥 [**Datasets**](docs/assets.md#assets-and-resource-manager) for assets and scenes in MJCF and USDa format.
-- **[2026/02/11]** 🔥 [**Benchmark**](molmo_spaces/evaluation/README.md) for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs.
-- **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
+- **[2026/06/22]** 🔥 [**Projects using MolmoSpaces**](#papers-using-molmospaces) a list of MolmoSpaces projects.
+- **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) standalone third-party policies — contributions welcome.
+- **[2026/06/12]** 📦 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, better usability, tutorials, and more!
+- **[2026/03/24]** 🤖 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for data generation and benchmark creation.
+- **[2026/02/27]** 🏆 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
+- **[2026/02/11]** 🎉 **MolmoSpaces** Code for grasp generation, teleoperation, and benchmark evaluation, plus [**Datasets**](docs/assets.md#assets-and-resource-manager) for assets and [**Benchmark**](molmo_spaces/evaluation/README.md) for 8 tasks.
 
 
 ## Installation
@@ -197,7 +193,7 @@ The documentation for MolmoSpaces can be found [here](https://allenai.github.io/
 
 To see and easily run additional policies in MolmoSpaces, check out the [policy zoo](https://github.com/allenai/molmospaces_policy_zoo/)!
 
-For a list of projects using MolmoSpaces look [here](docs/awesome-molmospaces-papers.md).
+For a list of projects using MolmoSpaces, see [Projects using MolmoSpaces](#papers-using-molmospaces).
 
 Additional documentation for using assets and benchmarks in other simulators are listed below:
 
@@ -291,6 +287,23 @@ The repositories related to this project can be found here:
 | [ai2_robot_infra](https://github.com/allenai/ai2_robot_infra) | Real robot infrastructure and utilities for experiments |
 | [MolmoBot](https://github.com/allenai/MolmoBot) | MolmoBot policy code |
 | [curobo](https://github.com/allenai/curobo) | Ai2 cuRobo branch |
+
+
+## Projects using MolmoSpaces
+
+Papers that build on MolmoSpaces. Using MolmoSpaces in your work? Open a PR to add it —
+maintained by [Max Argus](http://maxargus.com).
+
+**Custom data generation**
+- 07/2026: [MolmoMotion: Forecasting Point Trajectories in 3D with Language Instruction](https://molmomotion.github.io/)
+
+**Training data use**
+- 07/2026: [Playful Agentic Robot Learning (RATS)](https://playful-rats.github.io/)
+- 03/2026: [MolmoB0T: Large-Scale Simulation Enables Zero-Shot Manipulation](https://allenai.github.io/MolmoBot/)
+
+**Benchmark evaluation**
+- 05/2026: [MolmoAct2](https://arxiv.org/abs/2605.02881)
+- 03/2026: [TeleDex](https://arxiv.org/abs/2603.17065)
 
 
 ## Development
