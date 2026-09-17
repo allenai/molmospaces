@@ -184,6 +184,14 @@ omit = [
     "molmo_spaces_maniskill/*",
     "mlspaces_tests/*",
     "scripts/*",
+    # CI installs only `.[dev,mujoco]` -- these need extras (`grasp`, `housegen`)
+    # that CI never installs, so they can never be exercised and just distort the
+    # denominator.
+    "molmo_spaces/grasp_generation/*",
+    "molmo_spaces/housegen/*",
+    # Needs live network access to resolve licenses against remote asset
+    # sources/indices; not something CI can exercise deterministically.
+    "molmo_spaces/utils/license_utils.py",
 ]
 
 [tool.coverage.report]

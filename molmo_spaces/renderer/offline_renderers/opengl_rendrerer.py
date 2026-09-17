@@ -1,6 +1,7 @@
 import json
 import os
-from typing import Any, Literal, Queue
+from multiprocessing import Queue
+from typing import Any, Literal
 
 import mujoco
 import numpy as np
