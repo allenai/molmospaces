@@ -115097,8 +115097,7 @@ Note: for some itetms realy small and low, robot might have to be further than d
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>molmo_spaces/tasks/util_samplers/navgoal_sampler.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-235">235</a></span>
-<span class="normal"><a href="#__codelineno-0-236">236</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-236">236</a></span>
 <span class="normal"><a href="#__codelineno-0-237">237</a></span>
 <span class="normal"><a href="#__codelineno-0-238">238</a></span>
 <span class="normal"><a href="#__codelineno-0-239">239</a></span>
@@ -115157,67 +115156,68 @@ Note: for some itetms realy small and low, robot might have to be further than d
 <span class="normal"><a href="#__codelineno-0-292">292</a></span>
 <span class="normal"><a href="#__codelineno-0-293">293</a></span>
 <span class="normal"><a href="#__codelineno-0-294">294</a></span>
-<span class="normal"><a href="#__codelineno-0-295">295</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="n">robot_view</span><span class="p">:</span> <span class="n">RobotView</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="n">distance_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="n">thormap</span><span class="p">:</span> <span class="n">THORMap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="n">n_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="n">robot_position</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="p">):</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="w">    </span><span class="sd">"""mode is 'global' or robot 'base'. Always sample in global coordinates.</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    Note: for some itetms realy small and low, robot might have to be further than distance thoreshold</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    """</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>    <span class="k">if</span> <span class="n">thormap</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">map_sampler</span><span class="o">.</span><span class="n">thormap</span> <span class="o">=</span> <span class="n">thormap</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="n">pose_sample</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>    <span class="n">is_in_view</span> <span class="o">=</span> <span class="kc">False</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="k">while</span> <span class="n">pose_sample</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="n">n_tries</span><span class="p">:</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>        <span class="c1"># For now, if no target is set, fall back on map sampler</span>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>            <span class="n">pose_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>                <span class="n">N</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>                <span class="n">z_pos</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>  <span class="c1"># 0.005</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>            <span class="p">)</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>            <span class="c1"># Our sampler can now be switched to use _sample_around_target_boundary if desired.</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>            <span class="k">if</span> <span class="n">distance_threshold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>                <span class="n">distance_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_threshold</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>            <span class="n">pose_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_around_target_boundary</span><span class="p">(</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>                <span class="n">distance_threshold</span><span class="o">=</span><span class="n">distance_threshold</span><span class="p">,</span> <span class="n">robot_position</span><span class="o">=</span><span class="n">robot_position</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>            <span class="p">)</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="w">            </span><span class="sd">"""</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="sd">            # Fallback: use uniform sampling based on constraint (if candidate not found)</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="sd">            pose_sample = self.map_sampler.sample(</span>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">                N=1,</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">                constraint_positions=[self.target.position],</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="sd">                constraint_distances=[distance_threshold],</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">                z_pos=0.005,</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">                look_at=True,</span>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">                camera_pose_rel_base=None,  # reshape to 4x4  if not None#camera_pose_rel_base,</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="sd">                view_range_deg=self.view_range_deg,  # 30.0,</span>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">            )</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">            """</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a>        <span class="k">if</span> <span class="n">pose_sample</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-284" name="__codelineno-0-284"></a>            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"No pose sample found. Trying again..."</span><span class="p">)</span>
-<a id="__codelineno-0-285" name="__codelineno-0-285"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_target_in_view</span><span class="p">:</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a>            <span class="n">is_in_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_target_in_view</span><span class="p">(</span><span class="n">pose_sample</span><span class="p">,</span> <span class="n">robot_view</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_name</span><span class="p">)</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_in_view</span><span class="p">:</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>                <span class="n">pose_sample</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a>                <span class="n">distance_threshold</span> <span class="o">+=</span> <span class="mf">0.25</span>  <span class="c1"># some object seems better when further away can see</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a>                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Target is not in view"</span><span class="p">)</span>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a>    <span class="k">if</span> <span class="n">pose_sample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a>        <span class="k">return</span> <span class="n">pose_sample</span><span class="p">[</span><span class="s2">"position"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pose_sample</span><span class="p">[</span><span class="s2">"quaternion"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No pose sample found after </span><span class="si">{</span><span class="n">n_tries</span><span class="si">}</span><span class="s2"> tries"</span><span class="p">)</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># i feel like this happens too often :(</span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="n">robot_view</span><span class="p">:</span> <span class="n">RobotView</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="n">distance_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="n">thormap</span><span class="p">:</span> <span class="n">THORMap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="n">n_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="n">robot_position</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="p">):</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="w">    </span><span class="sd">"""mode is 'global' or robot 'base'. Always sample in global coordinates.</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    Note: for some itetms realy small and low, robot might have to be further than distance thoreshold</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    """</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>    <span class="k">if</span> <span class="n">thormap</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">map_sampler</span><span class="o">.</span><span class="n">thormap</span> <span class="o">=</span> <span class="n">thormap</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>    <span class="n">pose_sample</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>    <span class="n">is_in_view</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="k">while</span> <span class="n">pose_sample</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="n">n_tries</span><span class="p">:</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>        <span class="c1"># For now, if no target is set, fall back on map sampler</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>            <span class="n">pose_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>                <span class="n">N</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>                <span class="n">z_pos</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>  <span class="c1"># 0.005</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>            <span class="p">)</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>            <span class="c1"># Our sampler can now be switched to use _sample_around_target_boundary if desired.</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>            <span class="k">if</span> <span class="n">distance_threshold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>                <span class="n">distance_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_threshold</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>            <span class="n">pose_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_around_target_boundary</span><span class="p">(</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>                <span class="n">distance_threshold</span><span class="o">=</span><span class="n">distance_threshold</span><span class="p">,</span> <span class="n">robot_position</span><span class="o">=</span><span class="n">robot_position</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>            <span class="p">)</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="w">            </span><span class="sd">"""</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="sd">            # Fallback: use uniform sampling based on constraint (if candidate not found)</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">            pose_sample = self.map_sampler.sample(</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">                N=1,</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="sd">                constraint_positions=[self.target.position],</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">                constraint_distances=[distance_threshold],</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">                z_pos=0.005,</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">                look_at=True,</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="sd">                camera_pose_rel_base=None,  # reshape to 4x4  if not None#camera_pose_rel_base,</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">                view_range_deg=self.view_range_deg,  # 30.0,</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">            )</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="sd">            """</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a>        <span class="k">if</span> <span class="n">pose_sample</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a>            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"No pose sample found. Trying again..."</span><span class="p">)</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_target_in_view</span><span class="p">:</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a>            <span class="n">is_in_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_target_in_view</span><span class="p">(</span><span class="n">pose_sample</span><span class="p">,</span> <span class="n">robot_view</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_name</span><span class="p">)</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_in_view</span><span class="p">:</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a>                <span class="n">pose_sample</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a>                <span class="n">distance_threshold</span> <span class="o">+=</span> <span class="mf">0.25</span>  <span class="c1"># some object seems better when further away can see</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Target is not in view"</span><span class="p">)</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="k">if</span> <span class="n">pose_sample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="k">return</span> <span class="n">pose_sample</span><span class="p">[</span><span class="s2">"position"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pose_sample</span><span class="p">[</span><span class="s2">"quaternion"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No pose sample found after </span><span class="si">{</span><span class="n">n_tries</span><span class="si">}</span><span class="s2"> tries"</span><span class="p">)</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># i feel like this happens too often :(</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
