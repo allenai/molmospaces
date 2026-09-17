@@ -55,6 +55,7 @@ _SKIP_REASONS = {
     "molmo_spaces.policy.learned_policy.spacemouse_policy": (
         "requires a real X display (pynput X11 backend)"
     ),
+    "molmo_spaces.utils.devices.keyboard": ("requires a real X display (pynput X11 backend)"),
     # Hardcodes the EGL backend and raises on import if PYOPENGL_PLATFORM is
     # anything else. CI sets MUJOCO_GL=osmesa (ci.yaml's "Set MuJoCo rendering
     # backend" step), and mujoco.osmesa sets PYOPENGL_PLATFORM=osmesa as a side
