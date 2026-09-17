@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="129" height="48" viewBox="0 0 129 48" role="img" aria-label="Leaderboard">
-  <rect y="12" width="129" height="36" rx="4" fill="#f0529c"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="137" height="48" viewBox="0 0 137 48" role="img" aria-label="Leaderboard"
+     shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
+  <rect y="12" width="137" height="36" rx="11" ry="11" fill="#f0529c"/>
   <text x="50%" y="30.0" dy="0.35em" text-anchor="middle"
-        font-family="Manrope,DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="600" fill="#032629">Leaderboard</text>
+        font-family="Manrope,DejaVu Sans,Arial,sans-serif" font-size="15" font-weight="600"
+        letter-spacing="0.2" fill="#032629">Leaderboard</text>
 </svg>

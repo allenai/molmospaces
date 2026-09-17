@@ -19,11 +19,20 @@
   </p>
 </div>
 
-<div align="center">
-  <img src="docs/images/Multi_Simulator_Pan.jpg" alt="MuJoCo, Isaac and ManiSkill renders of the same scene" width="1200"/>
+<div align="center"><img src="docs/images/Multi_Simulator_Pan.jpg" alt="MuJoCo, Isaac and ManiSkill renders of the same scene" width="1200"/><br/><sub>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.</sub></div>
+
+<p align="center">
   <br/>
-  <sub>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.</sub>
-</div>
+  <a href="https://github.com/allenai/molmospaces/actions/workflows/ci.yaml">
+    <img src="https://img.shields.io/github/actions/workflow/status/allenai/molmospaces/ci.yaml?branch=main&style=flat&label=CI" alt="CI"/>
+  </a>
+  <a href="https://pypi.org/project/molmo-spaces/">
+    <img src="https://img.shields.io/pypi/v/molmo-spaces.svg?style=flat&label=PyPI&color=green" alt="PyPI"/>
+  </a>
+  <a href="https://github.com/allenai/molmospaces/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg?style=flat" alt="Apache 2.0"/>
+  </a>
+</p>
 
 ## Updates
 - **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
