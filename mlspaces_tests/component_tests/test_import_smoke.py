@@ -17,7 +17,6 @@ shows what wasn't checked and why.
 
 import importlib
 import pkgutil
-import sys
 
 import pytest
 
@@ -56,6 +55,14 @@ _SKIP_REASONS = {
     "molmo_spaces.policy.learned_policy.spacemouse_policy": (
         "requires a real X display (pynput X11 backend)"
     ),
+    # Hardcodes the EGL backend and raises on import if PYOPENGL_PLATFORM is
+    # anything else. CI sets MUJOCO_GL=osmesa (ci.yaml's "Set MuJoCo rendering
+    # backend" step), and mujoco.osmesa sets PYOPENGL_PLATFORM=osmesa as a side
+    # effect of importing it -- so this module can't import in this CI setup on
+    # any OS, not just macOS.
+    "molmo_spaces.renderer.opengl_context": (
+        "requires PYOPENGL_PLATFORM=egl; CI runs mujoco with MUJOCO_GL=osmesa"
+    ),
 }
 
 # Whole subpackages skipped because CI never installs their extras: `grasp`
@@ -65,15 +72,6 @@ _SKIP_PREFIXES = (
     "molmo_spaces.grasp_generation.",
     "molmo_spaces.housegen.",
 )
-
-# Modules whose import requirement is platform-specific rather than a missing
-# extra: `mujoco.egl` needs a real EGL library, which CI only provides on the
-# Linux runners (via the osmesa/libEGL packages `ci.yaml` installs); macOS has
-# no EGL/OSMesa backend for mujoco at all (see ci.yaml's comment on the
-# data-generation job for the same constraint). Still exercised on Linux.
-_LINUX_ONLY = {
-    "molmo_spaces.renderer.opengl_context": "needs a Linux EGL/OSMesa GL backend",
-}
 
 
 def _discover_modules() -> list[str]:
@@ -90,6 +88,4 @@ def test_module_imports_cleanly(module_name):
     """Every non-excluded module under molmo_spaces should import without error."""
     if module_name in _SKIP_REASONS:
         pytest.skip(_SKIP_REASONS[module_name])
-    if module_name in _LINUX_ONLY and sys.platform != "linux":
-        pytest.skip(_LINUX_ONLY[module_name])
     importlib.import_module(module_name)
