@@ -239,7 +239,11 @@ class PickTaskSamplerG1(PickTaskSampler):
                 pickup_obj.pose,
                 check_collision=True,
                 n_collision_checks=512,
-                collision_batch_size=64,
+                # Must not exceed the probe count the scene was built with
+                # (policy_config.grasp_collision_batch_size, default 1) --
+                # get_noncolliding_grasp_mask looks up one probe body per
+                # batch slot and KeyErrors on the ones that were never added.
+                collision_batch_size=1,
                 check_ik=False,
                 n_ik_checks=0,
                 ik_batch_size=0,

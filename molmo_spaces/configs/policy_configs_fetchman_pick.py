@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from molmo_spaces.configs.policy_configs import PickPlannerPolicyConfig
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.planner.astar_planner import AStarPlannerConfig
 
 
@@ -23,6 +24,15 @@ class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
 
     # g1_molmo's GraspPolicy.LIFT (PickPlannerPolicyConfig's 0.08 is arm-only-IK tuned).
     postgrasp_z_offset: float = 0.15
+
+    # G1 ships a gripper_probe.xml beside its MJCF, and this policy's pre-grasp
+    # clearance check drives that real gripper envelope rather than the jaw
+    # stand-in. The jaw probes stay: PickTaskSamplerG1's placement precheck
+    # collision-filters candidates through `get_noncolliding_grasp_mask`.
+    grasp_probe_shapes: tuple[str, ...] = (
+        spec_ops.PROBE_SHAPE_JAW,
+        spec_ops.PROBE_SHAPE_GRIPPER_XML,
+    )
 
     # Grasp candidates tried in cost order before giving up (g1_molmo's PATH_CHECK_K).
     grasp_candidates_to_try: int = 5

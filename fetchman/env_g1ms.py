@@ -25,6 +25,7 @@ from fetchman.scene_g1ms import Scene
 from molmo_spaces.configs.task_sampler_configs import OccupancyMapImpl
 from molmo_spaces.env.camera_manager import CameraManager
 from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.robots.g1 import JOINT_NAMES, PREFIX, XML_PATH, G1Robot
 
@@ -347,19 +348,21 @@ class G1CPUMujocoEnv(CPUMujocoEnv):
         can overlay them at any grasp pose without touching physics."""
         m = self.scene.model
         d = self.scene.data
-        gj = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, "gripper_probe_joint")
+        gj = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, spec_ops.GRIPPER_PROBE_JOINT_NAME)
         if gj < 0:
             return []
         saved = d.qpos.copy()
         qa = int(m.jnt_qposadr[gj])
         d.qpos[qa : qa + 3] = [0, 0, 0]
         d.qpos[qa + 3 : qa + 7] = [1, 0, 0, 0]
-        for jname, val in (("gripper_probe_joint_a", 0.04), ("gripper_probe_joint_b", -0.04)):
+        for jname, val in zip(
+            spec_ops.GRIPPER_PROBE_FINGER_JOINT_NAMES, spec_ops.GRIPPER_PROBE_FINGER_OPEN_QPOS
+        ):
             jid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, jname)
             if jid >= 0:
                 d.qpos[m.jnt_qposadr[jid]] = val
         mujoco.mj_forward(m, d)
-        probe_bid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "gripper_probe")
+        probe_bid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, spec_ops.GRIPPER_PROBE_BODY_NAME)
         descendants = self.scene.get_body_descendants(probe_bid) if probe_bid >= 0 else set()
         out = []
         for gid in range(m.ngeom):

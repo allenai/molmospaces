@@ -733,25 +733,36 @@ class BaseMujocoTaskSampler:
             spec_ops.enable_sleep(spec)
 
         if tsc.add_grasp_probe:
-            # The single producer of grasp probes. Count and dimensions come from
-            # the policy that consumes them (get_noncolliding_grasp_mask), with
-            # gold's defaults for policies that carry no grasp settings.
+            # The single producer of grasp probes, for every shape. Which shapes,
+            # how many and what size all come from the policy that consumes them,
+            # so a scene carries only the probes something actually drives --
+            # each one is a freejointed body that costs DOF on every sim step.
+            # Policies that carry no grasp settings get gold's jaw defaults.
             pc = self.config.policy_config
-            probe_kwargs = {}
+            shapes = getattr(pc, "grasp_probe_shapes", (spec_ops.PROBE_SHAPE_JAW,))
+            jaw_kwargs = {}
             if hasattr(pc, "grasp_width"):
-                probe_kwargs = dict(
+                jaw_kwargs = dict(
                     count=pc.grasp_collision_batch_size,
                     width=pc.grasp_width,
                     length=pc.grasp_length,
                     height=pc.grasp_height,
                     base_pos=np.asarray(pc.grasp_base_pos, dtype=np.float64),
                 )
-            # gripper_probe.xml, when the robot ships one, sits beside its MJCF.
-            if hasattr(robot_config, "get_robot_xml_path"):
-                probe_kwargs["gripper_probe_xml"] = (
-                    robot_config.get_robot_xml_path().parent / "gripper_probe.xml"
+            if spec_ops.PROBE_SHAPE_JAW in shapes:
+                spec_ops.add_grasp_probes(spec, shape=spec_ops.PROBE_SHAPE_JAW, **jaw_kwargs)
+            # The robot's own gripper model, when it ships one beside its MJCF.
+            # Only the policies that drive it ask for this shape; a missing file
+            # is a no-op, which is how a robot without a gripper model skips it.
+            if spec_ops.PROBE_SHAPE_GRIPPER_XML in shapes and hasattr(
+                robot_config, "get_robot_xml_path"
+            ):
+                spec_ops.add_grasp_probes(
+                    spec,
+                    count=1,
+                    shape=spec_ops.PROBE_SHAPE_GRIPPER_XML,
+                    gripper_xml=robot_config.get_robot_xml_path().parent / "gripper_probe.xml",
                 )
-            spec_ops.add_grasp_probes(spec, **probe_kwargs)
 
         if tsc.weld_robot_base:
             spec_ops.add_base_weld(spec, robot_prefix=prefix)

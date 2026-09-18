@@ -149,10 +149,9 @@ class Scene:
                     )
                     or ""
                 ).lower()
-                if bname.startswith(self._robot_prefix.lower()) or bname in (
-                    spec_ops.grasp_probe_body_name(0),
-                    "gripper_probe",
-                ):
+                if bname.startswith(
+                    self._robot_prefix.lower()
+                ) or spec_ops.is_grasp_probe_body_name(bname):
                     continue
                 gname = (mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, gid) or "").lower()
                 cat = classify_scene_geom(bname, gname)
@@ -304,8 +303,20 @@ class Scene:
         )
 
     def _add_grasp_probe(self, spec):
-        """Gold's single grasp probe -- see spec_ops.add_grasp_probes,
-        the one producer of these bodies for both stacks."""
+        """Gold's single jaw probe, plus G1's own gripper model -- see
+        spec_ops.add_grasp_probes, the one producer of these bodies for both
+        stacks and both shapes.
+
+        The port loads both regardless of what it drives: the gripper model is
+        the one G1PickPlannerPolicy's clearance check uses, and the jaw probe is
+        kept because gold's scene has it, so the two models stay body- and
+        qpos-comparable. The native build instead loads only the shapes its
+        policy declares (task_sampler._apply_spec_ops).
+        """
+        spec_ops.add_grasp_probes(spec, count=1, shape=spec_ops.PROBE_SHAPE_JAW)
         spec_ops.add_grasp_probes(
-            spec, count=1, gripper_probe_xml=self.robot_xml.parent / "gripper_probe.xml"
+            spec,
+            count=1,
+            shape=spec_ops.PROBE_SHAPE_GRIPPER_XML,
+            gripper_xml=self.robot_xml.parent / "gripper_probe.xml",
         )

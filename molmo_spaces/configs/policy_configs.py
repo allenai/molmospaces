@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from molmo_spaces.configs.abstract_config import Config
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.planner.astar_planner import AStarPlannerConfig
 from molmo_spaces.planner.curobo_planner_config import CuroboPlannerConfig
 from molmo_spaces.policy.base_policy import BasePolicy, PolicyFactory
@@ -87,6 +88,14 @@ class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):
     # simulate -- grasp-library filtering, placement validation, house sweeps.
     grasp_collision_batch_size: int = 1
     grasp_collision_max_grasps: int = 512
+    # Which probe shapes the scene build puts in the model for this policy
+    # (spec_ops.PROBE_SHAPE_*). Only the shapes a policy actually drives are
+    # loaded: every probe is a freejointed body that costs DOF on every sim
+    # step. The parametric jaw is what `get_noncolliding_grasp_mask` scatters
+    # over candidates, so it is what a policy needs by default; a robot's own
+    # gripper model (PROBE_SHAPE_GRIPPER_XML) is added only by the policies
+    # that drive it -- see FetchmanPickPlannerPolicyConfig.
+    grasp_probe_shapes: tuple[str, ...] = (spec_ops.PROBE_SHAPE_JAW,)
     grasp_width: float = 0.08
     grasp_length: float = 0.05
     grasp_height: float = 0.01

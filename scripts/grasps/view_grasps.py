@@ -659,10 +659,10 @@ if __name__ == "__main__":
         add_grasp_probes(
             spec,
             args.collision_batch_size,  # Only need as many as batch size
-            grasp_width,
-            grasp_length,
-            grasp_height,
-            grasp_base_pos,
+            width=grasp_width,
+            length=grasp_length,
+            height=grasp_height,
+            base_pos=grasp_base_pos,
         )
 
     model = spec.compile()

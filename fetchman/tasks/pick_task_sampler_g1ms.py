@@ -1279,9 +1279,8 @@ class G1TaskSampler(BaseMujocoTaskSampler):
             if int(m.body_parentid[bid]) != 0:
                 continue
             name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, bid) or ""
-            if name.startswith(self.env.scene._robot_prefix) or name in (
-                spec_ops.grasp_probe_body_name(0),
-                "gripper_probe",
+            if name.startswith(self.env.scene._robot_prefix) or spec_ops.is_grasp_probe_body_name(
+                name
             ):
                 continue
             sr, _, chain = self._trace_support_chain(bid)
@@ -1293,9 +1292,8 @@ class G1TaskSampler(BaseMujocoTaskSampler):
             if bid in grouped_bids or bid == sup_root or bid == 0:
                 continue
             name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, bid) or ""
-            if name.startswith(self.env.scene._robot_prefix) or name in (
-                spec_ops.grasp_probe_body_name(0),
-                "gripper_probe",
+            if name.startswith(self.env.scene._robot_prefix) or spec_ops.is_grasp_probe_body_name(
+                name
             ):
                 continue
             grouped_bids.add(bid)

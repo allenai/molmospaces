@@ -21,6 +21,7 @@ from molmo_spaces.controllers.g1_wbc import (
     ACTION_DIM,
     flat15_to_move_groups,
 )
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy import PickPlannerPolicy
 from molmo_spaces.robots.g1 import JOINT_NAMES as _JOINTS
 from molmo_spaces.robots.g1 import PELVIS_FORWARD_OFFSET as _PELVIS_FWD
@@ -523,7 +524,9 @@ class GraspPlanner:
         # CACHE: probe_bids + robot_bids are static for the lifetime of the scene
         # model. Recomputing them every call was the O(N²) hot spot during precheck.
         if getattr(self, "_cached_bids_for_model_id", None) != id(m):
-            probe_bid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "gripper_probe")
+            probe_bid = mujoco.mj_name2id(
+                m, mujoco.mjtObj.mjOBJ_BODY, spec_ops.GRIPPER_PROBE_BODY_NAME
+            )
             if probe_bid < 0:
                 self._cached_probe_bids = set()
             else:
@@ -565,13 +568,13 @@ class GraspPlanner:
             self._cached_target_body_id = tbid
         target_bids = self._cached_target_bids
         ignore = robot_bids | target_bids | probe_bids
-        qa = m.joint("gripper_probe_joint").qposadr[0]
-        ja = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, "gripper_probe_joint_a")
-        jb = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, "gripper_probe_joint_b")
-        if ja >= 0:
-            sd.qpos[m.jnt_qposadr[ja]] = 0.04
-        if jb >= 0:
-            sd.qpos[m.jnt_qposadr[jb]] = -0.04
+        qa = m.joint(spec_ops.GRIPPER_PROBE_JOINT_NAME).qposadr[0]
+        for jname, val in zip(
+            spec_ops.GRIPPER_PROBE_FINGER_JOINT_NAMES, spec_ops.GRIPPER_PROBE_FINGER_OPEN_QPOS
+        ):
+            jid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, jname)
+            if jid >= 0:
+                sd.qpos[m.jnt_qposadr[jid]] = val
         grasp_quat = R.from_matrix(grasp_T[:3, :3]).as_quat(scalar_first=True)
         # Precheck only needs a smell-test (grasp pose isn't in a wall). At runtime
         # (committed to executing this grasp), sweep the full pregrasp→mid→grasp

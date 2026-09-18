@@ -101,17 +101,33 @@ def freeze_non_mobile_bodies(
     return frozen
 
 
-# Gold's own probe dimensions (fetchman/scene_g1ms.py). Only `length` differs
-# from ObjectManipulationPlannerPolicyConfig's default (0.03 vs 0.05).
+# The parametric "jaw" probe's dimensions, gold's own (fetchman/scene_g1ms.py).
+# Only `length` differs from ObjectManipulationPlannerPolicyConfig's default
+# (0.03 vs 0.05).
 GOLD_PROBE_WIDTH = 0.08
 GOLD_PROBE_LENGTH = 0.03
 GOLD_PROBE_HEIGHT = 0.01
 GOLD_PROBE_BASE_POS = (0.0, 0.0, -0.04)
 
+# The two probe shapes. "jaw" is the parametric three-cylinder open jaw, built
+# here and scattered `count` at a time over candidate grasps. "gripper_xml" is a
+# robot's own gripper model, attached from the MJCF that ships beside its
+# robot XML -- one body, articulated fingers, the real gripper envelope.
+PROBE_SHAPE_JAW = "jaw"
+PROBE_SHAPE_GRIPPER_XML = "gripper_xml"
+
+# The gripper_xml probe's names are fixed by the MJCF it is attached from, so
+# they are constants rather than functions of an index -- there is only ever one.
+GRIPPER_PROBE_BODY_NAME = "gripper_probe"
+GRIPPER_PROBE_JOINT_NAME = "gripper_probe_joint"
+GRIPPER_PROBE_FINGER_JOINT_NAMES = ("gripper_probe_joint_a", "gripper_probe_joint_b")
+# Finger slide targets that hold the attached gripper open, per its "open" key.
+GRIPPER_PROBE_FINGER_OPEN_QPOS = (0.04, -0.04)
+
 
 def grasp_probe_body_name(i: int) -> str:
-    """The one place probe bodies are named. Every producer and consumer -- the
-    scene build, `get_noncolliding_grasp_mask`, the FetchMan port -- goes
+    """The one place jaw probe bodies are named. Every producer and consumer --
+    the scene build, `get_noncolliding_grasp_mask`, the FetchMan port -- goes
     through this, so there is exactly one naming scheme and no second set of
     probes under a parallel name."""
     return f"grasp_probe_{i}"
@@ -121,33 +137,64 @@ def grasp_probe_joint_name(i: int) -> str:
     return f"grasp_probe_joint_{i}"
 
 
+def is_grasp_probe_body_name(name: str) -> bool:
+    """True for any probe body of either shape -- what scans over the scene use
+    to skip probes without spelling the names out again."""
+    return name == GRIPPER_PROBE_BODY_NAME or bool(re.fullmatch(r"grasp_probe_\d+", name))
+
+
 def add_grasp_probes(
     spec,
     count: int = 1,
+    *,
+    shape: str = PROBE_SHAPE_JAW,
     width: float = GOLD_PROBE_WIDTH,
     length: float = GOLD_PROBE_LENGTH,
     height: float = GOLD_PROBE_HEIGHT,
     base_pos=GOLD_PROBE_BASE_POS,
     rgba=(1, 0, 0, 0.6),
     group: int = 0,
-    gripper_probe_xml=None,
+    gripper_xml=None,
 ) -> list:
-    """Add `count` gripper stand-ins: a three-cylinder open jaw on a freejoint,
-    parked at z=10 and gravity-compensated so it stays put.
+    """Add `count` gripper stand-ins on freejoints, parked at z=10 and
+    gravity-compensated so they stay put. Returns the probe bodies.
 
-    This is the ONLY place probe bodies are created. One probe is gold's; a
-    batch is what `get_noncolliding_grasp_mask` scatters over candidate grasps
-    to test many per collision pass. They are the same body either way -- see
-    ObjectManipulationPlannerPolicyConfig.grasp_collision_batch_size for the
-    speed trade-off that sets `count`.
+    This is the ONLY place probe bodies are created, for either shape. One jaw
+    probe is gold's; a batch is what `get_noncolliding_grasp_mask` scatters over
+    candidate grasps to test many per collision pass. They are the same body
+    either way -- see ObjectManipulationPlannerPolicyConfig.grasp_collision_batch_size
+    for the speed trade-off that sets `count`.
+
+    `shape` picks the geometry:
+
+    * `PROBE_SHAPE_JAW` -- the parametric three-cylinder open jaw built from
+      `width`/`length`/`height`/`base_pos`. Cheap, robot-agnostic, `count` of them.
+    * `PROBE_SHAPE_GRIPPER_XML` -- the robot's own gripper model, attached from
+      `gripper_xml`. G1 ships one; it is a different envelope (box pads plus
+      sliding fingers) and is what pick_planner_policy_g1 drives for the final
+      pre-grasp clearance check. Its names are fixed by the MJCF, so only
+      `count=1` is possible; a missing file is a no-op, which is how robots
+      without a gripper model skip it.
 
     `contype=0` with `conaffinity=0b1111` makes a probe a pure sensor: scene
-    geometry registers contact against it, but it never pushes anything.
-
-    `gripper_probe_xml`, when the robot ships one, is attached alongside. That
-    is a different object -- a real gripper model, driven by pick_planner_policy_g1 for
-    the final pre-grasp clearance check -- not another stand-in.
+    geometry registers contact against it, but it never pushes anything. The
+    gripper_xml probe sets the same flags in its MJCF.
     """
+    if shape == PROBE_SHAPE_GRIPPER_XML:
+        if gripper_xml is None or not gripper_xml.exists():
+            return []
+        if count != 1:
+            raise ValueError(
+                f"{PROBE_SHAPE_GRIPPER_XML} probes are named by their MJCF, so only "
+                f"one can be attached (got count={count})"
+            )
+        gprobe_spec = mujoco.MjSpec.from_file(str(gripper_xml))
+        frame = spec.worldbody.add_frame()
+        return [frame.attach_body(gprobe_spec.worldbody.first_body(), "", "")]
+
+    if shape != PROBE_SHAPE_JAW:
+        raise ValueError(f"unknown grasp probe shape {shape!r}")
+
     bodies = []
     for i in range(count):
         probe = spec.worldbody.add_body(name=grasp_probe_body_name(i), pos=[0, 0, 10], gravcomp=1)
@@ -171,11 +218,6 @@ def add_grasp_probes(
             g.fromto[:3] = np.array(fromto[0]) + np.asarray(base_pos, dtype=np.float64)
             g.fromto[3:] = np.array(fromto[1]) + np.asarray(base_pos, dtype=np.float64)
         bodies.append(probe)
-
-    if gripper_probe_xml is not None and gripper_probe_xml.exists():
-        gprobe_spec = mujoco.MjSpec.from_file(str(gripper_probe_xml))
-        frame = spec.worldbody.add_frame()
-        frame.attach_body(gprobe_spec.worldbody.first_body(), "", "")
 
     return bodies
 
