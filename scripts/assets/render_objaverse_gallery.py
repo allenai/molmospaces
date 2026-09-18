@@ -16,10 +16,11 @@ Requires the Filament-enabled mujoco wheel to be importable, e.g.:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import mujoco as mj
@@ -35,6 +36,11 @@ from molmo_spaces.utils.mj_model_and_data_utils import geom_aabb
 # Grasp libraries to check for "pickability", in priority order (matches
 # get_valid_pickupable_obja_uids' notion of "has a valid pickup grasp file").
 PICKUP_GRASP_LIBRARIES = ("droid_objaverse", "droid")
+
+# Filament MJCF attribute names (FILAMENT_ATTR_ENV_LIGHT_INTENSITY comes from
+# task_sampler; the rest aren't exported there).
+FILAMENT_ATTR_HEAD_LIGHT_INTENSITY = "filament.fallback.head_light_intensity"
+FILAMENT_ATTR_TONE_MAPPING = "filament.out.tone_mapping"
 
 log = logging.getLogger(__name__)
 
@@ -181,16 +187,138 @@ def instance_geom_ids(model: mj.MjModel, instance: ObjectInstance) -> list[int]:
     return geom_ids
 
 
-def load_model_for_filament(scene_path: Path, environment_light_intensity: float = 15000.0):
+@dataclass
+class RenderSettings:
+    """Filament render settings, tuned for photographic-looking output.
+
+    Each knob has a `*_center` default (what a single, non-randomized render uses)
+    and a `*_range` (inclusive lo/hi) used when randomizing across a dataset.
+
+    Only a subset of MuJoCo's documented ``filament.*`` MJCF attributes actually
+    affect this build's render; these were determined empirically (rendering a fixed
+    scene and diffing images). Notably inert here: ``filament.out.{exposure,contrast,
+    saturation,vibrance,temperature,tint}``, ``filament.msaa.enabled`` and MuJoCo's
+    classic ``visual/headlight`` ambient -- so *exposure is controlled solely by the
+    environment light intensity*, not by a camera exposure triad.
+    """
+
+    # -- Exposure. The env light is the dominant (and only real) exposure control.
+    # With ACES, 15k reads as natural indoor daylight; 8k is a dim/evening interior
+    # and 26k a bright, sunlit one. ACES holds highlights without clipping across
+    # this entire range (measured: 0% clipped pixels even at 40k).
+    env_light_intensity_center: float = 15000.0
+    env_light_intensity_range: tuple[float, float] = (8000.0, 26000.0)
+
+    # -- Tone mapping. This build accepts only "aces", "filmic" and "linear" (any
+    # other string silently falls back to the engine default). ACES is the clear
+    # winner: "linear" blows out badly (24% clipped pixels at 25k env) and "filmic"
+    # lifts blacks into a washed-out, low-contrast look.
+    tone_mapping: str = "aces"
+
+    # -- Camera-mounted headlight. Physically unrealistic (a light that follows the
+    # lens casts no shadows and flattens form), so it's off by default; a little of
+    # it can rescue objects in very dark corners.
+    head_light_intensity_center: float = 0.0
+    head_light_intensity_range: tuple[float, float] = (0.0, 6000.0)
+
+    # -- Ambient occlusion: the contact/micro-shadowing that stops objects looking
+    # pasted onto the scene. Bent normals + screen-space cone tracing measurably
+    # deepen it (image std rises 55.6 -> 63.7 going from AO off to full AO).
+    ao_enabled: bool = True
+    ao_bent_normals: bool = True
+    ao_ssct: bool = True
+
+    shadow_type: int = 0  # 0=PCF; 1..3 (VSM/DPCF/PCSS) look near-identical here
+
+    # -- Camera geometry. Deliberately NOT randomized: the camera pose and FOV are
+    # deterministic so repeat runs frame each object identically and only the
+    # image-formation side of the render varies. The scene's own FOV is left alone,
+    # so framing comes purely from how far back the camera sits.
+    #
+    # Camera distance scales with the object's bounding radius, then is clamped into
+    # an absolute metre band.
+    distance_scale: float = 3.6
+    distance_m_bounds: tuple[float, float] = (1.0, 3.0)
+
+    # Fraction of the frame the object should cover, used to nudge the distance
+    # within the band above.
+    target_fill: float = 0.3
+
+    # Viewpoint candidates for the occlusion search.
+    elevation_candidates_deg: tuple[float, ...] = (-15.0, -30.0, -50.0, -70.0)
+    n_azimuths: int = 8
+
+    def sample(self, rng: random.Random) -> RenderSettings:
+        """Draw a randomized variant of the *image-formation* settings only.
+
+        Camera extrinsics and FOV are left untouched; only the lighting/exposure side
+        varies. Light intensities are sampled log-uniformly, since perceived
+        brightness is roughly logarithmic in them.
+        """
+
+        def loguniform(lo: float, hi: float) -> float:
+            if lo <= 0.0:
+                return rng.uniform(lo, hi)
+            return float(np.exp(rng.uniform(np.log(lo), np.log(hi))))
+
+        return replace(
+            self,
+            env_light_intensity_center=loguniform(*self.env_light_intensity_range),
+            head_light_intensity_center=rng.uniform(*self.head_light_intensity_range),
+        )
+
+    def as_manifest(self) -> dict:
+        return {
+            "env_light_intensity": round(self.env_light_intensity_center, 1),
+            "tone_mapping": self.tone_mapping,
+            "head_light_intensity": round(self.head_light_intensity_center, 1),
+            "distance_m_bounds": list(self.distance_m_bounds),
+            "ao": [self.ao_enabled, self.ao_bent_normals, self.ao_ssct],
+        }
+
+
+def load_model_for_filament(scene_path: Path, settings: RenderSettings) -> mj.MjModel:
+    """Compile a scene with the filament render settings baked in.
+
+    The env/head light intensities are also patched per-object at render time (see
+    `set_light_intensities`), which is why they're added as numerics here even when
+    left at their defaults.
+    """
     spec = mj.MjSpec.from_file(str(scene_path))
-    spec.add_numeric(
-        FILAMENT_ATTR_ENV_LIGHT_INTENSITY,
-        [environment_light_intensity],
-        1,
-        "Filament default env light intensity",
-    )
-    model = spec.compile()
-    return model
+    numerics = {
+        FILAMENT_ATTR_ENV_LIGHT_INTENSITY: settings.env_light_intensity_center,
+        FILAMENT_ATTR_HEAD_LIGHT_INTENSITY: settings.head_light_intensity_center,
+        "filament.ao.enabled": float(settings.ao_enabled),
+        "filament.ao.bent_normals": float(settings.ao_bent_normals),
+        "filament.ao.ssct": float(settings.ao_ssct),
+        "filament.shadows.type": float(settings.shadow_type),
+    }
+    for name, value in numerics.items():
+        spec.add_numeric(name, [value], 1, name)
+    spec.add_text(FILAMENT_ATTR_TONE_MAPPING, settings.tone_mapping, FILAMENT_ATTR_TONE_MAPPING)
+    return spec.compile()
+
+
+def _numeric_address(model: mj.MjModel, name: str) -> int | None:
+    numeric_id = mj.mj_name2id(model, mj.mjtObj.mjOBJ_NUMERIC, name)
+    if numeric_id < 0:
+        return None
+    return int(model.numeric_adr[numeric_id])
+
+
+def set_light_intensities(model: mj.MjModel, settings: RenderSettings) -> None:
+    """Patch the filament light intensities on an already-compiled model.
+
+    The filament context reads these when it is created, and we create a renderer per
+    object, so this gives per-object exposure without recompiling the (large) house.
+    """
+    for name, value in (
+        (FILAMENT_ATTR_ENV_LIGHT_INTENSITY, settings.env_light_intensity_center),
+        (FILAMENT_ATTR_HEAD_LIGHT_INTENSITY, settings.head_light_intensity_center),
+    ):
+        adr = _numeric_address(model, name)
+        if adr is not None:
+            model.numeric_data[adr] = value
 
 
 def _measure_view(
@@ -200,9 +328,11 @@ def _measure_view(
     target_body_ids: set[int],
 ) -> tuple[float, float]:
     """Renders a segmentation pass (at the renderer's native size) and returns
-    (fg_fraction, occlusion_penalty). Note: the renderer's offscreen framebuffer is
-    fixed at construction time, so this must use the renderer's own width/height
-    rather than a separate probe resolution."""
+    (fg_fraction, occlusion_penalty).
+
+    Note: the renderer's offscreen framebuffer is fixed at construction time, so this
+    must use the renderer's own width/height rather than a separate probe resolution.
+    """
     renderer.update(data, camera=cam)
     renderer.enable_segmentation_rendering()
     seg = renderer.render()
@@ -223,13 +353,15 @@ def render_instance(
     model: mj.MjModel,
     data: mj.MjData,
     instance: ObjectInstance,
-    n_azimuths: int = 8,
-    elevations: tuple[float, ...] = (-15.0, -30.0, -50.0, -70.0),
-    distance_scale: float = 3.6,
-    target_fill: float = 0.3,
-    min_camera_distance_m: float = 0.5,
-    max_camera_distance_m: float = 1.5,
+    settings: RenderSettings,
 ) -> np.ndarray | None:
+    """Render one object-centered tile.
+
+    The scene's own field of view is left untouched, so framing comes purely from the
+    camera distance, which scales with the object's size and is then clamped into
+    `settings.distance_m_bounds`. Azimuth/elevation are chosen by a segmentation search
+    that targets a given on-screen fill while penalizing occlusion by other objects.
+    """
     geom_ids = instance_geom_ids(model, instance)
     if not geom_ids:
         return None
@@ -237,25 +369,24 @@ def render_instance(
     radius = float(np.linalg.norm(size) / 2.0)
     if radius < 1e-4:
         return None
+
     # Never let the camera get closer than ~1.15x the object's own bounding radius --
     # closer than that risks the near clip plane (or occluding furniture) cutting
-    # through the object, producing a degenerate macro/clipped shot -- but also clamp
-    # to an absolute [min_camera_distance_m, max_camera_distance_m] range regardless of
-    # object size, since the request here is for a consistent "standing back" distance
-    # rather than one that's purely relative to each object's own scale.
-    min_distance = max(radius * 1.15, 0.12, min_camera_distance_m)
-    distance = float(np.clip(radius * distance_scale, min_distance, max_camera_distance_m))
+    # through the object -- and otherwise keep it inside the absolute metre band.
+    lo, hi = settings.distance_m_bounds
+    min_distance = max(radius * 1.15, lo)
+    distance = float(np.clip(radius * settings.distance_scale, min_distance, max(min_distance, hi)))
 
     target_body_ids = set(instance.body_ids)
 
-    # Pass 1: probe azimuth/elevation combos at low resolution, scoring by how
-    # close the object's fill fraction is to a target (object-centered, with
-    # margin) while penalizing occlusion by other objects.
+    # Pass 1: probe azimuth/elevation combos, scoring by how close the object's fill
+    # fraction is to the target (object-centered, with margin) while penalizing
+    # occlusion by other objects.
     best_score = -np.inf
-    best_cam_params = (0.0, elevations[0])
-    best_fill = target_fill
-    for azimuth in np.linspace(0, 360, n_azimuths, endpoint=False):
-        for elevation in elevations:
+    best_cam_params = (0.0, settings.elevation_candidates_deg[0])
+    best_fill = settings.target_fill
+    for azimuth in np.linspace(0, 360, settings.n_azimuths, endpoint=False):
+        for elevation in settings.elevation_candidates_deg:
             cam = mj.MjvCamera()
             cam.type = mj.mjtCamera.mjCAMERA_FREE
             cam.lookat[:] = center
@@ -264,20 +395,18 @@ def render_instance(
             cam.elevation = float(elevation)
 
             fg_fraction, occlusion_penalty = _measure_view(renderer, data, cam, target_body_ids)
-            score = -abs(fg_fraction - target_fill) - 0.6 * occlusion_penalty
+            score = -abs(fg_fraction - settings.target_fill) - 0.6 * occlusion_penalty
             if score > best_score:
                 best_score = score
                 best_cam_params = (float(azimuth), float(elevation))
                 best_fill = fg_fraction
 
-    # Pass 2: adjust distance once so the object's fill fraction is close to
-    # target_fill (projected area scales roughly as 1/distance^2). The rescale is
-    # clamped so a mostly-occluded or edge-on best view (very low measured fill)
-    # can't drag the camera in so close that it clips into the object or nearby
-    # geometry -- we'd rather keep some margin than produce a degenerate macro shot.
+    # Pass 2: nudge the distance once so the object's fill fraction moves toward the
+    # target (projected area scales roughly as 1/distance^2), clamped so a
+    # mostly-occluded or edge-on best view can't drag the camera into the object.
     if best_fill > 1e-4:
-        rescale = float(np.clip(np.sqrt(best_fill / target_fill), 0.7, 1.6))
-        distance = float(np.clip(distance * rescale, min_distance, max_camera_distance_m))
+        rescale = float(np.clip(np.sqrt(best_fill / settings.target_fill), 0.7, 1.6))
+        distance = float(np.clip(distance * rescale, min_distance, max(min_distance, hi)))
 
     azimuth, elevation = best_cam_params
     cam = mj.MjvCamera()
@@ -286,6 +415,14 @@ def render_instance(
     cam.distance = distance
     cam.azimuth = azimuth
     cam.elevation = elevation
+
+    log.info(
+        "%-28s radius=%.3fm distance=%.2fm on-screen=%.1f%%",
+        instance.category,
+        radius,
+        distance,
+        best_fill * 100.0,
+    )
 
     renderer.update(data, camera=cam)
     return renderer.render()
@@ -394,10 +531,62 @@ def main():
         help="Also sample static/structural objects with no pickup grasp file "
         "(default: only sample pickable objects).",
     )
+    parser.add_argument(
+        "--randomize",
+        action="store_true",
+        help="Sample per-tile image-formation settings (environment/head light "
+        "intensity) from RenderSettings' ranges instead of using the tuned centers. "
+        "Camera pose and FOV stay deterministic either way.",
+    )
+    parser.add_argument(
+        "--distance-m",
+        type=float,
+        nargs=2,
+        metavar=("MIN", "MAX"),
+        default=None,
+        help="Override the camera distance band in metres (default 1.0 3.0).",
+    )
+    parser.add_argument(
+        "--env-light",
+        type=float,
+        nargs=2,
+        metavar=("MIN", "MAX"),
+        default=None,
+        help="Override the environment-light (exposure) randomization range.",
+    )
+    parser.add_argument(
+        "--tone-mapping",
+        type=str,
+        default=RenderSettings.tone_mapping,
+        choices=["aces", "filmic", "linear"],
+        help="Filament tone mapper (this MuJoCo build accepts only these three).",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     rng = random.Random(args.seed)
+
+    base_settings = RenderSettings(tone_mapping=args.tone_mapping)
+    if args.distance_m is not None:
+        base_settings = replace(base_settings, distance_m_bounds=tuple(args.distance_m))
+    if args.env_light is not None:
+        lo, hi = args.env_light
+        base_settings = replace(
+            base_settings,
+            env_light_intensity_range=(lo, hi),
+            env_light_intensity_center=float(
+                np.clip(base_settings.env_light_intensity_center, lo, hi)
+            ),
+        )
+    log.info(
+        "Render settings: tone_mapping=%s env_light=%s distance_m=%s randomize=%s",
+        base_settings.tone_mapping,
+        base_settings.env_light_intensity_range
+        if args.randomize
+        else base_settings.env_light_intensity_center,
+        base_settings.distance_m_bounds,
+        args.randomize,
+    )
 
     # Gather candidate scene paths across the requested scene sets.
     scene_paths: list[Path] = []
@@ -423,7 +612,7 @@ def main():
         # This installs (downloads/symlinks) the scene, its objects, and grasps as a
         # side effect; the scene XML itself lives at `scene_path` once installed.
         install_scene_with_objects_and_grasps_from_path(scene_path)
-        model = load_model_for_filament(scene_path)
+        model = load_model_for_filament(scene_path, base_settings)
         instances = collect_object_instances(model, pickable_only=not args.include_non_pickable)
         log.info("%s -> %d object instances", scene_path, len(instances))
         all_instances.append(instances)
@@ -448,10 +637,11 @@ def main():
         order.append((scene_idx, instance))
 
     images_by_key: dict[str, np.ndarray] = {}
+    settings_by_key: dict[str, dict] = {}
     for scene_idx, instances in selections_by_scene.items():
         # Second pass: (re-)load only the scenes we actually selected objects from,
         # one at a time.
-        model = load_model_for_filament(scene_paths[scene_idx])
+        model = load_model_for_filament(scene_paths[scene_idx], base_settings)
         data = mj.MjData(model)
         mj.mj_forward(model, data)
         for instance in instances:
@@ -465,13 +655,24 @@ def main():
                 np.round(center, 3),
                 np.round(size, 3),
             )
+            settings = base_settings.sample(rng) if args.randomize else base_settings
+            # Must precede renderer construction: the filament context snapshots these
+            # light intensities when it is created.
+            set_light_intensities(model, settings)
             renderer = MjFilamentRenderer(model=model, width=args.tile_size, height=args.tile_size)
-            image = render_instance(renderer, model, data, instance)
+            image = render_instance(renderer, model, data, instance, settings)
             renderer.close()
             if image is None:
                 log.warning("Skipping %s: empty/degenerate AABB", instance.instance_key)
                 continue
             images_by_key[instance.instance_key] = image
+            manifest = settings.as_manifest()
+            manifest.update(
+                category=instance.category,
+                uid=instance.uid,
+                scene=scene_paths[scene_idx].name,
+            )
+            settings_by_key[instance.instance_key] = manifest
         del model, data
 
     rendered = [
@@ -487,13 +688,19 @@ def main():
     if args.tiles_dir is not None:
         args.tiles_dir.mkdir(parents=True, exist_ok=True)
         n_digits = max(3, len(str(len(rendered))))
+        manifest = {}
         for idx, (instance, image) in enumerate(rendered, start=1):
-            tile_path = (
-                args.tiles_dir
-                / f"tile_{idx:0{n_digits}d}_{instance.category.replace(' ', '_')}_{instance.uid}.png"
+            name = (
+                f"tile_{idx:0{n_digits}d}_{instance.category.replace(' ', '_')}_{instance.uid}.png"
             )
-            Image.fromarray(image).save(tile_path)
-        log.info("Wrote %d individual tiles to %s", len(rendered), args.tiles_dir)
+            Image.fromarray(image).save(args.tiles_dir / name)
+            manifest[name] = settings_by_key.get(instance.instance_key, {})
+        (args.tiles_dir / "render_settings.json").write_text(json.dumps(manifest, indent=2))
+        log.info(
+            "Wrote %d individual tiles (+ render_settings.json) to %s",
+            len(rendered),
+            args.tiles_dir,
+        )
 
     if args.out is not None:
         grid = build_grid(tiles, n_cols=args.n_cols)
