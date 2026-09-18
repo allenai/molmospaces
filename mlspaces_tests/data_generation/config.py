@@ -20,12 +20,14 @@ from molmo_spaces.configs.task_sampler_configs import (
     OpenTaskSamplerConfig,
     PickTaskSamplerConfig,
 )
+from molmo_spaces.data_generation.config.nav_to_obj_configs import NavToObjDataGenConfig
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDroidDataGenConfig,
     FrankaPickDroidDataGenConfig,
     FrankaPickRandomizedDataGenConfig,
     RUMPickDataGenConfig,
 )
+from molmo_spaces.policy.solvers.navigation.astar_planner_policy import AStarPlannerPolicy
 from molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy import PickPlannerPolicy
 from molmo_spaces.tasks.opening_task_samplers import OpenTaskSampler
 
@@ -368,3 +370,32 @@ class RUMCloseTestConfig(OpeningBaseConfig):
         self.policy_config.grasp_rot_cost_weight = 0.0  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
         self.policy_config.grasp_vertical_cost_weight = 0.0  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
         self.policy_config.grasp_com_dist_cost_weight = 0.0  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
+
+
+class NavToObjTestConfig(NavToObjDataGenConfig):
+    """Test configuration for RBY1 nav-to-object -- fixed seed/houses for a deterministic rollout."""
+
+    def model_post_init(self, _context: Any) -> None:
+        """Override to apply test-specific settings after initialization."""
+        super().model_post_init(_context)
+
+        self.policy_config.policy_cls = AStarPlannerPolicy
+        self.policy_config.policy_factory = AStarPlannerPolicy
+
+        # House 8 alone (the pick tests' default) is invalid for nav tasks --
+        # its floor doesn't leave enough free space for NavGoalSampler's
+        # placement constraints. Houses 0-3 (this config's own production
+        # default) do work; keep all four so `max_tasks` retries have somewhere
+        # to fall back to instead of failing outright on a single bad house.
+        self.task_sampler_config.house_inds = [0, 1, 2, 3]
+        self.task_sampler_config.samples_per_house = 1
+        self.task_sampler_config.max_tasks = 20
+
+        # Fixed seed and a short horizon -- this test only steps the policy a
+        # handful of times, not to completion.
+        self.seed = 3
+        self.task_horizon = 50
+
+        self.use_passive_viewer = False
+        self.profile = False
+        self.use_wandb = False

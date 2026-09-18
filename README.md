@@ -25,6 +25,22 @@
   <sub>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.</sub>
 </div>
 
+<p align="center">
+  <br/>
+  <a href="https://github.com/allenai/molmospaces/actions/workflows/ci.yaml">
+    <img src="https://img.shields.io/github/actions/workflow/status/allenai/molmospaces/ci.yaml?branch=main&style=flat&label=CI" alt="CI"/>
+  </a>
+  <a href="https://codecov.io/gh/allenai/molmospaces">
+    <img src="https://codecov.io/gh/allenai/molmospaces/branch/main/graph/badge.svg" alt="Coverage"/>
+  </a>
+  <a href="https://pypi.org/project/molmo-spaces/">
+    <img src="https://img.shields.io/pypi/v/molmo-spaces.svg?style=flat&label=PyPI&color=green" alt="PyPI"/>
+  </a>
+  <a href="https://github.com/allenai/molmospaces/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg?style=flat" alt="Apache 2.0"/>
+  </a>
+</p>
+
 ## Updates
 - **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
 - **[2026/06/22]** 🔥 [**Projects using MolmoSpaces**](#papers-using-molmospaces) a list of MolmoSpaces projects.

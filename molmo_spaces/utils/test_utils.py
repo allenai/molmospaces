@@ -859,6 +859,7 @@ def save_observation_comparison(obs_dict, expected_dict, output_dir, prefix="com
         prefix: Prefix for the saved image filenames
     """
     from molmo_spaces.utils.depth_utils import visualize_depth_error, visualize_depth_image
+    from molmo_spaces.utils.plotting_utils import pyplot_available
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -872,6 +873,16 @@ def save_observation_comparison(obs_dict, expected_dict, output_dir, prefix="com
                 if isinstance(actual_data, np.ndarray) and isinstance(expected_data, np.ndarray):
                     # Handle depth sensors differently
                     if sensor_name.endswith("_depth"):
+                        # Depth figures are matplotlib-rendered debug output; without the
+                        # `visualization` extra there is nothing to draw with, and the
+                        # comparison itself has already run by this point.
+                        if not pyplot_available():
+                            print(
+                                f"Skipping depth visualizations for {sensor_name}:"
+                                " install molmo-spaces[visualization] to save them"
+                            )
+                            continue
+
                         # Convert float16 to float32 if needed
                         if expected_data.dtype == np.float16:
                             expected_data = expected_data.astype(np.float32)

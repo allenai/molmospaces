@@ -93,7 +93,19 @@ jobs:
       - name: Run component tests
         run: |
           source .venv/bin/activate
-          python -m pytest mlspaces_tests/component_tests/ -v --tb=short -x
+          python -m pytest mlspaces_tests/component_tests/ -v --tb=short -x \
+            --cov --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        # Coverage is informational -- a Codecov outage must not redden an
+        # otherwise-green build.
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: component-${{ matrix.os }}
+          fail_ci_if_error: false
 
   data-generation-tests:
     timeout-minutes: 60
@@ -183,10 +195,22 @@ jobs:
           ( while true; do date; free -h; sleep 15; done ) > memory_usage.log &
           MONITOR_PID=$!
           python -m pytest mlspaces_tests/data_generation/ -v --tb=short -x \
-            --splits 4 --group ${{ matrix.group }}
+            --splits 4 --group ${{ matrix.group }} \
+            --cov --cov-report=xml
           TEST_EXIT=$?
           kill "$MONITOR_PID" 2>/dev/null || true
           exit $TEST_EXIT
+
+      - name: Upload coverage to Codecov
+        # Each of the four split groups uploads its own partial report; Codecov
+        # merges them (and the other jobs') into one figure per commit.
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: datagen
+          fail_ci_if_error: false
 
       - name: Diagnose data generation test failure (memory/OOM/cancellation)
         if: always()
@@ -298,7 +322,17 @@ jobs:
       - name: Run data generation curobo tests
         run: |
           source .venv/bin/activate
-          python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x
+          python -m pytest mlspaces_tests/data_generation_curobo/ -v --tb=short -x \
+            --cov --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: curobo
+          fail_ci_if_error: false
 
   ruff-checks:
     timeout-minutes: 60

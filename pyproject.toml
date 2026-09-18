@@ -62,7 +62,6 @@ dependencies = [
     "tensorboard>=2.20.0",
     "teledex",
     "termcolor>=2.0.0",
-    "toppra>=0.6.3",
     "torch~=2.7.0", # torch 2.8.x is brand new and has some regressions vs 2.7.x - prefer to hold back for now - this installs nvidia_cuda_nvrtc_cu12-12.6.77 by default, not 12.8
     "torchvision>=0.22.0,<0.23.0",
     "tqdm>=4.65.0",
@@ -78,14 +77,18 @@ dev = [
     "mypy>=1.18.1",
     "pre-commit>=4.3.0",
     "pybind11-stubgen>=2.5.5",
+    "pytest-cov>=7.0.0",
     "pytest-split>=0.10.0",
     "ruff==0.15.0",  # keep in sync with .pre-commit-config.yaml's ruff-pre-commit rev
     "ty>=0.0.15",
     "ipython",
     "ipdb",
 ]
-grasp = [
+visualization = [
     "matplotlib",
+]
+grasp = [
+    "molmo-spaces[visualization]",
     "meshcat",
     "python-fcl",
     "rtree",
@@ -166,6 +169,41 @@ exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 norecursedirs = [".git", "*.egg-info", "build", "dist"]
 markers = [
     "slow: takes minutes of physics stepping; deselect with -m 'not slow'",
+]
+
+[tool.coverage.run]
+source = ["molmo_spaces"]
+branch = true
+# CI measures coverage from several jobs at once (component tests, four
+# pytest-split data-generation groups, the curobo GPU job). `parallel` keeps each
+# run's data file distinct so they can be combined, and `relative_files` records
+# paths relative to the repo root -- without it, the runners' differing absolute
+# checkout paths look like different files and Codecov cannot merge them.
+parallel = true
+relative_files = true
+omit = [
+    # Separate simulator backends, not part of the published molmo_spaces package
+    # (see [tool.setuptools.packages.find]) and not exercised by CI.
+    "molmo_spaces_isaac/*",
+    "molmo_spaces_maniskill/*",
+    "mlspaces_tests/*",
+    "scripts/*",
+    # CI installs only `.[dev,mujoco]` -- these need extras (`grasp`, `housegen`)
+    # that CI never installs, so they can never be exercised and just distort the
+    # denominator.
+    "molmo_spaces/grasp_generation/*",
+    "molmo_spaces/housegen/*",
+    # Needs live network access to resolve licenses against remote asset
+    # sources/indices; not something CI can exercise deterministically.
+    "molmo_spaces/utils/license_utils.py",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.ruff]

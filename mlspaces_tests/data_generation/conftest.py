@@ -41,6 +41,18 @@ def pytest_configure(config):
     )
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--regen-golden",
+        action="store_true",
+        default=False,
+        help=(
+            "Regenerate small in-repo golden fixtures (e.g. "
+            "test_nav_to_obj_rollout.py) instead of comparing against them."
+        ),
+    )
+
+
 @pytest.fixture(scope="function", autouse=True)
 def collect_profilers(request):
     """

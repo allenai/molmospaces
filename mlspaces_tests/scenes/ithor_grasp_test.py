@@ -25,7 +25,10 @@ import sys
 import time
 from multiprocessing import Pool, cpu_count
 
-import matplotlib.pyplot as plt
+# matplotlib is optional (the `visualization` extra); skip rather than fail collection.
+import pytest
+
+plt = pytest.importorskip("matplotlib.pyplot")
 
 # Configure logging format but don't set level yet
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")

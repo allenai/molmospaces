@@ -8,7 +8,6 @@ import os
 import re
 
 import cv2
-import matplotlib.pyplot as plt
 import mujoco as mj
 import numpy as np
 from PIL import Image
@@ -84,7 +83,7 @@ def _delete_blacklisted_bodies(spec: mj.MjSpec) -> int:
     return len(bodies_to_delete)
 
 
-def _delete_license_blocked_bodies(spec: mujoco.MjSpec) -> int:
+def _delete_license_blocked_bodies(spec: mj.MjSpec) -> int:
     """Delete bodies whose asset UIDs are blocked by the active license policy."""
     from molmo_spaces.molmo_spaces_constants import get_license_policy
     from molmo_spaces.tasks.task_sampler import extract_asset_uid_from_object_name
@@ -99,7 +98,7 @@ def _delete_license_blocked_bodies(spec: mujoco.MjSpec) -> int:
 
     bodies_to_delete = []
 
-    def collect_blocked_bodies(body_spec: mujoco.MjsBody) -> None:
+    def collect_blocked_bodies(body_spec: mj.MjsBody) -> None:
         uid_key = extract_asset_uid_from_object_name(body_spec.name or "")
         if uid_key and uid_key in blocked_keys:
             bodies_to_delete.append(body_spec)
@@ -1043,6 +1042,8 @@ class iTHORMap(ProcTHORMap):
 
 if __name__ == "__main__":
     import glob
+
+    import matplotlib.pyplot as plt
 
     from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 
