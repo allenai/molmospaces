@@ -22,6 +22,7 @@ from molmo_spaces.env.data_views import (
     MlSpacesObject,
     create_mlspaces_body,
 )
+from molmo_spaces.env.scene.spec_ops import is_grasp_probe_body_name
 from molmo_spaces.utils.constants.object_constants import (
     AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA,
 )
@@ -676,8 +677,10 @@ class ObjectManager:
 
         if "excluded" not in cache_in_use[oname]:
             is_excluded = (
-                self._env.config.robot_config.robot_namespace in oname
-            ) or not self._has_visible_geom(self.get_object_body_id(object_or_name_or_id))
+                (self._env.config.robot_config.robot_namespace in oname)
+                or is_grasp_probe_body_name(oname)
+                or not self._has_visible_geom(self.get_object_body_id(object_or_name_or_id))
+            )
             if self._caching_enabled:
                 cache_in_use[oname]["excluded"] = is_excluded
             else:
