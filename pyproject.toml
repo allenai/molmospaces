@@ -34,8 +34,6 @@ dependencies = [
     "hidapi",
     "imageio[ffmpeg]",
     "lxml>=5.0.0",
-    # mink>=1.0 declares mujoco>=3.8.1, so it can pull mujoco forward.
-    "mink",
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
@@ -52,7 +50,6 @@ dependencies = [
     "numpy-quaternion~=2024.0.10",
     "nvidia-ml-py",
     "omegaconf>=2.3.0",
-    "onnxruntime>=1.18.0",
     "open_clip_torch~=3.2.0",
     "opencv-python",
     "pandas>=2.3.1",
@@ -110,6 +107,12 @@ housegen = [
 ]
 curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
+]
+g1_humanoid = [
+    "ml-collections", # molmo_spaces/utils/prompt_samplers.py's g1_molmo-ported sampler
+    # mink>=1.0 declares mujoco>=3.8.1, so it can pull mujoco forward.
+    "mink", # G1 whole-body IK: robots/g1.py, pick_task_sampler_g1.py, pick_planner_policy_g1.py
+    "onnxruntime>=1.18.0", # G1 whole-body controller's learned policy: controllers/g1_wbc.py
 ]
 mujoco = [
     "mujoco~=3.5.0",
