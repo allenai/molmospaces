@@ -318,8 +318,13 @@ def determine_task_horizon(
         log.info(f"Using explicit task_horizon override: {task_horizon_override} steps")
         return task_horizon_override
 
+    # TODO(wilbert): yooo my boi, seems the 'task_horizon_sec' is a runtime field added while
+    # patching the benchmarks. I'm trusting you guys on this for now :sweat_smile:, so will just
+    # suppress the warning for now. We don't use a default on .get() bc seems you are checking
+    # for None in a weird way here, so as long as it doesn't blow up then we're good I think LOL
+
     # Read task_horizon_sec from the benchmark episodes
-    horizon_sec_values = {ep.task.get("task_horizon_sec") for ep in episodes}
+    horizon_sec_values: set[int] = {ep.task.get("task_horizon_sec") for ep in episodes}  # pyright: ignore[reportAssignmentType] # ty: ignore
 
     if None in horizon_sec_values:
         missing_count = sum(1 for ep in episodes if ep.task.get("task_horizon_sec") is None)
@@ -407,12 +412,25 @@ def create_eval_config(
     Returns:
         Configured MlSpacesExpConfig
     """
+
+    # TODO(wilbert): ok, this part still works in practice. Unlike plain dataclasses which fail when
+    # not passing non-optional args, pydantic seems to not complain. Also, the cls we pass are the
+    # subclasses which actually define an arg always on its definition, so it won't crash for those
+    # particular config classes. For now I'll just suppress the warning here
+
     # Instantiate the eval config
-    exp_config = eval_config_cls()
+    exp_config = eval_config_cls()  # pyright: ignore[reportCallIssue] # ty: ignore
+
+    # TODO(wilbert): ok folks, here we also have some danger, as the 'checkpoint_path' field seems
+    # to not be always defined in all policy configs (e.g. DummyBenchmarkEvalConfig), so this part
+    # right here can actually crash if we pass a not-None 'checkpoint_path' and a cfg class that
+    # doesn't define this field when being subclassed. For now I'll just check that it has the attr
+    # like the dirty boi I am xD, but we have to redesign this guys. Still have to suppress the warn
+    # bc hasattr doesn't actually propagate the info of having that attribute downstream LOL
 
     # Override checkpoint if provided
-    if checkpoint_path is not None:
-        exp_config.policy_config.checkpoint_path = checkpoint_path
+    if checkpoint_path is not None and hasattr(exp_config.policy_config, "checkpoint_path"):
+        exp_config.policy_config.checkpoint_path = checkpoint_path  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
     # Set output directory
     exp_config.output_dir = output_dir
@@ -531,6 +549,12 @@ def run_evaluation(
             class_name = eval_config_cls
             eval_config_cls = get_config_class(class_name)
 
+    # TODO(wilbert): by this point all code downstream expects a class instead of a string. The
+    # getattr() section could in theory return Any, but all code above expects a class, so for now
+    # I'll just assume that by now we must have a class object (otherwise we would have already
+    # crashed downstream)
+    assert not isinstance(eval_config_cls, str), "Must have provided a class, not a string"
+
     # Validate benchmark directory
     benchmark_dir = benchmark_dir.resolve()
     if not benchmark_dir.exists():
@@ -574,7 +598,7 @@ def run_evaluation(
         )
 
     total_episodes = len(episodes)
-    num_houses = len(set(ep.house_index for ep in episodes))
+    num_houses = len({ep.house_index for ep in episodes})
 
     # Create timestamp and output directory
     # Use the original string if eval_config_cls was passed as a string, otherwise use __name__.
@@ -632,8 +656,15 @@ def run_evaluation(
 
     # Override policy camera names if requested
     if camera_names_override is not None:
-        log.info(f"Overriding policy_config.camera_names: {camera_names_override}")
-        exp_config.policy_config.camera_names = camera_names_override
+        # TODO(wilbert): seems 'camera_names' is not defined in any policy config class, so this
+        # code path seems to be actually broken, and can crash if the user passes to the eval_main
+        # arguments a 'camera_names' from argparse. So, for now I'll just avoid the crash so we can
+        # fix this later when we decide how actually the configs stuff should behave. So hasattr
+        # would have to suffice for now, being a bit dirty again LOL
+
+        if hasattr(exp_config.policy_config, "camera_names"):
+            log.info(f"Overriding policy_config.camera_names: {camera_names_override}")
+            exp_config.policy_config.camera_names = camera_names_override  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore
 
     # Patch config with evaluation-specific runtime parameters
     exp_config = JsonEvalRunner.patch_config(
@@ -661,6 +692,15 @@ def run_evaluation(
             ckpt_name = "_".join(ckpt_name_parts)
         else:
             ckpt_name = "no_ckpt"
+
+        # TODO(wilbert): here we should actually have 'task_horizon' be not None, otherwise we crash
+        # anyway, so for now I'll just assert that we get the correct configuration from the user.
+        # We should actually decide if those Optional parameters in the experiment-config class need
+        # to actually be optional (atm e.g. `task_horizon: int | None`)
+
+        assert exp_config.task_horizon is not None, (
+            "The user must have provided a valid 'task_horizon' by now (of type int)"
+        )
 
         wandb_run_name = f"{ckpt_name}_{timestamp}"
         wandb.init(project=wandb_project, name=wandb_run_name)
