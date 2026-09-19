@@ -331,7 +331,7 @@ class GraspTestRolloutRunner(ParallelRolloutRunner):
         viewer=None,
         shutdown_event=None,
         use_passive_viewer: bool = False,
-        save_failed_video_dir: Optional[Path] = None,
+        save_failed_video_dir: Path | None = None,
         grasp_idx: int = 0,
         object_name: str = "",
         joint_name: str = "",
@@ -625,10 +625,10 @@ def test_grasps_for_scene(
     task_horizon: int = 120,
     use_passive_viewer: bool = False,
     task_type: str = "both",
-    grasp_loader: Optional[GraspLoader] = None,
-    save_failed_videos_dir: Optional[Path] = None,
-    save_metrics_json_path: Optional[Path] = None,
-) -> Dict[str, Any]:
+    grasp_loader: GraspLoader | None = None,
+    save_failed_videos_dir: Path | None = None,
+    save_metrics_json_path: Path | None = None,
+) -> dict[str, Any]:
     """Test grasps for all objects in a scene.
 
     Returns:

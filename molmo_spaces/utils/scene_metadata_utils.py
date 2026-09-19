@@ -40,7 +40,7 @@ def get_scene_metadata(mj_base_scene_path: str | Path) -> dict | None:
         while parts:
             cur_name = "_".join(parts + ["metadata.json"])
             if (dir_path / cur_name).exists():
-                with open(dir_path / cur_name, "r") as f:
+                with open(dir_path / cur_name) as f:
                     return json.load(f)
 
             # Not found, remove last part and try again
@@ -50,7 +50,7 @@ def get_scene_metadata(mj_base_scene_path: str | Path) -> dict | None:
 
         return None
 
-    with open(metadata_file, "r") as f:
+    with open(metadata_file) as f:
         metadata = json.load(f)
 
     return metadata

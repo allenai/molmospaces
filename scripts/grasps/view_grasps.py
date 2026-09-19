@@ -142,8 +142,8 @@ def extract_objects_from_metadata(model, scene_metadata):
         return {}, {}
 
     # Separate pickup and articulation types (convert to lowercase for comparison)
-    pickup_categories = set(cat.lower() for cat in ALL_PICKUP_TYPES_THOR)
-    articulation_categories = set(cat.lower() for cat in EXTENDED_ARTICULATION_TYPES_THOR)
+    pickup_categories = {cat.lower() for cat in ALL_PICKUP_TYPES_THOR}
+    articulation_categories = {cat.lower() for cat in EXTENDED_ARTICULATION_TYPES_THOR}
 
     objects_dict = scene_metadata.get("objects", {})
     pickup_objects = {}  # {asset_id: body_name}

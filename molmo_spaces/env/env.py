@@ -226,7 +226,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self._mj_model = mj_model
         self._mj_base_scene_path = mj_base_scene_path
         self._scene_metadata = (
-            scene_metadata if scene_metadata is not None else (get_scene_metadata(mj_base_scene_path) or {})
+            scene_metadata
+            if scene_metadata is not None
+            else (get_scene_metadata(mj_base_scene_path) or {})
         )
 
         # data for each batch
@@ -266,7 +268,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
             om.clear()
         self.object_managers = [ObjectManager(self, idx) for idx in range(len(self._mj_datas))]
 
-    def _create_renderer(self, width: int, height: int) -> "MjAbstractRenderer | None":
+    def _create_renderer(self, width: int, height: int) -> MjAbstractRenderer | None:
         """The renderer `_render_frame` draws with. A subclass that renders
         through another path (G1CPUMujocoEnv's per-camera mujoco.Renderer pool
         and fisheye composite) returns None here and overrides the render_*

@@ -7,6 +7,7 @@ from fetchman.configs.g1_port_configs import (
     G1TaskConfig,
     G1TaskSamplerConfig,
 )
+
 from molmo_spaces.data_generation.config_registry import register_config
 
 NAV_PROFILE = dict(

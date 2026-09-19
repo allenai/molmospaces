@@ -108,7 +108,7 @@ def main():
 
     rng = random.Random(args.seed)
 
-    with open(args.json_file, "r") as f:
+    with open(args.json_file) as f:
         data = json.load(f)
 
     hash_to_uid = build_hash_to_uid()

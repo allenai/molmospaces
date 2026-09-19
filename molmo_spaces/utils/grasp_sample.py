@@ -28,7 +28,7 @@ def get_noncolliding_grasp_mask(
         create_mlspaces_body(mj_data, spec_ops.grasp_probe_body_name(i)) for i in range(batch_size)
     ]
     start_poses = [body.pose.copy() for body in grasp_bodies]
-    grasp_body_ids = set(body.body_id for body in grasp_bodies)
+    grasp_body_ids = {body.body_id for body in grasp_bodies}
 
     try:
         colliding_grasp_mask = np.zeros(n_grasps, dtype=bool)

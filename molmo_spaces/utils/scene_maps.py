@@ -409,7 +409,7 @@ class ProcTHORMap(THORMap):
         `occupancy` with the pair this returns."""
         return self.pos_m_to_px(np.array([float(xy[0]), float(xy[1]), 0.0]))[:2]
 
-    def dilated(self, extra_radius_m: float) -> "ProcTHORMap":
+    def dilated(self, extra_radius_m: float) -> ProcTHORMap:
         """Return a copy with obstacles inflated by extra_radius_m. Shallow copy
         (shares world_to_map/map_to_world/room_map) so it works for iTHORMap too,
         whose __init__ doesn't take room_map/room_ids_to_name."""

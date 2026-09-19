@@ -409,7 +409,7 @@ def log_eval_videos_to_wandb(eval_dir: Path, camera_names: list[str], epoch: int
 
     # Find all matching video files
     video_files = sorted(
-        set(path for cam in camera_names for path in eval_dir.glob(f"**/episode_*_{cam}*.mp4"))
+        {path for cam in camera_names for path in eval_dir.glob(f"**/episode_*_{cam}*.mp4")}
     )
 
     if not video_files:

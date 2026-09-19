@@ -247,7 +247,7 @@ def download_and_extract(
 
     manifest = {}
     if os.path.isfile(extracted_manifest_path):
-        with open(extracted_manifest_path, "r") as f:
+        with open(extracted_manifest_path) as f:
             manifest = json.load(f)
     if (
         data_type in manifest

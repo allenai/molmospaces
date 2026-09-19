@@ -69,7 +69,7 @@ class PickAndPlaceNextToTaskSampler(AbstractPickAndPlaceObjectTargetTaskSampler)
 
         place_receptacle_types = self.config.task_sampler_config.place_receptacle_types
         if place_receptacle_types:
-            place_types_set = set(t.lower() for t in place_receptacle_types)
+            place_types_set = {t.lower() for t in place_receptacle_types}
             filtered_context_objects = []
             for obj in context_objects:
                 obj_types = om.get_possible_object_types(obj.name)
