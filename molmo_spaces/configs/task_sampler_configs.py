@@ -109,6 +109,46 @@ class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     grasp_libraries: list[str] | None = None
 
 
+class HumanRBVariant(StrEnum):
+    """Which build of the Rocketbox avatars PickWithHumanRBTaskSampler populates
+    a scene with. Each value names the library holding it, a directory under
+    ROBOTS_DIR -- installed on demand for the published builds (see
+    `is_downloadable`), otherwise generated locally by
+    scripts/assets/convert_human_rb.py (its `articulate`, `skin` and `convert`
+    commands respectively). See
+    molmo_spaces/tasks/pick_with_human_rb_task_sampler.py.
+
+    They live under ROBOTS_DIR rather than beside the object libraries because
+    an avatar is also drivable as a robot in its own right (see
+    molmo_spaces/robots/human_rb.py) and is installed through the same
+    robot-source machinery as every other robot model.
+
+    ARTICULATED  ~20-body ball-joint ragdoll whose mesh is cut into rigid
+                 per-bone chunks, one mesh geom each.
+    SKINNED      The same ragdoll, with the mesh riding on the bones as MuJoCo
+                 skins instead: joints deform rather than tearing open, and each
+                 avatar is a few visual assets instead of ~60 mesh geoms.
+    STATIC       A single free-jointed mannequin, no skeleton -- cheapest, and
+                 all that scene-population obstacles strictly need.
+    """
+
+    ARTICULATED = "humans_rocketbox_articulated"
+    SKINNED = "humans_rocketbox_skinned"
+    STATIC = "humans_rocketbox_static"
+
+    @property
+    def is_downloadable(self) -> bool:
+        """Whether this build is published as a robot asset source, i.e. can be
+        installed on demand rather than generated locally.
+
+        Derived from the manifest rather than hardcoded, so publishing a further
+        build needs nothing but its DATA_TYPE_TO_SOURCE_TO_VERSION entry.
+        """
+        from molmo_spaces.molmo_spaces_constants import DATA_TYPE_TO_SOURCE_TO_VERSION
+
+        return str(self) in DATA_TYPE_TO_SOURCE_TO_VERSION["robots"]
+
+
 class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     """Configuration for Franka move-to-pose task sampler."""
 
@@ -208,6 +248,27 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
             self.added_pickup_objects = all_uids
         if self.added_pickup_objects:
             self.objaverse_oversampling_factor = 1
+
+
+class PickWithHumanRBTaskSamplerConfig(PickTaskSamplerConfig):
+    """PickTaskSamplerConfig plus scattering humanoid avatars (scene
+    population / soft obstacles) around a Pick episode, placed via the same
+    occupancy-map machinery used for robot placement."""
+
+    avatar_variant: HumanRBVariant = HumanRBVariant.ARTICULATED
+    # None = auto-discover every UID in the registered avatar user asset library.
+    avatar_uids: list[str] | None = None
+    num_avatars: int = 10
+    avatar_namespace: str = "avatar/"
+    # Occupancy-map dilation radius used to find candidate points for avatars --
+    # deliberately separate from robot_safety_radius (tuned for a small stationary
+    # arm base): avatars are human-sized (~0.2m capsule radius), so a point that's
+    # "free" for the robot's much smaller radius often isn't wide enough to also
+    # fit a standing person without a placement collision.
+    avatar_agent_radius: float = 0.3
+    avatar_placement_radius: float = 0.15  # mirrors trajectory_obstacle_placement_radius
+    avatar_min_spacing: float = 0.6  # min distance between two avatars' sampled points
+    max_avatar_point_attempts: int = 20  # per-avatar retry budget for a valid map point
 
 
 class OpenTaskSamplerConfig(PickTaskSamplerConfig):

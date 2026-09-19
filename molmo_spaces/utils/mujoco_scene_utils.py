@@ -371,3 +371,19 @@ def is_object_supported_by_body(
     # both transitive support and multiple supports.
 
     return contact_is_vertical and is_supporting_weight
+
+
+def namespace_skins(spec: MjSpec, namespace: str) -> None:
+    """Prefix a spec's skin assets with the namespace it is about to be attached under.
+
+    `attach_body` renames bodies, geoms, materials and the skins' *bone* body
+    references, but not a skin's own name or its material reference (MuJoCo
+    3.5). Left alone, attaching two copies of the same skinned model fails
+    outright ("repeated name ... in skin") and even a single one fails to
+    compile once its material has been renamed out from under it ("material
+    ... not found in skin"). A no-op for specs with no skins.
+    """
+    for skin in spec.skins:
+        skin.name = namespace + skin.name
+        if skin.material:
+            skin.material = namespace + skin.material

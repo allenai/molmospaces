@@ -14,12 +14,18 @@ from typing import Any
 import mujoco as mj
 
 from molmo_spaces.configs.abstract_config import Config
+from molmo_spaces.configs.task_sampler_configs import HumanRBVariant
 from molmo_spaces.molmo_spaces_constants import get_robot_path
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.robots.bimanual_yam import BimanualYamRobot
 from molmo_spaces.robots.floating_robotiq import FloatingRobotiqRobot
 from molmo_spaces.robots.floating_rum import FloatingRUMRobot
 from molmo_spaces.robots.franka import FrankaRobot
+from molmo_spaces.robots.human_rb import (
+    HumanRBRobot,
+    human_rb_library_dir,
+    human_rb_move_group_dofs,
+)
 from molmo_spaces.robots.i2rt_yam import I2rtYamRobot
 from molmo_spaces.robots.mobile_franka import MobileFrankaRobot
 from molmo_spaces.robots.rby1 import RBY1
@@ -32,6 +38,7 @@ from molmo_spaces.robots.robot_views.franka_droid_view import (
     FloatingRobotiq2f85RobotView,
     FrankaDroidRobotView,
 )
+from molmo_spaces.robots.robot_views.human_rb_view import HumanRBRobotView
 from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.mobile_franka_droid_view import MobileFrankaDroidRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
@@ -439,3 +446,96 @@ class BimanualYamRobotConfig(BaseRobotConfig):
             assert self.command_mode["gripper"] == "joint_position"
         if "arm" in self.command_mode:
             assert self.command_mode["arm"] in ["joint_position", "joint_rel_position"]
+
+
+class HumanRBRobotConfig(BaseRobotConfig):
+    """Configuration for a Rocketbox humanoid avatar driven as a robot.
+
+    Unlike every other robot here the model is not one robot but one *of* a
+    library: `avatar_variant` picks the build (see HumanRBVariant) and `uid` one
+    of its characters, so `robot_dir` / `robot_xml_path` are derived from the
+    two rather than set by hand.
+
+    The articulated and skinned builds are published as robot asset sources and
+    install on demand like any other robot model. The static build is not, and
+    has to be generated locally by scripts/assets/convert_human_rb.py, which is
+    also where the setup instructions live.
+
+    `HumanRBRobot._load_robot_spec` rewrites that asset into an actuated robot on
+    the way in -- see molmo_spaces/robots/human_rb.py for what that involves and
+    which of the knobs below feed it.
+    """
+
+    robot_cls: type[HumanRBRobot] | None = HumanRBRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = HumanRBRobot
+    robot_view_factory: RobotViewFactory | None = HumanRBRobotView
+    robot_namespace: str = "robot_0/"
+    name: str = "avatar"
+
+    # Which character, and which build of it. Only the skinned build makes a
+    # usable robot: the articulated one tears open at the seams once its joints
+    # leave the rest pose, and the static one has no skeleton at all.
+    uid: str = "Female_Adult_16"
+    avatar_variant: HumanRBVariant = HumanRBVariant.SKINNED
+
+    # Set from uid/avatar_variant in model_post_init; present here because
+    # BaseRobotConfig declares them required.
+    robot_xml_path: Path = Path("unset.xml")
+    robot_dir: Path | None = None
+
+    # Total body mass, distributed over the bones anthropometrically (see
+    # human_rb.py's _MASS_FRACTIONS). The converter leaves every limb at 1e-08 kg
+    # and the pelvis capsule at ~240kg, which no position actuator can drive.
+    total_mass: float = 70.0
+
+    # Position-actuator gains and passive joint properties for the 57 hinges
+    # human_rb.py substitutes for the rig's ball joints. One set for all of them:
+    # the mass distribution already scales what each joint has to hold, and the
+    # avatar is a figure to be posed, not a machine with per-joint hardware to
+    # model. These gains hold the reset pose to within ~0.02 rad against gravity
+    # (measured over 5s on adult, child and costumed avatars alike).
+    #
+    # `joint_armature` is a stability floor, not a tuning knob: a hand bone
+    # weighs 0.4kg and has an inertia around 1e-4, so a stiff position servo
+    # driving it directly diverges within ~30 steps at the default 2ms
+    # timestep. 0.05 is the first value that holds across the gain range;
+    # 0.03 still blows up. Lower it only alongside a smaller timestep.
+    joint_kp: float = 600.0
+    joint_kd: float = 50.0
+    joint_damping: float = 1.0
+    joint_armature: float = 0.05
+
+    # Hold the pelvis with a mocap weld (see HumanRBRobot.add_robot_to_scene).
+    # Without it the avatar is a free-floating ragdoll balancing on the rounded
+    # end of a single body-length collision capsule, i.e. it falls over.
+    weld_base: bool = True
+
+    # Bring the arms from the authored A-pose down to rest at the sides on
+    # reset, per-avatar from its own bone geometry -- see
+    # human_rb.arms_down_shoulder_angles. Applied on top of init_qpos.
+    lower_arms: bool = True
+
+    # The rig's own rest pose, i.e. standing. `lower_arms` above is what moves
+    # the arms off it.
+    init_qpos: dict[str, list[float]] = {
+        mg_id: [0.0] * n_dofs for mg_id, n_dofs in human_rb_move_group_dofs().items()
+    }
+    init_qpos_noise_range: dict[str, list[float]] | None = None
+    command_mode: dict[str, str] = dict.fromkeys(human_rb_move_group_dofs(), "joint_position")
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        object.__setattr__(self, "robot_xml_path", Path(f"{self.uid}.xml"))
+
+    def get_robot_dir(self) -> Path:
+        """This character's directory inside its library.
+
+        Resolved here rather than baked into `robot_dir` at construction so that
+        merely building a config does not install a ~150MB asset library --
+        get_robot_path downloads on first miss, and configs get constructed to be
+        inspected, serialized and copied (see
+        BaseMujocoTaskSampler._robot_configs) far more often than to be loaded.
+        """
+        if self.robot_dir is not None:
+            return self.robot_dir
+        return human_rb_library_dir(self.avatar_variant) / self.uid
