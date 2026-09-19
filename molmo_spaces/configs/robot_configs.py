@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import mujoco as mj
+import numpy as np
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.molmo_spaces_constants import get_robot_path
@@ -383,7 +384,7 @@ class G1Config(BaseRobotConfig):
     """
 
     robot_cls: type[G1Robot] | None = G1Robot
-    robot_factory: Callable[[MjData, Any], Robot] | None = G1Robot.from_mj_data
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = G1Robot.from_mj_data
     robot_view_factory: RobotViewFactory | None = G1RobotView
     robot_namespace: str = "robot_0/"
     name: str = "g1"
