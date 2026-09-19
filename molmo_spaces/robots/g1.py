@@ -276,11 +276,13 @@ class G1Robot(Robot):
         exp_config: "MlSpacesExpConfig | None" = None,
         gripper_friction: tuple[float, float, float] | None = None,
     ):
-        # Robot.__init__ wants (mj_data, exp_config) and only stores them; this
+        # Robot.__init__ stores its second arg as self.robot_config, but this
         # class is constructed with an explicit (model, data) pair by the
-        # reference stack, so pass `data` through and keep self.model/self.data
-        # as the names the ported code already reads.
+        # reference stack and reads self.exp_config everywhere below, so pass
+        # `data` through and set self.exp_config explicitly rather than rely
+        # on the (mis-typed, for us) base-class attribute.
         super().__init__(data, exp_config)
+        self.exp_config = exp_config
         self.model = model
         self.data = data
         self._env = env
