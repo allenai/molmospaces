@@ -90,13 +90,15 @@ class I2rtYamRobot(Robot):
         randomize_textures: bool = False,
         strip_meshes: bool = False,
     ) -> None:
-        if len(pos) == 2:
-            pos.append(0.0)
+        # TODO(wilbert): this part is iffy, we shouldn't expect to receive either both vec3 and vec2
+        # here. The caller should just send a vec3 and if he just wants xy then the last element
+        # should be just 0. We could maybe change list[float] to tuple[float,float,float] and so on
+        pos_xyz = pos + [0.0] if len(pos) == 2 else pos.copy()
 
         # Create a mocap body to control the robot base pose
         robot_body = spec.worldbody.add_body(
             name=f"{prefix}base",
-            pos=pos,
+            pos=pos_xyz,
             quat=quat,
             mocap=True,
         )

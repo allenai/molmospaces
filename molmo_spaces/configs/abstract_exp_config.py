@@ -231,7 +231,7 @@ class MlSpacesExpConfig(Config, ABC):
         task_cls_str: str | None = None
         """(Optional) The name of the task class to be used"""
 
-    def freeze_task_config(self, observation, task: BaseMujocoTask | None = None) -> str:
+    def freeze_task_config(self, observation, task: BaseMujocoTask) -> str:
         sc = MlSpacesExpConfig.SavedEpisode()
 
         # NOTE(RMH): deep argument VERY IMPORTANT. Mutates config for future episodes otherwise
@@ -244,68 +244,66 @@ class MlSpacesExpConfig(Config, ABC):
         sc.robot_config.init_qpos_noise_range = None
         sc.robot_config.init_qpos = observation[0]["qpos"]
 
-        if task and self.camera_config:
-            sc.camera_config = self.camera_config.model_copy(deep=True)
-            for i, camera in enumerate(sc.camera_config.cameras):
-                # Some cameras can contain random sampling, e.g. of positions
-                # Read the camera's positions and convert them to fixed cameras
-                if isinstance(camera, MjcfCameraConfig | RobotMountedCameraConfig):
-                    cam = task.env.camera_manager.registry[camera.name]
+        # TODO(wilbert): by now the camera_config shouldn't be None (must be set by the user). It
+        # might need to be declared as not optional instead
+        assert self.camera_config is not None, "Must have a valid 'self.camera_config' by now"
 
-                    # TODO(wilbert): uhmm, most of the attributes below are only defined in the
-                    # RobotMountedCamera cls, not the base Camera cls. For now we're assumming
-                    # that here we always get a RobotMountedCamera instance, otherwise it would
-                    # crash anyway bc the parameters expected wouldn't be defined
-                    assert isinstance(cam, RobotMountedCamera), (
-                        "Something is wrong here, the 'cam' instance should be of class 'RobotMountedCamera'"
-                    )
+        sc.camera_config = self.camera_config.model_copy(deep=True)
+        for i, camera in enumerate(sc.camera_config.cameras):
+            # Some cameras can contain random sampling, e.g. of positions
+            # Read the camera's positions and convert them to fixed cameras
+            if isinstance(camera, MjcfCameraConfig | RobotMountedCameraConfig):
+                cam = task.env.camera_manager.registry[camera.name]
 
-                    camera_quat: list[float] = (
-                        cam.camera_quaternion.tolist()
-                        if cam.camera_quaternion is not None
-                        else [1.0, 0.0, 0.0, 0.0]
-                    )
-                    new_camera = RobotMountedCameraConfig(
-                        name=cam.name,
-                        reference_body_names=list(cam.reference_body_names),
-                        camera_offset=list(cam.camera_offset),
-                        lookat_offset=list(cam.lookat_offset),
-                        camera_quaternion=camera_quat,
-                        fov=cam.fov,
-                    )
-                    sc.camera_config.cameras[i] = new_camera
-
-                elif isinstance(
-                    camera, RandomizedExocentricCameraConfig | FixedExocentricCameraConfig
-                ):
-                    cam = task.env.camera_manager.registry[camera.name]
-                    new_camera = FixedExocentricCameraConfig(
-                        name=cam.name,
-                        fov=cam.fov,
-                        pos=list(cam.pos),
-                        up=list(cam.up),
-                        forward=list(cam.forward),
-                    )
-                    sc.camera_config.cameras[i] = new_camera
-                else:
-                    raise NotImplementedError(
-                        f"Cannot freeze camera of type {type(camera).__name__}"
-                    )
-
-        if task:
-            obj_poses = {}
-            om = task.env.object_managers[task.env.current_batch_index]
-            task_objects = om.get_mobile_objects()
-            for task_object in task_objects:
-                obj_poses[task_object.name] = pose_mat_to_7d(task_object.pose).tolist()
-            task.config.task_config.object_poses = obj_poses
-
-            sc.task_config = self.task_config.model_copy(deep=True)
-            sc.task_config.task_cls = None
-            if self.task_config.task_cls is not None:
-                sc.task_cls_str = (
-                    self.task_config.task_cls.__module__ + "." + self.task_config.task_cls.__name__
+                # TODO(wilbert): uhmm, most of the attributes below are only defined in the
+                # RobotMountedCamera cls, not the base Camera cls. For now we're assumming
+                # that here we always get a RobotMountedCamera instance, otherwise it would
+                # crash anyway bc the parameters expected wouldn't be defined
+                assert isinstance(cam, RobotMountedCamera), (
+                    "Something is wrong here, the 'cam' instance should be of class 'RobotMountedCamera'"
                 )
+
+                camera_quat: list[float] = (
+                    cam.camera_quaternion.tolist()
+                    if cam.camera_quaternion is not None
+                    else [1.0, 0.0, 0.0, 0.0]
+                )
+                new_camera = RobotMountedCameraConfig(
+                    name=cam.name,
+                    reference_body_names=list(cam.reference_body_names),
+                    camera_offset=list(cam.camera_offset),
+                    lookat_offset=list(cam.lookat_offset),
+                    camera_quaternion=camera_quat,
+                    fov=cam.fov,
+                )
+                sc.camera_config.cameras[i] = new_camera
+
+            elif isinstance(camera, RandomizedExocentricCameraConfig | FixedExocentricCameraConfig):
+                cam = task.env.camera_manager.registry[camera.name]
+                new_camera = FixedExocentricCameraConfig(
+                    name=cam.name,
+                    fov=cam.fov,
+                    pos=list(cam.pos),
+                    up=list(cam.up),
+                    forward=list(cam.forward),
+                )
+                sc.camera_config.cameras[i] = new_camera
+            else:
+                raise NotImplementedError(f"Cannot freeze camera of type {type(camera).__name__}")
+
+        obj_poses = {}
+        om = task.env.object_managers[task.env.current_batch_index]
+        task_objects = om.get_mobile_objects()
+        for task_object in task_objects:
+            obj_poses[task_object.name] = pose_mat_to_7d(task_object.pose).tolist()
+        task.config.task_config.object_poses = obj_poses
+
+        sc.task_config = self.task_config.model_copy(deep=True)
+        sc.task_config.task_cls = None
+        if self.task_config.task_cls is not None:
+            sc.task_cls_str = (
+                self.task_config.task_cls.__module__ + "." + self.task_config.task_cls.__name__
+            )
 
         if sc.task_config and sc.task_config.robot_base_pose is None:
             raise RuntimeError("'robot_base_pose' attribute must be in the task_config")

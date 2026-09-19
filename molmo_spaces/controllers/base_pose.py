@@ -127,7 +127,12 @@ class DiffDriveBasePoseController(BasePoseController):
         dy = y_t - y
 
         # Transform error to robot frame
-        error_x = np.cos(theta) * dx + np.sin(theta) * dy - np.sin(theta) * dx + np.cos(theta) * dy
+        error_x = np.cos(theta) * dx + np.sin(theta) * dy
+
+        # TODO(wilbert): this part was unused, should it have been error_y = ... ?. Will keep it
+        # commented here bc as mentioned in the past comments above this needs to be more tested
+        # - np.sin(theta) * dx + np.cos(theta) * dy
+
         error_theta = np.arctan2(np.sin(theta_t - theta), np.cos(theta_t - theta))
 
         # Proportional gains
