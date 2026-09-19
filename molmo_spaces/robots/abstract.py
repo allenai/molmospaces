@@ -26,10 +26,10 @@ log = logging.getLogger(__name__)
 
 
 class Robot:
-    def __init__(self, mj_data: MjData, config: BaseRobotConfig) -> None:
+    def __init__(self, mj_data: MjData, robot_config: BaseRobotConfig) -> None:
         self.mj_model = mj_data.model
         self.mj_data = mj_data
-        self.config = config
+        self.robot_config = robot_config
 
         self._last_unnoised_cmd_joint_pos: dict[str, np.ndarray] | None = None
 
@@ -189,7 +189,7 @@ class Robot:
         Returns:
             Modified action dict with noise added
         """
-        noise_config = self.config.action_noise_config
+        noise_config = self.robot_config.action_noise_config
         assert noise_config, "Something is wrong here, 'noise_config' shouldn't be None"
 
         if not noise_config.enabled:

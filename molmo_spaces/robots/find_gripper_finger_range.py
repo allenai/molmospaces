@@ -33,6 +33,10 @@ def main():
     robot_config_class = getattr(robot_config_module, args.robot_config_class)
 
     robot_config: BaseRobotConfig = robot_config_class()
+    assert robot_config.robot_cls is not None, "Must have provided a valid robot-class"
+    assert robot_config.robot_view_factory is not None, (
+        "Must have provided a valid robot-view-factory"
+    )
 
     spec = MjSpec()
     robot_config.robot_cls.add_robot_to_scene(
