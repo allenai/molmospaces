@@ -117,8 +117,8 @@ def summarize_config(config_name: str, split: str, entries: list[dict]) -> dict:
     compressed = sum(e["size"] for e in entries)
     inflated = sum(e.get("inflated_size", 0) for e in entries)
     has_inflated = entries and "inflated_size" in entries[0]
-    parts = sorted(set(e["part"] for e in entries))
-    shards = sorted(set(e["shard_id"] for e in entries))
+    parts = sorted({e["part"] for e in entries})
+    shards = sorted({e["shard_id"] for e in entries})
 
     per_part: dict[int, dict] = {}
     for p in parts:

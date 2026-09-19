@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from molmo_spaces.configs import PickTaskConfig
+from molmo_spaces.configs.task_configs import PickTaskConfig
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy import (
     ActionPrimitive,

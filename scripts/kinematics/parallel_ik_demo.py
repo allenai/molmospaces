@@ -6,13 +6,17 @@ On mac, run with mjpython.
 
 from collections import defaultdict
 
-import numpy as np
 import mujoco
-from mujoco import MjModel, MjData, MjSpec
+import numpy as np
+from mujoco import MjData, MjModel, MjSpec
 from mujoco.viewer import launch_passive
 
-from molmo_spaces.configs import BaseRobotConfig
-from molmo_spaces.configs.robot_configs import FrankaRobotConfig, I2rtYamRobotConfig, RBY1MConfig
+from molmo_spaces.configs.robot_configs import (
+    BaseRobotConfig,
+    FrankaRobotConfig,
+    I2rtYamRobotConfig,
+    RBY1MConfig,
+)
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 from molmo_spaces.robots.robot_views.abstract import RobotView
 

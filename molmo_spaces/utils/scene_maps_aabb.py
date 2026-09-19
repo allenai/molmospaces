@@ -2,9 +2,9 @@
 scene's floor geoms, rendered through MuJoCo's segmentation renderer.
 
 From the FetchMan repo (`g1_molmo`, `components/occupancy_map.py::OccupancyMap`),
-relocated here while dissolving `fetchman/`. FetchMan goal/spawn sampling is
+relocated here while dissolving `projects/fetchman/`. FetchMan goal/spawn sampling is
 verified bit-exact against that repo and reads *this* grid, so cell-for-cell
-output is load-bearing: re-run fetchman/scripts/check_gold_parity.py
+output is load-bearing: re-run projects/fetchman/scripts/check_gold_parity.py
 before changing it.
 
 Same query API as `ProcTHORMap`/`iTHORMap` (utils/scene_maps.py, True = free) but a
@@ -39,9 +39,16 @@ reason to switch a non-FetchMan experiment on its own:
     ProcTHORMap re-renders. `CPUMujocoEnv` memory-caches either one per scene, so
     in a single run this is worth a fraction of a second.
 
-What you give up by selecting it: the room map. ProcTHORMap carries
-`room_ids_to_name`, `get_free_points_by_room` and room-scoped `label_at`; the
-labels here are plain connected components of free space.
+Both carry a room map, from the same floor segmentation, but they spell it
+differently: ProcTHORMap has `room_ids_to_name`, `get_free_points_by_room` and
+room-scoped `label_at`, while this one exposes the point queries
+`room_at`/`room_near`/`room_of`/`same_room`. A pixel here holds the scene's own
+room number -- `room_7` is 7 -- where ProcTHORMap stores `geom_id + 1`, which
+does not survive the uint8 channel either map caches its rooms in. Only the
+"room|"/"room_" floor geoms become rooms here; `_floor_geom_ids` also matches
+anything merely named "...floor...", which on a procthor scene picks up every
+floorlamp. `label_at` here stays what it was: a plain connected component of
+free space.
 
 Its own module because importing it monkeypatches `mujoco.renderer.Renderer.render`
 process-globally (MuJoCo sizes its segid table by `scene.ngeom`, which IndexErrors
@@ -51,6 +58,7 @@ inside `get_occupancy_map`, only when "aabb" is selected.
 """
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -166,6 +174,22 @@ def _floor_geom_ids(model):
     return ids
 
 
+_ROOM_NUMBER_RE = re.compile(r"room[|_](\d+)")
+
+
+def _room_number(geom_name: str, body_name: str) -> int | None:
+    """The scene's own number for a room, from `room_7` / `room|7|...`, or None
+    where the name carries no number a uint8 map channel can hold. Never a
+    number of our own: a pixel value here is the room number in the scene."""
+    for name in (body_name, geom_name):
+        match = _ROOM_NUMBER_RE.match(name or "")
+        if match:
+            number = int(match.group(1))
+            if 1 <= number <= 255:
+                return number
+    return None
+
+
 def _geom_aabb(model, data, geom_ids):
     mins = np.full(3, np.inf)
     maxs = np.full(3, -np.inf)
@@ -212,11 +236,25 @@ def _fetchman_map_path(xml_path) -> Path:
 
 
 class AABBMap:
-    def __init__(self, occupancy, world_to_map, map_to_world, px_per_m, agent_radius=None):
+    def __init__(
+        self,
+        occupancy,
+        world_to_map,
+        map_to_world,
+        px_per_m,
+        agent_radius=None,
+        room_map=None,
+        room_ids_to_name=None,
+    ):
         self.occupancy = occupancy
         self.world_to_map = world_to_map
         self.map_to_world = map_to_world
         self.px_per_m = px_per_m
+        # Per-pixel room id (0 = no room: an occluded cell, or a scene whose
+        # floors carry no room names), and the id -> room body name it decodes
+        # to. Same pair ProcTHORMap carries; see room_at/room_near.
+        self.room_map = room_map
+        self.room_ids_to_name = room_ids_to_name or {}
         # Radius the obstacles were already inflated by when this grid was
         # rendered, or None for a map cached before that was recorded. Read by
         # from_model_path to decide whether the cache is reusable.
@@ -318,6 +356,42 @@ class AABBMap:
         for fid in floor_ids:
             occupancy_occupied &= seg_geom != fid
 
+        # Room map: the same floor segmentation, kept per room instead of
+        # collapsed into one mask. A pixel holds the scene's own room number
+        # (room_7 -> 7), not an index of our own and not ProcTHORMap's
+        # geom_id + 1, which overflows the uint8 PNG channel this is cached in.
+        # Only the "room|"/"room_" floor geoms are rooms: `_floor_geom_ids` also
+        # takes anything whose name merely contains "floor", which on a procthor
+        # scene picks up every floorlamp. Those stay free space, as they always
+        # have, but they are not rooms.
+        room_map = np.zeros(seg_geom.shape, dtype=np.uint8)
+        room_ids_to_name = {}
+        unnumbered = []
+        for fid in floor_ids:
+            geom_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, fid) or ""
+            if not geom_name.startswith(("room|", "room_")):
+                continue
+            body_name = (
+                mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, int(model.geom_bodyid[fid]))
+                or geom_name
+            )
+            number = _room_number(geom_name, body_name)
+            if number is None:
+                unnumbered.append((fid, body_name))
+                continue
+            room_map[seg_geom == fid] = number
+            room_ids_to_name[number] = body_name
+        # A room the scene did not number (or numbered past 255) still needs an
+        # id to be told apart from its neighbours; it gets the lowest free one.
+        for fid, body_name in unnumbered:
+            free = next((i for i in range(1, 256) if i not in room_ids_to_name), None)
+            if free is None:
+                print(f"AABBMap: no room id left for {body_name!r} in {xml_path.name}")
+                break
+            print(f"AABBMap: {body_name!r} in {xml_path.name} has no room number, using {free}")
+            room_map[seg_geom == fid] = free
+            room_ids_to_name[free] = body_name
+
         # Door opening mask = doorframe minus door panel. Cleared from obstacles below.
         occ_door = np.zeros(seg_geom.shape, dtype=bool)
         for did in door_geom_ids:
@@ -349,12 +423,17 @@ class AABBMap:
         cam_to_world_floor = cam_to_world[:-1, [0, 1, 3]].copy()
         cam_to_world_floor[2, 2] = 0
         map_to_world = cam_to_world_floor @ centered_to_cam @ map_to_centered
-        img = Image.fromarray(occupancy.astype(np.uint8) * 255)
+        # RGB: occupancy in R (what every existing reader takes, unchanged),
+        # a spare copy in G, the room ids in B. `load` treats a map without the
+        # room channel as room-less, so an older grayscale cache still reads.
+        occ_u8 = occupancy.astype(np.uint8) * 255
+        img = Image.fromarray(np.stack([occ_u8, occ_u8, room_map], axis=2))
         metadata = PngInfo()
         metadata.add_text("world_to_map", json.dumps(world_to_map.tolist()))
         metadata.add_text("map_to_world", json.dumps(map_to_world.tolist()))
         metadata.add_text("px_per_m", json.dumps(float(effective_px)))
         metadata.add_text("agent_radius", json.dumps(float(agent_radius or 0.0)))
+        metadata.add_text("room_ids_to_name", json.dumps(room_ids_to_name))
         img.save(str(out_path), pnginfo=metadata)
         return out_path
 
@@ -364,7 +443,9 @@ class AABBMap:
         cache file, and an existing one wins outright. Deliberately does NOT
         re-check the cached map's agent radius the way from_model_path below
         does -- this is the call the bit-exact gold rollout goes through, so it
-        keeps gold's exact cache semantics."""
+        keeps gold's exact cache semantics. One consequence: a `_thormap.png`
+        written before the room channel existed still wins, and loads room-less.
+        Delete it to get rooms; the occupancy it regenerates is bit-identical."""
         map_path = _fetchman_map_path(scene.xml_path)
         if not map_path.exists():
             cls.generate(scene.xml_path, agent_radius=agent_radius, force=True)
@@ -376,8 +457,11 @@ class AABBMap:
         any agent radius. Caches per (radius, px_per_m) in its own file, not in
         FetchMan's radius-less `<scene>_thormap.png`, which the gold rollout reads."""
         xml_path = Path(xml_path)
+        # v2: carries the room channel. A v1 cache cannot be told apart from a
+        # scene that genuinely has no rooms, so it gets a new name rather than
+        # a silently room-less map.
         map_path = xml_path.with_name(
-            f"{xml_path.stem}_aabbmap_r{float(agent_radius):g}_p{int(px_per_m)}.png"
+            f"{xml_path.stem}_aabbmap_v2_r{float(agent_radius):g}_p{int(px_per_m)}.png"
         )
         if map_path.exists():
             cached = cls.load(str(map_path))
@@ -398,8 +482,11 @@ class AABBMap:
     def load(cls, path):
         img = Image.open(path)
         arr = np.array(img)
+        room_map = None
         if arr.ndim == 3:
             occ_raw = arr[:, :, 0]
+            if arr.shape[2] >= 3:
+                room_map = arr[:, :, 2]
         else:
             occ_raw = arr
         occupancy = occ_raw > 0
@@ -408,7 +495,21 @@ class AABBMap:
         px_per_m = float(json.loads(img.info["px_per_m"]))
         radius_meta = img.info.get("agent_radius")
         agent_radius = float(json.loads(radius_meta)) if radius_meta is not None else None
-        return cls(occupancy, world_to_map, map_to_world, px_per_m, agent_radius=agent_radius)
+        rooms_meta = img.info.get("room_ids_to_name")
+        room_ids_to_name = (
+            {int(k): v for k, v in json.loads(rooms_meta).items()} if rooms_meta else {}
+        )
+        if not room_ids_to_name:
+            room_map = None
+        return cls(
+            occupancy,
+            world_to_map,
+            map_to_world,
+            px_per_m,
+            agent_radius=agent_radius,
+            room_map=room_map,
+            room_ids_to_name=room_ids_to_name,
+        )
 
     def _world_to_px(self, xy):
         pos = np.array([xy[0], xy[1], 0.0, 1.0])
@@ -439,7 +540,60 @@ class AABBMap:
             agent_radius=(
                 None if self.agent_radius is None else self.agent_radius + extra_radius_m
             ),
+            # Inflation moves the obstacles, not the rooms.
+            room_map=self.room_map,
+            room_ids_to_name=self.room_ids_to_name,
         )
+
+    def room_at(self, xy) -> int:
+        """Room id of the world point `xy`; 0 where the map has no room there.
+
+        The map is a top-down render, so anything that occludes the floor --
+        a table, a wall, an object -- leaves 0 behind it. A point query is
+        therefore only meaningful for open floor; use `room_near` for a point
+        that may be under something.
+        """
+        if self.room_map is None:
+            return 0
+        rc = self._world_to_px(xy)
+        r, c = int(rc[0]), int(rc[1])
+        h, w = self.room_map.shape
+        if r < 0 or r >= h or c < 0 or c >= w:
+            return 0
+        return int(self.room_map[r, c])
+
+    def room_near(self, xy, radius_m: float = 1.0) -> int:
+        """The room `xy` belongs to: the commonest non-zero room id within
+        `radius_m` of it, or 0 if there is none. Resolves the occluded-pixel
+        problem `room_at` documents -- an object's own footprint is never floor,
+        so its room has to be read off the floor around it.
+        """
+        if self.room_map is None:
+            return 0
+        rc = self._world_to_px(xy)
+        r0, c0 = int(rc[0]), int(rc[1])
+        h, w = self.room_map.shape
+        rad = max(1, int(radius_m * self.px_per_m))
+        patch = self.room_map[
+            max(0, r0 - rad) : min(h, r0 + rad + 1), max(0, c0 - rad) : min(w, c0 + rad + 1)
+        ]
+        ids, counts = np.unique(patch[patch > 0], return_counts=True)
+        return int(ids[int(np.argmax(counts))]) if ids.size else 0
+
+    def room_of(self, xy, radius_m: float = 1.0) -> int:
+        """The room `xy` belongs to: the room map at that point, or, where the
+        floor there is occluded -- under a table, under the object itself --
+        the commonest room within `radius_m`. 0 if neither answers."""
+        return self.room_at(xy) or self.room_near(xy, radius_m)
+
+    def same_room(self, xy_a, xy_b, radius_m: float = 1.0) -> bool:
+        """True unless `xy_a` and `xy_b` resolve to two different rooms. An
+        unlabelled scene, or a point with no floor near it, answers True: this
+        is a filter, and it declines to reject what it cannot see.
+        """
+        room_a = self.room_of(xy_a, radius_m)
+        room_b = self.room_of(xy_b, radius_m)
+        return room_a == 0 or room_b == 0 or room_a == room_b
 
     def _free_labels(self):
         lab = getattr(self, "_free_labels_cache", None)

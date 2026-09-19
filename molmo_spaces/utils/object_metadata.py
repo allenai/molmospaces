@@ -91,7 +91,7 @@ class UserLibraryMetadata(Mapping):
         def _get(key):
             metadata_entry = self._user_library_index[key]
             metadata_rel_path = metadata_entry.metadata_path
-            with open(self._user_library_path / metadata_rel_path, "r") as f:
+            with open(self._user_library_path / metadata_rel_path) as f:
                 metadata: dict = json.load(f)
 
             if metadata_entry.metadata_npz_path is not None:

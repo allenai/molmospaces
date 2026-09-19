@@ -10,56 +10,11 @@ from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.profiler_utils import Timer
 
 log = logging.getLogger(__name__)
-
-
-def get_grasp_collision_body_name(grasp_idx: int) -> str:
-    return f"grasp_collision_{grasp_idx}"
-
-
-def add_grasp_collision_bodies(
-    spec: mujoco.MjSpec,
-    num_grasps: int,
-    grasp_width: float,
-    grasp_length: float,
-    grasp_height: float,
-    grasp_base_pos: np.ndarray,
-):
-    """Add grasp collision bodies to the scene."""
-    for i in range(num_grasps):
-        # init grasp bodies in the sky (below the ground causes collision with the floor)
-        grasp_body = spec.worldbody.add_body(
-            name=get_grasp_collision_body_name(i),
-            pos=[0, 0, 10],
-            gravcomp=1.0,
-        )
-        grasp_body.add_freejoint()
-
-        geom_kwargs = dict(
-            type=mujoco.mjtGeom.mjGEOM_CYLINDER,
-            rgba=[0, 0, 1, 1],
-            group=3,
-            contype=0,
-            conaffinity=0b1111,
-        )
-
-        base_geom = grasp_body.add_geom(**geom_kwargs)
-        base_geom.size[0] = grasp_height / 2
-        base_geom.fromto[:3] = np.array([0, -grasp_width / 2, 0]) + grasp_base_pos
-        base_geom.fromto[3:] = np.array([0, grasp_width / 2, 0]) + grasp_base_pos
-
-        finger1_geom = grasp_body.add_geom(**geom_kwargs)
-        finger1_geom.size[0] = grasp_height / 2
-        finger1_geom.fromto[:3] = np.array([0, -grasp_width / 2, 0]) + grasp_base_pos
-        finger1_geom.fromto[3:] = np.array([0, -grasp_width / 2, grasp_length]) + grasp_base_pos
-
-        finger2_geom = grasp_body.add_geom(**geom_kwargs)
-        finger2_geom.size[0] = grasp_height / 2
-        finger2_geom.fromto[:3] = np.array([0, grasp_width / 2, 0]) + grasp_base_pos
-        finger2_geom.fromto[3:] = np.array([0, grasp_width / 2, grasp_length]) + grasp_base_pos
 
 
 def get_noncolliding_grasp_mask(
@@ -70,10 +25,10 @@ def get_noncolliding_grasp_mask(
 ) -> np.ndarray:
     n_grasps = len(grasp_poses_world)
     grasp_bodies = [
-        create_mlspaces_body(mj_data, get_grasp_collision_body_name(i)) for i in range(batch_size)
+        create_mlspaces_body(mj_data, spec_ops.grasp_probe_body_name(i)) for i in range(batch_size)
     ]
     start_poses = [body.pose.copy() for body in grasp_bodies]
-    grasp_body_ids = set(body.body_id for body in grasp_bodies)
+    grasp_body_ids = {body.body_id for body in grasp_bodies}
 
     try:
         colliding_grasp_mask = np.zeros(n_grasps, dtype=bool)
@@ -166,7 +121,16 @@ def select_grasp_pose(
     vertical_cost_weight: float = 2.0,
     horizontal_cost_weight: float = 0,
     com_dist_cost_weight: float = 8.0,
+    top_k: int = 1,
 ) -> np.ndarray:
+    """... top_k: with check_ik=False, return the top_k non-colliding
+    candidates ranked by cost instead of just the single best one -- shape
+    (4, 4) when top_k=1 (default, preserves prior behavior for existing
+    callers), else (min(top_k, n_valid), 4, 4). Callers that want a
+    reachability-aware fallback across multiple candidates (e.g. when their
+    own IK isn't the arm-only kinematics check_ik=True would otherwise use)
+    can check_ik=False + top_k>1 and try each candidate themselves.
+    """
     robot = env.current_robot
     gripper_mg_id = robot.robot_view.get_gripper_movegroup_ids()[0]
     tcp_pose = robot.robot_view.get_move_group(gripper_mg_id).leaf_frame_to_world
@@ -228,12 +192,14 @@ def select_grasp_pose(
             )
             if noncolliding_grasp_idx is not None:
                 grasp_idx = noncolliding_close_grasp_ids[noncolliding_grasp_idx]
-    elif noncolliding_close_grasp_ids.size > 0:
-        grasp_idx = int(noncolliding_close_grasp_ids[0])
-    else:
-        grasp_idx = None
 
-    if grasp_idx is None:
+        if grasp_idx is None:
+            raise ValueError("No feasible grasp found")
+        return grasp_poses_world[grasp_idx]
+
+    if noncolliding_close_grasp_ids.size == 0:
         raise ValueError("No feasible grasp found")
 
-    return grasp_poses_world[grasp_idx]
+    if top_k == 1:
+        return grasp_poses_world[noncolliding_close_grasp_ids[0]]
+    return grasp_poses_world[noncolliding_close_grasp_ids[:top_k]]

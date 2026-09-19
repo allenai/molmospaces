@@ -1257,7 +1257,7 @@ def main() -> int:  # noqa: PLR0915
             if len(error_messages) > 0:
                 errors_data = {}
                 if errors_filepath.is_file():
-                    with open(errors_filepath, "r") as fhandle:
+                    with open(errors_filepath) as fhandle:
                         errors_data = json.load(fhandle)
 
                 for msg, trace, scene_name in zip(error_messages, error_tracebacks, error_scenes):
