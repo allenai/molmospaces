@@ -2,9 +2,9 @@
 scene's floor geoms, rendered through MuJoCo's segmentation renderer.
 
 From the FetchMan repo (`g1_molmo`, `components/occupancy_map.py::OccupancyMap`),
-relocated here while dissolving `fetchman/`. FetchMan goal/spawn sampling is
+relocated here while dissolving `projects/fetchman/`. FetchMan goal/spawn sampling is
 verified bit-exact against that repo and reads *this* grid, so cell-for-cell
-output is load-bearing: re-run fetchman/scripts/check_gold_parity.py
+output is load-bearing: re-run projects/fetchman/scripts/check_gold_parity.py
 before changing it.
 
 Same query API as `ProcTHORMap`/`iTHORMap` (utils/scene_maps.py, True = free) but a

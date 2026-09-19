@@ -2,7 +2,7 @@
 set -euo pipefail
 # Adapted from g1_molmo's own molmospaces/scripts/collect_single.sh, but
 # driving THIS repo's ported pipeline (fetchman, see its
-# __init__.py) via fetchman/scripts/collect_single_main.py --
+# __init__.py) via projects/fetchman/scripts/collect_single_main.py --
 # not g1_molmo's own main.py/agents/policy.py (gold), and not
 # FetchmanPickPlannerPolicy. Run this from this repo's root (or via its own
 # conda env, mlspaces).
@@ -13,10 +13,10 @@ set -euo pipefail
 # watch the rollout live. Needs `mjpython` (not plain `python`) on macOS for
 # the viewer to work; falls back to `python` on Linux.
 #
-# Usage: bash fetchman/scripts/collect_single.sh [EPISODES] [ENV_CONFIG] [debug]
+# Usage: bash projects/fetchman/scripts/collect_single.sh [EPISODES] [ENV_CONFIG] [debug]
 #   EPISODES: episodes to run, 0 = unbounded (default 10)
 #   ENV_CONFIG: a config name (bowl_fetchman) or path
-#               (fetchman/configs/bowl_fetchman.py);
+#               (projects/fetchman/configs/bowl_fetchman.py);
 #               default bowl_fetchman.py, the lightest config for
 #               interactive use
 #   debug: overlay debug markers (nav waypoints, etc.) in the viewer
@@ -27,7 +27,7 @@ set -euo pipefail
 #   REALTIME=1 (throttle wall-clock to sim time, easier to watch),
 #   RECORD=1 (also save successful episodes -- REPO_ID/DATA_DIR to steer where)
 
-cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.."
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../../.."
 
 # Run THIS checkout, whichever one the script lives in. `pip install -e` may
 # well point molmo_spaces at a different clone (the interpreter's site-packages
@@ -37,8 +37,8 @@ cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.."
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 PYTHON_BIN="${PYTHON_BIN:-$(command -v mjpython || command -v python)}"
-MAIN_PY="fetchman/scripts/collect_single_main.py"
-CONFIG_DIR="fetchman/configs"
+MAIN_PY="projects/fetchman/scripts/collect_single_main.py"
+CONFIG_DIR="projects/fetchman/configs"
 ENV_CONFIG="${ENV_CONFIG:-${CONFIG_DIR}/bowl_fetchman.py}"
 SEED="${SEED:-$(date +%s)}"
 GPU="${GPU:--1}"

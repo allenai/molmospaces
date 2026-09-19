@@ -1003,7 +1003,7 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
         # on that grid. See configs/task_sampler_configs.OccupancyMapImpl.
         occupancy_map_impl=OccupancyMapImpl.AABB,
         # Gold's scene build (env/scene/spec_ops.py), matching the
-        # FetchMan port config (fetchman/configs/bowl_fetchman.py:
+        # FetchMan port config (projects/fetchman/configs/bowl_fetchman.py:
         # objects="bowl"). Freezing everything but the Bowls is what makes a
         # natively built model of a house the same physical system as the
         # port's -- without it this scene compiles to nq=1642 against gold's

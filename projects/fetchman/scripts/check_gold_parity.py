@@ -1,6 +1,6 @@
 """Compare a gold rollout trace against a ported/native one.
 
-    python fetchman/scripts/check_gold_parity.py GOLD.txt OURS.txt
+    python projects/fetchman/scripts/check_gold_parity.py GOLD.txt OURS.txt
     python .../check_gold_parity.py GOLD.txt OURS.txt --strict
 
 Normalizes only the cosmetic differences the ported stack is allowed to have
@@ -35,10 +35,10 @@ Gold vs ported -- does the port still behave like the reference stack:
         molmospaces/scripts/g1_molmo_comparison/generate_gold_rollout.py \\
         --seed 0 > /tmp/gold.txt 2>&1
     cd ~/code/molmospaces && conda run -n mlspaces python \\
-        fetchman/scripts/generate_ported_rollout.py \\
+        projects/fetchman/scripts/generate_ported_rollout.py \\
         --seed 0 > /tmp/ported.txt 2>&1
     conda run -n mlspaces python \\
-        fetchman/scripts/check_gold_parity.py \\
+        projects/fetchman/scripts/check_gold_parity.py \\
         /tmp/gold.txt /tmp/ported.txt
 
 Expect `PASS: N/N discrete invariants identical` (and, on the same MuJoCo,
@@ -51,14 +51,14 @@ Ported vs ported -- the regression gate to run around EVERY refactor step.
 Record a baseline before touching anything, then compare:
 
     conda run -n mlspaces python \\
-        fetchman/scripts/generate_ported_rollout.py \\
+        projects/fetchman/scripts/generate_ported_rollout.py \\
         --seed 0 > /tmp/baseline.txt 2>&1
     # ... make a change ...
     conda run -n mlspaces python \\
-        fetchman/scripts/generate_ported_rollout.py \\
+        projects/fetchman/scripts/generate_ported_rollout.py \\
         --seed 0 > /tmp/after.txt 2>&1
     conda run -n mlspaces python \\
-        fetchman/scripts/check_gold_parity.py \\
+        projects/fetchman/scripts/check_gold_parity.py \\
         /tmp/baseline.txt /tmp/after.txt --strict
 
 Expect `PASS (strict): 212 trace lines byte-identical`. If it fails, stop and

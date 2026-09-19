@@ -9,7 +9,7 @@ around it were adapted to molmo_spaces' abstractions.
 ## Layout
 
 ```
-fetchman/
+projects/fetchman/
 ├── scene_g1ms.py                Scene — MJCF compile, occupancy maps
 ├── env_g1ms.py                  G1CPUMujocoEnv, a CPUMujocoEnv subclass
 ├── configs/
@@ -60,8 +60,8 @@ Both live in [`scripts/`](scripts/) and both must stay green.
 ```bash
 cd ~/code/g1_molmo && conda run -n g1_molmo python \
     molmospaces/scripts/g1_molmo_comparison/generate_gold_rollout.py --seed 0 > /tmp/gold.txt 2>&1
-conda run -n mlspaces python fetchman/scripts/generate_ported_rollout.py --seed 0 > /tmp/ours.txt 2>&1
-conda run -n mlspaces python fetchman/scripts/check_gold_parity.py /tmp/gold.txt /tmp/ours.txt --strict
+conda run -n mlspaces python projects/fetchman/scripts/generate_ported_rollout.py --seed 0 > /tmp/ours.txt 2>&1
+conda run -n mlspaces python projects/fetchman/scripts/check_gold_parity.py /tmp/gold.txt /tmp/ours.txt --strict
 ```
 
 Expect `PASS (strict): 299 trace lines byte-identical`. `--strict` is only
@@ -73,9 +73,9 @@ ported-vs-ported form of this around **every** refactor.
 produce the same rollouts?
 
 ```bash
-conda run -n mlspaces python fetchman/scripts/collect_trajectories.py --stack native --episodes 10 --out /tmp/n.json
-conda run -n mlspaces python fetchman/scripts/collect_trajectories.py --stack port   --episodes 10 --out /tmp/p.json
-conda run -n mlspaces python fetchman/scripts/collect_trajectories.py --compare /tmp/n.json /tmp/p.json
+conda run -n mlspaces python projects/fetchman/scripts/collect_trajectories.py --stack native --episodes 10 --out /tmp/n.json
+conda run -n mlspaces python projects/fetchman/scripts/collect_trajectories.py --stack port   --episodes 10 --out /tmp/p.json
+conda run -n mlspaces python projects/fetchman/scripts/collect_trajectories.py --compare /tmp/n.json /tmp/p.json
 ```
 
 Expect `PASS: 10/10 trajectories identical`. Compares target, spawn pose, step
@@ -86,8 +86,8 @@ count, sim time, success/terminated/truncated and a SHA over final qpos/qvel.
 From the repo root, in the `mlspaces` conda env:
 
 ```bash
-bash fetchman/scripts/collect_single.sh          # watch a rollout
-conda run -n mlspaces python fetchman/scripts/nav_demo.py
+bash projects/fetchman/scripts/collect_single.sh          # watch a rollout
+conda run -n mlspaces python projects/fetchman/scripts/nav_demo.py
 ```
 
 The parity scripts additionally need a `g1_molmo` checkout with the
@@ -105,6 +105,6 @@ these scripts live beside. No `PYTHONPATH` needed.
 
 - **Not shipped.** `[tool.setuptools.packages.find]` lists `include =
   ["molmo_spaces*"]`, so this directory is not in the wheel.
-- **`scripts/` is not linted.** `[tool.ruff] exclude` lists `fetchman/scripts/`
+- **`scripts/` is not linted.** `[tool.ruff] exclude` lists `projects/fetchman/scripts/`
   alongside the repo's top-level `scripts/`, so these stay close to their
   upstream g1_molmo originals.

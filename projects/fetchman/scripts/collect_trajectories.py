@@ -1,8 +1,8 @@
 """Collect N trajectories through either import path and dump them as JSON.
 
-    python fetchman/scripts/collect_trajectories.py --stack native --episodes 10 --out /tmp/native.json
-    python fetchman/scripts/collect_trajectories.py --stack port   --episodes 10 --out /tmp/port.json
-    python fetchman/scripts/collect_trajectories.py --compare /tmp/native.json /tmp/port.json
+    python projects/fetchman/scripts/collect_trajectories.py --stack native --episodes 10 --out /tmp/native.json
+    python projects/fetchman/scripts/collect_trajectories.py --stack port   --episodes 10 --out /tmp/port.json
+    python projects/fetchman/scripts/collect_trajectories.py --compare /tmp/native.json /tmp/port.json
 
 `--stack native` drives molmo_spaces' own modules (molmo_spaces.tasks.
 fetchman.tasks, fetchman.configs); `--stack port` reaches the

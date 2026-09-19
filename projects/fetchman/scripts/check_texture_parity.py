@@ -15,10 +15,10 @@ Run once per stack, then diff:
         --stack gold --out /tmp/tex_gold
 
     cd <this repo>
-    conda run -n mlspaces python fetchman/scripts/check_texture_parity.py \
+    conda run -n mlspaces python projects/fetchman/scripts/check_texture_parity.py \
         --stack ported --out /tmp/tex_ported
 
-    conda run -n mlspaces python fetchman/scripts/check_texture_parity.py \
+    conda run -n mlspaces python projects/fetchman/scripts/check_texture_parity.py \
         --compare /tmp/tex_gold /tmp/tex_ported
 
 Each run writes <out>.json (pool sizes + the per-category texture basenames

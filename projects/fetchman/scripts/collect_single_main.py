@@ -1,17 +1,17 @@
 """Interactive single-worker rollout collector for fetchman
 (the ported copy of g1_molmo's own env_g1ms.py/agents/policy_g1ms.py pick
-pipeline, see fetchman/__init__.py).
+pipeline, see projects/fetchman/__init__.py).
 
 Mirrors the reset/settle/step/record loop in g1_molmo's own main.py, but
 against the ported env/agent/recorder instead of g1_molmo's own molmospaces
-package -- this is the entrypoint fetchman/scripts/collect_single.sh execs.
+package -- this is the entrypoint projects/fetchman/scripts/collect_single.sh execs.
 
 Usage:
-    conda run -n mlspaces python fetchman/scripts/collect_single_main.py \\
-        --env=fetchman/configs/bowl_fetchman.py [flags]
+    conda run -n mlspaces python projects/fetchman/scripts/collect_single_main.py \\
+        --env=projects/fetchman/configs/bowl_fetchman.py [flags]
 
 --env accepts a filesystem path to a config module exposing get_config()
-(ml_collections.ConfigDict), e.g. any file under fetchman/configs/.
+(ml_collections.ConfigDict), e.g. any file under projects/fetchman/configs/.
 """
 
 import _bootstrap  # noqa: F401  -- must precede any molmo_spaces or fetchman import

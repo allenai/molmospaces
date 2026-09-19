@@ -1,6 +1,6 @@
 """Run fetchman (a wholesale copy of g1_molmo's own
 env_g1ms.py/agents/policy_g1ms.py pick pipeline, see molmo_spaces/
-fetchman/__init__.py) against the same real procthor-10k-val house/seed
+projects/fetchman/__init__.py) against the same real procthor-10k-val house/seed
 as g1_molmo's own generate_gold_rollout.py, retrying episodes until a
 successful pick rollout is collected.
 
@@ -12,7 +12,7 @@ g1_molmo's own generate_our_rollout.py already does against generate_gold_
 rollout.py.
 
 Run from this repo's own conda env (mlspaces), from the repo root:
-    conda run -n mlspaces python fetchman/scripts/generate_ported_rollout.py
+    conda run -n mlspaces python projects/fetchman/scripts/generate_ported_rollout.py
 
 Requires a g1_molmo checkout with procthor-10k-val scenes already downloaded
 (this script's assets resolve through fetchman.ASSETS_DIR,

@@ -12,7 +12,7 @@ against the scene occupancy map, so this works on whatever house the config
 loads without hardcoding scene coordinates.
 
 Run from the repo root:
-    conda run -n mlspaces python fetchman/scripts/nav_demo.py
+    conda run -n mlspaces python projects/fetchman/scripts/nav_demo.py
 """
 
 import _bootstrap  # noqa: F401  -- must precede any molmo_spaces or fetchman import

@@ -944,7 +944,7 @@ class G1PickAgent:
         self._face_yaw_offset_max = float(face_yaw_offset)
         self._grasp_retry_closer = bool(grasp_retry_closer)
         # Off: the reference walk, byte-for-byte what gold's G1Controller does
-        # (fetchman/scripts/check_gold_parity.py gates this).
+        # (projects/fetchman/scripts/check_gold_parity.py gates this).
         # On: prune_waypoints + the holonomic short hop, which InteractiveShell's
         # pick turns on (see FetchmanPickPlannerPolicyConfig.direct_walk).
         self.direct_walk = False

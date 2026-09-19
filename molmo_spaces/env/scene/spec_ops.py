@@ -1,5 +1,5 @@
 """Pre-compile MjSpec transforms shared by the native scene build and the
-FetchMan port (`fetchman/scene_g1ms.py`).
+FetchMan port (`projects/fetchman/scene_g1ms.py`).
 
 These are the five things gold's `Scene` does to an MJCF between loading it and
 compiling it. They lived only in the port, which is why a natively-built model
@@ -101,7 +101,7 @@ def freeze_non_mobile_bodies(
     return frozen
 
 
-# The parametric "jaw" probe's dimensions, gold's own (fetchman/scene_g1ms.py).
+# The parametric "jaw" probe's dimensions, gold's own (projects/fetchman/scene_g1ms.py).
 # Only `length` differs from ObjectManipulationPlannerPolicyConfig's default
 # (0.03 vs 0.05).
 GOLD_PROBE_WIDTH = 0.08

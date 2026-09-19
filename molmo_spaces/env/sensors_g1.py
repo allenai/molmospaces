@@ -3,7 +3,7 @@ Sensor ABC; the math is g1_molmo's, bit-identical to gold.
 
 They read `env.current_data` and ignore `batch_index`, unlike the rest of
 molmo_spaces' sensors; changing that can change numbers, so run the strict
-gate in fetchman/scripts/check_gold_parity.py around it.
+gate in projects/fetchman/scripts/check_gold_parity.py around it.
 PelvisFrameSensor and TargetPointInHeadSensor are helpers, not sensors: they
 return a closure and a raw (u, v)-or-None tuple, not gym-shaped arrays.
 """

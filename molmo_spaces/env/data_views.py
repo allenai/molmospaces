@@ -504,7 +504,7 @@ class MlSpacesObject(MlSpacesBody):
             else:
                 raise ValueError(f"Unknown joint scope {scope!r}")
         else:
-            in_scope = set(int(b) for b in scope)
+            in_scope = {int(b) for b in scope}
             scope = "explicit"
 
         if joint_name_map is not None:
@@ -891,7 +891,7 @@ class SceneObject:
     category, and (for articulated objects) its joint indices.
 
     From the FetchMan (g1_molmo) repo, relocated here out of
-    fetchman/components/object.py while dissolving that package.
+    projects/fetchman/components/object.py while dissolving that package.
 
     Deliberately not merged into MlSpacesObject above, which is a different
     thing: a live view that resolves position/quat as properties off an

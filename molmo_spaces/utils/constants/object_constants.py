@@ -252,7 +252,7 @@ THOR_PICKUP_OBJECTS_LOWERCASE = [x.replace("_", "") for x in THOR_PICKUP_OBJECTS
 
 # Categories excluded from THOR_PICKUP_OBJECTS_LOWERCASE by is_pickup_type --
 # too soft / large / deformable to grasp well. From the FetchMan (g1_molmo)
-# repo, relocated here out of fetchman/components/constants.py while
+# repo, relocated here out of projects/fetchman/components/constants.py while
 # dissolving that package.
 THOR_PICKUP_BLACKLIST = [
     "pillow",

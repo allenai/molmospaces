@@ -165,9 +165,9 @@ generate-houses = "molmo_spaces.housegen.exporter:main"
 
 [tool.setuptools.packages.find]
 where = ["./"]
-# `fetchman` is deliberately absent: it is the FetchMan reference port, a leaf
-# nothing in molmo_spaces imports, and its scripts expect a g1_molmo checkout
-# most installs do not have. See fetchman/README.md.
+# `projects/fetchman` is deliberately absent: it is the FetchMan reference
+# port, a leaf nothing in molmo_spaces imports, and its scripts expect a
+# g1_molmo checkout most installs do not have. See projects/fetchman/README.md.
 include = ["molmo_spaces*"]
 exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 
@@ -227,7 +227,7 @@ target-version = "py311"
 line-length = 100
 exclude = [
  "scripts/",
- "fetchman/scripts/",
+ "projects/fetchman/scripts/",
  "tests/",
  "mlspaces_tests/scenes/",
 ]

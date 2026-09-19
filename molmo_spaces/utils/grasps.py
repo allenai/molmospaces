@@ -357,7 +357,7 @@ def get_joint_grasps(
 # ---------------------------------------------------------------------------
 # FetchMan (g1_molmo) grasp-file lookups
 #
-# Relocated verbatim from fetchman/components/constants.py while
+# Relocated verbatim from projects/fetchman/components/constants.py while
 # dissolving that package. Deliberately NOT folded into
 # get_joint_grasp_path/has_valid_pickup_grasps above: those resolve through the
 # registered grasp libraries, whereas FetchMan addresses files by raw on-disk
