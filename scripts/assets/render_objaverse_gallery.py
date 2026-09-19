@@ -29,6 +29,7 @@ from PIL import Image
 
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_scenes
 from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
+from molmo_spaces.renderer.pbr_materials import apply_pbr_material_overrides
 from molmo_spaces.tasks.task_sampler import FILAMENT_ATTR_ENV_LIGHT_INTENSITY
 from molmo_spaces.utils.lazy_loading_utils import install_scene_with_objects_and_grasps_from_path
 from molmo_spaces.utils.mj_model_and_data_utils import geom_aabb
@@ -204,8 +205,11 @@ class RenderSettings:
 
     # -- Exposure. The env light is the dominant (and only real) exposure control.
     # With ACES, 15k reads as natural indoor daylight; 8k is a dim/evening interior
-    # and 26k a bright, sunlit one. ACES holds highlights without clipping across
-    # this entire range (measured: 0% clipped pixels even at 40k).
+    # and 26k a bright, sunlit one. ACES holds highlights without clipping across this
+    # entire range (measured: 0% clipped pixels even at 40k), so the choice is purely
+    # about where the midtones sit -- 8k/15k/26k/40k give mean luminance 54/80/107/130
+    # over three tiles. 26k measures "better exposed" and was tried as the default,
+    # but reads washed out next to 15k, so 15k stands.
     env_light_intensity_center: float = 15000.0
     env_light_intensity_range: tuple[float, float] = (8000.0, 26000.0)
 
@@ -229,6 +233,41 @@ class RenderSettings:
     ao_ssct: bool = True
 
     shadow_type: int = 0  # 0=PCF; 1..3 (VSM/DPCF/PCSS) look near-identical here
+
+    # -- Anti-aliasing. There is no working AA switch in this build: MuJoCo's
+    # `visual/quality offsamples` and `shadowsize`, and `filament.msaa.enabled`, all
+    # render bit-identical images (verified by diffing 0/4/16 offsamples, 1k/8k
+    # shadowsize and msaa on/off -- every pair came back with a mean difference of
+    # exactly 0.000). So the only lever left is brute force: render the tile at this
+    # multiple and Lanczos it back down, which drops a staircase metric (mean absolute
+    # second difference) from 15.0 to 14.0 and visibly cleans up chair rails and table
+    # edges. Costs the square of this number in render time; 3x was no better than 2x.
+    supersample: int = 2
+
+    # -- PBR materials. Objaverse objects ship with an albedo texture and nothing
+    # else, so metallic/roughness are unset and every surface -- a steel pan, a wool
+    # scarf -- takes the same undifferentiated shading. This derives a metallic and
+    # roughness value per material from the object's annotated composition, and
+    # breaks up the reflections with a shared noise map. See
+    # molmo_spaces/renderer/pbr_materials.py.
+    pbr_materials: bool = True
+    # How far the roughness map swings either side of the class value, as a fraction.
+    # At gallery framing this is invisible whatever it is set to -- objects cover
+    # 0.1-6.6% of the frame, so the variation falls below a pixel and minification
+    # averages it away. In a macro shot (object filling the frame) it starts to read
+    # at 0.15 and is clear at 0.35, breaking up the specular streak along a metal
+    # body. 0.30 is chosen for that case; it costs nothing at gallery range.
+    pbr_noise_amplitude: float = 0.30
+    # Relief, as RMS surface slope. Unlike roughness this reads at any framing,
+    # because it makes each bump light on one side and dark on the other rather than
+    # modulating a dim reflection -- so it is kept gentle, and procedural relief is
+    # confined to object materials. At 0.10, applied to walls and floors too, the
+    # panel came back visibly mottled and looked worse than no relief at all.
+    pbr_bump_strength: float = 0.06
+    # Prefer the real normal / metallic-smoothness maps that ship beside the THOR
+    # textures, where a material has them. None of the 5,980 objaverse assets do, so
+    # this only ever affects THOR materials.
+    pbr_authored_maps: bool = True
 
     # -- Camera geometry. Deliberately NOT randomized: the camera pose and FOV are
     # deterministic so repeat runs frame each object identically and only the
@@ -274,6 +313,10 @@ class RenderSettings:
             "head_light_intensity": round(self.head_light_intensity_center, 1),
             "distance_m_bounds": list(self.distance_m_bounds),
             "ao": [self.ao_enabled, self.ao_bent_normals, self.ao_ssct],
+            "pbr_materials": self.pbr_materials,
+            "supersample": self.supersample,
+            "pbr_bump_strength": self.pbr_bump_strength,
+            "pbr_authored_maps": self.pbr_authored_maps,
         }
 
 
@@ -285,6 +328,14 @@ def load_model_for_filament(scene_path: Path, settings: RenderSettings) -> mj.Mj
     left at their defaults.
     """
     spec = mj.MjSpec.from_file(str(scene_path))
+    if settings.pbr_materials:
+        stats = apply_pbr_material_overrides(
+            spec,
+            noise_amplitude=settings.pbr_noise_amplitude,
+            bump_strength=settings.pbr_bump_strength,
+            use_authored_maps=settings.pbr_authored_maps,
+        )
+        log.info("PBR material overrides: %s", stats)
     numerics = {
         FILAMENT_ATTR_ENV_LIGHT_INTENSITY: settings.env_light_intensity_center,
         FILAMENT_ATTR_HEAD_LIGHT_INTENSITY: settings.head_light_intensity_center,
@@ -561,12 +612,44 @@ def main():
         choices=["aces", "filmic", "linear"],
         help="Filament tone mapper (this MuJoCo build accepts only these three).",
     )
+    parser.add_argument(
+        "--supersample",
+        type=int,
+        default=RenderSettings.supersample,
+        help="Render each tile at this multiple and downsample it; the only working "
+        "anti-aliasing in this build. Costs its square in render time.",
+    )
+    parser.add_argument(
+        "--bump-strength",
+        type=float,
+        default=RenderSettings.pbr_bump_strength,
+        help="RMS surface slope of the procedural relief on object materials; 0 "
+        "disables it. Authored normal maps are unaffected.",
+    )
+    parser.add_argument(
+        "--no-authored-maps",
+        action="store_true",
+        help="Ignore the real normal and metallic/smoothness maps shipped beside the "
+        "THOR textures and use the procedural finishes everywhere.",
+    )
+    parser.add_argument(
+        "--no-pbr-materials",
+        action="store_true",
+        help="Skip the metallic/roughness overrides and shade every material with "
+        "the legacy response, for an A/B against the default.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     rng = random.Random(args.seed)
 
-    base_settings = RenderSettings(tone_mapping=args.tone_mapping)
+    base_settings = RenderSettings(
+        tone_mapping=args.tone_mapping,
+        pbr_materials=not args.no_pbr_materials,
+        supersample=args.supersample,
+        pbr_bump_strength=args.bump_strength,
+        pbr_authored_maps=not args.no_authored_maps,
+    )
     if args.distance_m is not None:
         base_settings = replace(base_settings, distance_m_bounds=tuple(args.distance_m))
     if args.env_light is not None:
@@ -659,9 +742,16 @@ def main():
             # Must precede renderer construction: the filament context snapshots these
             # light intensities when it is created.
             set_light_intensities(model, settings)
-            renderer = MjFilamentRenderer(model=model, width=args.tile_size, height=args.tile_size)
+            render_px = args.tile_size * max(1, settings.supersample)
+            renderer = MjFilamentRenderer(model=model, width=render_px, height=render_px)
             image = render_instance(renderer, model, data, instance, settings)
             renderer.close()
+            if image is not None and render_px != args.tile_size:
+                image = np.asarray(
+                    Image.fromarray(image).resize(
+                        (args.tile_size, args.tile_size), Image.LANCZOS
+                    )
+                )
             if image is None:
                 log.warning("Skipping %s: empty/degenerate AABB", instance.instance_key)
                 continue
