@@ -88,7 +88,13 @@ class G1CPUMujocoEnv(CPUMujocoEnv):
         qpos/qdof index arrays are, rebuilt by G1Robot.__init__'s
         low_level.setup() call) and reloading it would re-load its
         groot_balance/groot_walk ONNX sessions for nothing."""
-        return G1Robot(self.scene.model, mj_data, env=self, low_level=self._prev_low_level)
+        return G1Robot(
+            self.scene.model,
+            mj_data,
+            env=self,
+            low_level=self._prev_low_level,
+            gripper_friction=self.config.robot_config.gripper_friction,
+        )
 
     def _create_renderer(self, width, height):
         # Rendering goes through the mujoco.Renderer pool and the fisheye

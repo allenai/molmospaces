@@ -454,6 +454,14 @@ class G1Config(BaseRobotConfig):
     # placements. Confirmed stable for 3s+ in the standing smoke test.
     fixed_base_height: float | None = 0.793
 
+    # Override for the right gripper pad geoms' (tangential, torsional, rolling)
+    # friction triple -- None keeps the MJCF's own default (5, 0.05, 0.01).
+    # Applied in G1Robot._apply_solver_overrides by matching geoms against that
+    # default's tangential value, since the gripper_pad geoms are unnamed in
+    # g1_dex.xml (only grouped by an MJCF `class`, which isn't queryable on the
+    # compiled model). See molmo_spaces/robots/g1.py for the matching logic.
+    gripper_friction: tuple[float, float, float] | None = None
+
 
 class FloatingRUMRobotConfig(BaseRobotConfig):
     robot_cls: type[Robot] | None = FloatingRUMRobot

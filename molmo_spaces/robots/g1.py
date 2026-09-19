@@ -1,6 +1,6 @@
 """The G1 humanoid robot: g1_molmo's components/robot.py on molmo_spaces'
 Robot interface, verified byte-identical against the gold pick rollout
-(fetchman/scripts/). `G1Config` constructs it through
+(projects/fetchman/scripts/). `G1Config` constructs it through
 `from_mj_data`; its whole-body controller is controllers/g1_wbc.py.
 """
 
@@ -274,6 +274,7 @@ class G1Robot(Robot):
         namespace: str = PREFIX,
         xml_path: str = XML_PATH,
         exp_config: "MlSpacesExpConfig | None" = None,
+        gripper_friction: tuple[float, float, float] | None = None,
     ):
         # Robot.__init__ wants (mj_data, exp_config) and only stores them; this
         # class is constructed with an explicit (model, data) pair by the
@@ -299,6 +300,7 @@ class G1Robot(Robot):
         self._namespace = namespace
         self._xml_path = xml_path
         self._root_body = f"{namespace}pelvis"
+        self._gripper_friction = gripper_friction
         # The reference stack sets the physics rate in G1Controller.set_env
         # (m.opt.timestep = 0.005), which molmo_spaces' own env never calls --
         # it constructs robots through the factory and drives them through the
@@ -999,6 +1001,30 @@ class G1Robot(Robot):
             gname = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, gid) or ""
             if _is_floor_geom(gname):
                 m.geom_friction[gid] = [1.0, 0.005, 0.0001]
+        self._apply_gripper_friction_override()
+
+    def _apply_gripper_friction_override(self):
+        """Override the right gripper pad geoms' friction, if requested via
+        either the constructor's `gripper_friction=` (the reference stack's
+        own (model, data) call sites, which don't pass exp_config -- see
+        env_g1ms.py's _make_robot) or exp_config.robot_config.gripper_friction
+        (the standard molmo_spaces factory path, from_mj_data). See
+        G1Config.gripper_friction.
+
+        The gripper_pad geoms in g1_dex.xml are unnamed -- only grouped by an
+        MJCF `class`, which the compiled model doesn't expose -- so they're
+        matched here by their distinctive default tangential friction (5.0,
+        vs. every other geom in the model) rather than by name.
+        """
+        friction = self._gripper_friction
+        if friction is None and self.exp_config is not None:
+            friction = getattr(self.exp_config.robot_config, "gripper_friction", None)
+        if friction is None:
+            return
+        m = self.model
+        for gid in range(m.ngeom):
+            if abs(m.geom_friction[gid][0] - 5.0) < 1e-9:
+                m.geom_friction[gid] = list(friction)
 
     def _fix_contacts(self):
         m = self.model
