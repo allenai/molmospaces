@@ -1,5 +1,5 @@
 """
-This module defines the core abstractions for representing and controlling robots in mj.
+This module defines the core abstractions for representing and controlling robots in MuJoCo.
 The architecture is based on a hierarchical structure where a RobotView contains multiple MoveGroups,
 each representing an atomic collection of joints and actuators.
 """
@@ -283,7 +283,7 @@ class MoveGroup(ABC):
         Returns:
             A 6xN numpy array where N is the number of degrees of freedom in the model.
 
-        See: https://mj.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
+        See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
         raise NotImplementedError
 
@@ -327,7 +327,7 @@ class MJCFFrameMixin(ABC):
         Returns:
             A 6xN numpy array where N is the number of degrees of freedom in the model.
 
-        See: https://mj.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
+        See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
         assert isinstance(self, MoveGroup), (
             f"{self.__class__.__name__} must be used with a MoveGroup"
@@ -828,7 +828,7 @@ class RobotView(ABC):
             The (6, N) jacobian of the move group, where N is the total number of degrees
             of freedom of the input move groups.
 
-        See: https://mj.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
+        See: https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html#mj-jac
         """
         J = self._move_groups[move_group_id].get_jacobian()
         qveladr: list[int] = []
