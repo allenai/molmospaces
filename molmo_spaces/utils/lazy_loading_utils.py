@@ -194,13 +194,13 @@ def add_install_prefixes(data_type, source, relative_path):
 
 @cache
 def get_user_library_index(user_library_path: Path):
-    with open(user_library_path / "assets_index.json", "r") as f:
+    with open(user_library_path / "assets_index.json") as f:
         return UserAssetLibraryIndex.validate_json(f.read())
 
 
 @cache
 def get_user_grasp_library_index(user_library_path: Path):
-    with open(user_library_path / "grasps_index.json", "r") as f:
+    with open(user_library_path / "grasps_index.json") as f:
         return UserGraspLibraryIndex.model_validate_json(f.read())
 
 

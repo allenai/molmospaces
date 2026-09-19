@@ -7,6 +7,13 @@ on:
   pull_request:
     branches:
       - main
+      # main_public mirrors allenai/molmospaces' own main (see
+      # sync-upstream.yaml). The G1 merge PR (#2) targets it, and without it
+      # listed here `pull_request` never matches that PR's base, so no CI job is
+      # created at all -- the only check reported is the GitGuardian app scan,
+      # which runs independently of workflow triggers and so goes green without
+      # anything having been built.
+      - main_public
   workflow_dispatch:
 
 concurrency:
@@ -84,7 +91,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco]
+          uv pip install --no-cache -e .[dev,mujoco,g1_humanoid]
 
       - name: Log disk space
         run: |
@@ -184,7 +191,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco]
+          uv pip install --no-cache -e .[dev,mujoco,g1_humanoid]
 
       - name: Run data generation tests (group ${{ matrix.group }}/4)
         run: |
@@ -316,7 +323,7 @@ jobs:
           # above -- that mismatch is what produced the "12.8 vs 13.0" CUDA error.
           # Skipping build isolation just for curobo makes it build against the
           # already-installed, correct torch.
-          uv pip install --no-cache -e .[dev,mujoco,curobo] \
+          uv pip install --no-cache -e .[dev,mujoco,curobo,g1_humanoid] \
             --no-build-isolation-package nvidia-curobo
 
       - name: Run data generation curobo tests

@@ -180,8 +180,17 @@ class NavToObjTaskConfig(BaseMujocoTaskConfig):
     receptacle_name: str | None = None
     pickup_obj_start_pose: list[float] | None = None
 
+    # Base-motion evaluation: set by the sampler when
+    # task_sampler_config.start_near_object_probability fires, naming the object the
+    # robot was placed near (distinct from pickup_obj_name, the nav target). None when
+    # the robot was placed near the nav target itself (the default/prior behavior).
+    start_obj_name: str | None = None
+
     # Task parameters
     succ_pos_threshold: float = 1.5  # meters  # Success distance threshold in meters
+    require_visibility: bool = (
+        True  # Also require the target object visible from a robot camera to succeed
+    )
 
     # Rendering settings
     enable_rendering: bool = True  # Whether to enable environment rendering for visual sensors

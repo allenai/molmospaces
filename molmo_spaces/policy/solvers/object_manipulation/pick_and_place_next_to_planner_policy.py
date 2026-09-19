@@ -99,7 +99,7 @@ class PickAndPlaceNextToPlannerPolicy(PickAndPlacePlannerPolicy):
             print("Trying to get supporting geom id via bounding box approximation")
             body_to_geoms = om.get_body_to_geoms()
             pickup_geoms = om.approximate_supporting_geoms(pickup_obj, body_to_geoms)
-            pickup_geoms = set(p[1] for p in pickup_geoms)
+            pickup_geoms = {p[1] for p in pickup_geoms}
             recep_geoms = om.approximate_supporting_geoms(place_receptacle, body_to_geoms)
             # Since the pickup object could have ended up on top of something else, we
             # prioritize the receptacle (we need to bring out pickup object close to it)
