@@ -276,13 +276,12 @@ class G1Robot(Robot):
         exp_config: "MlSpacesExpConfig | None" = None,
         gripper_friction: tuple[float, float, float] | None = None,
     ):
-        # Robot.__init__ stores its second arg as self.robot_config, but this
-        # class is constructed with an explicit (model, data) pair by the
-        # reference stack and reads self.exp_config everywhere below, so pass
-        # `data` through and set self.exp_config explicitly rather than rely
-        # on the (mis-typed, for us) base-class attribute.
+        # Robot.__init__(mj_data, robot_config) stores its second arg as
+        # self.robot_config; this class is constructed with an explicit
+        # (model, data) pair by the reference stack, so pass `data` through
+        # and let self.robot_config hold the exp_config (below reads it as
+        # self.robot_config, matching the base class attribute).
         super().__init__(data, exp_config)
-        self.exp_config = exp_config
         self.model = model
         self.data = data
         self._env = env
@@ -426,7 +425,7 @@ class G1Robot(Robot):
         reference stack's pose helper view. The pass-through methods always use
         the pose view, whichever is published here.
         """
-        if self.exp_config is None:
+        if self.robot_config is None:
             return self._pose_view
         if self._native_robot_view is None:
             from molmo_spaces.robots.robot_views.g1_view import (
@@ -436,7 +435,7 @@ class G1Robot(Robot):
             self._native_robot_view = _NativeG1RobotView(
                 self.data,
                 self._namespace,
-                use_holo_base=getattr(self.exp_config.robot_config, "use_holo_base", False),
+                use_holo_base=getattr(self.robot_config.robot_config, "use_holo_base", False),
             )
         return self._native_robot_view
 
@@ -982,13 +981,13 @@ class G1Robot(Robot):
         return self._parallel_kinematics
 
     def _require_exp_config(self, what: str):
-        if self.exp_config is None:
+        if self.robot_config is None:
             raise RuntimeError(
                 f"G1Robot.{what} needs an exp_config, but this robot was constructed "
                 "without one (the fetchman stack builds it straight from "
                 "model/data). Construct it with exp_config= to use this."
             )
-        return self.exp_config.robot_config
+        return self.robot_config.robot_config
 
     def _apply_solver_overrides(self):
         m = self.model
@@ -1019,8 +1018,8 @@ class G1Robot(Robot):
         vs. every other geom in the model) rather than by name.
         """
         friction = self._gripper_friction
-        if friction is None and self.exp_config is not None:
-            friction = getattr(self.exp_config.robot_config, "gripper_friction", None)
+        if friction is None and self.robot_config is not None:
+            friction = getattr(self.robot_config.robot_config, "gripper_friction", None)
         if friction is None:
             return
         m = self.model
