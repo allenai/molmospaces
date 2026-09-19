@@ -170,6 +170,11 @@ class MlSpacesExpConfig(Config, ABC):
     environment_light_intensity: float = 15000.0
     """The environment intensity value for the IBL when using the filament-based renderer"""
 
+    override_pbr_materials: bool = False
+    """Give materials that ship without PBR data (an albedo texture and nothing else) a
+    metallic/roughness pair derived from the object's annotated composition. Only affects
+    the Filament renderer. Off by default so existing datasets don't change appearance"""
+
     no_cached_map: bool = False
     """Whether or not to cache the generated thormap to disk after creating it for a datagen run"""
 

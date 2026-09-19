@@ -549,6 +549,7 @@ class BaseMujocoTaskSampler:
         scene_file_path,
         randomize_textures=False,
         environment_light_intensity: float = 15000.0,
+        override_pbr_materials: bool = False,
     ):
         """
         Complete function to set up a scene with robot and objects.
@@ -565,6 +566,14 @@ class BaseMujocoTaskSampler:
             self._datagen_profiler.start("compile_xml_load")
 
         spec = MjSpec.from_file(str(scene_file_path))
+
+        if override_pbr_materials:
+            # Our assets carry an albedo texture and nothing else, so without this
+            # every surface in the scene shades identically. Must happen before
+            # compile(): metallic/roughness are spec-level material properties.
+            from molmo_spaces.renderer.pbr_materials import apply_pbr_material_overrides
+
+            apply_pbr_material_overrides(spec)
 
         # Hack(wilbert): only run on 3.5.1 onwards for now (custom mujoco wheel)
         if MJC_VERSION >= (3, 5, 1):
@@ -859,6 +868,7 @@ class BaseMujocoTaskSampler:
                 randomize_textures=self.config.task_sampler_config.randomize_textures
                 or enable_door_randomization,  # Enable door joint randomization
                 environment_light_intensity=self.config.environment_light_intensity,
+                override_pbr_materials=self.config.override_pbr_materials,
             )
         except HouseInvalidForTask:
             if self._datagen_profiler is not None:
