@@ -49,14 +49,14 @@ class RBY1(Robot):
             "Something went wrong, 'robot_view_factory' shouldn't be None"
         )
 
-        self._namespace = self.config.robot_namespace
+        self._namespace = self.robot_config.robot_namespace
 
         # TODO(wilbert): uhmmm, make sure we change the design of these configs and views to not
         # have to be forced to use getattr
-        self._use_holo_base = getattr(self.config, "use_holo_base")  # noqa: B009
+        self._use_holo_base = getattr(self.robot_config, "use_holo_base")  # noqa: B009
 
         self._robot_view = RBY1RobotView(mj_data, self.namespace, holo_base=self._use_holo_base)
-        self._kinematics = MlSpacesKinematics(self.config)
+        self._kinematics = MlSpacesKinematics(self.robot_config)
 
         # Create controllers:
 
@@ -70,14 +70,14 @@ class RBY1(Robot):
             "ee_position",
             "ee_velocity",
         ]
-        if self.config.command_mode["arm"] is not None:
-            assert self.config.command_mode["arm"] in self.arm_command_modes, (
-                f"Arm command mode {self.config.command_mode['arm']} not in {self.arm_command_modes}"
+        if self.robot_config.command_mode["arm"] is not None:
+            assert self.robot_config.command_mode["arm"] in self.arm_command_modes, (
+                f"Arm command mode {self.robot_config.command_mode['arm']} not in {self.arm_command_modes}"
             )
         self.arm_command_mode = (
             "joint_position"
-            if not self.config.command_mode["arm"]
-            else self.config.command_mode["arm"]
+            if not self.robot_config.command_mode["arm"]
+            else self.robot_config.command_mode["arm"]
         )
         if self.arm_command_mode == "joint_rel_position":
             left_arm_controller = JointRelPosController(self.robot_view.get_move_group("left_arm"))
@@ -98,14 +98,14 @@ class RBY1(Robot):
             "joint_rel_position",
             "joint_velocity",
         ]
-        if self.config.command_mode["gripper"] is not None:
-            assert self.config.command_mode["gripper"] in self.gripper_command_modes, (
-                f"Gripper command mode {self.config.command_mode['gripper']} not in {self.gripper_command_modes}"
+        if self.robot_config.command_mode["gripper"] is not None:
+            assert self.robot_config.command_mode["gripper"] in self.gripper_command_modes, (
+                f"Gripper command mode {self.robot_config.command_mode['gripper']} not in {self.gripper_command_modes}"
             )
         self.gripper_command_mode = (
             "joint_position"
-            if not self.config.command_mode["gripper"]
-            else self.config.command_mode["gripper"]
+            if not self.robot_config.command_mode["gripper"]
+            else self.robot_config.command_mode["gripper"]
         )
         if self.gripper_command_mode == "joint_rel_position":
             left_gripper_controller = JointRelPosController(
@@ -136,18 +136,18 @@ class RBY1(Robot):
             "holo_joint_planar_position",
             "holo_joint_rel_planar_position",
         ]
-        if self.config.command_mode["base"] is not None:
-            assert self.config.command_mode["base"] in self.base_command_modes, (
-                f"Base command mode {self.config.command_mode['base']} not in {self.base_command_modes}"
+        if self.robot_config.command_mode["base"] is not None:
+            assert self.robot_config.command_mode["base"] in self.base_command_modes, (
+                f"Base command mode {self.robot_config.command_mode['base']} not in {self.base_command_modes}"
             )
         self.base_command_mode = (
             "planar_position"
-            if not self.config.command_mode["base"]
-            else self.config.command_mode["base"]
+            if not self.robot_config.command_mode["base"]
+            else self.robot_config.command_mode["base"]
         )
         if self.base_command_mode == "planar_position":
             base_controller = DiffDriveBasePoseController(
-                self.config,
+                self.robot_config,
                 self.robot_view.get_move_group("base"),  # pyright: ignore[reportArgumentType]
             )
         elif self.base_command_mode == "holo_joint_rel_planar_position":
@@ -160,7 +160,7 @@ class RBY1(Robot):
             )
 
         # Head is fixed - no head actions are supported
-        self.head_command_mode = self.config.command_mode.get("head")
+        self.head_command_mode = self.robot_config.command_mode.get("head")
         assert self.head_command_mode is None, (
             "RBY1 head actuation is disabled. The head is fixed at init_qpos['head'] with optional "
             "randomization via init_qpos_noise_range['head']. "
@@ -170,7 +170,7 @@ class RBY1(Robot):
         # Torso command modes
         self.torso_command_modes = ["joint_position", "height"]
         self.torso_command_mode = (
-            self.config.command_mode.get("torso", "joint_position") or "joint_position"
+            self.robot_config.command_mode.get("torso", "joint_position") or "joint_position"
         )
         assert self.torso_command_mode in self.torso_command_modes, (
             f"Torso command mode {self.torso_command_mode} not in {self.torso_command_modes}"
@@ -238,7 +238,7 @@ class RBY1(Robot):
         Returns:
             Noisy base position [x, y, theta]
         """
-        noise_config = self.config.action_noise_config
+        noise_config = self.robot_config.action_noise_config
         assert noise_config is not None, "Something wen't wrong, 'noise_config' shouldn't be None"
 
         # Get current base position (x, y, theta)
@@ -299,7 +299,7 @@ class RBY1(Robot):
         # TODO(wilbert): seems noise_config is not used at all for this part of rby1 code, we could
         # remove it instead of having to check, but for now will just assert and remove it in a
         # later commit
-        noise_config = self.config.action_noise_config
+        noise_config = self.robot_config.action_noise_config
         if noise_config and not noise_config.enabled:
             return action
 
@@ -326,7 +326,7 @@ class RBY1(Robot):
     def reset(self) -> None:
         """Reset the robot to its initial state."""
 
-        init_qpos_dict = {key: np.array(val) for key, val in self.config.init_qpos.items()}
+        init_qpos_dict = {key: np.array(val) for key, val in self.robot_config.init_qpos.items()}
         self.set_joint_pos(init_qpos_dict)
 
         # reset controllers

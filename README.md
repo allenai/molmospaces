@@ -161,6 +161,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 | `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `~/.cache/molmospaces/assets/<install-hash>` |
 | `MLSPACES_FORCE_INSTALL` | Override existing assets | `True` |
 | `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |  |
+| `MLSPACES_LICENSE_POLICY` | Filters which objects/scenes may be used, e.g. `commercial_safe` to exclude non-commercial-licensed Objaverse assets. See [License](#license) below. | `none` |
 | `MUJOCO_EGL_DEVICE_ID` | The rendering device; indices do not always match `CUDA_VISIBLE_DEVICES`. See [here](https://github.com/allenai/molmospaces/issues/66) for details. | `0`|
 
 
@@ -374,6 +375,8 @@ Robot parallel-jaw gripper conventions: +z=forward, fingers open along the y axi
 The codebase is licensed under [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt).
 The public MolmoSpaces data endpoint is available [here](https://pub-3555e9bb2d304fab9c6c79819e48aa40.r2.dev). The public MolmoSpaces Isaac data endpoint is available [here](https://pub-96496c3574b24d0c98b235219711d359.r2.dev). Both datasets are also available for download on [HuggingFace](https://huggingface.co/datasets/allenai/molmospaces). The Objaverse subsets in these buckets are licensed under [ODC-BY 1.0](https://opendatacommons.org/licenses/by/1-0/). All other data subsets are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.en).
 The artifacts are intended for research and educational use in accordance with [Ai2's Responsible Use Guidelines](https://allenai.org/responsible-use).
+
+Some Objaverse assets are licensed non-commercially (CC BY-NC / BY-NC-SA); by default MolmoSpaces makes no distinction and will use any asset. Setting `MLSPACES_LICENSE_POLICY=commercial_safe` (see [Set Environment Variables](#set-environment-variables-optional)) filters these non-commercial-licensed objects out of object pools and scenes at data-generation time, so that resulting runs and datasets only draw on commercially-licensed assets.
 
 ## Data Attributions
 

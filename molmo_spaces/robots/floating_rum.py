@@ -28,7 +28,7 @@ class FloatingRUMRobot(Robot):
 
     @property
     def namespace(self):
-        return self.config.robot_namespace
+        return self.robot_config.robot_namespace
 
     @property
     def robot_view(self):
@@ -63,7 +63,7 @@ class FloatingRUMRobot(Robot):
 
     def reset(self):
         self._last_cmd_action = None
-        for mg_id, default_pos in self.config.init_qpos.items():
+        for mg_id, default_pos in self.robot_config.init_qpos.items():
             if mg_id in self._robot_view.move_group_ids():
                 self._robot_view.get_move_group(mg_id).joint_pos = np.array(default_pos)
 
