@@ -19,7 +19,7 @@ repos:
       - id: trailing-whitespace
       - id: debug-statements
         exclude: ^molmo_spaces/utils/misc_utils\.py$
-        language_version: python3.11
+        language_version: python3.12
       - id: pretty-format-json
         args: ["--autofix", "--indent=4", "--no-sort-keys"]
 
@@ -34,7 +34,7 @@ repos:
     rev: v3.21.2
     hooks:
       - id: pyupgrade
-        args: [--py311-plus]
+        args: [--py312-plus]
 
   - repo: local
     hooks:

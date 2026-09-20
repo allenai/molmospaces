@@ -15,9 +15,9 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "attrs",
     "beaker-py>2.0.0",
@@ -25,7 +25,7 @@ dependencies = [
     "coacd>=1.0.7",
     "compress-json>=1.1.1",
     "decord; sys_platform == 'linux'", # For Linux
-    "eva-decord; sys_platform == 'darwin'", # For macOS
+    "decord2; sys_platform == 'darwin'", # For macOS (eva-decord has no cp312+ wheels; decord2 is a drop-in `decord` replacement with cp312+ macOS wheels)
     "einops>=0.8.1",
     "ffmpeg-python>=0.2.0",
     "future>=1.0.0",
@@ -104,10 +104,12 @@ curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
 ]
 mujoco = [
-    "mujoco~=3.5.0",
+    "mujoco~=3.13.0",
+    "mujoco-warp~=3.13.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-filament = [
-    "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco-warp~=3.7.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 docs = [
     "mkdocs>=1.6.0",
@@ -207,7 +209,7 @@ exclude_also = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 exclude = [
  "scripts/",
