@@ -4,19 +4,18 @@ version = "0.0.1"
 description = "ManiSkill environments for ProcTHOR and RoboTHOR"
 readme = "README.md"
 authors = []
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "mani-skill-nightly",
+    "mani-skill==3.0.1b1",
     "mujoco",
     "tyro",
     "msgspec",
     "setuptools>=83.0.0",
-    "lmdb~=1.7.5",
-    "zstandard~=0.25.0",
+    "molmospaces-resources==0.0.3a2",
 ]
 
 [build-system]
-requires = ["uv_build>=0.8.6,<0.9.0"]
+requires = ["uv_build>=0.12.5,<0.13"]
 build-backend = "uv_build"
 
 [project.optional-dependencies]
@@ -26,13 +25,22 @@ dev = [
     "ruff",
     "ty",
     "ipython",
+    "ipdb",
 ]
+
+[tool.uv.sources]
+mani-skill = { index = "robotics-folks" }
+
+[[tool.uv.index]]
+name = "robotics-folks"
+url = "https://codeberg.org/api/packages/robotics-folks/pypi/simple/"
+explicit = true
 
 [project.scripts]
 ms-download = "molmo_spaces_maniskill.downloader.main:main"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 
 [tool.ruff.format]
@@ -43,8 +51,6 @@ docstring-code-format = false
 
 [tool.ruff.lint]
 select = [
-    # # docstring
-    # "D",
     # pycodestyle
     "E",
     # Pyflakes
