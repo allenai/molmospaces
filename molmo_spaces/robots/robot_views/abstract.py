@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from typing import Literal, NoReturn, TypeAlias
+from typing import Literal, NoReturn
 
 import mujoco as mj
 import numpy as np
@@ -846,5 +846,5 @@ class RobotView(ABC):
         return J
 
 
-RobotViewFactory: TypeAlias = Callable[[mj.MjData, str], RobotView]
+type RobotViewFactory = Callable[[mj.MjData, str], RobotView]
 """Factory function that creates a RobotView from a MjData and a robot namespace"""

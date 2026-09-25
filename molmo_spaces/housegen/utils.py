@@ -104,7 +104,7 @@ class SceneInfo:
     objects: dict[str, SceneObjectInfo] = field(default_factory=dict)
 
 
-def unity_to_mj_pos(pos: Vec3) -> Vec3:
+def unity_to_mj_pos[Vec3: (list[float], tuple[float, float, float], np.ndarray)](pos: Vec3) -> Vec3:
     assert len(pos) == 3, "Given vector should be of length 3"  # noqa: PLR2004
 
     if isinstance(pos, tuple):

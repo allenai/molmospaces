@@ -4,7 +4,7 @@ from enum import StrEnum
 
 import logging
 from abc import ABC
-from typing import ClassVar, TypeAlias, TypeVar
+from typing import ClassVar, TypeVar
 
 import numpy as np
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 from molmo_spaces.configs.abstract_config import Config
 
 T = TypeVar("T")
-Triple: TypeAlias = tuple[T, T, T]
+type Triple[T] = tuple[T, T, T]
 
 
 class CameraConfig(Config, ABC):
@@ -1048,7 +1048,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
     ]
 
 
-AllCameraSystems: TypeAlias = (
+type AllCameraSystems = (
     RBY1MjcfCameraSystem
     | RBY1GoProD455CameraSystem
     | FrankaRandomizedD405D455CameraSystem

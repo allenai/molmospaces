@@ -1,7 +1,6 @@
 """Task configuration classes for MolmoSpaces experiments."""
 
 from pathlib import Path
-from typing import TypeAlias
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -187,7 +186,7 @@ class NavToObjTaskConfig(BaseMujocoTaskConfig):
     enable_rendering: bool = True  # Whether to enable environment rendering for visual sensors
 
 
-AllTaskConfigs: TypeAlias = (
+type AllTaskConfigs = (
     BaseMujocoTaskConfig
     | PickTaskConfig
     | PickAndPlaceTaskConfig

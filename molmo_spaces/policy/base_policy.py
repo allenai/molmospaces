@@ -7,7 +7,7 @@ that can interact with the environment to collect data.
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 from mujoco import MjSpec
 
@@ -107,7 +107,7 @@ class BasePolicy(ABC):
         return []
 
 
-PolicyFactory: TypeAlias = Callable[..., BasePolicy]
+type PolicyFactory = Callable[..., BasePolicy]
 """
 Factory function with signature ``Callable[[MlSpacesExpConfig, BaseMujocoTask | None], BasePolicy]``.
 To avoid forward-reference resolution issues with Pydantic, the type is relaxed to Callable[..., BasePolicy].
