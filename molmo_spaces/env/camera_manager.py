@@ -380,14 +380,34 @@ class CameraManager:
 
         log.info(f"[CAMERA SETUP] Successfully set up {len(self.registry.cameras)} cameras")
 
-    def fisheye_renderer(self, env, camera_name: str, output_h: int, output_w: int):
-        """The cubemap FisheyeRenderer for a FisheyeMjcfCameraConfig camera at
-        this output size, built on first use from the config's own lens
-        parameters (FisheyeMjcfCameraConfig.cubemap_renderer_kwargs) and cached
-        on the camera; a different output size rebuilds it. Its K/D can be
-        perturbed in place afterwards (set_intrinsics), which is why the cache
-        is per camera rather than per call.
+    @staticmethod
+    def mjcf_scene_option(camera: Camera) -> mujoco.MjvOption:
+        """Scene options for rendering through `camera`'s MJCF camera: MuJoCo's
+        defaults with the camera config's `geomgroup_overrides` applied."""
+        opt = mujoco.MjvOption()
+        mujoco.mjv_defaultOption(opt)
+        overrides = getattr(camera.mjcf.config, "geomgroup_overrides", None)
+        for group, enabled in (overrides or {}).items():
+            opt.geomgroup[int(group)] = int(enabled)
+        return opt
+
+    def fisheye_renderer(
+        self, env, camera_name: str, output_h: int | None = None, output_w: int | None = None
+    ):
+        """The cubemap FisheyeRenderer for a FisheyeMjcfCameraConfig camera, at
+        the env's observation image size (`env._render_size()`) unless another
+        is given. Built on first use from the config's own lens parameters
+        (FisheyeMjcfCameraConfig.cubemap_renderer_kwargs) and cached on the
+        camera; a different output size rebuilds it. Returned rather than
+        rendered with, because callers also read and perturb its intrinsics
+        (K/D, set_intrinsics) in place -- which is why the cache is per camera
+        rather than per call.
         """
+        if output_h is None or output_w is None:
+            default_h, default_w = env._render_size()
+            output_h = default_h if output_h is None else output_h
+            output_w = default_w if output_w is None else output_w
+        output_h, output_w = int(output_h), int(output_w)
         camera = self.registry[camera_name]
         info = camera.mjcf
         if info is None or not info.is_fisheye:

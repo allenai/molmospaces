@@ -14,7 +14,9 @@ from pathlib import Path
 
 _PROJECTS_DIR = str(Path(__file__).resolve().parents[2])
 _REPO_ROOT = str(Path(__file__).resolve().parents[3])
-for _path in (_PROJECTS_DIR, _REPO_ROOT):
+# Inserted in reverse so `projects/` ends up first: a stray top-level
+# `fetchman/` at the repo root must not shadow `projects/fetchman`.
+for _path in (_REPO_ROOT, _PROJECTS_DIR):
     if _path in sys.path:
         sys.path.remove(_path)
     sys.path.insert(0, _path)

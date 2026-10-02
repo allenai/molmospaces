@@ -1235,10 +1235,6 @@ class InteractiveShellTask(BaseMujocoTask):
             )
             pick_config.task_config.referral_expressions["pickup_obj_name"] = object
 
-            # A 1cm lift (PickTaskConfig's default) is cleared while the gripper is
-            # still closing; combined with end_on_success that ended the rollout
-            # before post_close/lift ever ran, so `pick` returned True on a barely
-            # -moved object. Require the lift to be real, and run the motion out.
             pick_config.task_config.succ_pos_threshold = 0.01
 
             sub_task = PickTask(self._env, pick_config)

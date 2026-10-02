@@ -310,30 +310,6 @@ class CPUMujocoEnv(BaseMujocoEnv):
             width, height = (640, 480)
         return int(height), int(width)
 
-    def _mjcf_scene_option(self, camera: Camera) -> mujoco.MjvOption:
-        """Scene options for rendering through `camera`'s MJCF camera: MuJoCo's
-        defaults with the camera config's `geomgroup_overrides` applied."""
-        opt = mujoco.MjvOption()
-        mujoco.mjv_defaultOption(opt)
-        overrides = getattr(camera.mjcf.config, "geomgroup_overrides", None)
-        for group, enabled in (overrides or {}).items():
-            opt.geomgroup[int(group)] = int(enabled)
-        return opt
-
-    def fisheye_renderer(
-        self, camera_name: str, output_h: int | None = None, output_w: int | None = None
-    ):
-        """The cubemap FisheyeRenderer for a fisheye MJCF camera, at the
-        observation image size unless another is given. Built (and cached on
-        the camera) by CameraManager from the camera config's own lens
-        parameters; returned rather than rendered with, because callers also
-        read and perturb its intrinsics (K/D)."""
-        if output_h is None or output_w is None:
-            default_h, default_w = self._render_size()
-            output_h = default_h if output_h is None else output_h
-            output_w = default_w if output_w is None else output_w
-        return self.camera_manager.fisheye_renderer(self, camera_name, int(output_h), int(output_w))
-
     @property
     def mj_datas(self) -> Sequence[mj.MjData]:
         if not self.is_loaded():
@@ -430,10 +406,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
         default_h, default_w = self._render_size()
         out_h = default_h if height is None else int(height)
         out_w = default_w if width is None else int(width)
-        opt = self._mjcf_scene_option(camera)
+        opt = self.camera_manager.mjcf_scene_option(camera)
 
         if camera.mjcf.is_fisheye:
-            fisheye = self.fisheye_renderer(camera.name, out_h, out_w)
+            fisheye = self.camera_manager.fisheye_renderer(self, camera.name, out_h, out_w)
             # The tiles are square and rendered at the lens' own tile size, not
             # at the output size; the composite is what comes out at (out_h, out_w).
             renderer = self._ensure_renderer(fisheye.tile_size, fisheye.tile_size)

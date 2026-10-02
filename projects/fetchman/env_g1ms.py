@@ -292,9 +292,11 @@ class G1CPUMujocoEnv(CPUMujocoEnv):
 
     def ensure_fisheye(self, output_h=None, output_w=None):
         """The head camera's FisheyeRenderer, at the observation image size
-        unless another is given -- `fisheye_renderer` by the name and the
+        unless another is given -- CameraManager.fisheye_renderer by the name and the
         obs-key-free signature the port's callers use."""
-        return self.fisheye_renderer(self.cameras["head_image"], output_h, output_w)
+        return self.camera_manager.fisheye_renderer(
+            self, self.cameras["head_image"], output_h, output_w
+        )
 
     def _render_size(self) -> tuple[int, int]:
         """The reference stack's own camera_size, not
