@@ -24,7 +24,7 @@ from typing import NamedTuple
 import pytest
 from pydantic import BaseModel
 
-from molmo_spaces.configs import MlSpacesExpConfig
+from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.data_generation.config.door_opening_configs import (
     DoorOpeningDataGenConfig,
 )

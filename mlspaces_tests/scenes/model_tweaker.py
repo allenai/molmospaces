@@ -52,7 +52,7 @@ def main() -> int:
         with open(status_file, "w") as fhandle:
             json.dump({"tweaks": {"apply_dressers_offset": False}}, fhandle, indent=4)
 
-    with open(status_file, "r") as fhandle:
+    with open(status_file) as fhandle:
         status_data = json.load(fhandle)
 
     if args.tweak_dressers_apply_offset:

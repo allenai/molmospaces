@@ -290,7 +290,7 @@ class FisheyeRenderer:
         Implementation note: each tile is rendered in segmentation mode so we get
         per-pixel geom IDs; the tile masks are then resampled with nearest-neighbor
         through the cubemap LUT and combined with logical-or."""
-        robot_set = set(int(g) for g in robot_geom_ids)
+        robot_set = {int(g) for g in robot_geom_ids}
         seg_tiles = []
         renderer.enable_segmentation_rendering()
         try:

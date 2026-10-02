@@ -37,7 +37,12 @@ dependencies = [
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
-    "mujoco-warp",
+    # mujoco-warp tracks MuJoCo's own version and reads enum members that MuJoCo
+    # moves between releases (mjENBL_MULTICCD became mjDSBL_MULTICCD), so it
+    # fails at import against a mujoco it does not match. mujoco's own version is
+    # pinned per extra below, so the matching mujoco-warp minor is pinned there
+    # too; this floor only rules out the pre-3.x releases.
+    "mujoco-warp>=3.5",
     "warp-lang",
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
@@ -103,11 +108,19 @@ housegen = [
 curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
 ]
+g1_humanoid = [
+    "ml-collections", # molmo_spaces/utils/prompt_samplers.py's g1_molmo-ported sampler
+    # mink>=1.0 declares mujoco>=3.8.1, so it can pull mujoco forward.
+    "mink", # G1 whole-body IK: robots/g1.py, pick_task_sampler_g1.py, pick_planner_policy_g1.py
+    "onnxruntime>=1.18.0", # G1 whole-body controller's learned policy: controllers/g1_wbc.py
+]
 mujoco = [
     "mujoco~=3.5.0",
+    "mujoco-warp~=3.5.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-filament = [
     "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco-warp~=3.7.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 docs = [
     "mkdocs>=1.6.0",
@@ -152,6 +165,9 @@ generate-houses = "molmo_spaces.housegen.exporter:main"
 
 [tool.setuptools.packages.find]
 where = ["./"]
+# `projects/fetchman` is deliberately absent: it is the FetchMan reference
+# port, a leaf nothing in molmo_spaces imports, and its scripts expect a
+# g1_molmo checkout most installs do not have. See projects/fetchman/README.md.
 include = ["molmo_spaces*"]
 exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 
@@ -211,6 +227,7 @@ target-version = "py311"
 line-length = 100
 exclude = [
  "scripts/",
+ "projects/fetchman/scripts/",
  "tests/",
  "mlspaces_tests/scenes/",
 ]

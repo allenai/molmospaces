@@ -200,7 +200,7 @@ def register_user_grasp_library(root_name: str, path: Path, object_library: str)
 
     from molmo_spaces.utils.lazy_loading_utils import UserGraspLibraryIndex
 
-    with open(grasps_index_path, "r") as f:
+    with open(grasps_index_path) as f:
         grasp_index = UserGraspLibraryIndex.model_validate_json(f.read())
 
     grasp_robots = set(grasp_index.grasp_paths.keys()) | set(
@@ -313,10 +313,20 @@ def _merge_dicts(dict1: dict, dict2: dict):
 
 if PINNED_ASSETS_FILE:
     assert PINNED_ASSETS_FILE.is_file(), f"Could not find pinned assets file: {PINNED_ASSETS_FILE}"
-    with open(PINNED_ASSETS_FILE, "r") as f:
+    with open(PINNED_ASSETS_FILE) as f:
         pinned_assets = json.load(f)
         print(f"Pinning assets from {PINNED_ASSETS_FILE}:\n{json.dumps(pinned_assets, indent=2)}")
         _merge_dicts(DATA_TYPE_TO_SOURCE_TO_VERSION, pinned_assets)
+
+
+def log_data_versions() -> None:
+    """Log the data versions currently in use.
+
+    Call this once from a script's entry point (see the "entry points" section of
+    the README) rather than from library code, so that merely importing molmospaces
+    modules doesn't spam logs.
+    """
+    logging.getLogger(__name__).info(f"Data versions in use: {DATA_TYPE_TO_SOURCE_TO_VERSION}")
 
 
 # ------------------------------

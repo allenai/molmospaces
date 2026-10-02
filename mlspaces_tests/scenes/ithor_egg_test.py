@@ -39,7 +39,7 @@ def find_object_base_name_in_scene(model, object_type="egg") -> tuple[int, str]:
     raise ValueError(f"Object {object_type} not found in scene")
 
 
-def run_grasp_batch(args: Tuple[str, str, List[int], int, str, bool, str, bool]) -> Dict[str, int]:
+def run_grasp_batch(args: tuple[str, str, list[int], int, str, bool, str, bool]) -> dict[str, int]:
     """Worker for `pool.map` below -- not a pytest test.
 
     It was called `test_grasp_batch`, so pytest collected it on name alone and

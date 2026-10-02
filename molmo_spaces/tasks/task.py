@@ -26,8 +26,8 @@ from molmo_spaces.env.env import BaseMujocoEnv
 from molmo_spaces.env.object_manager import ObjectManager
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs import BaseMujocoTaskConfig
     from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+    from molmo_spaces.configs.task_configs import BaseMujocoTaskConfig
     from molmo_spaces.policy.base_policy import BasePolicy
 
 

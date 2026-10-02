@@ -76,11 +76,7 @@ class PickTask(BaseMujocoTask):
 
     def judge_success(self) -> bool:
         """Judge if the task was successful (for data generation)."""
-
-        if self.config.task_type == "pick":
-            return self.get_info()[0]["success"]
-        else:
-            raise ValueError(f"Invalid action_type {self.config.task_type}")
+        return self.get_info()[0]["success"]
 
     def get_reward(self) -> np.ndarray:
         """Calculate reward for each environment in the batch."""
@@ -178,6 +174,12 @@ class PickTask(BaseMujocoTask):
                     "rotation_error": rot_error,
                     "success": success,
                     "episode_step": self.episode_step_count,
+                    # The two terms success is made of, so a caller can tell a
+                    # missed grasp from a lift that fell short or an object
+                    # still touching something else.
+                    "lift_height": float(lift_height),
+                    "only_robot_contact": bool(only_robot_collision),
+                    "robot_contact": bool(robot_collision),
                 }
             )
 

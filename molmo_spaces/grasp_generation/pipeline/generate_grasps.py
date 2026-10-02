@@ -734,7 +734,7 @@ def sample_multiple_grasps(
 
 
 def generate_per_joint_grasps(joint_meshes_json, base_prefix, args):
-    with open(joint_meshes_json, "r") as f:
+    with open(joint_meshes_json) as f:
         joint_meshes = json.load(f)
     summary = []
 

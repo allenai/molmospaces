@@ -1,4 +1,3 @@
-
 # THOR object category simplifications for diversity analysis
 THOR_CAT_SIMPLIFY = {
     'saltshaker':'s/p shaker',

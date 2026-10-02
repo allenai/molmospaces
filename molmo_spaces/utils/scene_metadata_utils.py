@@ -7,6 +7,7 @@ from pathlib import Path
 import mujoco
 from mujoco import MjModel
 
+from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.molmo_spaces_constants import get_resource_manager, get_scenes
 
 log = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def get_scene_metadata(mj_base_scene_path: str | Path) -> dict | None:
         while parts:
             cur_name = "_".join(parts + ["metadata.json"])
             if (dir_path / cur_name).exists():
-                with open(dir_path / cur_name, "r") as f:
+                with open(dir_path / cur_name) as f:
                     return json.load(f)
 
             # Not found, remove last part and try again
@@ -49,7 +50,7 @@ def get_scene_metadata(mj_base_scene_path: str | Path) -> dict | None:
 
         return None
 
-    with open(metadata_file, "r") as f:
+    with open(metadata_file) as f:
         metadata = json.load(f)
 
     return metadata
@@ -72,11 +73,18 @@ def is_object_articulable_from_metadata(
     )
     if not joint_maps:
         return False
-    for joint_name, _ in joint_maps.items():
-        joint_type = model.joint(joint_name).type
-        if joint_type == mujoco.mjtJoint.mjJNT_HINGE or joint_type == mujoco.mjtJoint.mjJNT_SLIDE:
-            return True
-    return False
+    # Metadata-only variant of ObjectManager.is_object_articulable: no scope
+    # filter, since the name_map is already per-object. Unlike the pre-merge
+    # loop, a mapped joint missing from the model is skipped rather than raising.
+    return bool(
+        MlSpacesObject.collect_joints(
+            model,
+            -1,
+            joint_name_map=joint_maps,
+            scope="all",
+            joint_types=(mujoco.mjtJoint.mjJNT_HINGE, mujoco.mjtJoint.mjJNT_SLIDE),
+        )[1]
+    )
 
 
 _ALL_SCENES_INSTALLED = False

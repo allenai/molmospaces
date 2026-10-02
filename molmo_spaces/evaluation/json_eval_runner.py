@@ -225,7 +225,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
         house_episodes = [ep for ep in all_episodes if ep.house_index == house_id]
 
         if not house_episodes:
-            available_houses = sorted(set(ep.house_index for ep in all_episodes))
+            available_houses = sorted({ep.house_index for ep in all_episodes})
             worker_logger.error(
                 f"House {house_id} not found in benchmark. Available houses: {available_houses}"
             )

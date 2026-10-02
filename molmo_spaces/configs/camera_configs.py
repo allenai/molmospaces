@@ -12,30 +12,15 @@ logger = logging.getLogger(__name__)
 
 from molmo_spaces.configs.abstract_config import Config
 
+# Re-exported: these live in utils/camera_utils.py so env/camera_manager.py can
+# import them without pulling in the configs package (see the note there).
+from molmo_spaces.utils.camera_utils import (  # noqa: F401
+    CameraNoiseModel,
+    CameraResetCadence,
+)
+
 T = TypeVar("T")
 Triple: TypeAlias = tuple[T, T, T]
-
-
-class CameraConfig(Config, ABC):
-    """Base specification for a single camera.
-
-    Each camera spec defines how one camera should be created and configured.
-    Subclasses implement different camera types (MJCF, robot-mounted, exocentric).
-    """
-
-    name: str  # Unique identifier for this camera in the registry
-    fov: float | None = None  # Field of view in degrees
-    is_warped: bool = False  # Whether camera has lens distortion (e.g., GoPro fisheye)
-    record_depth: bool = False  # Whether to record depth images for this camera
-    skip_erosion: bool = (
-        False  # Skip erosion for object point sampling (useful for wide FOV cameras)
-    )
-
-    # Visibility constraints for robot placement validation (optional)
-    # Maps body names to minimum visibility thresholds (0.0 to 1.0)
-    # Can use special keys like "__gripper__" or "__task_objects__" (resolved at placement time)
-    # If specified, these constraints will be checked during robot placement when enabled
-    visibility_constraints: dict[str, float] | None = None
 
 
 class FisheyeImpl(StrEnum):
@@ -63,6 +48,36 @@ class FisheyeImpl(StrEnum):
     WARPING = "warping"
 
 
+class CameraConfig(Config, ABC):
+    """Base specification for a single camera.
+
+    Each camera spec defines how one camera should be created and configured.
+    Subclasses implement different camera types (MJCF, robot-mounted, exocentric).
+    """
+
+    name: str  # Unique identifier for this camera in the registry
+    fov: float | None = None  # Field of view in degrees
+    is_warped: bool = False  # Whether camera has lens distortion (e.g., GoPro fisheye)
+    record_depth: bool = False  # Whether to record depth images for this camera
+    skip_erosion: bool = (
+        False  # Skip erosion for object point sampling (useful for wide FOV cameras)
+    )
+
+    # Only read when `is_warped`; see FisheyeImpl.
+    fisheye_impl: FisheyeImpl = FisheyeImpl.WARPING
+
+    # Every camera type carries noise fields, so the cadence lives on the base.
+    # See CameraResetCadence.
+    # TODO(max): switch to episode reset cadence per default.
+    reset_cadence: CameraResetCadence = CameraResetCadence.SETUP
+
+    # Visibility constraints for robot placement validation (optional)
+    # Maps body names to minimum visibility thresholds (0.0 to 1.0)
+    # Can use special keys like "__gripper__" or "__task_objects__" (resolved at placement time)
+    # If specified, these constraints will be checked during robot placement when enabled
+    visibility_constraints: dict[str, float] | None = None
+
+
 class MjcfCameraConfig(CameraConfig):
     """Camera defined in the MJCF file.
 
@@ -73,6 +88,24 @@ class MjcfCameraConfig(CameraConfig):
     mjcf_name: str  # Full name of camera in MJCF (may include namespace)
     robot_namespace: str | None = None  # If specified, prepends to mjcf_name (e.g., "robot_0/")
 
+    # Render through the model's own camera (mujoco.Renderer.update_scene with
+    # this camera's id) rather than CPUMujocoEnv's free-camera path, which
+    # positions a free camera from the tracked Camera pose.
+    #
+    # These are NOT equivalent. The free-camera path renders the *noised*
+    # mounting that _setup_mjcf_camera stored on the Camera; the MJCF path
+    # renders whatever is in `model.cam_*`, so a per-episode randomizer has to
+    # write the noise into the model for it to show up (G1TaskSampler does;
+    # CameraManager's own setup-time noise does not). Leave this False unless
+    # the sampler owns model.cam_*. Fisheye cameras always take the MJCF path.
+    render_via_mjcf: bool = False
+
+    # Scene-option geomgroup toggles applied when rendering through this
+    # camera, as {group index: 0 or 1}, over MuJoCo's default [1,1,1,0,0,0].
+    # Lets a camera hide its own mount, or reveal a group that is off by
+    # default, without touching the model.
+    geomgroup_overrides: dict[int, int] | None = None
+
     # Optional noise for MJCF cameras (applied to their fixed mounting)
     pos_noise_range: tuple[float, float] | tuple[Triple[float], Triple[float]] | None = (
         None  # Add noise to camera position (min, max)
@@ -81,6 +114,10 @@ class MjcfCameraConfig(CameraConfig):
         None  # Random rotation noise in degrees
     )
     fov_noise_degrees: tuple[float, float] | None = None  # Add noise to FOV (min, max)
+
+    # How the three noise fields above are drawn and applied; see
+    # CameraNoiseModel.
+    noise_model: CameraNoiseModel = CameraNoiseModel.CAMERA_LOCAL_EULER
 
 
 class FisheyeMjcfCameraConfig(MjcfCameraConfig):
@@ -283,6 +320,19 @@ class EvalExocentricCameraConfig(FixedExocentricCameraConfig):
     camera_quaternion: list[float] = [-0.3633, -0.1241, 0.4263, 0.8191]
 
 
+AllCameraTypes: TypeAlias = (
+    # Before MjcfCameraConfig: it is a subclass, and pydantic resolves a union
+    # left to right, so the base would swallow it and drop the fisheye fields.
+    FisheyeMjcfCameraConfig
+    | MjcfCameraConfig
+    | RobotMountedCameraConfig
+    | FixedExocentricCameraConfig
+    | RandomizedExocentricCameraConfig
+    | EvalRobotMountedCameraConfig
+    | EvalExocentricCameraConfig
+)
+
+
 class CameraSystemConfig(Config):
     """Complete camera system configuration.
 
@@ -395,6 +445,89 @@ class RBY1GoProD455CameraSystem(CameraSystemConfig):
             pos_noise_range=((-0.015, -0.005, -0.01), (0.015, 0.005, 0.01)),
             orientation_noise_degrees=(8.0, 4.0, 4.0),
             record_depth=True,
+        ),
+    ]
+
+
+class G1CameraSystem(CameraSystemConfig):
+    """G1 humanoid: head fisheye + right wrist camera, matching g1_molmo's
+    camera setup (its bowl config and the base FOVs in g1_dex.xml).
+    `head_camera` owns every fisheye parameter, including the lens
+    calibration; CameraManager builds the cubemap FisheyeRenderer from it on
+    request. Both cameras set `render_via_mjcf`, so CPUMujocoEnv.render_rgb_frame
+    draws them through their MJCF camera ids -- the head as its cubemap
+    composite, not the raw `head_pov` pinhole.
+    """
+
+    # g1_molmo's camera_size=(224, 384) is (height, width); img_resolution is
+    # (width, height) -- see CameraSensor, which unpacks `width, height`.
+    img_resolution: tuple[int, int] = (384, 224)
+    cameras: list[AllCameraTypes] = [
+        FisheyeMjcfCameraConfig(
+            name="head_camera",
+            mjcf_name="head_pov",
+            robot_namespace="robot_0/",
+            # fov=None takes the MJCF's own fovy (68 for head_pov, 37.956 for
+            # right_wrist_camera), which is the base g1_molmo perturbs around
+            # -- rather than restating it here and silently drifting from the
+            # robot asset. The previous wrist value (70.0) came from the
+            # commented-out camera_mount block in g1_dex.xml, not the live
+            # camera, and was ~1.8x too wide.
+            fov=None,
+            # The real head camera is a fisheye.
+            is_warped=True,
+            # g1_molmo renders this head as a cubemap composite, so WARPING
+            # would not reproduce its recordings however well it is tuned.
+            fisheye_impl=FisheyeImpl.CUBEMAP,
+            # G1TaskSampler writes the per-episode camera noise into model.cam_*
+            # itself, so the MJCF path is the one that reproduces g1_molmo.
+            render_via_mjcf=True,
+            # g1_molmo's render_fisheye drops group 5 (robot head shell + logo)
+            # so the head does not occlude its own view. 5 is off by default,
+            # stated here because the wrist camera turns it on.
+            geomgroup_overrides={5: 0},
+            # g1_molmo's render_fisheye(tile_size=512) over the five fovy=100
+            # head_pov_tile_* cameras, on the default G1 head lens below.
+            tile_fov=100.0,
+            tile_size=512,
+            # head_camera_pos_noise=0.01, head_camera_rot_noise=0.0349 rad.
+            # G1TaskSampler already redraws these per episode; camera_manager
+            # does not, so on that path EPISODE states intent, not behavior.
+            noise_model=CameraNoiseModel.BODY_FRAME_AXIS_ANGLE,
+            reset_cadence=CameraResetCadence.EPISODE,
+            orientation_noise_degrees=2.0,
+            pos_noise_range=(-0.01, 0.01),
+            # head_camera_distortion_noise=0.2, and the /90 focal scaling that
+            # g1_molmo's fovy noise uses on a fisheye.
+            distortion_noise=0.2,
+            fov_noise_focal_divisor=90.0,
+            # head_camera_fovy_noise=2.0. On the fisheye g1_molmo applies this by
+            # scaling K's focal lengths by 1 + u/90 rather than moving cam_fovy;
+            # on molmo_spaces' pinhole path it perturbs the FOV instead.
+            fov_noise_degrees=(-2.0, 2.0),
+        ),
+        MjcfCameraConfig(
+            name="wrist_camera",
+            mjcf_name="right_wrist_camera",
+            robot_namespace="robot_0/",
+            fov=None,
+            # See head_camera.
+            render_via_mjcf=True,
+            # g1_molmo shows group 5 (wrist_mount) on every camera but this one,
+            # and hides group 1 here so the mount and camera body are not in the
+            # wrist camera's own image.
+            geomgroup_overrides={1: 0, 5: 1},
+            # g1_molmo records RGB video only -- its LeRobotRecorder builds one
+            # "video" feature per camera and no depth feature at all.
+            record_depth=False,
+            # wrist_camera_pos_noise=0.01, wrist_camera_rot_noise=0.0349 rad;
+            # same caveat as head_camera above.
+            noise_model=CameraNoiseModel.BODY_FRAME_AXIS_ANGLE,
+            reset_cadence=CameraResetCadence.EPISODE,
+            orientation_noise_degrees=2.0,
+            pos_noise_range=(-0.01, 0.01),
+            # wrist_camera_fovy_noise=2.0
+            fov_noise_degrees=(-2.0, 2.0),
         ),
     ]
 
@@ -1051,6 +1184,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
 AllCameraSystems: TypeAlias = (
     RBY1MjcfCameraSystem
     | RBY1GoProD455CameraSystem
+    | G1CameraSystem
     | FrankaRandomizedD405D455CameraSystem
     | FrankaEasyRandomizedDroidCameraSystem
     | FrankaDroidCameraSystem

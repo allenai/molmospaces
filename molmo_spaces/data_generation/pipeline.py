@@ -254,6 +254,25 @@ def save_house_trajectories(
         )
         if datagen_profiler is not None:
             datagen_profiler.end("save_trajectories")
+
+        # Second format, same prepared episodes -- must run after
+        # save_trajectories, which is what writes the mp4s it copies.
+        if exp_config.save_lerobot:
+            from molmo_spaces.utils.lerobot_save_utils import save_trajectories_lerobot
+
+            if datagen_profiler is not None:
+                datagen_profiler.start("save_trajectories_lerobot")
+            save_trajectories_lerobot(
+                house_trajectory_data,
+                save_dir=house_output_dir,
+                fps=exp_config.fps,
+                save_file_suffix=batch_suffix,
+                robot_type=exp_config.robot_config.name or "unknown",
+                logger=worker_logger,
+            )
+            if datagen_profiler is not None:
+                datagen_profiler.end("save_trajectories_lerobot")
+
         t_save = time.perf_counter() - t_save_start
 
         total_time = time.perf_counter() - t_start

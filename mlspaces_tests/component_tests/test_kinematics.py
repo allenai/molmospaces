@@ -13,9 +13,10 @@ import pytest
 import warp as wp
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.configs.robot_configs import FrankaRobotConfig, RBY1MConfig
+from molmo_spaces.configs.robot_configs import FrankaRobotConfig, G1Config, RBY1MConfig
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
+from molmo_spaces.utils.pose import pos_quat_to_pose_mat
 
 _WARP_DEVICES = ["cpu"] + (["cuda:0"] if wp.is_cuda_available() else [])
 
@@ -30,6 +31,11 @@ def rby1m_base_qpos_to_pose(base_qpos: np.ndarray) -> np.ndarray:
     pose[1, 3] = base_qpos[1]
     pose[:3, :3] = R.from_euler("z", base_qpos[2]).as_matrix()
     return pose
+
+
+def g1_base_qpos_to_pose(base_qpos: np.ndarray) -> np.ndarray:
+    """Convert G1's free-floating pelvis qpos [x, y, z, qw, qx, qy, qz] to a 4x4 pose matrix."""
+    return pos_quat_to_pose_mat(base_qpos)
 
 
 def _assert_valid_transform(pose: np.ndarray, atol=1e-6):
@@ -61,6 +67,11 @@ def rby1m_config():
 
 
 @pytest.fixture(scope="module")
+def g1_config():
+    return G1Config()
+
+
+@pytest.fixture(scope="module")
 def franka_mujoco_kin(franka_config):
     return MlSpacesKinematics(franka_config)
 
@@ -68,6 +79,11 @@ def franka_mujoco_kin(franka_config):
 @pytest.fixture(scope="module")
 def rby1m_mujoco_kin(rby1m_config):
     return MlSpacesKinematics(rby1m_config)
+
+
+@pytest.fixture(scope="module")
+def g1_mujoco_kin(g1_config):
+    return MlSpacesKinematics(g1_config)
 
 
 @pytest.fixture(scope="module", params=_WARP_DEVICES)
@@ -90,6 +106,17 @@ def franka_q0(franka_config):
 @pytest.fixture()
 def rby1m_q0(rby1m_config):
     return {k: np.array(v, dtype=np.float64) for k, v in rby1m_config.init_qpos.items()}
+
+
+@pytest.fixture()
+def g1_q0(g1_config):
+    q0 = {k: np.array(v, dtype=np.float64) for k, v in g1_config.init_qpos.items()}
+    # G1Config.init_qpos has no "base" entry -- the free-floating pelvis isn't
+    # driven via init_qpos the way arm/legs_waist joint positions are. Use G1's
+    # own validated standing height (see G1Config.fixed_base_height) with a
+    # level, unrotated orientation (quat scalar-first: [qw, qx, qy, qz]).
+    q0["base"] = np.array([0.0, 0.0, 0.793, 1.0, 0.0, 0.0, 0.0])
+    return q0
 
 
 # --- MlSpacesKinematics: FrankaDroid ---
@@ -279,6 +306,54 @@ class TestMlSpacesKinematicsRBY1M:
         assert result is not None
         fk_check = rby1m_mujoco_kin.fk(result, moved_bp, rel_to_base=True)
         np.testing.assert_allclose(fk_check["left_gripper"][:3, 3], target_rel[:3, 3], atol=1e-3)
+
+
+# --- MlSpacesKinematics: G1 ---
+
+
+class TestMlSpacesKinematicsG1:
+    def test_fk_returns_valid_transforms(self, g1_mujoco_kin, g1_q0):
+        base_pose = g1_base_qpos_to_pose(g1_q0["base"])
+        result = g1_mujoco_kin.fk(g1_q0, base_pose)
+        expected = {"base", "legs_waist", "left_arm", "right_arm", "right_gripper"}
+        assert expected.issubset(set(result.keys()))
+        for pose in result.values():
+            _assert_valid_transform(pose)
+
+    def test_fk_arms_are_not_coincident(self, g1_mujoco_kin, g1_q0):
+        base_pose = g1_base_qpos_to_pose(g1_q0["base"])
+        result = g1_mujoco_kin.fk(g1_q0, base_pose)
+        dist = np.linalg.norm(result["left_arm"][:3, 3] - result["right_arm"][:3, 3])
+        assert dist > 0.1
+
+    @pytest.mark.parametrize("arm", ["left_arm", "right_arm"])
+    def test_ik_moves_ee_to_specified_position(self, g1_mujoco_kin, g1_q0, arm):
+        """Move the arm's end-effector (its wrist grasp site, see G1ArmGroup) to
+        an explicit, fully-specified world-frame position -- not just wherever
+        IK happens to land -- and verify it actually gets there."""
+        base_pose = g1_base_qpos_to_pose(g1_q0["base"])
+        fk_result = g1_mujoco_kin.fk(g1_q0, base_pose)
+
+        # A concrete target: 5cm forward, 3cm out to the arm's own side, 4cm up
+        # from wherever the arm starts (init_qpos's resting pose) -- small
+        # enough to stay comfortably in reach regardless of exact link lengths,
+        # but a real, specified displacement, not a no-op.
+        side_sign = 1.0 if arm == "left_arm" else -1.0
+        target = fk_result[arm].copy()
+        target[:3, 3] += [0.05, side_sign * 0.03, 0.04]
+
+        result = g1_mujoco_kin.ik(arm, target, [arm], g1_q0, base_pose)
+        assert result is not None, f"IK failed to reach the specified position for {arm}"
+        fk_check = g1_mujoco_kin.fk(result, base_pose)
+        np.testing.assert_allclose(fk_check[arm][:3, 3], target[:3, 3], atol=1e-3)
+
+    @pytest.mark.parametrize("arm", ["left_arm", "right_arm"])
+    def test_ik_unreachable_returns_none(self, g1_mujoco_kin, g1_q0, arm):
+        base_pose = g1_base_qpos_to_pose(g1_q0["base"])
+        target = np.eye(4)
+        target[:3, 3] = [10.0, 10.0, 10.0]
+        result = g1_mujoco_kin.ik(arm, target, [arm], g1_q0, base_pose, max_iter=100)
+        assert result is None
 
 
 # --- SimpleWarpKinematics: FrankaDroid ---
