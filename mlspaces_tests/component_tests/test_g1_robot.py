@@ -30,13 +30,6 @@ _G1_ASSETS_DIR = ROBOTS_DIR / "g1"
 _G1_POLICIES_DIR = _G1_ASSETS_DIR / "policies"
 
 
-class _FakeExpConfig:
-    """Minimal stand-in for MlSpacesExpConfig -- G1Robot only reads .robot_config."""
-
-    def __init__(self, robot_config: G1Config) -> None:
-        self.robot_config = robot_config
-
-
 def _g1_config() -> G1Config:
     if not _G1_ASSETS_DIR.exists():
         pytest.skip(f"G1 assets not found at {_G1_ASSETS_DIR} (local-only checkout)")
@@ -63,7 +56,7 @@ def _build_standing_scene(config: G1Config):
 def g1_robot():
     config = _g1_config()
     model, data = _build_standing_scene(config)
-    robot = G1Robot.from_mj_data(data, _FakeExpConfig(config))
+    robot = G1Robot.from_mj_data(data, config)
     robot.reset()
     mujoco.mj_forward(model, data)
     return model, data, robot
