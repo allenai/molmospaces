@@ -1239,7 +1239,8 @@ class InteractiveShellTask(BaseMujocoTask):
             # still closing; combined with end_on_success that ended the rollout
             # before post_close/lift ever ran, so `pick` returned True on a barely
             # -moved object. Require the lift to be real, and run the motion out.
-            pick_config.task_config.succ_pos_threshold = 0.10
+            pick_config.task_config.succ_pos_threshold = 0.01
+
             sub_task = PickTask(self._env, pick_config)
             # G1PickPlannerPolicy seeds its standoff-pose and grasp sampling from
             # the task's episode_seed, and on a retry is told to walk to that
