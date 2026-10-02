@@ -40,7 +40,7 @@ repos:
     hooks:
       - id: ty-check
         name: Custom ty hook for linting our changes
-        entry: ty check --python ${VIRTUAL_ENV}/bin/python --exit-zero
+        entry: ty check --exit-zero
         language: system
         verbose: true
         types_or: [python, pyi]

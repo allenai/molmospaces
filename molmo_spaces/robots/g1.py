@@ -20,7 +20,7 @@ from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.linalg_utils import normalize_ang_error
 
 if TYPE_CHECKING:
-    from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
+    from molmo_spaces.configs.robot_configs import G1Config
 
 XML_PATH = str(ASSETS_DIR / "robots/g1/g1_dex.xml")
 PREFIX = "robot_0/"
@@ -273,15 +273,15 @@ class G1Robot(Robot):
         low_level=None,
         namespace: str = PREFIX,
         xml_path: str = XML_PATH,
-        exp_config: "MlSpacesExpConfig | None" = None,
+        robot_config: "G1Config | None" = None,
         gripper_friction: tuple[float, float, float] | None = None,
     ):
         # Robot.__init__(mj_data, robot_config) stores its second arg as
         # self.robot_config; this class is constructed with an explicit
         # (model, data) pair by the reference stack, so pass `data` through
-        # and let self.robot_config hold the exp_config (below reads it as
+        # and let self.robot_config hold the robot config (below reads it as
         # self.robot_config, matching the base class attribute).
-        super().__init__(data, exp_config)
+        super().__init__(data, robot_config)
         self.model = model
         self.data = data
         self._env = env
@@ -309,8 +309,8 @@ class G1Robot(Robot):
         # gets the 5ms step its WBC was trained at, instead of inheriting the
         # scene default (2ms) and failing BaseMujocoTask's
         # control-dt-divisible-by-sim-dt check.
-        if exp_config is not None:
-            physics_timestep = getattr(exp_config.robot_config, "physics_timestep", None)
+        if robot_config is not None:
+            physics_timestep = getattr(robot_config, "physics_timestep", None)
             if physics_timestep is not None:
                 data.model.opt.timestep = physics_timestep
 
@@ -421,7 +421,7 @@ class G1Robot(Robot):
     @property
     def robot_view(self):
         """Robot ABC's RobotView: the MoveGroup view of robot_views/g1_view.py
-        when constructed with an exp_config (molmo_spaces' factory), else the
+        when constructed with a robot_config (molmo_spaces' factory), else the
         reference stack's pose helper view. The pass-through methods always use
         the pose view, whichever is published here.
         """
@@ -435,7 +435,7 @@ class G1Robot(Robot):
             self._native_robot_view = _NativeG1RobotView(
                 self.data,
                 self._namespace,
-                use_holo_base=getattr(self.robot_config.robot_config, "use_holo_base", False),
+                use_holo_base=getattr(self.robot_config, "use_holo_base", False),
             )
         return self._native_robot_view
 
@@ -588,16 +588,15 @@ class G1Robot(Robot):
             controller.move_group.set_ctrl(data, np.atleast_1d(values))
 
     @classmethod
-    def from_mj_data(cls, mj_data, exp_config) -> "G1Robot":
-        """molmo_spaces' `(mj_data, exp_config)` robot-factory constructor;
+    def from_mj_data(cls, mj_data, robot_config) -> "G1Robot":
+        """molmo_spaces' `(mj_data, robot_config)` robot-factory constructor;
         `__init__` keeps the reference stack's explicit `(model, data)` pair."""
-        robot_config = exp_config.robot_config
         return cls(
             mj_data.model,
             mj_data,
             namespace=robot_config.robot_namespace,
             xml_path=str(robot_config.get_robot_xml_path()),
-            exp_config=exp_config,
+            robot_config=robot_config,
         )
 
     def set_env(self, env):
@@ -961,13 +960,13 @@ class G1Robot(Robot):
     @property
     def kinematics(self):
         """Robot ABC's kinematics solver. Built lazily: the reference stack
-        constructs this robot with no exp_config at all (it drives the arm
+        constructs this robot with no robot_config at all (it drives the arm
         through solve_scene_ik/kinematics_wbc, never through
         MlSpacesKinematics), so requiring one up front would break that path.
-        Native callers that do pass an exp_config get the same solver every
+        Native callers that do pass a robot_config get the same solver every
         other molmo_spaces Robot exposes."""
         if self._kinematics is None:
-            self._kinematics = MlSpacesKinematics(self._require_exp_config("kinematics"))
+            self._kinematics = MlSpacesKinematics(self._require_robot_config("kinematics"))
         return self._kinematics
 
     @property
@@ -976,18 +975,18 @@ class G1Robot(Robot):
         what native G1Robot uses -- G1 has no batched-IK backend."""
         if self._parallel_kinematics is None:
             self._parallel_kinematics = DummyParallelKinematics(
-                self._require_exp_config("parallel_kinematics"), self.kinematics
+                self._require_robot_config("parallel_kinematics"), self.kinematics
             )
         return self._parallel_kinematics
 
-    def _require_exp_config(self, what: str):
+    def _require_robot_config(self, what: str):
         if self.robot_config is None:
             raise RuntimeError(
-                f"G1Robot.{what} needs an exp_config, but this robot was constructed "
+                f"G1Robot.{what} needs a robot_config, but this robot was constructed "
                 "without one (the fetchman stack builds it straight from "
-                "model/data). Construct it with exp_config= to use this."
+                "model/data). Construct it with robot_config= to use this."
             )
-        return self.robot_config.robot_config
+        return self.robot_config
 
     def _apply_solver_overrides(self):
         m = self.model
@@ -1007,8 +1006,8 @@ class G1Robot(Robot):
     def _apply_gripper_friction_override(self):
         """Override the right gripper pad geoms' friction, if requested via
         either the constructor's `gripper_friction=` (the reference stack's
-        own (model, data) call sites, which don't pass exp_config -- see
-        env_g1ms.py's _make_robot) or exp_config.robot_config.gripper_friction
+        own (model, data) call sites, which don't pass robot_config -- see
+        env_g1ms.py's _make_robot) or robot_config.gripper_friction
         (the standard molmo_spaces factory path, from_mj_data). See
         G1Config.gripper_friction.
 
@@ -1019,7 +1018,7 @@ class G1Robot(Robot):
         """
         friction = self._gripper_friction
         if friction is None and self.robot_config is not None:
-            friction = getattr(self.robot_config.robot_config, "gripper_friction", None)
+            friction = getattr(self.robot_config, "gripper_friction", None)
         if friction is None:
             return
         m = self.model
