@@ -191,7 +191,7 @@ jobs:
       - name: Install package
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco,g1_humanoid]
+          uv pip install --no-cache -e .[dev,mujoco,g1_humanoid,torch-cpu]
 
       - name: Run data generation tests (group ${{ matrix.group }}/4)
         run: |
