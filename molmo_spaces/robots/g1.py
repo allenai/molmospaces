@@ -269,7 +269,7 @@ HAND_SITE = {side: f"{side}_grasp" for side in ("left", "right")}
 class G1Robot(Robot):
     def __init__(
         self,
-        data,
+        data: mj.MjData,
         robot_config: G1Config,
         env=None,
         low_level=None,
@@ -591,7 +591,6 @@ class G1Robot(Robot):
         """molmo_spaces' `(mj_data, robot_config)` robot-factory constructor;
         `__init__` keeps the reference stack's explicit `(model, data)` pair."""
         return cls(
-            mj_data.model,
             mj_data,
             namespace=robot_config.robot_namespace,
             xml_path=str(robot_config.get_robot_xml_path()),

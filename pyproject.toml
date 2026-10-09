@@ -67,8 +67,6 @@ dependencies = [
     "tensorboard>=2.20.0",
     "teledex",
     "termcolor>=2.0.0",
-    "torch~=2.7.0", # torch 2.8.x is brand new and has some regressions vs 2.7.x - prefer to hold back for now - this installs nvidia_cuda_nvrtc_cu12-12.6.77 by default, not 12.8
-    "torchvision>=0.22.0,<0.23.0",
     "tqdm>=4.65.0",
     "trimesh>=4.7.3",
     "wandb>=0.18.10",
@@ -107,6 +105,18 @@ housegen = [
 ]
 curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
+]
+torch-cpu = [
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+]
+torch-cu12 = [
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+]
+torch-cu13 = [
+    "torch==2.11.0",
+    "torchvision==0.26.0",
 ]
 g1_humanoid = [
     "ml-collections", # molmo_spaces/utils/prompt_samplers.py's g1_molmo-ported sampler
@@ -154,10 +164,35 @@ extra-index-url = ["https://pypi.org/simple", "https://test.pypi.org/simple/"]
 
 [tool.uv.sources]
 bpy = { index = "bpy" }
+torch = [
+    { index = "pytorch-cu12", extra = "torch-cu12", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cu13", extra = "torch-cu13", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cpu", extra = "torch-cpu", marker = "platform_system == 'Darwin' or platform_system == 'Linux'" },
+]
+torchvision = [
+    { index = "pytorch-cu12", extra = "torch-cu12", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cu13", extra = "torch-cu13", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cpu", extra = "torch-cpu", marker = "platform_system == 'Darwin' or platform_system == 'Linux'" },
+]
 
 [[tool.uv.index]]
 name = "bpy"
 url = "https://download.blender.org/pypi/"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu12"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu13"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [project.scripts]

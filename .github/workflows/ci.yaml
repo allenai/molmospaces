@@ -302,7 +302,7 @@ jobs:
           # exact +cu128 pin was reported "not found" against pypi.org even
           # though it's confirmed present on download.pytorch.org. All indices
           # here are trusted, so bypass that safety check for this one install.
-          uv pip install --no-cache "torch==2.7.1+cu128" \
+          uv pip install --no-cache "torch==2.7.1+cu128" "torchvision==0.22.1+cu128" \
             --index-url https://download.pytorch.org/whl/cu128 \
             --index-strategy unsafe-best-match
           # curobo's [build-system] requires setuptools_scm to compute its version
