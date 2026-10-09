@@ -4,12 +4,14 @@ Robot interface, verified byte-identical against the gold pick rollout
 `from_mj_data`; its whole-body controller is controllers/g1_wbc.py.
 """
 
+from __future__ import annotations
+
 import contextlib
 import re
 from typing import TYPE_CHECKING
 
 import mink
-import mujoco
+import mujoco as mj
 import numpy as np
 from scipy.spatial.transform import Rotation as _R
 
@@ -171,13 +173,13 @@ class G1RobotView:
         for i in range(d.ncon):
             con = d.contact[i]
             g1, g2 = int(con.geom1), int(con.geom2)
-            n1 = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[g1]) or ""
-            n2 = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[g2]) or ""
+            n1 = mj.mj_id2name(m, mj.mjtObj.mjOBJ_BODY, m.geom_bodyid[g1]) or ""
+            n2 = mj.mj_id2name(m, mj.mjtObj.mjOBJ_BODY, m.geom_bodyid[g2]) or ""
             r1, r2 = n1.startswith(self._namespace), n2.startswith(self._namespace)
             if r1 == r2:
                 continue
             scene_geom = g2 if r1 else g1
-            if _is_floor_geom(mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, scene_geom) or ""):
+            if _is_floor_geom(mj.mj_id2name(m, mj.mjtObj.mjOBJ_GEOM, scene_geom) or ""):
                 continue
             return True
         return False
@@ -192,7 +194,7 @@ class G1RobotView:
             return True
         if self._renderer is None:
             # procthor scenes can exceed the default max_geom.
-            self._renderer = mujoco.Renderer(
+            self._renderer = mj.Renderer(
                 self.model, 224, 224, max_geom=max(20000, self.model.ngeom * 4)
             )
         m = self.model
@@ -267,13 +269,12 @@ HAND_SITE = {side: f"{side}_grasp" for side in ("left", "right")}
 class G1Robot(Robot):
     def __init__(
         self,
-        model,
         data,
+        robot_config: G1Config,
         env=None,
         low_level=None,
         namespace: str = PREFIX,
         xml_path: str = XML_PATH,
-        robot_config: "G1Config | None" = None,
         gripper_friction: tuple[float, float, float] | None = None,
     ):
         # Robot.__init__(mj_data, robot_config) stores its second arg as
@@ -282,7 +283,7 @@ class G1Robot(Robot):
         # and let self.robot_config hold the robot config (below reads it as
         # self.robot_config, matching the base class attribute).
         super().__init__(data, robot_config)
-        self.model = model
+        self.model = data.model
         self.data = data
         self._env = env
         # Robot ABC solver properties, built lazily (see `kinematics`).
@@ -325,22 +326,22 @@ class G1Robot(Robot):
 
             low_level = _LowLevelController()
         self._low_level = low_level
-        self._low_level.setup(model, data, prefix=self._namespace)
+        self._low_level.setup(self.model, data, prefix=self._namespace)
 
-        self._body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, self._root_body)
+        self._body_id = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_BODY, self._root_body)
         if self._body_id < 0:
             raise RuntimeError(f"G1 root body '{self._root_body}' not found")
-        self._freejoint_id = mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}floating_base_joint"
+        self._freejoint_id = mj.mj_name2id(
+            self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}floating_base_joint"
         )
 
         # kinematics() state -- lazily-built mink.Configuration cache (see
         # kinematics' own docstring) plus the full scene joint-name list
         # _solve_ik reads back solved qpos through.
         self._stj = [
-            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, i) for i in range(model.njnt)
+            mj.mj_id2name(self.model, mj.mjtObj.mjOBJ_JOINT, i) for i in range(self.model.njnt)
         ]
-        self._fj_scene = int(model.jnt_qposadr[self._freejoint_id])
+        self._fj_scene = self.model.jnt_qposadr[self._freejoint_id].item()
         self._ik_cfg = None
         self._ik_mdl = None
         self._ik_fj_qa = None
@@ -362,16 +363,16 @@ class G1Robot(Robot):
 
         self._qpos_ids = np.array(
             [
-                model.jnt_qposadr[
-                    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}{n}")
+                self.model.jnt_qposadr[
+                    mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{n}")
                 ]
                 for n in JOINT_NAMES
             ]
         )
         self._dof_ids = np.array(
             [
-                model.jnt_dofadr[
-                    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}{n}")
+                self.model.jnt_dofadr[
+                    mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{n}")
                 ]
                 for n in JOINT_NAMES
             ]
@@ -379,34 +380,34 @@ class G1Robot(Robot):
 
         def _find_act(jname):
             act_name = ACTUATOR_NAME_MAP.get(jname, jname)
-            aid = mujoco.mj_name2id(
-                model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}walk_{act_name}"
+            aid = mj.mj_name2id(
+                self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}walk_{act_name}"
             )
             if aid < 0:
-                aid = mujoco.mj_name2id(
-                    model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}{act_name}"
+                aid = mj.mj_name2id(
+                    self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}{act_name}"
                 )
             return aid
 
         self.act_ids = np.array([_find_act(n) for n in JOINT_NAMES])
 
-        self.right_gripper_aid = mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}right_grip"
+        self.right_gripper_aid = mj.mj_name2id(
+            self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}right_grip"
         )
-        self.left_gripper_aid = mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}left_grip"
+        self.left_gripper_aid = mj.mj_name2id(
+            self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}left_grip"
         )
 
-        self.n_substeps = max(1, round(0.02 / model.opt.timestep))
+        self.n_substeps = max(1, round(0.02 / self.model.opt.timestep))
 
         # Visibility uses the egocentric head camera so checks match policy POV.
         self._cam_ids = [
-            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, f"{self._namespace}{n}")
+            mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_CAMERA, f"{self._namespace}{n}")
             for n in ("head_pov",)
-            if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, f"{self._namespace}{n}") >= 0
+            if mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_CAMERA, f"{self._namespace}{n}") >= 0
         ]
         self._pose_view = G1RobotView(
-            model,
+            self.model,
             data,
             self._body_id,
             self._freejoint_id,
@@ -425,8 +426,6 @@ class G1Robot(Robot):
         reference stack's pose helper view. The pass-through methods always use
         the pose view, whichever is published here.
         """
-        if self.robot_config is None:
-            return self._pose_view
         if self._native_robot_view is None:
             from molmo_spaces.robots.robot_views.g1_view import (
                 G1RobotView as _NativeG1RobotView,
@@ -588,7 +587,7 @@ class G1Robot(Robot):
             controller.move_group.set_ctrl(data, np.atleast_1d(values))
 
     @classmethod
-    def from_mj_data(cls, mj_data, robot_config) -> "G1Robot":
+    def from_mj_data(cls, mj_data, robot_config) -> G1Robot:
         """molmo_spaces' `(mj_data, robot_config)` robot-factory constructor;
         `__init__` keeps the reference stack's explicit `(model, data)` pair."""
         return cls(
@@ -685,23 +684,25 @@ class G1Robot(Robot):
             self._ik_cfg = mink.Configuration(self.model)
             self._ik_mdl = self._ik_cfg.model
             self._ik_fj_qa = self._ik_mdl.jnt_qposadr[
-                mujoco.mj_name2id(
-                    self._ik_mdl, mujoco.mjtObj.mjOBJ_JOINT, self._namespace + "floating_base_joint"
+                mj.mj_name2id(
+                    self._ik_mdl, mj.mjtObj.mjOBJ_JOINT, self._namespace + "floating_base_joint"
                 )
             ]
+        assert self._ik_mdl, "Must have a valid MjModel for _ik_mdl by now"
+        assert self._ik_fj_qa, "Must have a valid nparray for _ik_fj_qa by now"
 
         config = self._ik_cfg
         config.update(self.data.qpos.copy())
 
         mask = np.zeros(self._ik_mdl.nv)
         for jn in ik_joints:
-            jid = mujoco.mj_name2id(self._ik_mdl, mujoco.mjtObj.mjOBJ_JOINT, self._namespace + jn)
+            jid = mj.mj_name2id(self._ik_mdl, mj.mjtObj.mjOBJ_JOINT, self._namespace + jn)
             if jid >= 0:
                 mask[self._ik_mdl.jnt_dofadr[jid]] = 1.0
         if use_height:
             fj_dof = self._ik_mdl.jnt_dofadr[
-                mujoco.mj_name2id(
-                    self._ik_mdl, mujoco.mjtObj.mjOBJ_JOINT, self._namespace + "floating_base_joint"
+                mj.mj_name2id(
+                    self._ik_mdl, mj.mjtObj.mjOBJ_JOINT, self._namespace + "floating_base_joint"
                 )
             ]
             mask[fj_dof + 2] = 1.0
@@ -752,7 +753,7 @@ class G1Robot(Robot):
         for jn in self._stj:
             if jn == self._namespace + "floating_base_joint":
                 continue
-            jid = mujoco.mj_name2id(self._ik_mdl, mujoco.mjtObj.mjOBJ_JOINT, jn)
+            jid = mj.mj_name2id(self._ik_mdl, mj.mjtObj.mjOBJ_JOINT, jn)
             if jid < 0:
                 continue
             key = jn[len(self._namespace) :] if jn.startswith(self._namespace) else jn
@@ -769,7 +770,7 @@ class G1Robot(Robot):
             if ik_model.geom_contype[gid] == 0 and ik_model.geom_conaffinity[gid] == 0:
                 continue
             bid = ik_model.geom_bodyid[gid]
-            bname = mujoco.mj_id2name(ik_model, mujoco.mjtObj.mjOBJ_BODY, bid) or ""
+            bname = mj.mj_id2name(ik_model, mj.mjtObj.mjOBJ_BODY, bid) or ""
             if any(s in bname for s in ("shoulder", "elbow", "wrist", "gripper")):
                 (right_arm if "right" in bname else left_arm if "left" in bname else []).append(gid)
             elif any(s in bname for s in ("pelvis", "torso", "hip", "waist")):
@@ -798,22 +799,20 @@ class G1Robot(Robot):
         lifetime the ported code had)."""
         if self._wbc_ik_cfg is not None:
             return
-        self._wbc_ik_cfg = mink.Configuration(mujoco.MjModel.from_xml_path(self._xml_path))
+        self._wbc_ik_cfg = mink.Configuration(mj.MjModel.from_xml_path(self._xml_path))
         ik_model = self._wbc_ik_cfg.model
-        ik_fj = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, "floating_base_joint")
+        ik_fj = mj.mj_name2id(ik_model, mj.mjtObj.mjOBJ_JOINT, "floating_base_joint")
         self._wbc_ik_fj_dof = ik_model.jnt_dofadr[ik_fj]
         self._wbc_ik_fj_qa = ik_model.jnt_qposadr[ik_fj]
         self._wbc_scene_to_ik_qpos = []
         for jid in range(ik_model.njnt):
-            jname = mujoco.mj_id2name(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jid)
+            jname = mj.mj_id2name(ik_model, mj.mjtObj.mjOBJ_JOINT, jid)
             if not jname:
                 continue
-            scene_jid = mujoco.mj_name2id(
-                self.model, mujoco.mjtObj.mjOBJ_JOINT, self._namespace + jname
-            )
+            scene_jid = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, self._namespace + jname)
             if scene_jid < 0:
                 continue
-            qsz = 7 if ik_model.jnt_type[jid] == mujoco.mjtJoint.mjJNT_FREE else 1
+            qsz = 7 if ik_model.jnt_type[jid] == mj.mjtJoint.mjJNT_FREE else 1
             self._wbc_scene_to_ik_qpos.append(
                 (
                     self.model.jnt_qposadr[scene_jid],
@@ -828,7 +827,7 @@ class G1Robot(Robot):
             site = HAND_SITE[hand]
             mask = np.zeros(ik_model.nv)
             for jn in arm_joints + list(WAIST_JOINTS):
-                jid = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+                jid = mj.mj_name2id(ik_model, mj.mjtObj.mjOBJ_JOINT, jn)
                 if jid >= 0:
                     mask[ik_model.jnt_dofadr[jid]] = 1.0
             mask_h = mask.copy()
@@ -842,7 +841,7 @@ class G1Robot(Robot):
             )
             arm_qa = np.array(
                 [
-                    ik_model.jnt_qposadr[mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)]
+                    ik_model.jnt_qposadr[mj.mj_name2id(ik_model, mj.mjtObj.mjOBJ_JOINT, jn)]
                     for jn in arm_joints
                 ],
                 dtype=np.int32,
@@ -857,13 +856,13 @@ class G1Robot(Robot):
 
         posture_cost = np.full(ik_model.nv, 0.1)
         for jn in WAIST_JOINTS:
-            jid = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+            jid = mj.mj_name2id(ik_model, mj.mjtObj.mjOBJ_JOINT, jn)
             if jid >= 0:
                 posture_cost[ik_model.jnt_dofadr[jid]] = 0.2
         posture_cost[self._wbc_ik_fj_dof + 2] = 0.1
         self._wbc_waist_qa = np.array(
             [
-                ik_model.jnt_qposadr[mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)]
+                ik_model.jnt_qposadr[mj.mj_name2id(ik_model, mj.mjtObj.mjOBJ_JOINT, jn)]
                 for jn in WAIST_JOINTS
             ],
             dtype=np.int32,
@@ -881,7 +880,7 @@ class G1Robot(Robot):
             ("waist_roll_joint", -0.4, 0.4),
             ("waist_pitch_joint", -0.1, 0.4),
         ]:
-            jid = mujoco.mj_name2id(ik_model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+            jid = mj.mj_name2id(ik_model, mj.mjtObj.mjOBJ_JOINT, jn)
             if jid >= 0:
                 ik_model.jnt_range[jid] = [lo, hi]
         self._wbc_limits = [mink.ConfigurationLimit(ik_model)]
@@ -896,6 +895,14 @@ class G1Robot(Robot):
         Returns (arm, waist, ik_h, err).
         """
         self._ensure_wbc_ik_setup()
+
+        assert self._wbc_hand_cfg is not None
+        assert self._wbc_ik_cfg is not None
+        assert self._wbc_scene_to_ik_qpos is not None
+        assert self._wbc_posture_task is not None
+        assert self._wbc_pelvis_task is not None
+        assert self._wbc_limits is not None
+
         hcfg = self._wbc_hand_cfg[hand]
 
         ik_q = np.zeros(self._wbc_ik_cfg.model.nq, dtype=np.float64)
@@ -966,7 +973,7 @@ class G1Robot(Robot):
         Native callers that do pass a robot_config get the same solver every
         other molmo_spaces Robot exposes."""
         if self._kinematics is None:
-            self._kinematics = MlSpacesKinematics(self._require_robot_config("kinematics"))
+            self._kinematics = MlSpacesKinematics(self.robot_config)
         return self._kinematics
 
     @property
@@ -974,31 +981,20 @@ class G1Robot(Robot):
         """Robot ABC's parallel kinematics. DummyParallelKinematics matches
         what native G1Robot uses -- G1 has no batched-IK backend."""
         if self._parallel_kinematics is None:
-            self._parallel_kinematics = DummyParallelKinematics(
-                self._require_robot_config("parallel_kinematics"), self.kinematics
-            )
+            self._parallel_kinematics = DummyParallelKinematics(self.robot_config, self.kinematics)
         return self._parallel_kinematics
-
-    def _require_robot_config(self, what: str):
-        if self.robot_config is None:
-            raise RuntimeError(
-                f"G1Robot.{what} needs a robot_config, but this robot was constructed "
-                "without one (the fetchman stack builds it straight from "
-                "model/data). Construct it with robot_config= to use this."
-            )
-        return self.robot_config
 
     def _apply_solver_overrides(self):
         m = self.model
-        m.opt.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
-        m.opt.cone = mujoco.mjtCone.mjCONE_PYRAMIDAL
+        m.opt.integrator = mj.mjtIntegrator.mjINT_IMPLICITFAST
+        m.opt.cone = mj.mjtCone.mjCONE_PYRAMIDAL
         m.opt.noslip_iterations = 5
         m.opt.gravity[:] = [0, 0, -9.81]
         m.opt.impratio = 1.0
         m.opt.jacobian = 2  # auto
         m.opt.enableflags = 0
         for gid in range(m.ngeom):
-            gname = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, gid) or ""
+            gname = mj.mj_id2name(m, mj.mjtObj.mjOBJ_GEOM, gid) or ""
             if _is_floor_geom(gname):
                 m.geom_friction[gid] = [1.0, 0.005, 0.0001]
         self._apply_gripper_friction_override()
@@ -1030,9 +1026,9 @@ class G1Robot(Robot):
         m = self.model
         for gid in range(m.ngeom):
             bid = m.geom_bodyid[gid]
-            bname = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, bid) or ""
+            bname = mj.mj_id2name(m, mj.mjtObj.mjOBJ_BODY, bid) or ""
             if bname.startswith(self._namespace) and "ankle_roll" in bname:
-                if m.geom_type[gid] == mujoco.mjtGeom.mjGEOM_SPHERE:
+                if m.geom_type[gid] == mj.mjtGeom.mjGEOM_SPHERE:
                     m.geom_conaffinity[gid] = 15
 
     def set_defaults(self):
@@ -1041,8 +1037,8 @@ class G1Robot(Robot):
         self.data.ctrl[self.act_ids[valid]] = DEFAULT_QPOS[valid]
         for i, name in enumerate(JOINT_NAMES):
             for prefix in ("walk_", "grasp_"):
-                aid = mujoco.mj_name2id(
-                    self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}{prefix}{name}"
+                aid = mj.mj_name2id(
+                    self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}{prefix}{name}"
                 )
                 if aid >= 0:
                     self.data.ctrl[aid] = DEFAULT_QPOS[i]
@@ -1052,9 +1048,7 @@ class G1Robot(Robot):
             ("right_Joint1_1", GRIPPER_OPEN),
             ("right_Joint2_1", GRIPPER_OPEN),
         ):
-            jid = mujoco.mj_name2id(
-                self.model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}{jname}"
-            )
+            jid = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{jname}")
             if jid >= 0:
                 self.data.qpos[self.model.jnt_qposadr[jid]] = qval
 
@@ -1070,8 +1064,8 @@ class G1Robot(Robot):
         sampled = DEFAULT_QPOS[idx] + np_random.uniform(-per_dim, per_dim)
         sampled[self._UPPER_GRIPPER_LOCAL] = float(np_random.uniform(GRIPPER_OPEN, GRIPPER_CLOSED))
         for i, jidx in enumerate(idx):
-            jid = mujoco.mj_name2id(
-                self.model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}{JOINT_NAMES[jidx]}"
+            jid = mj.mj_name2id(
+                self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{JOINT_NAMES[jidx]}"
             )
             if jid >= 0:
                 lo, hi = self.model.jnt_range[jid]
@@ -1086,9 +1080,7 @@ class G1Robot(Robot):
         if valid.any():
             self.data.ctrl[aids[valid]] = values[valid]
         # Mirror Joint2_1 to Joint1_1 — the equality only enforces during sim, not on init.
-        j2 = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}right_Joint2_1"
-        )
+        j2 = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}right_Joint2_1")
         if j2 >= 0:
             self.data.qpos[self.model.jnt_qposadr[j2]] = values[self._UPPER_GRIPPER_LOCAL]
 
@@ -1104,9 +1096,7 @@ class G1Robot(Robot):
                 aid = int(self.act_ids[i])
                 if aid >= 0:
                     self.data.ctrl[aid] = float(joints_dict[jname])
-        j2 = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_JOINT, f"{self._namespace}right_Joint2_1"
-        )
+        j2 = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}right_Joint2_1")
         if j2 >= 0 and "right_Joint1_1" in joints_dict:
             self.data.qpos[self.model.jnt_qposadr[j2]] = float(joints_dict["right_Joint1_1"])
 
@@ -1129,7 +1119,7 @@ class G1Robot(Robot):
         self.set_pose(np.asarray(xy, dtype=np.float64), float(yaw))
         self.set_defaults()
         self.zero_velocities()
-        mujoco.mj_forward(self.model, self.data)
+        mj.mj_forward(self.model, self.data)
 
     def has_bad_contacts(self):
         return self._pose_view.has_bad_contacts()
