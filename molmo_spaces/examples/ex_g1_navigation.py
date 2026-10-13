@@ -6,18 +6,20 @@ import tyro
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
 from molmo_spaces.configs.robot_configs import G1Config
+from molmo_spaces.robots.robot_views.g1_view import G1BaseGroup, G1HoloBaseGroup, G1RobotView
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
 
 @dataclass
 class Args:
-    pass
+    use_holo_base: bool = False
 
 
 @dataclass
 class SimOptions:
     running: bool = True
+    reset: bool = False
 
 
 OPTIONS = SimOptions()
@@ -28,16 +30,18 @@ def key_callback(keycode: int) -> None:
 
     # print(f"{keycode=}")
     match keycode:
-        case 32:  # PAUSE
+        case 32:  # SPACE == PAUSE
             OPTIONS.running = not OPTIONS.running
+        case 82:  # R == Reset
+            OPTIONS.reset = True
 
 
 def main() -> int:
     global OPTIONS
 
-    _ = tyro.cli(Args)
+    args = tyro.cli(Args)
 
-    robot_cfg = G1Config()
+    robot_cfg = G1Config(use_holo_base=args.use_holo_base)
     robot_cls = robot_cfg.robot_cls
     assert robot_cls, "Robot class for G1 is not defined for some reason LOL"
 
@@ -63,7 +67,19 @@ def main() -> int:
     data = mj.MjData(model)
     mj.mj_forward(model, data)
 
-    _ = robot_cls(data, robot_cfg)
+    robot = robot_cls(data, robot_cfg)
+    robot_view = robot.robot_view
+
+    assert isinstance(robot_view, G1RobotView)
+
+    # TODO(wilbert): Holo stuff is broken for G1 atm
+    base_group = robot_view.base
+    if args.use_holo_base:
+        assert isinstance(base_group, G1HoloBaseGroup)
+    else:
+        assert isinstance(base_group, G1BaseGroup)
+
+    robot.place((0.0, 0.0), 0.0)
 
     viewer_args = dict(
         key_callback=key_callback,
@@ -72,9 +88,22 @@ def main() -> int:
     )
     with mjviewer.launch_passive(model, data, **viewer_args) as viewer:
         while viewer.is_running():
+            if OPTIONS.reset:
+                robot.reset()
+                robot.place((0.0, 0.0), 0.0)
+                OPTIONS.reset = False
+
             if OPTIONS.running:
+                # robot.advance_control_clock()
+                # action = robot.nav_action((0.0, 2.0, 0.0))
+                # robot.execute_action(action)
+                # robot.compute_control()
+
+                robot.update_control({})
+
                 t_start = data.time
                 while data.time - t_start < 1.0 / 60.0:
+                    robot.compute_control()
                     mj.mj_step(model, data)
             else:
                 mj.mj_forward(model, data)
