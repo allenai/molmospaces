@@ -255,29 +255,14 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.ctrl_dt_ms = 5.0
         datagen_cfg.sim_dt_ms = 5.0
         if isinstance(datagen_cfg.policy_config, AStarNavToObjPolicyConfig):
-            if datagen_cfg.robot_config.use_holo_base:
-                # AStar's rotate-then-drive waypoint schedule works with the holo
-                # base's direct [x,y,theta] mocap-weld target, but LegsWaistController
-                # converges markedly slower (see G1RobotView.is_close_to's higher
-                # default threshold, for the same reason): widen waypoint
-                # spacing/retries so segments are long enough to actually cruise
-                # instead of stop-and-reconverging every short segment. Mirrors
-                # InteractiveShellTask.nav_to()'s identical override.
-                datagen_cfg.policy_config = AStarNavToObjPolicyConfig(
-                    plan_fail_after_waypoint_steps=50,
-                    plan_max_retries=5,
-                    path_max_inter_waypoint_dist=1.0,
-                    path_max_inter_waypoint_angle=np.radians(30),
-                )
-            else:
-                # WBC mode (the default): G1Robot.update_control only reads a
-                # "base_velocity" [vx, vy, yaw_rate] action -- AStar's pre-baked
-                # waypoint schedule doesn't produce that, no matter how it's
-                # tuned. FetchManBasePlannerPolicy (a live per-step velocity-
-                # command controller, ported from g1_molmo) does, and is the
-                # default InteractiveShellTask.nav_to() already picks for this
-                # exact case (robot_config.name == "g1" and not use_holo_base).
-                datagen_cfg.policy_config = FetchManBasePlannerPolicyConfig()
+            # WBC mode (the default): G1Robot.update_control only reads a
+            # "base_velocity" [vx, vy, yaw_rate] action -- AStar's pre-baked
+            # waypoint schedule doesn't produce that, no matter how it's
+            # tuned. FetchManBasePlannerPolicy (a live per-step velocity-
+            # command controller, ported from g1_molmo) does, and is the
+            # default InteractiveShellTask.nav_to() already picks for this
+            # exact case (robot_config.name == "g1" and not use_holo_base).
+            datagen_cfg.policy_config = FetchManBasePlannerPolicyConfig()
     elif robot == "yam":
         datagen_cfg.robot_config = I2rtYamRobotConfig()
         datagen_cfg.camera_config = I2rtYamCameraSystem()

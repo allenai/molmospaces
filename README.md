@@ -60,13 +60,26 @@ Installing `molmospaces` is easy!
 You can get the latest wheels from [PyPI](https://pypi.org/project/molmo-spaces/):
 
 > [!WARNING]
-> Use version 0.2.9, as it's the stable version used for all bencmarks and leaderboard
+> Use version 0.2.9, as it's the stable version used for all benchmarks and leaderboard
 
 ```bash
 # If using uv as package manager
 uv pip install molmo-spaces==0.2.9
+
 # If using other package manager (conda, etc)
 pip install molmo-spaces==0.2.9
+```
+
+> [!NOTE]
+> To use the G1 and a Whole Body Controller based on the [SONIC](https://nvlabs.github.io/GEAR-SONIC/) policy, use the following
+
+```bash
+# If using Linux with CUDA-12 (if your drivers on your workstation are not up to date)
+uv pip install -e ".[g1_humanoid,torch-cu12]"
+# If using Linux with CUDA-13 (if you have the latest drivers, like working on Fedora or Arch, etc.)
+uv pip install -e ".[g1_humanoid,torch-cu13]"
+# If using MacOS, we only require torch-cpu (will change this to torch with MLX support later)
+uv pip install -e ".[g1_humanoid,torch-cpu]"
 ```
 
 ### From Source
@@ -122,13 +135,6 @@ If using `uv`, simply run:
 
 ```bash
 uv pip install -e .[mujoco-filament]
-```
-
-Otherwise, first install `mujoco-filament` before installing this project:
-
-```bash
-pip install -i https://test.pypi.org/simple/ mujoco-filament
-pip install -e .[mujoco-filament]
 ```
 
 ### Installing cuRobo (optional, used only for RB-Y1 tasks)

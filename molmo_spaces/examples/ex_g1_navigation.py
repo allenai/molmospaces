@@ -3,17 +3,22 @@ from dataclasses import dataclass
 import mujoco as mj
 import mujoco.viewer as mjviewer  # ty: ignore
 import tyro
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
 from molmo_spaces.configs.robot_configs import G1Config
-from molmo_spaces.robots.robot_views.g1_view import G1BaseGroup, G1HoloBaseGroup, G1RobotView
+from molmo_spaces.controllers.g1_wbc import flat15_to_move_groups
+from molmo_spaces.robots.robot_views.g1_view import G1BaseGroup, G1RobotView
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
+
+MOCAP_WAYPOINT_NAME = "waypoint"
+WAYPOINT_START_XY = (2.0, 0.0)
 
 
 @dataclass
 class Args:
-    use_holo_base: bool = False
+    pass
 
 
 @dataclass
@@ -39,9 +44,9 @@ def key_callback(keycode: int) -> None:
 def main() -> int:
     global OPTIONS
 
-    args = tyro.cli(Args)
+    _ = tyro.cli(Args)
 
-    robot_cfg = G1Config(use_holo_base=args.use_holo_base)
+    robot_cfg = G1Config()
     robot_cls = robot_cfg.robot_cls
     assert robot_cls, "Robot class for G1 is not defined for some reason LOL"
 
@@ -63,6 +68,25 @@ def main() -> int:
         if mjs_geom.classname.name == f"{robot_cfg.robot_namespace}visual":
             mjs_geom.group = 2
 
+    # Add a mocap body for the waypoint used for naviation
+    body_waypoint = spec.worldbody.add_body(
+        name=MOCAP_WAYPOINT_NAME,
+        pos=(*WAYPOINT_START_XY, 0.03),
+        mocap=True,
+    )
+    body_waypoint.add_geom(
+        type=mj.mjtGeom.mjGEOM_BOX,
+        size=(0.06, 0.06, 0.06),
+        contype=0,
+        conaffinity=0,
+        rgba=(0.6, 0.3, 0.3, 0.5),
+    )
+    body_waypoint.add_site(
+        type=mj.mjtGeom.mjGEOM_SPHERE,
+        size=(0.01,),
+        rgba=(0.0, 0.0, 1.0, 1.0),
+    )
+
     model = spec.compile()
     data = mj.MjData(model)
     mj.mj_forward(model, data)
@@ -74,12 +98,11 @@ def main() -> int:
 
     # TODO(wilbert): Holo stuff is broken for G1 atm
     base_group = robot_view.base
-    if args.use_holo_base:
-        assert isinstance(base_group, G1HoloBaseGroup)
-    else:
-        assert isinstance(base_group, G1BaseGroup)
+    assert isinstance(base_group, G1BaseGroup)
 
     robot.place((0.0, 0.0), 0.0)
+
+    mocap_waypoint_id = model.body(MOCAP_WAYPOINT_NAME).mocapid[0].item()
 
     viewer_args = dict(
         key_callback=key_callback,
@@ -87,6 +110,7 @@ def main() -> int:
         show_right_ui=False,
     )
     with mjviewer.launch_passive(model, data, **viewer_args) as viewer:
+        viewer.opt.frame = mj.mjtFrame.mjFRAME_SITE
         while viewer.is_running():
             if OPTIONS.reset:
                 robot.reset()
@@ -94,12 +118,13 @@ def main() -> int:
                 OPTIONS.reset = False
 
             if OPTIONS.running:
-                # robot.advance_control_clock()
-                # action = robot.nav_action((0.0, 2.0, 0.0))
-                # robot.execute_action(action)
-                # robot.compute_control()
-
-                robot.update_control({})
+                robot.advance_control_clock()
+                waypoint_xy = data.body(MOCAP_WAYPOINT_NAME).xpos[:2].tolist()
+                waypoint_euler = R.from_quat(
+                    data.body(MOCAP_WAYPOINT_NAME).xquat, scalar_first=True
+                ).as_euler("xyz", degrees=False)
+                action = robot.nav_action((*waypoint_xy, waypoint_euler[2].item()))
+                robot.update_control(flat15_to_move_groups(action))
 
                 t_start = data.time
                 while data.time - t_start < 1.0 / 60.0:
@@ -107,6 +132,17 @@ def main() -> int:
                     mj.mj_step(model, data)
             else:
                 mj.mj_forward(model, data)
+
+            data.mocap_pos[mocap_waypoint_id][2] = 0.03
+            waypoint_yaw = (
+                R.from_quat(data.mocap_quat[mocap_waypoint_id], scalar_first=True)
+                .as_euler("xyz", degrees=False)[2]
+                .item()
+            )
+
+            data.mocap_quat[mocap_waypoint_id] = R.from_euler(
+                "xyz", (0.0, 0.0, waypoint_yaw), degrees=False
+            ).as_quat(scalar_first=True)
 
             viewer.sync()
 

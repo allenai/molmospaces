@@ -16,17 +16,15 @@ managed by the G1RobotView class. There is no independent head MoveGroup
 (no hardware exists for it).
 """
 
-from functools import cached_property
-
 import numpy as np
 from mujoco import MjData
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.data_views import create_mlspaces_body
 from molmo_spaces.robots.robot_views.abstract import (
     FreeJointRobotBaseGroup,
     GripperGroup,
     MJCFFrameMixin,
+    MoveGroup,
     RobotBaseGroup,
     RobotView,
     SimplyActuatedMoveGroup,
@@ -91,51 +89,6 @@ class G1BaseGroup(FreeJointRobotBaseGroup):
     @property
     def noop_ctrl(self) -> np.ndarray:
         return np.array([])
-
-
-class G1HoloBaseGroup(FreeJointRobotBaseGroup):
-    """Mocap-weld-driven pelvis base for G1Config(use_holo_base=True), as
-    FloatingRUMBaseGroup: a weld pulls the free-joint pelvis to a commanded
-    [x, y, z, quat] pose, decoupling base motion from the legs."""
-
-    def __init__(self, mj_data: MjData, namespace: str = "") -> None:
-        model = mj_data.model
-        base_joint_id = model.joint(f"{namespace}floating_base_joint").id
-        self._target_pose_body = create_mlspaces_body(
-            mj_data, f"{namespace}{HOLO_BASE_TARGET_BODY_NAME}"
-        )
-        super().__init__(mj_data, base_joint_id, [], [], floating=True)
-
-    @cached_property
-    def is_mobile(self):
-        return True
-
-    @cached_property
-    def n_actuators(self):
-        return 7
-
-    @property
-    def ctrl(self) -> np.ndarray:
-        ret = np.zeros(7)
-        ret[:3] = self._target_pose_body.position
-        ret[3:] = self._target_pose_body.quat
-        return ret
-
-    @ctrl.setter
-    def ctrl(self, ctrl: np.ndarray) -> None:
-        self._target_pose_body.position = ctrl[:3]
-        self._target_pose_body.quat = ctrl[3:]
-
-    @property
-    def noop_ctrl(self) -> np.ndarray:
-        return self.joint_pos.copy()
-
-    @cached_property
-    def ctrl_limits(self) -> np.ndarray:
-        ctrl_range = np.empty((self.n_actuators, 2))
-        ctrl_range[:, 0] = -np.inf
-        ctrl_range[:, 1] = np.inf
-        return ctrl_range
 
 
 class G1LegsWaistGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
@@ -268,9 +221,8 @@ class G1RobotView(RobotView):
 
     def __init__(self, mj_data: MjData, namespace: str = "", use_holo_base: bool = False) -> None:
         self._namespace = namespace
-        base_cls = G1HoloBaseGroup if use_holo_base else G1BaseGroup
-        base = base_cls(mj_data, namespace=namespace)
-        move_groups = {
+        base = G1BaseGroup(mj_data, namespace=namespace)
+        move_groups: dict[str, MoveGroup] = {
             "base": base,
             "legs_waist": G1LegsWaistGroup(mj_data, base, namespace=namespace),
             "left_arm": G1ArmGroup(mj_data, "left", base, namespace=namespace),
