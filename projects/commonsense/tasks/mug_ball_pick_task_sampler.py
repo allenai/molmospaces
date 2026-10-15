@@ -5,6 +5,7 @@ import numpy as np
 from mujoco import MjSpec
 from scipy.spatial.transform import Rotation as R
 
+from commonsense.tasks.mug_ball_pick_task import MugBallPickTask
 from molmo_spaces.env.data_views import MlSpacesObject, create_mlspaces_body
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.evaluation.benchmark_schema import (
@@ -12,7 +13,6 @@ from molmo_spaces.evaluation.benchmark_schema import (
     PrimitiveObjectSpec,
 )
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
-from molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task import MugBallPickTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler, SameClassClutterMetadataAdder
 from molmo_spaces.tasks.task_sampler_errors import RobotPlacementError
 from molmo_spaces.utils.constants.object_constants import THOR_PICKUP_OBJECTS_LOWERCASE

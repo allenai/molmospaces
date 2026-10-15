@@ -1,5 +1,30 @@
 """Experiment configuration classes for commonsense benchmark tasks."""
 
+from pathlib import Path
+
+from commonsense.configs.commonsense_task_configs import (
+    BlockSupportTaskConfig,
+    MugBallPickTaskConfig,
+    SemanticGraspPickTaskConfig,
+)
+from commonsense.configs.commonsense_task_sampler_configs import (
+    BlockSupportTaskSamplerConfig,
+    MugBallPickTaskSamplerConfig,
+    SemanticGraspPickTaskSamplerConfig,
+)
+from commonsense.tasks.block_support_task import BlockSupportTask
+from commonsense.tasks.block_support_task_sampler import (
+    BlockSupportTaskSampler,
+)
+from commonsense.tasks.mug_ball_pick_task import MugBallPickTask
+from commonsense.tasks.mug_ball_pick_task_sampler import (
+    MugBallPickTaskSampler,
+)
+from commonsense.tasks.semantic_grasp_pick_task import SemanticGraspPickTask
+from commonsense.tasks.semantic_grasp_pick_task_sampler import (
+    SemanticGraspPickTaskSampler,
+)
+
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
@@ -7,35 +32,16 @@ from molmo_spaces.configs.camera_configs import (
     FrankaDroidCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
 )
-from molmo_spaces.configs.commonsense_task_configs import (
-    BlockSupportTaskConfig,
-    MugBallPickTaskConfig,
-    SemanticGraspPickTaskConfig,
-)
-from molmo_spaces.configs.commonsense_task_sampler_configs import (
-    BlockSupportTaskSamplerConfig,
-    MugBallPickTaskSamplerConfig,
-    SemanticGraspPickTaskSamplerConfig,
-)
 from molmo_spaces.configs.policy_configs import (
     BlockStackingPolicyConfig,
     PickPlannerPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import BaseRobotConfig, CommonSenseFrankaRobotConfig
-from molmo_spaces.tasks.commonsense_samplers.block_support_task_sampler import (
-    BlockSupportTaskSampler,
-)
-from molmo_spaces.tasks.commonsense_samplers.mug_ball_pick_task_sampler import (
-    MugBallPickTaskSampler,
-)
-from molmo_spaces.tasks.commonsense_samplers.semantic_grasp_pick_task_sampler import (
-    SemanticGraspPickTaskSampler,
-)
-from molmo_spaces.tasks.commonsense_tasks.block_support_task import BlockSupportTask
-from molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task import MugBallPickTask
-from molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task import SemanticGraspPickTask
+from molmo_spaces.data_generation.config_registry import register_config
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 
 
+@register_config("BlockSupportConfig")
 class BlockSupportConfig(PickBaseConfig):
     """Configuration for block support task data generation.
     The block support task involves:
@@ -47,6 +53,7 @@ class BlockSupportConfig(PickBaseConfig):
     """
 
     task_type: str = "block_stacking"
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "block_stacking"
 
     # Oracle-terminate the rollout as soon as the success condition fires
     # so flicker at the end of a barely-successful trajectory can't flip
@@ -92,6 +99,7 @@ class BlockSupportConfig(PickBaseConfig):
         task_cls_str: str | None = None
 
 
+@register_config("MugBallPickConfig")
 class MugBallPickConfig(PickBaseConfig):
     """Configuration for mug-ball pick task data generation.
 
@@ -100,6 +108,7 @@ class MugBallPickConfig(PickBaseConfig):
     """
 
     task_type: str = "mug_ball_pick"
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "mug_ball_pick"
 
     # Oracle-terminate the rollout as soon as the success condition fires
     # so flicker at the end of a barely-successful trajectory can't flip
@@ -147,6 +156,7 @@ class MugBallPickConfig(PickBaseConfig):
         task_cls_str: str | None = None
 
 
+@register_config("SemanticGraspPickConfig")
 class SemanticGraspPickConfig(PickBaseConfig):
     """Configuration for semantic grasp pick task data generation.
 
@@ -156,6 +166,7 @@ class SemanticGraspPickConfig(PickBaseConfig):
     """
 
     task_type: str = "semantic_grasp_pick"
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "semantic_grasp_pick"
 
     # Oracle-terminate the rollout as soon as the success condition fires
     # so flicker at the end of a barely-successful trajectory can't flip

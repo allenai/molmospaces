@@ -23,20 +23,22 @@ rollout, so the answer is never given away by the manipulation itself.
 
 Usage:
     export GEMINI_API_KEY=...
-    python scripts/mlspaces_commonsense/object_permanence_point_eval.py \\
+    python projects/commonsense/scripts/object_permanence_point_eval.py \\
         --eval-dir eval_output/objpermanence_cap/CAPPolicyEvalConfig/20260807_150608 \\
         --output op_point_eval.jsonl --debug-image-dir /tmp/op_frames
 
     # control: hide the mid-air frame, so the model can only guess
-    python scripts/mlspaces_commonsense/object_permanence_point_eval.py ... --frame-mode drop-first
+    python projects/commonsense/scripts/object_permanence_point_eval.py ... --frame-mode drop-first
 
     # re-print the summary for an existing run
-    python scripts/mlspaces_commonsense/object_permanence_point_eval.py --summarize op_point_eval.jsonl
+    python projects/commonsense/scripts/object_permanence_point_eval.py --summarize op_point_eval.jsonl
 """
 
 from __future__ import annotations
 
 import argparse
+import _bootstrap  # noqa: F401  -- must precede any molmo_spaces or commonsense import
+
 import concurrent.futures
 import io
 import json
@@ -58,7 +60,7 @@ from PIL import Image
 
 # Prompts and response schema are shared with the GeminiCAP policy path so the
 # offline eval and the in-policy pointing stay in lockstep.
-from molmo_spaces.utils.object_permanence_pointing import (  # noqa: E402
+from commonsense.object_permanence_pointing import (  # noqa: E402
     MIDAIR_DESCRIPTION,
     RESPONSE_SCHEMA,
     SCENE_DESCRIPTION,

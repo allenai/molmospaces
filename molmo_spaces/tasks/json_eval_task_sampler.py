@@ -31,11 +31,6 @@ from molmo_spaces.configs.camera_configs import (
     FixedExocentricCameraConfig,
     RobotMountedCameraConfig,
 )
-from molmo_spaces.configs.commonsense_task_configs import (
-    BlockSupportTaskConfig,
-    MugBallPickTaskConfig,
-    SemanticGraspPickTaskConfig,
-)
 from molmo_spaces.configs.task_configs import (
     BaseMujocoTaskConfig,
     DoorOpeningTaskConfig,
@@ -54,11 +49,9 @@ from molmo_spaces.env.data_views import (
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.evaluation.benchmark_schema import (
     BaseTaskSpec,
-    BlockSupportTaskSpec,
     DoorOpeningTaskSpec,
     EpisodeSpec,
     ExocentricCameraSpec,
-    MugBallPickTaskSpec,
     NavToObjTaskSpec,
     OpenCloseTaskSpec,
     PickAndPlaceColorTaskSpec,
@@ -96,9 +89,6 @@ TASK_CLASS_TO_CONFIG_CLASS: dict[str, type[BaseMujocoTaskConfig]] = {
     "DoorOpeningTask": DoorOpeningTaskConfig,
     "NavToObjTask": NavToObjTaskConfig,
     "PackingTask": PackingTaskConfig,
-    "BlockSupportTask": BlockSupportTaskConfig,
-    "MugBallPickTask": MugBallPickTaskConfig,
-    "SemanticGraspPickTask": SemanticGraspPickTaskConfig,
 }
 
 # Mapping from task class names to their benchmark schema spec classes.
@@ -112,13 +102,28 @@ TASK_CLASS_TO_SPEC_CLASS: dict[str, type[BaseTaskSpec]] = {
     "OpeningTask": OpenCloseTaskSpec,
     "DoorOpeningTask": DoorOpeningTaskSpec,
     "NavToObjTask": NavToObjTaskSpec,
-    "BlockSupportTask": BlockSupportTaskSpec,
-    # Not PickTaskSpec: MugBallPickTaskSpec adds scene_settle_duration, without which
-    # MugBallPickTask.step() skips its settle window and never refreshes the object
-    # poses to their post-fall values.
-    "MugBallPickTask": MugBallPickTaskSpec,
-    "SemanticGraspPickTask": PickTaskSpec,
 }
+
+# Fully qualified task class -> task_type, for tasks registered from outside
+# molmo_spaces. Core tasks are listed in JsonEvalTaskSampler._infer_task_type.
+TASK_CLS_TO_TASK_TYPE: dict[str, str] = {}
+
+
+def register_json_eval_task(
+    task_cls: type,
+    task_type: str,
+    config_cls: type[BaseMujocoTaskConfig],
+    spec_cls: type[BaseTaskSpec] | None = None,
+) -> None:
+    """Make a task that lives outside molmo_spaces (e.g. under projects/) loadable
+    from a JSON benchmark. Call it when the task's module is imported: the
+    sampler imports the module named by an episode's task_cls before it looks
+    up any of these mappings.
+    """
+    TASK_CLS_TO_TASK_TYPE[f"{task_cls.__module__}.{task_cls.__qualname__}"] = task_type
+    TASK_CLASS_TO_CONFIG_CLASS[task_cls.__name__] = config_cls
+    if spec_cls is not None:
+        TASK_CLASS_TO_SPEC_CLASS[task_cls.__name__] = spec_cls
 
 
 def import_class_from_string(class_path: str) -> type:
@@ -372,15 +377,17 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.nav_task.NavToObjTask": "nav_to_obj",
             "molmo_spaces.tasks.packing_task.PackingTask": "packing",
-            "molmo_spaces.tasks.commonsense_tasks.block_support_task.BlockSupportTask": "block_stacking",
-            "molmo_spaces.tasks.commonsense_tasks.mug_ball_pick_task.MugBallPickTask": "mug_ball_pick",
-            "molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task.SemanticGraspPickTask": "semantic_grasp_pick",
         }
 
         # Older benchmark JSONs use the legacy mujoco_thor package prefix.
         task_cls = task_cls.replace("mujoco_thor.", "molmo_spaces.", 1)
         if task_cls in task_cls_to_type:
             return task_cls_to_type[task_cls]
+
+        # Out-of-tree tasks register their task_type when their module is imported.
+        import_class_from_string(task_cls)
+        if task_cls in TASK_CLS_TO_TASK_TYPE:
+            return TASK_CLS_TO_TASK_TYPE[task_cls]
 
         raise ValueError(
             f"Cannot infer task_type from task_cls: {task_cls}. "
@@ -821,11 +828,16 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         task_cls_str = self.episode_spec.get_task_cls()
         task_class_name = task_cls_str.rsplit(".", 1)[-1]  # e.g., "PickAndPlaceTask"
 
+        # Import before the lookups below: out-of-tree tasks register their
+        # config/spec classes on import (see register_json_eval_task).
+        task_cls = self._get_task_class()
+
         config_cls = TASK_CLASS_TO_CONFIG_CLASS.get(task_class_name)
         if config_cls is None:
             raise ValueError(
                 f"Unknown task class '{task_class_name}' - no mapping to task config class. "
-                f"Add it to TASK_CLASS_TO_CONFIG_CLASS in json_eval_task_sampler.py. "
+                f"Add it to TASK_CLASS_TO_CONFIG_CLASS in json_eval_task_sampler.py, "
+                f"or call register_json_eval_task() from the task's module. "
                 f"Available mappings: {list(TASK_CLASS_TO_CONFIG_CLASS.keys())}"
             )
 
@@ -839,7 +851,6 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             task_dict = validated_spec.model_dump()
 
         # Create new task config of the proper type with task_cls set
-        task_cls = self._get_task_class()
         task_config = config_cls(task_cls=task_cls)
 
         # Copy task fields from episode spec to task_config.

@@ -203,6 +203,7 @@ where = ["./"]
 # `projects/fetchman` is deliberately absent: it is the FetchMan reference
 # port, a leaf nothing in molmo_spaces imports, and its scripts expect a
 # g1_molmo checkout most installs do not have. See projects/fetchman/README.md.
+# `projects/commonsense` is likewise a leaf; see projects/commonsense/README.md.
 include = ["molmo_spaces*"]
 exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 
@@ -263,6 +264,7 @@ line-length = 100
 exclude = [
  "scripts/",
  "projects/fetchman/scripts/",
+ "projects/commonsense/scripts/",
  "tests/",
  "mlspaces_tests/scenes/",
 ]

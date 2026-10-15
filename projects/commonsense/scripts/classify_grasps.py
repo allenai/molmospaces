@@ -6,16 +6,16 @@ rectangle selection to mark grasps as semantically good.
 
 Usage:
     # Single asset
-    python scripts/mlspaces_commonsense/classify_grasps.py --asset_id Pan_22
-    python scripts/mlspaces_commonsense/classify_grasps.py --asset_id Pan_22 --resume
-    python scripts/mlspaces_commonsense/classify_grasps.py --asset_id Mug_1 --output_dir /tmp/classifications
+    python projects/commonsense/scripts/classify_grasps.py --asset_id Pan_22
+    python projects/commonsense/scripts/classify_grasps.py --asset_id Pan_22 --resume
+    python projects/commonsense/scripts/classify_grasps.py --asset_id Mug_1 --output_dir /tmp/classifications
 
     # Loop through every instance of one or more categories
-    python scripts/mlspaces_commonsense/classify_grasps.py --categories Pan,Mug,Bowl
-    python scripts/mlspaces_commonsense/classify_grasps.py --categories Pan --skip_existing
+    python projects/commonsense/scripts/classify_grasps.py --categories Pan,Mug,Bowl
+    python projects/commonsense/scripts/classify_grasps.py --categories Pan --skip_existing
 
     # Loop through the full default set of pickupable iTHOR categories
-    python scripts/mlspaces_commonsense/classify_grasps.py --all_graspable --skip_existing
+    python projects/commonsense/scripts/classify_grasps.py --all_graspable --skip_existing
 """
 
 import argparse
@@ -42,7 +42,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import trimesh
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+import _bootstrap  # noqa: E402, F401  -- puts the repo root on sys.path
 
 from molmo_spaces.grasp_generation.pipeline.extract_leaf_meshes import (
     load_and_transform_mesh,

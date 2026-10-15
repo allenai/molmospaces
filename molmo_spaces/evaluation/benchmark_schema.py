@@ -326,6 +326,12 @@ ALL_TASK_SPEC_CLASSES: list[type[BaseTaskSpec]] = [
     BlockSupportTaskSpec,
 ]
 
+# Benchmarks generated before a task moved keep its old module path in task_cls.
+# The commonsense tasks moved to projects/commonsense (importable as `commonsense`).
+_LEGACY_TASK_CLS_PREFIXES = {
+    "molmo_spaces.tasks.commonsense_tasks.": "commonsense.tasks.",
+}
+
 # Fields that are metadata about the task, not configuration to copy
 _TASK_METADATA_FIELDS = {"task_cls", "task_type"}
 
@@ -460,6 +466,9 @@ class EpisodeSpec(BaseModel):
         # if "molmo_spaces" in task_cls:  # TODO(rose): forking breanch
         #    print("XXX patching config molmo_spaces->mujoco_thor")
         #    task_cls = task_cls.replace("molmo_spaces", "mujoco_thor")
+        for old_prefix, new_prefix in _LEGACY_TASK_CLS_PREFIXES.items():
+            if task_cls.startswith(old_prefix):
+                return new_prefix + task_cls.removeprefix(old_prefix)
         return task_cls
 
 

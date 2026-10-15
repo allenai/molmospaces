@@ -61,8 +61,8 @@ scripts.sh
 # local eval/analysis artifacts
 eval_output/
 wandb/
-scripts/paper_plots/*.pdf
-scripts/paper_plots/*.png
+projects/commonsense/scripts/paper_plots/*.pdf
+projects/commonsense/scripts/paper_plots/*.png
 # Coverage artifacts (pytest-cov / coverage.py)
 .coverage
 .coverage.*

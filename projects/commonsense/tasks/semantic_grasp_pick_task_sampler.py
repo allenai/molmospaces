@@ -1,10 +1,10 @@
 import functools
 import logging
 
+from commonsense.tasks.semantic_grasp_pick_task import SemanticGraspPickTask
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
-from molmo_spaces.tasks.commonsense_tasks.semantic_grasp_pick_task import SemanticGraspPickTask
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
 from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask
 
