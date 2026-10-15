@@ -89,8 +89,8 @@ class G1CPUMujocoEnv(CPUMujocoEnv):
         low_level.setup() call) and reloading it would re-load its
         groot_balance/groot_walk ONNX sessions for nothing."""
         return G1Robot(
-            self.scene.model,
             mj_data,
+            self.config.robot_config,
             env=self,
             low_level=self._prev_low_level,
             gripper_friction=self.config.robot_config.gripper_friction,
