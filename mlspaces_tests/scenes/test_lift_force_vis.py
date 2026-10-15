@@ -7,8 +7,8 @@ import mujoco as mj
 import mujoco.viewer as mjviewer
 import numpy as np
 
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects_with_tweaks
-from molmo_spaces.env.arena.scene_tweaks import (
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects_with_tweaks
+from molmo_spaces.env.scene.containment import (
     is_body_com_within_box_site,
     is_body_within_any_site,
     is_body_within_site_in_freespace,

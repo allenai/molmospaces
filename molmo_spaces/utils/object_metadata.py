@@ -91,7 +91,7 @@ class UserLibraryMetadata(Mapping):
         def _get(key):
             metadata_entry = self._user_library_index[key]
             metadata_rel_path = metadata_entry.metadata_path
-            with open(self._user_library_path / metadata_rel_path, "r") as f:
+            with open(self._user_library_path / metadata_rel_path) as f:
                 metadata: dict = json.load(f)
 
             if metadata_entry.metadata_npz_path is not None:
@@ -261,6 +261,18 @@ class ObjectMeta:
     @staticmethod
     def all_uids() -> list[str]:
         return list(get_db().keys())
+
+    @staticmethod
+    def is_commercial_use_allowed(asset_id: str) -> bool:
+        from molmo_spaces.utils.license_policy import NON_COMMERCIAL_OBJAVERSE_LICENSES
+
+        anno = ObjectMeta.annotation(asset_id)
+        if anno is None or not anno.get("isObjaverse"):
+            return True
+        lic = (anno.get("license_info") or {}).get("license")
+        if not lic:
+            return False
+        return lic not in NON_COMMERCIAL_OBJAVERSE_LICENSES
 
     @staticmethod
     def annotation(asset_ids: str | list[str] | None = None) -> list[dict | None] | dict | None:

@@ -5,7 +5,8 @@ For each task, resolves the pickup object's asset_id from the object name hash,
 then uses ObjectMeta.short_descriptions (1/2/3 word name) to set the
 task_description using the appropriate template based on task_cls.
 
-This matches the runtime behavior of PromptSampler.
+This matches the runtime behavior of PromptSamplerLearnedPolicy
+(molmo_spaces.utils.prompt_samplers).
 """
 
 import argparse
@@ -107,7 +108,7 @@ def main():
 
     rng = random.Random(args.seed)
 
-    with open(args.json_file, "r") as f:
+    with open(args.json_file) as f:
         data = json.load(f)
 
     hash_to_uid = build_hash_to_uid()

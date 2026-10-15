@@ -96,8 +96,10 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "floating_robotiq": "20260208_retry4",
         "franka_fr3": "20260303",
         "i2rt_yam": "20260223",
-        "g1": "20260802",
-        "humans_rocketbox": "20260812",
+        "g1": "20260815",
+        "humans_rocketbox_articulated": "20260817",
+        "humans_rocketbox_skinned": "20260817",
+        "humans_rocketbox_static": "20260817",
     },
     scenes={
         "ithor": "20251217_with_occupancy",
@@ -133,6 +135,9 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "molmospaces-bench-v1": "20260408",
         "molmospaces-bench-v2": "20260415",
         "molmospaces-commonsense-bench": "20260824",
+    },
+    textures={
+        "fetchman": "20260817",
     },
 )
 
@@ -196,7 +201,7 @@ def register_user_grasp_library(root_name: str, path: Path, object_library: str)
 
     from molmo_spaces.utils.lazy_loading_utils import UserGraspLibraryIndex
 
-    with open(grasps_index_path, "r") as f:
+    with open(grasps_index_path) as f:
         grasp_index = UserGraspLibraryIndex.model_validate_json(f.read())
 
     grasp_robots = set(grasp_index.grasp_paths.keys()) | set(
@@ -243,7 +248,7 @@ def get_resource_manager(
         use_global = False
 
     if _RESOURCE_MANAGER is None or not use_global:
-        MIN_VERSION = "0.0.2"
+        MIN_VERSION = "0.0.3a2"
         if Version(version("molmospaces-resources")) < Version(MIN_VERSION):
             raise ImportError(
                 f"Please ensure molmospaces_resources is >= min({MIN_VERSION}, <version in pyproject.toml>), e.g., by reinstalling/updating molmospaces"
@@ -309,10 +314,20 @@ def _merge_dicts(dict1: dict, dict2: dict):
 
 if PINNED_ASSETS_FILE:
     assert PINNED_ASSETS_FILE.is_file(), f"Could not find pinned assets file: {PINNED_ASSETS_FILE}"
-    with open(PINNED_ASSETS_FILE, "r") as f:
+    with open(PINNED_ASSETS_FILE) as f:
         pinned_assets = json.load(f)
         print(f"Pinning assets from {PINNED_ASSETS_FILE}:\n{json.dumps(pinned_assets, indent=2)}")
         _merge_dicts(DATA_TYPE_TO_SOURCE_TO_VERSION, pinned_assets)
+
+
+def log_data_versions() -> None:
+    """Log the data versions currently in use.
+
+    Call this once from a script's entry point (see the "entry points" section of
+    the README) rather than from library code, so that merely importing molmospaces
+    modules doesn't spam logs.
+    """
+    logging.getLogger(__name__).info(f"Data versions in use: {DATA_TYPE_TO_SOURCE_TO_VERSION}")
 
 
 # ------------------------------
@@ -730,16 +745,42 @@ def get_robot_path(robot_name) -> Path:
     return ROBOTS_DIR / robot_name
 
 
-def print_license_info(data_type, data_source, asset_or_tar_id=None):
-    from molmo_spaces.utils.license_utils import resolve_license
+def get_license_policy():
+    """Return the active runtime license policy (default: no filtering)."""
+    from molmo_spaces.utils.license_policy import get_license_policy as _get
 
-    def get_identifiers():
-        return [
-            archive.replace(f"{data_source}_", "").replace(".tar.zst", "")
-            for archive in get_resource_manager().find_all_packages_for_source(
-                data_type, data_source
-            )
-        ]
+    return _get()
+
+
+def set_license_policy(policy):
+    """Set the active runtime license policy for this context (datagen worker / inspection)."""
+    from molmo_spaces.utils.license_policy import set_license_policy as _set
+
+    _set(policy)
+
+
+def parse_license_policy(value):
+    from molmo_spaces.utils.license_policy import parse_license_policy as _parse
+
+    return _parse(value)
+
+
+def resolve_license_policy(explicit=None, *, config_policy=None):
+    from molmo_spaces.utils.license_policy import resolve_license_policy as _resolve
+
+    return _resolve(explicit, config_policy=config_policy)
+
+
+def __getattr__(name):
+    if name == "LicensePolicy":
+        from molmo_spaces.utils.license_policy import LicensePolicy
+
+        return LicensePolicy
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def print_license_info(data_type, data_source, asset_or_tar_id=None, license_policy=None):
+    from molmo_spaces.utils.license_utils import list_asset_identifiers, resolve_license
 
     if asset_or_tar_id is None and data_type != "robots":
         raise ValueError(
@@ -747,7 +788,10 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
         )
 
     if asset_or_tar_id == "--list_all":
-        print(f"Possible identifiers: {sorted(get_identifiers())}")
+        policy = parse_license_policy(license_policy) if license_policy else None
+        print(
+            f"Possible identifiers: {sorted(list_asset_identifiers(data_type, data_source, policy))}"
+        )
         return
 
     try:
@@ -756,10 +800,11 @@ def print_license_info(data_type, data_source, asset_or_tar_id=None):
     except ValueError as e:
         import random
 
-        archives = get_identifiers()
-        formatted = "\n".join(sorted(random.choices(archives, k=min(len(archives), 10))))
+        policy = parse_license_policy(license_policy) if license_policy else None
+        identifiers = list_asset_identifiers(data_type, data_source, policy)
+        formatted = "\n".join(sorted(random.choices(identifiers, k=min(len(identifiers), 10))))
         print(e)
-        print(f"Possible identifiers:\n{formatted}{'...' if len(archives) > 10 else ''}")
+        print(f"Possible identifiers:\n{formatted}{'...' if len(identifiers) > 10 else ''}")
 
 
 if __name__ == "__main__":

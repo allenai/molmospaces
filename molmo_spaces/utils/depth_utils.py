@@ -30,6 +30,8 @@ from pathlib import Path
 
 import numpy as np
 
+from molmo_spaces.utils.plotting_utils import require_pyplot
+
 log = logging.getLogger(__name__)
 
 # Fixed depth range optimized for Intel RealSense D405 camera specs
@@ -268,15 +270,7 @@ def visualize_depth_image(depth_meters: np.ndarray, title: str, save_path: Path 
     Returns:
         Dictionary of depth statistics from compute_depth_encoding_stats()
     """
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError as e:
-        raise ImportError(
-            "Visualization requires matplotlib. Install with: pip install matplotlib"
-        ) from e
+    plt = require_pyplot(headless=True)
 
     # Compute stats
     stats = compute_depth_encoding_stats(depth_meters)
@@ -426,15 +420,7 @@ def visualize_depth_error(
         title: Title for the visualization
         save_path: Optional path to save the visualization (PNG)
     """
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError as e:
-        raise ImportError(
-            "Visualization requires matplotlib. Install with: pip install matplotlib"
-        ) from e
+    plt = require_pyplot(headless=True)
 
     # Create mask for valid pixels (within valid range in original)
     valid_mask = (original_depth >= DEPTH_MIN) & (original_depth <= DEPTH_MAX)

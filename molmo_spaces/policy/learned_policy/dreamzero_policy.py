@@ -10,7 +10,8 @@ import websockets.sync.client
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy
-from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_pad
+from molmo_spaces.policy.learned_policy.utils import resize_with_pad
+from molmo_spaces.utils.prompt_samplers import PromptSamplerLearnedPolicy
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -111,7 +112,7 @@ class DreamZero_Policy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
-        self.prompt_sampler = PromptSampler(
+        self.prompt_sampler = PromptSamplerLearnedPolicy(
             task_type=exp_config.task_type,
             prompt_templates=exp_config.policy_config.prompt_templates,
             prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,

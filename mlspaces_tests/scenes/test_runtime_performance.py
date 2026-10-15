@@ -16,14 +16,18 @@ import numpy as np
 from test_utils import get_stats_runtime_test
 from tqdm import tqdm
 
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+
 ROOT_DIR = Path(__file__).parent.parent.parent
 
 DEFAULT_HOUSES_FOLDER_WEKA = (
     "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}-refactor"
 )
-DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
+# Local scenes come from the resource manager's asset tree, not a
+# repo-relative `assets/`; ASSETS_DIR honours $MLSPACES_ASSETS_DIR.
+DEFAULT_HOUSES_FOLDER_LOCAL = str(ASSETS_DIR / "scenes" / "{dataset}-{split}")
 DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
-DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = str(ASSETS_DIR / "scenes" / "ithor")
 
 RESULTS_FILEPATH = "history_runtime_test_{dataset}_{split}_{identifier}.json"
 WARNINGS_FILEPATH = "runtime_test_warnings_{dataset}_{split}_{identifier}.json"
@@ -299,7 +303,7 @@ def show_results_summary_from_file(house_path: Path, settings: TestSettings) -> 
         return
 
     results_info = dict(results=dict(), warnings=dict(), settings=dict())
-    with open(settings.results_path, "r") as fhandle:
+    with open(settings.results_path) as fhandle:
         results_info = json.load(fhandle)
 
     if house_path.stem not in results_info["results"]:
@@ -423,7 +427,7 @@ def run_performance_test(house_path: Path, settings: TestSettings, lock: LockTyp
         with lock if lock is not None else nullcontext():
             errors_dict = dict()
             if settings.errors_path.exists():
-                with open(settings.errors_path, "r") as fhandle:
+                with open(settings.errors_path) as fhandle:
                     errors_dict = json.load(fhandle)
             errors_dict[house_path.stem] = f"Got an error while processing house: {e}"
             with open(settings.errors_path, "w") as fhandle:
@@ -480,7 +484,7 @@ def compare_results(results_a: Path, results_b: Path) -> None:
 def save_results(results_scene: ResultsCache, settings: TestSettings) -> None:
     results_all = dict(results=dict(), warnings=dict(), settings=dict())
     if settings.results_path.is_file():
-        with open(settings.results_path, "r") as fhandle:
+        with open(settings.results_path) as fhandle:
             results_all = json.load(fhandle)
     results_all["settings"] = settings.to_dict()
     results_all["results"][results_scene.house_name] = results_scene.to_dict()

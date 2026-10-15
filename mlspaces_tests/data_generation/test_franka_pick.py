@@ -26,6 +26,7 @@ from molmo_spaces.molmo_spaces_constants import get_resource_manager
 from molmo_spaces.utils.test_utils import (
     assert_obs_scene_match,
     compare_h5_groups,
+    compare_lerobot_to_h5,
     run_task_for_steps_with_observations,
     verify_and_compare_camera_observations,
     verify_and_compare_camera_observations_after_steps,
@@ -331,6 +332,7 @@ def test_droid_integration(droid_config):
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     droid_config.output_dir = TEST_OUTPUT_DIR / "franka_pick_droid_output" / str(timestamp)
+    droid_config.save_lerobot = True
 
     runner = ParallelRolloutRunner(droid_config)
 
@@ -369,6 +371,12 @@ def test_droid_integration(droid_config):
                 if traj_key.startswith("traj_"):
                     assert traj_key in f2, f"traj_key {traj_key} missing in {f2.filename}"
                     assert_obs_scene_match(f1[traj_key], f2[traj_key])
+
+            # Same episodes, second format: once against this run's own h5, once
+            # against the golden reference the h5 was just checked against.
+            lerobot_root = house_dir / "lerobot_batch_1_of_1"
+            compare_lerobot_to_h5(lerobot_root, f2, atol=0.001, label="actual h5")
+            compare_lerobot_to_h5(lerobot_root, f1, atol=0.001, label="expected h5")
 
 
 def test_randomized_task_sampler(randomized_config, randomized_task_sampler, randomized_task):

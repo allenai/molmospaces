@@ -11,8 +11,8 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
+import mujoco as mj
 import numpy as np
-from mujoco import MjData
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.molmo_spaces_constants import get_robot_path
@@ -21,6 +21,7 @@ from molmo_spaces.robots.bimanual_yam import BimanualYamRobot
 from molmo_spaces.robots.floating_robotiq import FloatingRobotiqRobot
 from molmo_spaces.robots.floating_rum import FloatingRUMRobot
 from molmo_spaces.robots.franka import FrankaRobot
+from molmo_spaces.robots.g1 import G1Robot
 from molmo_spaces.robots.i2rt_yam import I2rtYamRobot
 from molmo_spaces.robots.mobile_franka import MobileFrankaRobot
 from molmo_spaces.robots.rby1 import RBY1
@@ -33,6 +34,7 @@ from molmo_spaces.robots.robot_views.franka_droid_view import (
     FloatingRobotiq2f85RobotView,
     FrankaDroidRobotView,
 )
+from molmo_spaces.robots.robot_views.g1_view import G1RobotView
 from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.mobile_franka_droid_view import MobileFrankaDroidRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
@@ -84,16 +86,18 @@ class BaseRobotConfig(Config):
     """Base configuration for robot setup."""
 
     robot_cls: type[Robot] | None
-    robot_factory: (
-        Callable[[MjData, Any], Robot] | None
-    )  # (MjData, MlSpacesExpConfig) -> Robot. here (and subclasses) we use Any to avoid annotation dependency on MlSpacesExpConfig
+
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None
+    # (MjData, MlSpacesExpConfig) -> Robot. here (and subclasses) we use Any to avoid annotation dependency on MlSpacesExpConfig
+
     robot_view_factory: RobotViewFactory | None
-    robot_namespace: (
-        str  # namespace used to differentiate between one or multiple robots and the environment
-    )
-    command_mode: dict[
-        str, str
-    ]  # move_group to command_mode e.g., "joint", "cartesian", "velocity"
+
+    robot_namespace: str
+    """Namespace used to differentiate between one or multiple robots and the environment"""
+
+    command_mode: dict[str, str | None]
+    """move_group to command_mode e.g., 'joint', 'cartesian', 'velocity'"""
+
     init_qpos: dict[str, list[float]]
     init_qpos_noise_range: dict[str, list[float]] | None
     name: str | None
@@ -112,6 +116,30 @@ class BaseRobotConfig(Config):
 
     # Action noise configuration - applied per-robot in Robot.apply_action_noise()
     action_noise_config: ActionNoiseConfig | None = None
+
+    # If set, task samplers should place the robot's base at this world-frame z
+    # height rather than deriving spawn height from the target object's height
+    # (target_z + robot_object_z_offset +/- noise, see PickTaskSampler). That
+    # target-relative placement assumes an adjustable base height (RBY1's torso
+    # lift, FloatingRUM's freely-positioned floating base) and produces an
+    # unnatural spawn height for a robot whose base height is fixed by its own
+    # controller (e.g. LegsWaistController's WBC holds a constant standing height
+    # regardless of where the robot is placed) -- planning code that reads the
+    # robot's pose at task reset (before physics has run) would then see a
+    # spawn height physics is about to correct away, silently invalidating any
+    # grasp/reach poses computed from it.
+    fixed_base_height: float | None = None
+
+    # If set, overrides the scene's compiled model.opt.timestep (normally
+    # 0.002s, set in molmo_spaces/resources/base_scene.xml) once the robot is
+    # constructed -- see Robot subclasses' __init__ (e.g. G1Robot's, which
+    # sets this for G1). None (default) leaves the scene's own timestep
+    # untouched. Only override this for a robot whose controller was
+    # trained/tuned at a specific physics rate that differs from our own
+    # scene default (see G1Config's own physics_timestep for why G1 needs
+    # this) -- mutating model.opt.timestep for a robot whose controllers
+    # don't care is pure risk with no benefit.
+    physics_timestep: float | None = None
 
     def model_post_init(self, _context):
         """Ensure action_noise_config is always initialized, even when loading from old configs."""
@@ -139,11 +167,11 @@ class BaseRobotConfig(Config):
 class FrankaRobotConfig(BaseRobotConfig):
     """Configuration for Franka FR3 robot."""
 
-    robot_cls: type[FrankaRobot] | None = FrankaRobot
-    robot_factory: Callable[[MjData, Any], Robot] | None = FrankaRobot
+    robot_cls: type[Robot] | None = FrankaRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = FrankaRobot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = FrankaDroidRobotView
-    name: str = "franka_droid"
+    name: str | None = "franka_droid"
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] | None = [0.5, 0.5, 0.58]
     init_qpos: dict[str, list[float]] = {
@@ -165,8 +193,8 @@ class FrankaRobotConfig(BaseRobotConfig):
     # texture randomization parameters, ignored if texture randomization is disabled
     perturb_texture_probability: float = 0.7
 
-    def model_post_init(self, __context):
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any):
+        super().model_post_init(_context)
         if "gripper" in self.command_mode:
             assert self.command_mode["gripper"] == "joint_position"
         if "arm" in self.command_mode:
@@ -194,11 +222,11 @@ class CommonSenseFrankaRobotConfig(FrankaRobotConfig):
 
 
 class MobileFrankaRobotConfig(BaseRobotConfig):
-    robot_cls: type[MobileFrankaRobot] | None = MobileFrankaRobot
-    robot_factory: Callable[[MjData, Any], Robot] | None = MobileFrankaRobot
+    robot_cls: type[Robot] | None = MobileFrankaRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = MobileFrankaRobot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = MobileFrankaDroidRobotView
-    name: str = "franka_droid"
+    name: str | None = "franka_droid"
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] = [0.5, 0.5, 0.58]
     init_qpos: dict[str, list[float]] = {
@@ -237,11 +265,11 @@ class MobileFrankaRobotConfig(BaseRobotConfig):
 class FrankaCAPRobotConfig(BaseRobotConfig):
     """Configuration for Franka FR3 robot."""
 
-    robot_cls: type[FrankaRobot] | None = FrankaRobot
-    robot_factory: Callable[[MjData, Any], Robot] | None = FrankaRobot
+    robot_cls: type[Robot] | None = FrankaRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = FrankaRobot
     robot_namespace: str = "robot_0/"
     robot_view_factory: RobotViewFactory | None = FrankaCAPRobotView
-    name: str = "franka_cap"
+    name: str | None = "franka_cap"
     robot_xml_path: Path = Path("model.xml")
     base_size: list[float] | None = [0.5, 0.5, 0.58]
     init_qpos: dict[str, list[float]] = {
@@ -261,8 +289,8 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
     }
     gravcomp: bool = True
 
-    def model_post_init(self, __context):
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any):
+        super().model_post_init(_context)
         if "gripper" in self.command_mode:
             assert self.command_mode["gripper"] == "joint_position"
         if "arm" in self.command_mode:
@@ -272,35 +300,48 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
 class RBY1Config(BaseRobotConfig):
     """Configuration for RBY1 robot."""
 
-    robot_cls: type[RBY1] = RBY1
-    robot_factory: Callable[[MjData, Any], Robot] | None = RBY1
+    robot_cls: type[Robot] | None = RBY1
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = RBY1
     robot_view_factory: RobotViewFactory | None = None  # set in model_post_init
     robot_namespace: str = "robot_0/"
-    init_qpos: dict[str, np.ndarray] = {
-        "base": np.array([0.0, 0.0, 0.0]),  # x, y, theta
-        "head": np.array(
-            [0.0, 0.6]
-        ),  # (pan, tilt) - 0 pan = forward, ~0.4 rad tilt = looking down ~34 degrees
-        "left_arm": np.array([0.5, 0.0, 0.0, -2.3, 0.0, -0.5, 0.0]),
-        "left_gripper": np.array([-0.05]),  # Open position - coupling handled in RBY1GripperGroup
-        "right_arm": np.array([0.5, 0.0, 0.0, -2.3, 0.0, -0.5, 0.0]),
-        "right_gripper": np.array([-0.05]),  # Open position - coupling handled in RBY1GripperGroup
-        "torso": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    init_qpos: dict[str, list[float]] = {
+        "base": [0.0, 0.0, 0.0],  # x, y, theta
+        "head": [
+            0.0,
+            0.6,
+        ],  # (pan, tilt) - 0 pan = forward, ~0.4 rad tilt = looking down ~34 degrees
+        "left_arm": [0.5, 0.0, 0.0, -2.3, 0.0, -0.5, 0.0],
+        "left_gripper": [-0.05],  # Open position - coupling handled in RBY1GripperGroup
+        "right_arm": [0.5, 0.0, 0.0, -2.3, 0.0, -0.5, 0.0],
+        "right_gripper": [-0.05],  # Open position - coupling handled in RBY1GripperGroup
+        "torso": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     }
     # TODO: Add noise ranges for arms etc
-    init_qpos_noise_range: dict[str, np.ndarray] = {
-        "base": np.array([0.0, 0.0, 0.0]),
-        # "head": np.array([0.15, 0.1]),  # (pan, tilt) noise in radians (~8.5 deg, ~5.7 deg)
-        "head": np.array([0.2, 0.2]),  # (pan, tilt) noise in radians (~11.4 deg, ~11.4 deg)
-        "left_arm": np.array(
-            [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175]
-        ),  # Graduated noise: more distal = more variation
-        "left_gripper": np.array([0.01]),
-        "right_arm": np.array(
-            [0.05, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175]
-        ),  # Graduated noise: more distal = more variation
-        "right_gripper": np.array([0.01]),
-        "torso": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    init_qpos_noise_range: dict[str, list[float]] | None = {
+        "base": [0.0, 0.0, 0.0],
+        # "head": [0.15, 0.1],  # (pan, tilt) noise in radians (~8.5 deg, ~5.7 deg)
+        "head": [0.2, 0.2],  # (pan, tilt) noise in radians (~11.4 deg, ~11.4 deg)
+        "left_arm": [
+            0.05,
+            0.05,
+            0.075,
+            0.1,
+            0.125,
+            0.15,
+            0.175,
+        ],  # Graduated noise: more distal = more variation
+        "left_gripper": [0.01],
+        "right_arm": [
+            0.05,
+            0.05,
+            0.075,
+            0.1,
+            0.125,
+            0.15,
+            0.175,
+        ],  # Graduated noise: more distal = more variation
+        "right_gripper": [0.01],
+        "torso": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     }
 
     use_holo_base: bool = True  # Whether to use virtual holonomic base joints or not
@@ -310,7 +351,7 @@ class RBY1Config(BaseRobotConfig):
         "base": "holo_joint_planar_position",  # e.g., "planar_position", "planar_velocity", "wheel_velocity"
         "head": None,  # Must be None - RBY1 head actuation is disabled
     }
-    name: str = "rby1"
+    name: str | None = "rby1"
     robot_xml_path: Path = Path("rby1_site_control.xml")
     gravcomp: bool = True
 
@@ -323,7 +364,7 @@ class RBY1MConfig(RBY1Config):
     """Configuration for RBY1M i.e. mecanum wheel robot."""
 
     use_holo_base: bool = True  # Whether to use virtual holonomic base joints or not
-    name: str = "rby1m"
+    name: str | None = "rby1m"
     robot_xml_path: Path = Path("rby1_v1.2_site_control.xml")
     # NOTE: No wheel control for now so we can re-use this config for both the robot types
 
@@ -344,45 +385,131 @@ class RBY1MOpenCloseConfig(RBY1MConfig):
     }
 
 
+class G1Config(BaseRobotConfig):
+    """Configuration for the Unitree G1 humanoid robot.
+
+    One base control mode:
+    - Whole-body walking: the combined `legs_waist` move group is
+      driven by the WBC (a PD-torque law plus an ONNX walking policy --
+      see `molmo_spaces.controllers.g1_wbc`), commanded via
+      `set_target([vx, vy, yaw_rate, height, waist_yaw, waist_roll,
+      waist_pitch])`. The base has no actuators (free-floating pelvis
+      integrated directly by MuJoCo's physics).
+
+    Both arms and the right gripper always stay on plain JointPosControllers,
+    relying on the MJCF's own tuned PD actuator gains.
+    """
+
+    robot_cls: type[G1Robot] | None = G1Robot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = G1Robot.from_mj_data
+    robot_view_factory: RobotViewFactory | None = G1RobotView
+    robot_namespace: str = "robot_0/"
+    name: str = "g1"
+    robot_xml_path: Path = Path("g1_dex.xml")
+    # Default standing pose, taken from the source G1 stack's validated
+    # gravity-settled/nominal joint values. Note this is the *reset* pose, a
+    # different (more upright) pose than LegsWaistController's own internal
+    # `_DEFAULT_POSE` action-space reference offset -- both exist in the
+    # source stack too, for the same reason (env reset vs. policy reference).
+    init_qpos: dict[str, np.ndarray] = {
+        "legs_waist": np.array(
+            [
+                -0.312,
+                0.0,
+                0.0,
+                0.669,
+                -0.363,
+                0.0,
+                -0.312,
+                0.0,
+                0.0,
+                0.669,
+                -0.363,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        ),
+        "left_arm": np.array([0.212, -0.017, 0.062, 1.216, 0.005, 0.258, 0.006]),
+        "right_arm": np.array([0.2, -0.2, 0.0, -0.2, 0.0, 0.0, 0.0]),
+        "right_gripper": np.array([-0.0222]),
+    }
+    init_qpos_noise_range: dict[str, np.ndarray] | None = None
+    command_mode: dict[str, str | None] = {
+        "legs_waist": "joint_position",
+        "arm": "joint_position",
+        "gripper": "joint_position",
+    }
+    gravcomp: bool = False
+
+    # Matches g1_molmo's components/controller.py set_env(), which sets
+    # `m.opt.timestep = 0.005` unconditionally for G1: the WBC's ONNX policy
+    # (controllers/g1_wbc.py) was trained at that rate, not our scene default
+    # of 0.002s. Applied in G1Robot.__init__. g1_wbc.py's _WBC_CONTROL_DEC (4)
+    # is set to match -- change both together or the WBC leaves its ~50Hz.
+    physics_timestep: float = 0.005
+
+    # The WBC (or, in holo-base mode, G1HoloBaseGroup's mocap weld) holds the
+    # pelvis at a constant height wherever the robot is placed, so unlike RBY1
+    # or FloatingRUM the G1 cannot stand at a target-relative height. See
+    # BaseRobotConfig.fixed_base_height.
+    #
+    # 0.793m is the pelvis height measured with this init_qpos right after
+    # reset()/mj_forward, before the WBC takes over -- NOT the WBC's own
+    # _WBC_HEIGHT_CMD (0.74), which is a crouched action-space reference. At
+    # 0.74 these leg angles put the ankles through the floor, failing 10/10
+    # placements. Confirmed stable for 3s+ in the standing smoke test.
+    fixed_base_height: float | None = 0.793
+
+    # Override for the right gripper pad geoms' (tangential, torsional, rolling)
+    # friction triple -- None keeps the MJCF's own default (5, 0.05, 0.01).
+    # Applied in G1Robot._apply_solver_overrides by matching geoms against that
+    # default's tangential value, since the gripper_pad geoms are unnamed in
+    # g1_dex.xml (only grouped by an MJCF `class`, which isn't queryable on the
+    # compiled model). See molmo_spaces/robots/g1.py for the matching logic.
+    gripper_friction: tuple[float, float, float] | None = None
+
+
 class FloatingRUMRobotConfig(BaseRobotConfig):
-    robot_cls: type[FloatingRUMRobot] | None = FloatingRUMRobot
-    robot_factory: Callable[[MjData, Any], Robot] | None = FloatingRUMRobot
+    robot_cls: type[Robot] | None = FloatingRUMRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = FloatingRUMRobot
     robot_view_factory: RobotViewFactory | None = FloatingRUMRobotView
     robot_namespace: str = "robot_0/"
     ctrl_dt_ms: float = 50.0
     command_mode: dict = {}
-    name: str = "floating_rum"
+    name: str | None = "floating_rum"
     robot_xml_path: Path = Path("model.xml")
     init_qpos: dict[str, list] = {
         "gripper": [0.0, 0.0],
     }
-    init_qpos_noise_range: dict[str, list] = {}
+    init_qpos_noise_range: dict[str, list[float]] | None = {}
 
 
 class FloatingRobotiq2f85RobotConfig(BaseRobotConfig):
-    robot_cls: type[FloatingRobotiqRobot] = FloatingRobotiqRobot
-    robot_factory: Callable[[MjData, BaseRobotConfig], Robot] = FloatingRobotiqRobot
-    robot_view_factory: RobotViewFactory = FloatingRobotiq2f85RobotView
+    robot_cls: type[Robot] | None = FloatingRobotiqRobot
+    robot_factory: Callable[[mj.MjData, BaseRobotConfig], Robot] | None = FloatingRobotiqRobot
+    robot_view_factory: RobotViewFactory | None = FloatingRobotiq2f85RobotView
     robot_namespace: str = "robot_0/"
     ctrl_dt_ms: float = 50.0
     command_mode: dict = {}
     action_spec: dict[str, int] = {"base": 7, "gripper": 2}  # Max lengths for action components
-    name: str = "floating_robotiq"
+    name: str | None = "floating_robotiq"
     robot_xml_path: Path = Path("model.xml")
     init_qpos: dict[str, list] = {
         "gripper": [0.00296, 0.00296],
     }
-    init_qpos_noise_range: dict[str, list] = {}
+    init_qpos_noise_range: dict[str, list[float]] | None = {}
 
 
 class I2rtYamRobotConfig(BaseRobotConfig):
     """Configuration for i2rt YAM 6-DOF robot."""
 
-    robot_cls: type[I2rtYamRobot] | None = I2rtYamRobot
-    robot_factory: Callable[[MjData, Any], Robot] | None = I2rtYamRobot
+    robot_cls: type[Robot] | None = I2rtYamRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = I2rtYamRobot
     robot_view_factory: RobotViewFactory | None = I2rtYamRobotView
     robot_namespace: str = "robot_0/"
-    name: str = "i2rt_yam"
+    name: str | None = "i2rt_yam"
     robot_xml_path: Path = Path("yam.xml")
     # Base platform size [width, depth, height] - raises robot above ground
     base_size: list[float] | None = [0.3, 0.3, 0.7]
@@ -394,14 +521,14 @@ class I2rtYamRobotConfig(BaseRobotConfig):
         "gripper": [0.0, 0.0],  # left_finger, right_finger (coupled)
     }
     init_qpos_noise_range: dict[str, list[float]] | None = None
-    command_mode: dict[str, str] = {
+    command_mode: dict[str, str | None] = {
         "arm": "joint_position",
         "gripper": "joint_position",
     }
     gravcomp: bool = True
 
-    def model_post_init(self, __context):
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any):
+        super().model_post_init(_context)
         if "gripper" in self.command_mode:
             assert self.command_mode["gripper"] == "joint_position"
         if "arm" in self.command_mode:
@@ -415,11 +542,11 @@ class BimanualYamRobotConfig(BaseRobotConfig):
     both facing forward.
     """
 
-    robot_cls: type[BimanualYamRobot] | None = BimanualYamRobot
-    robot_factory: Callable[[MjData, Any], Robot] | None = BimanualYamRobot
+    robot_cls: type[Robot] | None = BimanualYamRobot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = BimanualYamRobot
     robot_view_factory: RobotViewFactory | None = BimanualYamRobotView
     robot_namespace: str = "robot_0/"
-    name: str = "i2rt_yam"  # Use same directory as single-arm YAM
+    name: str | None = "i2rt_yam"  # Use same directory as single-arm YAM
     robot_xml_path: Path = Path("bimanual_yam.xml")
     # Base platform size [x, y, z] - raises robot above ground
     # Wider in Y to accommodate both arms (44cm apart along Y axis)
@@ -433,14 +560,14 @@ class BimanualYamRobotConfig(BaseRobotConfig):
         "right_gripper": [0.04068, 0.0],
     }
     init_qpos_noise_range: dict[str, list[float]] | None = None
-    command_mode: dict[str, str] = {
+    command_mode: dict[str, str | None] = {
         "arm": "joint_position",
         "gripper": "joint_position",
     }
     gravcomp: bool = True
 
-    def model_post_init(self, __context):
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any):
+        super().model_post_init(_context)
         if "gripper" in self.command_mode:
             assert self.command_mode["gripper"] == "joint_position"
         if "arm" in self.command_mode:

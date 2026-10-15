@@ -1,5 +1,7 @@
+from typing import Any
+
 from molmo_spaces.configs.policy_configs import BasePolicyConfig
-from molmo_spaces.policy.base_policy import PolicyFactory
+from molmo_spaces.policy.base_policy import BasePolicy, PolicyFactory
 from molmo_spaces.utils.function_utils import make_lenient
 
 
@@ -10,8 +12,8 @@ class PiPolicyConfig(BasePolicyConfig):
     remote_config: dict | None = dict(host="localhost", port=8080)
     prompt_object_word_num: int = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
-    # When True, every episode's prompt is produced by PromptSampler
-    # (templates in learned_policy/utils.py + semantic_pick_prompts.py).
+    # When True, every episode's prompt is produced by PromptSamplerLearnedPolicy
+    # (templates in utils/prompt_samplers.py + semantic_pick_prompts.py).
     # When False, fall back to task.get_task_description() — i.e. the
     # benchmark's referral expressions for pick/pick_and_place tasks.
     use_prompt_sampler: bool = True
@@ -23,13 +25,13 @@ class PiPolicyConfig(BasePolicyConfig):
     grasping_threshold: float = 0.5
     chunk_size: int = 8
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
-        super().model_post_init(__context)
+        super().model_post_init(_context)
         if self.policy_cls is None:
             from molmo_spaces.policy.learned_policy.pi_policy import PI_Policy
 
@@ -52,13 +54,13 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
     grasping_threshold: float = 0.5
     chunk_size: int = 24
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
-        super().model_post_init(__context)
+        super().model_post_init(_context)
         if self.policy_cls is None:
             from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
 
@@ -91,7 +93,7 @@ class CAPPolicyConfig(BasePolicyConfig):
     remote_config: dict = dict(host="localhost", port=8765)
     grasping_type: str = "binary"
     grasping_threshold: float = 0.7
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
     use_vlm: bool = False  # required for non-pick tasks
@@ -109,7 +111,7 @@ class CAPPolicyConfig(BasePolicyConfig):
 
 class TeleopPolicyConfig(BasePolicyConfig):
     device: str = "keyboard"  # "spacemouse", "keyboard", "phone"
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "teleop"
     # keyboard params
@@ -120,9 +122,9 @@ class TeleopPolicyConfig(BasePolicyConfig):
     rot_sensitivity: float = 0.02
     product_id: int = 50741  # 50741=wireless, 50734=wired
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
-        super().model_post_init(__context)
+        super().model_post_init(_context)
         if self.policy_cls is None:
             if self.device == "keyboard":
                 from molmo_spaces.policy.learned_policy.keyboard_policy import Keyboard_Policy
@@ -162,13 +164,13 @@ class BimanualYamPiPolicyConfig(BasePolicyConfig):
         exo_camera="observation.images.top",
     )
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "learned"
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
-        super().model_post_init(__context)
+        super().model_post_init(_context)
         if self.policy_cls is None:
             from molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy import (
                 BimanualYamPiPolicy,

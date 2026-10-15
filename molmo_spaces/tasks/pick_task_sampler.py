@@ -8,7 +8,6 @@ import numpy as np
 from mujoco import MjSpec, mjtGeom
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.env.arena.arena_utils import modify_mjmodel_thor_articulated
 from molmo_spaces.env.data_views import (
     MlSpacesArticulationObject,
     MlSpacesObject,
@@ -16,6 +15,8 @@ from molmo_spaces.env.data_views import (
 )
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.env.object_manager import Context, ObjectManager
+from molmo_spaces.env.scene import spec_ops
+from molmo_spaces.env.scene.thor.fixups import modify_mjmodel_thor_articulated
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.pick_task import PickTask
 from molmo_spaces.tasks.task_sampler import BaseMujocoTaskSampler
@@ -26,10 +27,7 @@ from molmo_spaces.tasks.task_sampler_errors import (
 )
 from molmo_spaces.utils.asset_names import get_thor_name
 from molmo_spaces.utils.constants.simulation_constants import OBJAVERSE_FREE_JOINT_DEFAULT_DAMPING
-from molmo_spaces.utils.grasp_sample import (
-    get_grasp_collision_body_name,
-    get_noncolliding_grasp_mask,
-)
+from molmo_spaces.utils.grasp_sample import get_noncolliding_grasp_mask
 from molmo_spaces.utils.grasps import (
     get_pickup_grasps,
     has_pickup_grasp_path,
@@ -124,7 +122,10 @@ def get_valid_pickupable_uids(
             om._object_name_to_possible_type_names = {}
             om._object_name_and_context_to_source_to_natural_names = {}
 
-    return valid_uids
+    from molmo_spaces.utils.license_policy import filter_uids
+
+    allowed = set(filter_uids(valid_uids.keys()))
+    return {uid: valid_uids[uid] for uid in allowed}
 
 
 def _get_cached_valid_pickupables(
@@ -899,13 +900,22 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_place_robot")
 
+            if not self._check_placement_walk_reachable(env, pickup_obj_name):
+                log.info(f"Robot placement not walk-reachable for {pickup_obj_name}")
+                self.report_grasp_failure(pickup_obj_name)
+                continue
+
             mujoco.mj_forward(env.current_model, env.current_data)
 
+            if not self._post_placement_setup(env, pickup_obj_name, supporting_geom_id):
+                self.report_grasp_failure(pickup_obj_name)
+                continue
+
             # Check grasp feasibility before proceeding
-            # Only run collision check if grasp_collision bodies were added to the scene
-            # (they are added by the policy's add_auxiliary_objects when filter_colliding_grasps is True)
-            has_grasp_collision_bodies = (
-                get_grasp_collision_body_name(0) in env.current_model.names.decode()
+            # Only run collision check if grasp probe bodies were added to the scene
+            # (task_sampler_config.add_grasp_probe)
+            has_grasp_probe_bodies = (
+                spec_ops.grasp_probe_body_name(0) in env.current_model.names.decode()
             )
             if self._datagen_profiler is not None:
                 self._datagen_profiler.start("sample_check_grasps")
@@ -920,7 +930,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                         include_flipped=False,
                         grasp_libraries=self.config.task_sampler_config.grasp_libraries,
                     )
-                    if has_grasp_collision_bodies and len(grasp_poses_world) > 0:
+                    if has_grasp_probe_bodies and len(grasp_poses_world) > 0:
                         noncolliding_mask = get_noncolliding_grasp_mask(
                             env.current_model, env.current_data, grasp_poses_world, 64
                         )
@@ -1082,12 +1092,20 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("sample_task_create")
 
-        task = PickTask(env, self.config)
+        task = self._task_cls()(env, self.config)
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_task_create")
 
         return task
+
+    def _task_cls(self) -> type[PickTask]:
+        """Hook: task class to instantiate in _sample_task. Override to swap
+        in a task with different success/reward semantics -- see
+        a task with g1_molmo's own success criteria instead of this class's
+        own (fetchman's PickTask is that task).
+        """
+        return PickTask
 
     def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MlSpacesObject]:
         """
@@ -1169,6 +1187,10 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 blacklisted_count += 1
                 continue
 
+            if asset_uid and self.is_license_blocked(asset_uid):
+                log.debug(f"Skipping {pickup_obj.name} (uid={asset_uid}) - license blocked")
+                continue
+
             if self.config.task_sampler_config.filter_for_grasps:
                 if not self._has_grasps(pickup_obj, asset_uid):
                     continue
@@ -1240,14 +1262,23 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         else:
             raise ValueError(f"Invalid pickup object type: {type(pickup_obj)}")
 
-        initial_robot_z = (
-            target_pos[2]
-            + self.config.task_sampler_config.robot_object_z_offset
-            + np.random.uniform(
-                self.config.task_sampler_config.robot_object_z_offset_random_min,
-                self.config.task_sampler_config.robot_object_z_offset_random_max,
+        fixed_base_height = self.config.robot_config.fixed_base_height
+        if fixed_base_height is not None:
+            # This robot's base height is held constant by its own controller
+            # regardless of placement (see BaseRobotConfig.fixed_base_height) --
+            # deriving a target-relative spawn height below would place it
+            # somewhere physics/the controller immediately corrects away from,
+            # silently invalidating any grasp/reach poses planned against it.
+            initial_robot_z = fixed_base_height
+        else:
+            initial_robot_z = (
+                target_pos[2]
+                + self.config.task_sampler_config.robot_object_z_offset
+                + np.random.uniform(
+                    self.config.task_sampler_config.robot_object_z_offset_random_min,
+                    self.config.task_sampler_config.robot_object_z_offset_random_max,
+                )
             )
-        )
 
         # place robot near receptacle - this is the expensive call with collision/visibility checks
         if self._datagen_profiler is not None:
@@ -1255,7 +1286,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         robot_placed = env.place_robot_near(
             robot_view=robot_view,
             target=pickup_obj,
-            max_tries=10,  # Use config value or reasonable default
+            max_tries=self.config.task_sampler_config.max_robot_placement_attempts,
             sampling_radius_range=self.config.task_sampler_config.base_pose_sampling_radius_range,
             robot_safety_radius=self.config.task_sampler_config.robot_safety_radius,
             preserve_z=initial_robot_z,
@@ -1283,6 +1314,46 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         task_cfg.pickup_obj_goal_pose = pickup_obj_goal_pose.tolist()
 
         log.info(f"Supporting receptacle: {self.config.task_config.receptacle_name}")
+
+    def _check_placement_walk_reachable(self, env: CPUMujocoEnv, pickup_obj_name: str) -> bool:
+        """Hook: verify the just-placed robot can reach a walk standoff point
+        near the pickup object, using the same nav-goal-sampling + A*/line-of-sight
+        machinery a walk-phase policy uses at reset(). Rejecting here retries with a
+        freshly sampled position, instead of discovering the mismatch during
+        policy.reset() after height randomization, camera setup and grasp
+        feasibility have already been paid for.
+
+        Placement (occupancy-map-based, and weighing visibility/exclusion zones) and
+        walk-goal sampling (a policy's NavGoalSampler/AStarPlanner) are independent
+        computations with no guarantee of agreeing on what is reachable. g1_molmo
+        sidesteps this by spawning at the standoff point so start == goal; lacking
+        that architecture, this validates consistency after the fact.
+
+        No-op by default (True) -- meaningful only for configs with a walk phase;
+        fetchman's G1TaskSampler does its own.
+        """
+        return True
+
+    def _post_placement_setup(
+        self, env: CPUMujocoEnv, pickup_obj_name: str, supporting_geom_id: int
+    ) -> bool:
+        """Hook: last chance to mutate scene state for, or reject outright,
+        this (object, placement) attempt -- after the robot has been placed
+        and forward-kinematics run, but before any grasp feasibility work is
+        paid for.
+
+        Returning False rejects the attempt (the caller reports a grasp
+        failure and retries with a freshly sampled object/placement), so an
+        override may both randomize state and veto, in whichever order it
+        needs -- state it mutates must therefore be consistent with a
+        subsequent rejection.
+
+        No-op by default (True). `PickTaskSamplerG1`
+        (tasks/pick_task_sampler_g1.py) overrides it with g1_molmo's
+        reset-time support/robot height randomization plus grasp
+        reachability precheck.
+        """
+        return True
 
     def _place_target_near_object(
         self, env: CPUMujocoEnv, object_pos: np.ndarray, placement_region=None

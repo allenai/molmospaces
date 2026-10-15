@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -6,10 +7,37 @@ from pathlib import Path
 
 import mujoco as mj
 import trimesh
+from tqdm import tqdm
 
 from molmo_spaces.utils.constants.object_constants import (
     AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA as TYPE_TO_LEMMA,
 )
+
+
+def p_uimap(func, items, num_cpus: int | None = None):
+    """Parallel unordered imap with a progress bar, over stdlib multiprocessing.
+
+    Stands in for `p_tqdm.p_uimap`, which pulled in pathos for a single call
+    site in each of the `*_mp` sweeps. Same contract: yields results as workers
+    finish, in completion order, not input order.
+
+    Forks where the platform allows it. Every caller sets a module-level
+    `SETTINGS` in `main()` and reads it back inside the worker, so the workers
+    have to inherit the parent's globals; under macOS' default "spawn" the
+    child re-imports the module and every one of them fails on `SETTINGS is
+    None`. Linux forks by default, which is why the sweeps work there.
+
+    `func` is pickled to the workers, so it must be a module-level function --
+    which is what every caller here passes.
+    """
+    items = list(items)
+    ctx = (
+        multiprocessing.get_context("fork")
+        if "fork" in multiprocessing.get_all_start_methods()
+        else multiprocessing.get_context()
+    )
+    with ctx.Pool(num_cpus) as pool:
+        yield from tqdm(pool.imap_unordered(func, items), total=len(items))
 
 WARNINGS_TO_CHECK = [
     mj.mjtWarning.mjWARN_BADQACC,
@@ -204,7 +232,7 @@ def sort_results_lift_force_test_by_scene_number(
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     results_info = data["results"]
@@ -243,7 +271,7 @@ def get_fail_info_lift_force_test(filepath: Path, flavor: str, split: str, ident
     if not filepath.exists():
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     fail_info: list[tuple[str, str]] = []  # [(scene_name, body_name)]
@@ -289,7 +317,7 @@ def get_lift_tests_results_info(
     count_total_badqacc = 0
     cant_lift: list[CantLiftResult] = []
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     results = data.get("results", {})
@@ -328,7 +356,7 @@ def sort_results_articulation_force_test_by_scene_number(
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     results_info = data["results"]
@@ -369,7 +397,7 @@ def get_fail_info_articulation_force_test(
     if not filepath.exists():
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     fail_info: list[tuple[str, str]] = []
@@ -386,7 +414,7 @@ def get_articulation_tests_results_info(filepath: Path) -> tuple[int, int, int, 
     count_total_joints = 0
     count_cant_open_joints = 0
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     for scene_name in data["results"]:
@@ -414,7 +442,7 @@ def get_object_categories_failed_articulation_test(filepath: Path) -> Counter:
         return counts
 
     data = {}
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
     data_res = data.get("results", {})
     for scene_info in data_res.values():
@@ -433,7 +461,7 @@ def get_object_categories_failed_lift_test(filepath: Path) -> tuple[Counter, Cou
         return counts, counts_overall
 
     data = {}
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     if "categories" in data:
@@ -460,7 +488,7 @@ def sort_results_stability_test_by_scene_number(
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     results_info = data["results"]
@@ -502,7 +530,7 @@ def get_fail_info_stability_test(filepath: Path, flavor: str, split: str, identi
     if not filepath.exists():
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     fail_info: list[tuple[str, str]] = []
@@ -534,7 +562,7 @@ def get_stability_tests_results_info(filepath: Path) -> tuple[int, int, int, int
     count_total_bodies = 0
     count_total_joints = 0
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     for scene_name in data["results"]:
@@ -566,7 +594,7 @@ def get_categories_failed_stability_test(filepath: Path) -> tuple[Counter, Count
         return counts_bodies, counts_joints, counts_jitter, counts_overall
 
     data = {}
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     if "categories" in data:
@@ -610,7 +638,7 @@ def get_stats_runtime_test(filepath: Path) -> dict[str, StatsRuntime]:
         return stats
 
     data = {}
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
     data_res = data.get("results", {})
     for scene_name, scene_info in data_res.items():
@@ -636,7 +664,7 @@ def sort_results_penetration_test_by_scene_number(
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     results_info = data["results"]
@@ -678,7 +706,7 @@ def get_fail_info_penetration_test(
     if not filepath.exists():
         print(f"Results file `{filepath.as_posix()}` doesn't exist")
         return
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     fail_info: list[tuple[str, str]] = []
@@ -705,7 +733,7 @@ def get_categories_failed_penetration_test(filepath: Path) -> tuple[Counter, Cou
         return counts_bodies, counts_overall
 
     data = {}
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     if "categories" in data:
@@ -723,7 +751,7 @@ def get_categories_failed_penetration_test(filepath: Path) -> tuple[Counter, Cou
 def get_penetration_tests_results_info(filepath: Path) -> tuple[int, int, int]:
     count_pairs_fail = 0
 
-    with open(filepath, "r") as fhandle:
+    with open(filepath) as fhandle:
         data = json.load(fhandle)
 
     for scene_name in data["results"]:

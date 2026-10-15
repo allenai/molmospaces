@@ -11,17 +11,18 @@ from typing import Any, Literal
 
 import mujoco as mj
 import numpy as np
-from p_tqdm import p_uimap
 from test_utils import (
     collect_warnings,
     get_articulation_tests_results_info,
     get_fail_info_articulation_force_test,
     get_object_categories_failed_articulation_test,
+    p_uimap,
     sort_results_articulation_force_test_by_scene_number,
 )
 from tqdm import tqdm
 
-from molmo_spaces.env.arena.scene_tweaks import (
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.env.scene.containment import (
     is_body_com_within_box_site,
     is_body_within_site_in_freespace,
 )
@@ -30,9 +31,11 @@ ROOT_DIR = Path(__file__).parent.parent.parent
 DEFAULT_HOUSES_FOLDER_WEKA = (
     "/weka/robots-default/datasets/mujoco-thor/assets/scenes/{dataset}-{split}"
 )
-DEFAULT_HOUSES_FOLDER_LOCAL = "assets/scenes/{dataset}-{split}"
+# Local scenes come from the resource manager's asset tree, not a
+# repo-relative `assets/`; ASSETS_DIR honours $MLSPACES_ASSETS_DIR.
+DEFAULT_HOUSES_FOLDER_LOCAL = str(ASSETS_DIR / "scenes" / "{dataset}-{split}")
 DEFAULT_HOUSES_FOLDER_ITHOR_WEKA = "/weka/robots-default/datasets/mujoco-thor/assets/scenes/ithor"
-DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = "assets/scenes/ithor"
+DEFAULT_HOUSES_FOLDER_ITHOR_LOCAL = str(ASSETS_DIR / "scenes" / "ithor")
 
 results_filepath_TEMPLATE = "history_articulation_force_test_{dataset}_{split}_{identifier}.json"
 INFO_BODIES_WITHIN_SITES_PATH_TEMPLATE = (
@@ -135,7 +138,7 @@ def get_only_failed_joints_from_previous_run(
     joints_ids = []
 
     if settings.results_filepath.exists():
-        with open(settings.results_filepath, "r") as fhandle:
+        with open(settings.results_filepath) as fhandle:
             data = json.load(fhandle)
         all_results = data.get("results", {})
         if house_name in all_results:
@@ -154,7 +157,7 @@ def get_only_failed_scenes_from_previous_run(
     if not settings.results_filepath.exists():
         return houses_xmls
 
-    with open(settings.results_filepath, "r") as fhandle:
+    with open(settings.results_filepath) as fhandle:
         data = json.load(fhandle)
     all_results = data.get("results", {})
 
@@ -448,7 +451,7 @@ def run_articulation_force_test(house_filepath: Path) -> tuple[bool, dict[str, A
 def add_test_settings(settings: TestSettings) -> None:
     if settings.results_filepath.exists():
         data = {}
-        with open(settings.results_filepath, "r") as fhandle:
+        with open(settings.results_filepath) as fhandle:
             data = json.load(fhandle)
             data["settings"] = asdict(settings)
 
@@ -492,7 +495,7 @@ def show_results_summary(settings: TestSettings) -> None:
 
         build_settings_filepath = settings.houses_folder / "housegen_build_settings.json"
         if build_settings_filepath.is_file():
-            with open(build_settings_filepath, "r") as fhandle:
+            with open(build_settings_filepath) as fhandle:
                 data = json.load(fhandle)
             print("Parameters:")
             if "param_geom_margin" in data:
@@ -753,7 +756,7 @@ def main() -> int:
 
     results_all = dict(results=dict(), settings=asdict(SETTINGS), categories=dict())
     if SETTINGS.results_filepath.is_file():
-        with open(SETTINGS.results_filepath, "r") as fhandle:
+        with open(SETTINGS.results_filepath) as fhandle:
             results_all = json.load(fhandle)
 
     if args.house != "":

@@ -996,12 +996,12 @@ def generate_all_hypernyms_with_exclusions(
     if isinstance(synset, str):
         synset = get_wordnet().synset(synset)
 
-    return set(
+    return {
         h
         for hp in synset.hypernym_paths()
         for h in hp
         if (include_self_synset or h != synset) and h.name() not in excluded
-    )
+    }
 
 
 @lru_cache(maxsize=10000, typed=True)
@@ -1069,10 +1069,10 @@ def filter_synsets_to_remove_hyponyms(synsets: Sequence[str] | Sequence[Synset])
 
 def get_all_synsets_in_metadata() -> list[Synset]:
     anns = ObjectMeta.annotation()
-    synsets = set(ann["synset"] for ann in anns.values() if "synset" in ann) | set(
+    synsets = {ann["synset"] for ann in anns.values() if "synset" in ann} | set(
         AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET.values()
     )
-    synsets = sorted(list(set([get_wordnet().synset(s) for s in synsets])), key=lambda s: s.name())
+    synsets = sorted(list({get_wordnet().synset(s) for s in synsets}), key=lambda s: s.name())
     return synsets
 
 
@@ -1120,7 +1120,7 @@ def get_singleton_highest_hypernyms():
     for syn in get_all_synsets_in_metadata():
         highest_hypernyms[get_highest_relevant_hypernym(syn)] += 1
 
-    return set([h for h in highest_hypernyms if highest_hypernyms[h] < 2])
+    return {h for h in highest_hypernyms if highest_hypernyms[h] < 2}
 
 
 def get_highest_relevant_hypernym(
@@ -1241,6 +1241,11 @@ def is_valid_receptacle_synset(synset: str | Synset) -> bool:
 def get_valid_receptacle_uids() -> dict[str, dict]:
     """
     Get all asset UIDs that are valid receptacles based on synset filtering.
+
+    The result is *not* filtered by the active license policy: callers cache it
+    process-wide, potentially before the policy has been resolved. Apply
+    ``license_policy.filter_uids`` at the point of use instead, where the policy
+    is known.
 
     Returns:
         Dict mapping UID to annotation dict for valid receptacle assets.
@@ -1367,6 +1372,12 @@ def get_valid_pickupable_obja_uids(debug: bool = False) -> list[str]:
 
     Checks for cached file at VALID_PICKUPABLE_OBJA_UIDS_PATH first to avoid
     expensive computation. If not found, computes and returns the list.
+
+    The returned list is *not* filtered by the active license policy: this runs
+    during config construction, before the effective policy has been resolved, and
+    its results are cached process-wide. License filtering happens at the single
+    gate ``license_policy.apply_license_policy_to_task_sampler_config``, which runs
+    once the policy is known.
 
     Args:
         debug: If True, prints 20 random samples with their short descriptions.

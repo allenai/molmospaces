@@ -1,0 +1,30 @@
+# Coverage is reported for information, not enforced. The `informational: true`
+# settings mean Codecov's PR checks always pass: they annotate the diff and post
+# the number, but a drop can never block a merge. Flip these to a real `target`
+# only once the reported figure has proven stable across the parallel CI jobs.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "condensed_header, diff, flags, files"
+  require_changes: true
+
+# Coverage arrives from several jobs per commit: the component tests on each OS,
+# four pytest-split data-generation groups, and the curobo GPU job. Codecov waits
+# for all of them before finalising a commit's number.
+flag_management:
+  default_rules:
+    carryforward: true
+
+ignore:
+  - "molmo_spaces_isaac/**"
+  - "molmo_spaces_maniskill/**"
+  - "mlspaces_tests/**"
+  - "scripts/**"
+  - "examples/**"

@@ -81,11 +81,7 @@ class PickTask(BaseMujocoTask):
 
     def judge_success(self) -> bool:
         """Judge if the task was successful (for data generation)."""
-
-        if self.config.task_type in ("pick", "pick_packing"):
-            return self.get_info()[0]["success"]
-        else:
-            raise ValueError(f"Invalid action_type {self.config.task_type}")
+        return self.get_info()[0]["success"]
 
     def get_reward(self) -> np.ndarray:
         """Calculate reward for each environment in the batch."""
@@ -153,6 +149,7 @@ class PickTask(BaseMujocoTask):
 
             # Option 2: go via root body and check if all contacts are with robot geoms
             # Check if object collides only with robot geoms
+            robot_root_body_id = self.env.current_robot.robot_view.root_body_id
             robot_collision = False
             non_robot_collision = False
             for c in data.contact:
@@ -160,7 +157,7 @@ class PickTask(BaseMujocoTask):
                 root_body2 = data.model.body_rootid[data.model.geom_bodyid[c.geom2]]
                 if (root_body1 == pickup_obj.body_id) ^ (root_body2 == pickup_obj.body_id):
                     other_root_body = root_body1 if root_body1 != pickup_obj.body_id else root_body2
-                    if other_root_body == self.env.current_robot.robot_view.base.root_body_id:
+                    if other_root_body == robot_root_body_id:
                         robot_collision = True
                     else:
                         non_robot_collision = True
@@ -180,12 +177,12 @@ class PickTask(BaseMujocoTask):
                     "rotation_error": rot_error,
                     "success": success,
                     "episode_step": self.episode_step_count,
-                    # Intermediate success components (useful for downstream
-                    # per-step diagnostics, e.g. MugBallPickTask logging).
+                    # The two terms success is made of, so a caller can tell a
+                    # missed grasp from a lift that fell short or an object
+                    # still touching something else.
                     "lift_height": float(lift_height),
-                    "robot_collision": robot_collision,
-                    "non_robot_collision": non_robot_collision,
-                    "only_robot_collision": only_robot_collision,
+                    "only_robot_contact": bool(only_robot_collision),
+                    "robot_contact": bool(robot_collision),
                 }
             )
 

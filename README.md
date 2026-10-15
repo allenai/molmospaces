@@ -1,53 +1,106 @@
 <div align="center">
-  <h1>
-  <img src="docs/images/MolmoSpacesLogo.png" alt="MolmoSpaces Logo" width="800" style="margin-left:'auto' margin-right:'auto' display:'block'"/></br>
-  A Large-Scale Open Ecosystem for Robot Manipulation and Navigation
-  <div align="center">
-    <a href="https://arxiv.org/pdf/2602.11337" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="./docs/images/button_paper.svg"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/datasets/allenai/molmospaces" target="_blank" rel="noopener noreferrer"><img alt="Data" src="./docs/images/button_data.svg"/></a>&nbsp;&nbsp;<a href="https://allenai.github.io/molmospaces/" target="_blank" rel="noopener noreferrer"><img alt="Docs" src="./docs/images/button_docs.svg"/></a>&nbsp;&nbsp;<a href="https://molmospaces.allen.ai/" target="_blank" rel="noopener noreferrer"><img alt="Demo" src="./docs/images/button_demo.svg"/></a>&nbsp;&nbsp;<a href="https://molmospaces.allen.ai/leaderboard" target="_blank" rel="noopener noreferrer"><img alt="Leaderboard" src="./docs/images/button_leaderboard.svg"/></a>
-  </div>
-  </br>
-  &</br>
-  <img src="docs/images/MolmoBotLogo.png" alt="MolmoSpaces Logo" width="800" style="margin-left:'auto' margin-right:'auto' display:'block'"/></br>
-  Large-Scale Simulation Enables Zero-Shot Manipulation
-  <div align="center">
-    <a href="https://allenai.github.io/MolmoBot" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="./docs/images/button_website.svg"/></a>&nbsp;&nbsp;<a href="https://github.com/allenai/MolmoBot" target="_blank" rel="noopener noreferrer"><img alt="Paper" src="./docs/images/button_code_models.svg"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/collections/allenai/molmobot-models" target="_blank" rel="noopener noreferrer"><img alt="Data" src="./docs/images/button_data_models.svg"/></a>&nbsp;&nbsp;<a href="https://huggingface.co/datasets/allenai/MolmoBot-Data" target="_blank" rel="noopener noreferrer"><img alt="Data" src="./docs/images/button_data.svg"/></a>
-  </div>
-  </h1>
+  <p>
+    <img src="docs/images/MolmoSpacesLogo.png" alt="MolmoSpaces" width="500"/>
+    <br/>
+    <b>A Large-Scale Open Ecosystem for Robot Manipulation and Navigation</b>
+    <br/><a href="https://arxiv.org/pdf/2602.11337"><img alt="Paper" src="./docs/images/button_paper.svg"/></a>
+    <a href="https://huggingface.co/datasets/allenai/molmospaces"><img alt="Data" src="./docs/images/button_data.svg"/></a>
+    <a href="https://allenai.github.io/molmospaces/"><img alt="Docs" src="./docs/images/button_docs.svg"/></a>
+    <a href="https://molmospaces.allen.ai/"><img alt="Demo" src="./docs/images/button_demo.svg"/></a>
+    <a href="https://molmospaces.allen.ai/leaderboard"><img alt="Leaderboard" src="./docs/images/button_leaderboard.svg"/></a>
+  </p>
+  <p>
+    <img src="docs/images/MolmoBotLogoRow.png" alt="MolmoBot" height="38"/>
+    <img src="./docs/images/sep_colon.svg" alt=":"/>
+    <a href="https://allenai.github.io/MolmoBot"><img alt="MolmoBot Website" src="./docs/images/button_website.svg"/></a>
+    <a href="https://github.com/allenai/MolmoBot"><img alt="MolmoBot Code" src="./docs/images/button_code_models.svg"/></a>
+    <a href="https://huggingface.co/collections/allenai/molmobot-models"><img alt="MolmoBot Models" src="./docs/images/button_data_models.svg"/></a>
+    <a href="https://huggingface.co/datasets/allenai/MolmoBot-Data"><img alt="MolmoBot Data" src="./docs/images/button_code.svg"/></a>
+  </p>
 </div>
-
-</br>
-<br/>
 
 <div align="center">
-  <img src="docs/images/Multi_Simulator_Pan.jpg" alt="Multi-Simulator-Pan" width="1200" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
-  <br>
-  <p>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.
-  <br>
+  <img src="docs/images/Multi_Simulator_Pan.jpg" alt="MuJoCo, Isaac and ManiSkill renders of the same scene" width="1200"/>
+  <br/>
+  <sub>Assets from MolmoSpaces are usable in MuJoCo, Isaac, and ManiSkill.</sub>
 </div>
 
+<p align="center">
+  <br/>
+  <a href="https://github.com/allenai/molmospaces/actions/workflows/ci.yaml">
+    <img src="https://img.shields.io/github/actions/workflow/status/allenai/molmospaces/ci.yaml?branch=main&style=flat&label=CI" alt="CI"/>
+  </a>
+  <a href="https://codecov.io/gh/allenai/molmospaces">
+    <img src="https://codecov.io/gh/allenai/molmospaces/branch/main/graph/badge.svg" alt="Coverage"/>
+  </a>
+  <a href="https://pypi.org/project/molmo-spaces/">
+    <img src="https://img.shields.io/pypi/v/molmo-spaces.svg?style=flat&label=PyPI&color=green" alt="PyPI"/>
+  </a>
+  <a href="https://github.com/allenai/molmospaces/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg?style=flat" alt="Apache 2.0"/>
+  </a>
+</p>
 
----
-### Updates
-- **[2026/06/22]** 🔥 [**awesome-molmospaces-papers**](docs/awesome-molmospaces-papers.md) a list of MolmoSpaces projects.
-- **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) is a repository containing standalone third party policy implementations. If you use MolmoSpaces to make a policy (planner-based, learning-based, etc.) please contribute!
-- **[2026/06/12]** 🔥 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, with significantly better usability, included tutorials, and more! Check out the changelog for more information.
-- **[2026/03/24]** 🔥 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for scripted planners, data generation, and benchmark creation.
-- **[2026/02/27]** 🔥 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
-- **[2026/02/11]** 🔥 [**Datasets**](docs/assets.md#assets-and-resource-manager) for assets and scenes in MJCF and USDa format.
-- **[2026/02/11]** 🔥 [**Benchmark**](molmo_spaces/evaluation/README.md) for 8 tasks, including *pick*, *open*, and *close* tasks in JSONs.
-- **[2026/02/11]** 🔥 **MolmoSpaces** Code for scene conversion, grasp generation, teleoperation, and benchmark evaluation.
+## Updates
+- **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
+- **[2026/06/22]** 🔥 [**Projects using MolmoSpaces**](#papers-using-molmospaces) a list of MolmoSpaces projects.
+- **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) standalone third-party policies — contributions welcome.
+- **[2026/06/12]** 📦 [**MolmoSpaces v0.2.0**](https://github.com/allenai/molmospaces/releases/tag/v0.2.0) is out, better usability, tutorials, and more!
+- **[2026/03/24]** 🤖 [**MolmoBot-Datagen**](https://allenai.org/blog/molmobot-robot-manipulation) Code for data generation and benchmark creation.
+- **[2026/02/27]** 🏆 [**Leaderboards**](https://molmospaces.allen.ai/leaderboard) are out.
+- **[2026/02/11]** 🎉 **MolmoSpaces** Code for grasp generation, teleoperation, and benchmark evaluation, plus [**Datasets**](docs/assets.md#assets-and-resource-manager) for assets and [**Benchmark**](molmo_spaces/evaluation/README.md) for 8 tasks.
 
 
 ## Installation
 
 Installing `molmospaces` is easy!
 
-First, clone the project.
+### Pre-built wheels
+
+You can get the latest wheels from [PyPI](https://pypi.org/project/molmo-spaces/):
+
+> [!WARNING]
+> Use version 0.2.9, as it's the stable version used for all benchmarks and leaderboard
 
 ```bash
-git clone git@github.com:allenai/molmospaces.git
+# If using uv as package manager
+uv pip install molmo-spaces==0.2.9
+
+# If using other package manager (conda, etc)
+pip install molmo-spaces==0.2.9
+```
+
+> [!NOTE]
+> To use the G1 and a Whole Body Controller based on the [SONIC](https://nvlabs.github.io/GEAR-SONIC/) policy, use the following
+
+```bash
+# If using Linux with CUDA-12 (if your drivers on your workstation are not up to date)
+uv pip install -e ".[g1_humanoid,torch-cu12]"
+# If using Linux with CUDA-13 (if you have the latest drivers, like working on Fedora or Arch, etc.)
+uv pip install -e ".[g1_humanoid,torch-cu13]"
+# If using MacOS, we only require torch-cpu (will change this to torch with MLX support later)
+uv pip install -e ".[g1_humanoid,torch-cpu]"
+```
+
+### From Source
+
+First, clone the project.
+
+> [!WARNING]
+> Use version 0.2.9, as it's the stable version used for all benchmarks and leaderboard
+
+```bash
+git clone --branch v0.2.9 https://github.com/allenai/molmospaces.git
 cd molmospaces
 ```
+
+If you want to use the latest state of the codebase, just clone from the main branch:
+
+```bash
+git clone https://github.com/allenai/molmospaces.git
+cd molmospaces
+```
+
 
 Then, set up the virtual environment and install.
 
@@ -95,13 +148,6 @@ If using `uv`, simply run:
 uv pip install -e .[mujoco-filament]
 ```
 
-Otherwise, first install `mujoco-filament` before installing this project:
-
-```bash
-pip install -i https://test.pypi.org/simple/ mujoco-filament
-pip install -e .[mujoco-filament]
-```
-
 ### Installing cuRobo (optional, used only for RB-Y1 tasks)
 
 For cuRobo support, inside your conda environment, install with:
@@ -132,6 +178,7 @@ Environment variables beginning with the `MLSPACES` prefix can be used to custom
 | `MLSPACES_ASSETS_DIR` | Where to place downloaded assets | `~/.cache/molmospaces/assets/<install-hash>` |
 | `MLSPACES_FORCE_INSTALL` | Override existing assets | `True` |
 | `MLSPACES_PINNED_ASSETS_FILE` | A `.json` file containing pinned versions for each asset, used to override the versions specified in [molmo_spaces_constants.py](molmo_spaces/molmo_spaces_constants.py). |  |
+| `MLSPACES_LICENSE_POLICY` | Filters which objects/scenes may be used, e.g. `commercial_safe` to exclude non-commercial-licensed Objaverse assets. See [License](#license) below. | `none` |
 | `MUJOCO_EGL_DEVICE_ID` | The rendering device; indices do not always match `CUDA_VISIBLE_DEVICES`. See [here](https://github.com/allenai/molmospaces/issues/66) for details. | `0`|
 
 
@@ -180,7 +227,7 @@ The documentation for MolmoSpaces can be found [here](https://allenai.github.io/
 
 To see and easily run additional policies in MolmoSpaces, check out the [policy zoo](https://github.com/allenai/molmospaces_policy_zoo/)!
 
-For a list of projects using MolmoSpaces look [here](docs/awesome-molmospaces-papers.md).
+For a list of projects using MolmoSpaces, see [Projects using MolmoSpaces](#papers-using-molmospaces).
 
 Additional documentation for using assets and benchmarks in other simulators are listed below:
 
@@ -276,6 +323,23 @@ The repositories related to this project can be found here:
 | [curobo](https://github.com/allenai/curobo) | Ai2 cuRobo branch |
 
 
+## Projects using MolmoSpaces
+
+Papers that build on MolmoSpaces. Using MolmoSpaces in your work? Open a PR to add it —
+maintained by [Max Argus](http://maxargus.com).
+
+**Custom data generation**
+- 07/2026: [MolmoMotion: Forecasting Point Trajectories in 3D with Language Instruction](https://molmomotion.github.io/)
+
+**Training data use**
+- 07/2026: [Playful Agentic Robot Learning (RATS)](https://playful-rats.github.io/)
+- 03/2026: [MolmoB0T: Large-Scale Simulation Enables Zero-Shot Manipulation](https://allenai.github.io/MolmoBot/)
+
+**Benchmark evaluation**
+- 05/2026: [MolmoAct2](https://arxiv.org/abs/2605.02881)
+- 03/2026: [TeleDex](https://arxiv.org/abs/2603.17065)
+
+
 ## Development
 
 ### Code Formatting
@@ -329,6 +393,8 @@ The codebase is licensed under [Apache 2.0](https://www.apache.org/licenses/LICE
 The public MolmoSpaces data endpoint is available [here](https://pub-3555e9bb2d304fab9c6c79819e48aa40.r2.dev). The public MolmoSpaces Isaac data endpoint is available [here](https://pub-96496c3574b24d0c98b235219711d359.r2.dev). Both datasets are also available for download on [HuggingFace](https://huggingface.co/datasets/allenai/molmospaces). The Objaverse subsets in these buckets are licensed under [ODC-BY 1.0](https://opendatacommons.org/licenses/by/1-0/). All other data subsets are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.en).
 The artifacts are intended for research and educational use in accordance with [Ai2's Responsible Use Guidelines](https://allenai.org/responsible-use).
 
+Some Objaverse assets are licensed non-commercially (CC BY-NC / BY-NC-SA); by default MolmoSpaces makes no distinction and will use any asset. Setting `MLSPACES_LICENSE_POLICY=commercial_safe` (see [Set Environment Variables](#set-environment-variables-optional)) filters these non-commercial-licensed objects out of object pools and scenes at data-generation time, so that resulting runs and datasets only draw on commercially-licensed assets.
+
 ## Data Attributions
 
 The XML files have been modified from the original versions provided by the following sources:
@@ -339,6 +405,9 @@ The XML files have been modified from the original versions provided by the foll
 - [I2RT Robotics / i2rt Python API](https://github.com/i2rt-robotics/i2rt) - Copyright (c) I2RT Robotics
 - [mujoco_menagerie / unitree_g1](https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_g1) - Copyright (c) 2016-2023 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")
 - [Microsoft-Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) - Copyright (c) 2020 Microsoft
+
+We also redistribute different types of data and artifacts from other sources, including:
+- [GR00T WholeBodyControl model weights](https://github.com/NVlabs/GR00T-WholeBodyControl) - Bundled with the G1 robot as ONNX whole-body control policies (`robots/g1/policies/groot_balance.onnx`, `groot_walk.onnx`). Licensed by NVIDIA Corporation under the [NVIDIA Open Model License](https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/LICENSE).
 
 ## Citing
 

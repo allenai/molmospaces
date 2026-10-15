@@ -63,3 +63,11 @@ eval_output/
 wandb/
 scripts/paper_plots/*.pdf
 scripts/paper_plots/*.png
+# Coverage artifacts (pytest-cov / coverage.py)
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+
+/references

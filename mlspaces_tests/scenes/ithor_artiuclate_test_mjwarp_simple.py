@@ -7,10 +7,10 @@ import mujoco
 import mujoco_warp as mjw
 import numpy as np
 import warp as wp
-from molmo_spaces.editor.thor_model_editor import ThorMjModelEditor
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
+from thor_scene_builder import ThorSceneBuilder
 from molmo_spaces.utils.scene_maps import iTHORMap
 
 # Performance optimization: one mjwarp world per handle
@@ -120,7 +120,7 @@ def get_gripper_pose_based_on_handle_pose(handle_pose, ithor_map):
 
 
 def add_gripper_to_scene(scene_path, gripper_pose, gripper_path="assets/rum_gripper/model.xml"):
-    editor = ThorMjModelEditor.from_xml_path(scene_path)
+    editor = ThorSceneBuilder.from_xml_path(scene_path)
     editor.set_options()
     editor.set_size(size=5000)
     editor.set_compiler()

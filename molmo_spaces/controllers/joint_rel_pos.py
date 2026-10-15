@@ -40,21 +40,19 @@ class JointRelPosController(AbstractPositionController):
         """Returns whether the controller is in stationary mode"""
         return self._stationary
 
-    def set_target(self, target_rel_joint_positions) -> None:
+    def set_target(self, target: np.ndarray) -> None:
         """Set the target joint positions for the controller.
         NOTE: For this controller we assume that the controller will be set to
         stationary every time before the relative target has to be computed"""
 
         # Case to avoid drift: if target is close to zero, stay stationary
-        if np.linalg.norm(target_rel_joint_positions) < 1e-6:
+        if np.linalg.norm(target) < 1e-6:
             if not self._stationary:  # important to avoid re-setting to noop ctrl and drifting
                 self.set_to_stationary()
         else:
             self._stationary = False
-            self.target = target_rel_joint_positions
-            self.desired_joint_positions = (
-                self.robot_move_group.noop_ctrl + target_rel_joint_positions
-            )
+            self.target = target
+            self.desired_joint_positions = self.robot_move_group.noop_ctrl + target
             self.desired_joint_positions = np.clip(
                 self.desired_joint_positions, self.ctrl_range[:, 0], self.ctrl_range[:, 1]
             )

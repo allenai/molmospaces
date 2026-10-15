@@ -143,7 +143,7 @@ class DoorOpeningTaskConfig(BaseMujocoTaskConfig):
     tasks sampled by the task sampler.
     """
 
-    task_cls: type = None  # Will be set by importing module to avoid circular imports
+    task_cls: type | None = None  # Will be set by importing module to avoid circular imports
 
     # --- DoorOpening-specific task parameters ---
     door_body_name: str | None = None  # e.g., "door|2|8_Doorway_Double_7_doorway_door_7"
@@ -190,8 +190,17 @@ class NavToObjTaskConfig(BaseMujocoTaskConfig):
     receptacle_name: str | None = None
     pickup_obj_start_pose: list[float] | None = None
 
+    # Base-motion evaluation: set by the sampler when
+    # task_sampler_config.start_near_object_probability fires, naming the object the
+    # robot was placed near (distinct from pickup_obj_name, the nav target). None when
+    # the robot was placed near the nav target itself (the default/prior behavior).
+    start_obj_name: str | None = None
+
     # Task parameters
     succ_pos_threshold: float = 1.5  # meters  # Success distance threshold in meters
+    require_visibility: bool = (
+        True  # Also require the target object visible from a robot camera to succeed
+    )
 
     # Rendering settings
     enable_rendering: bool = True  # Whether to enable environment rendering for visual sensors

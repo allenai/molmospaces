@@ -96,7 +96,7 @@ class RBY1GripperGroup(MJCFFrameMixin, GripperGroup):
             model.joint(f"{namespace}gripper_finger_{side[0]}{i + 1}").id for i in range(2)
         ]
         act_ids = [model.actuator(f"{namespace}{side}_finger_act").id]
-        root_body_id = model.body(f"{namespace}EE_BODY_{side[0].upper()}")
+        root_body_id = model.body(f"{namespace}EE_BODY_{side[0].upper()}").id
         super().__init__(mj_data, joint_ids, act_ids, root_body_id, base)
         self._ee_site_id = model.site(f"{namespace}ee_site_{side[0]}").id
 
@@ -246,7 +246,7 @@ class RBY1HoloBaseGroup(HoloJointsRobotBaseGroup):
         holo_base_site_id = model.site(f"{namespace}base_site").id
         joints = [model.joint(f"{namespace}base_{axis}").id for axis in ["x", "y", "theta"]]
         act = [model.actuator(f"{namespace}base_{axis}_act").id for axis in ["x", "y", "theta"]]
-        root_body_id = model.body(f"{namespace}base")
+        root_body_id = model.body(f"{namespace}base").id
         super().__init__(mj_data, world_site_id, holo_base_site_id, joints, act, root_body_id)
 
 

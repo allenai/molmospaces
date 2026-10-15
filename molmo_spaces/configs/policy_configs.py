@@ -2,51 +2,37 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 import numpy as np
 
 from molmo_spaces.configs.abstract_config import Config
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.planner.astar_planner import AStarPlannerConfig
+from molmo_spaces.planner.curobo_planner_config import CuroboPlannerConfig
 from molmo_spaces.policy.base_policy import BasePolicy, PolicyFactory
 from molmo_spaces.utils.function_utils import make_lenient
-
-# Import CuroboPlannerConfig if available (requires GPU), otherwise create a stub
-try:
-    from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
-except (ImportError, RuntimeError):
-    # Create a stub class when CuRobo isn't available (e.g., on non-GPU nodes)
-    # This allows Pydantic to resolve forward references during config validation
-    if TYPE_CHECKING:
-        from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
-    else:
-
-        class CuroboPlannerConfig(Config):  # type: ignore
-            """Stub for CuroboPlannerConfig when CuRobo is not available."""
-
-            pass
 
 
 class BasePolicyConfig(Config):
     """Base configuration for policies."""
 
-    policy_cls: type[BasePolicy]
-    policy_factory: PolicyFactory
-    """
-    Factory function to create the policy instance from a config and task, can be same as ``policy_cls``.
-    """
-    policy_type: str  # Type of the policy, e.g., "planner", "teleop", "learned", etc.
+    policy_cls: type[BasePolicy] | None
+
+    policy_factory: PolicyFactory | None
+    """Factory function to create the policy instance from a config and task, can be same as ``policy_cls``"""
+
+    policy_type: str
+    """Type of the policy, e.g., "planner", "teleop", "learned", etc."""
+
     force_enable_depth: bool = False
-    """
-    If true, require all cameras to record depth.
-    In eval the cameras will be overridden, otherwise it will just require the camera system config to enable depth.
-    """
+    """Whether or not to require all cameras to record depth"""
 
 
 class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):
     """Configuration for Franka pick planner policy."""
 
-    policy_cls: type = None  # Will be set by importing module to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "planner"
 
@@ -86,8 +72,33 @@ class ObjectManipulationPlannerPolicyConfig(BasePolicyConfig):
 
     # grasp sampling configuration (collision checking)
     filter_colliding_grasps: bool = True
-    grasp_collision_batch_size: int = 128
+    # Grasp-collision probes added to the scene (spec_ops.
+    # add_grasp_probe_bodies). Each one tests a candidate grasp, so a batch of N
+    # checks N grasps per mj_kinematics+mj_collision pass -- but every probe is a
+    # freejointed body that costs DOF on EVERY sim step thereafter.
+    #
+    # Measured on procthor-10k-val/val_0 with the G1 (4k geoms, MuJoCo 3.11):
+    #     N=1    mj_step 0.322 ms   512-grasp check 165.7 ms
+    #     N=128  mj_step 0.474 ms   512-grasp check  36.9 ms
+    # so a batch costs +0.152 ms/step and saves 128.8 ms/check -- break-even at
+    # ~850 sim steps per grasp check. Batching wins by only ~4.5x, not 128x,
+    # because each pass re-collides the whole scene.
+    #
+    # Default 1: rollout workloads (datagen episodes, the interactive shell, the
+    # FetchMan parity run) simulate thousands of steps per grasp check and sit
+    # far past that break-even, and one probe is also what gold's scene has.
+    # Raise it for reset-heavy sweeps that check many grasps and barely
+    # simulate -- grasp-library filtering, placement validation, house sweeps.
+    grasp_collision_batch_size: int = 1
     grasp_collision_max_grasps: int = 512
+    # Which probe shapes the scene build puts in the model for this policy
+    # (spec_ops.PROBE_SHAPE_*). Only the shapes a policy actually drives are
+    # loaded: every probe is a freejointed body that costs DOF on every sim
+    # step. The parametric jaw is what `get_noncolliding_grasp_mask` scatters
+    # over candidates, so it is what a policy needs by default; a robot's own
+    # gripper model (PROBE_SHAPE_GRIPPER_XML) is added only by the policies
+    # that drive it -- see FetchmanPickPlannerPolicyConfig.
+    grasp_probe_shapes: tuple[str, ...] = (spec_ops.PROBE_SHAPE_JAW,)
     grasp_width: float = 0.08
     grasp_length: float = 0.05
     grasp_height: float = 0.01
@@ -144,7 +155,7 @@ class OpenClosePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 
 
 class PickPlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     postgrasp_z_offset: float = 0.08  # Height above object for postgrasp
 
     def model_post_init(self, __context) -> None:
@@ -160,7 +171,7 @@ class PickPlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 
 
 class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     move_settle_time: float = 0.5
 
     def model_post_init(self, __context) -> None:
@@ -176,7 +187,7 @@ class PickAndPlacePlannerPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 
 
 class CuroboOpenClosePlannerPolicyConfig(OpenClosePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     right_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     left_planner_joint_ranges: dict[
@@ -222,7 +233,7 @@ class CuroboOpenClosePlannerPolicyConfig(OpenClosePlannerPolicyConfig):
 
 
 class CuroboPickAndPlacePlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     left_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     right_curobo_planner_config: CuroboPlannerConfig | None = None  # will be set in model_post_init
     left_planner_joint_ranges: dict[
@@ -281,9 +292,9 @@ class PackingPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
 
 
 class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_next_to_planner_policy import (
             PickAndPlaceNextToPlannerPolicy,
@@ -294,9 +305,9 @@ class PickAndPlaceNextToPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
 
 
 class PickAndPlaceColorPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
-    policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_color_planner_policy import (
             PickAndPlaceColorPlannerPolicy,
@@ -309,7 +320,7 @@ class PickAndPlaceColorPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
 class DoorOpeningPolicyConfig(BasePolicyConfig):
     """Configuration for RBY1 door opening planner policy."""
 
-    policy_cls: type = None  # Will be set by importing module to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "planner"
 
@@ -406,7 +417,7 @@ class BlockStackingPolicyConfig(ObjectManipulationPlannerPolicyConfig):
 class NavToObjPlannerPolicyConfig(BasePolicyConfig):
     """Base configuration for navigation to object planner policies."""
 
-    policy_cls: type = None  # Will be set by importing module to avoid circular imports
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "planner"
 
@@ -421,7 +432,7 @@ class NavToObjPlannerPolicyConfig(BasePolicyConfig):
 class AStarNavToObjPolicyConfig(NavToObjPlannerPolicyConfig):
     """Configuration for A* navigation policy (discrete grid-based planner)."""
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
 
     # A* planner configuration
     planner_config: AStarPlannerConfig = AStarPlannerConfig()
@@ -467,11 +478,73 @@ class AStarNavToObjPolicyConfig(NavToObjPlannerPolicyConfig):
             self.policy_factory = AStarSmoothPlannerPolicy
 
 
+class FetchManBasePlannerPolicyConfig(NavToObjPlannerPolicyConfig):
+    """Configuration for FetchManBasePlannerPolicy -- a port of g1_molmo's
+    navigation policy (molmospaces/agents/policy.py in the g1_molmo reference
+    repo). Unlike AStarPlannerPolicy, which pre-bakes an explicit
+    rotate-then-drive waypoint schedule at plan time, this recomputes a
+    [vx, vy, yaw_rate] base velocity command from the robot's live pose every
+    step (see FetchManBasePlannerPolicy._update_nav_command)."""
+
+    policy_cls: type = None
+
+    # Grid A* (ported from g1_molmo's _astar/_coarsen_and_dist)
+    planner_config: AStarPlannerConfig = AStarPlannerConfig()
+    downscale: int = 4  # Coarsening factor for the A* search grid
+    wall_radius: int = 10  # Distance (in coarse cells) at which the wall-clearance cost reaches 0
+    wall_gain: float = 6.0
+    wall_exp: float = 2.0
+    simplify_clearance: int = 6  # Px clearance required for a line-of-sight path shortcut
+
+    # Live waypoint-following control law (ported from g1_molmo's _update_nav_command)
+    waypoint_reach: float = 0.10  # Distance to advance to the next non-final waypoint
+    # See FetchmanPickPlannerPolicyConfig's final_reach comment: raised from
+    # g1_molmo's 0.05 to clear the effective minimum turning radius imposed by
+    # G1Robot's velocity deadband/floor (min_speed/drive_max_turn) -- 0.05
+    # left the robot orbiting the goal forever instead of ever arriving.
+    final_reach: float = 0.3  # Distance to consider the final waypoint reached
+    turn_kp: float = 2.0  # Proportional gain, heading error -> yaw rate
+    max_turn: float = 1.0  # Max yaw rate (rad/s) while driving
+    face_turn: float = 1.2  # Max yaw rate (rad/s) during the terminal face-the-target turn
+    # Loosened from g1_molmo's 0.1/0.25 rad, which sit below the WBC's ~15deg
+    # yaw-tracking ceiling: the heading error never settled and the turn/drive
+    # branches hunted indefinitely ~0.3m short of the goal.
+    face_tol: float = 0.35  # ~20deg -- heading error tolerance to end the terminal facing turn
+    face_wp_tol: float = 0.524  # 30deg -- heading error above which translation is suppressed
+    speed: float = 0.4  # Cruise linear speed (m/s)
+    min_speed: float = 0.15  # Minimum linear speed while still short of a non-final waypoint
+    brake_dist: float = 0.70  # Distance from the goal at which the smoothstep brake engages
+    stop_pad: float = 0.04  # Extra margin added to final_reach to absorb walking inertia
+    # Tighter yaw-rate cap while translating (max_turn/face_turn are for
+    # in-place turns): the WBC's gait stalls to a crawl under a forward speed
+    # plus a yaw_rate near max_turn.
+    drive_max_turn: float = 0.3
+
+    plan_max_retries: int = 3  # Number of alternate target candidates to try if planning fails
+
+    # FetchManBasePlannerPolicyPort only: walk to a grasping standoff on this
+    # annulus around the object (pick_planner_policy_g1.sample_standoff_pose) instead
+    # of NavGoalSampler's goal, so a following `pick` grasps without walking.
+    standoff_radius_range: tuple[float, float] | None = None
+    standoff_map_extra_inflation: float = 0.125  # planning-map inflation, as the pick's
+
+    def model_post_init(self, __context) -> None:
+        """Set policy_cls after initialization to avoid circular imports."""
+        super().model_post_init(__context)
+        if self.policy_cls is None:
+            from molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy import (
+                FetchManBasePlannerPolicy,
+            )
+
+            self.policy_cls = FetchManBasePlannerPolicy
+            self.policy_factory = FetchManBasePlannerPolicy
+
+
 class DummyPolicyConfig(BasePolicyConfig):
     """Policy config that uses DummyPolicy for testing."""
 
     policy_type: str = "dummy"
-    policy_cls: type = None  # Set in model_post_init
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
 
     def model_post_init(self, __context) -> None:
@@ -486,13 +559,13 @@ class DummyPolicyConfig(BasePolicyConfig):
 class BrownianMotionPolicyConfig(BasePolicyConfig):
     """Policy that applies Gaussian noise increments over noop control, resulting in Brownian motion."""
 
-    policy_cls: type = None
+    policy_cls: type[BasePolicy] | None = None
     policy_factory: PolicyFactory | None = None
     policy_type: str = "dummy"
     std: float = 0.1
 
-    def model_post_init(self, __context) -> None:
-        super().model_post_init(__context)
+    def model_post_init(self, _context: Any) -> None:
+        super().model_post_init(_context)
         if self.policy_cls is None:
             from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy
 

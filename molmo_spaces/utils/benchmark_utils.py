@@ -28,6 +28,8 @@ import numpy as np
 from scipy.stats import sigmaclip
 from tqdm import tqdm
 
+from molmo_spaces.utils.plotting_utils import require_pyplot
+
 log = logging.getLogger(__name__)
 
 
@@ -660,10 +662,7 @@ def save_signal_histograms(
     vs relative tracking error: one with a tight x-range and one with a
     wide range showing the chosen *min_joint_pos_rel_magnitude* threshold.
     """
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    plt = require_pyplot(headless=True)
 
     data_path = Path(data_path)
     output_dir = Path(output_dir)

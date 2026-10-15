@@ -45,6 +45,7 @@ class PackingTaskSampler(PickAndPlaceTaskSampler):
         # from the exo cameras. Set task_sampler_config.box_uids to sample others
         # (e.g. DEFAULT_BOX_UIDS for the full Box_1..Box_30 set).
         box_uids = task_sampler_config.box_uids or ["Box_11"]
+        # THOR Box_* assets only (commercial-safe CC-BY-4.0); no Objaverse path here.
         uid = np.random.choice(box_uids)
         box_xml = install_uid(uid)
 

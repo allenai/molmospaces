@@ -6,15 +6,18 @@ import os
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-import matplotlib.pyplot as plt
+# matplotlib is optional (the `visualization` extra); skip rather than fail collection.
+import pytest
+
+plt = pytest.importorskip("matplotlib.pyplot")
 import mujoco
 import numpy as np
 from gripper_teleop import GripperTeleopController
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
-from molmo_spaces.editor.thor_model_editor import ThorMjModelEditor
-from molmo_spaces.env.arena.arena_utils import load_env_with_objects
+from thor_scene_builder import ThorSceneBuilder
+from molmo_spaces.env.scene.thor.fixups import load_env_with_objects
 from molmo_spaces.utils.profiler_utils import Profiler
 from molmo_spaces.utils.scene_maps import iTHORMap
 
@@ -693,7 +696,7 @@ def add_gripper_to_scene(
     else:
         raise ValueError(f"Invalid gripper type: {GRIPPER_TYPE}")
 
-    editor = ThorMjModelEditor.from_xml_path(scene_path)
+    editor = ThorSceneBuilder.from_xml_path(scene_path)
     editor.set_options()
     editor.set_size(size=5000)
     editor.set_compiler()
@@ -1383,7 +1386,7 @@ def aggregate_statistics_across_floorplans(output_dir=SAVE_DIR_PATH):
     all_cat_force_applied = []
     for metric_file in metric_files:
         try:
-            with open(metric_file, "r") as f:
+            with open(metric_file) as f:
                 data = json.load(f)
 
             # Aggregate overall statistics

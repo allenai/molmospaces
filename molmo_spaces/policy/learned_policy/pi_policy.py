@@ -9,7 +9,8 @@ import numpy as np
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
 from molmo_spaces.policy.base_policy import InferencePolicy, StatefulPolicy
-from molmo_spaces.policy.learned_policy.utils import PromptSampler, resize_with_pad
+from molmo_spaces.policy.learned_policy.utils import resize_with_pad
+from molmo_spaces.utils.prompt_samplers import PromptSamplerLearnedPolicy
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -34,14 +35,14 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.chunk_size = exp_config.policy_config.chunk_size
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.use_prompt_sampler = exp_config.policy_config.use_prompt_sampler
-        # PromptSampler is the prompt source whenever use_prompt_sampler is
+        # PromptSamplerLearnedPolicy is the prompt source whenever use_prompt_sampler is
         # True (default): it pulls per-object templates from utils.py for
         # generic tasks and from semantic_pick_prompts.py for
         # semantic_grasp_pick (driven by policy_config.prompt_level). The
         # construction-time exp_config.task_type is whatever the eval config
         # defaults to (e.g. "pick" for JsonBenchmarkEvalConfig); the actual
-        # task_type is re-synced per-episode inside PromptSampler.get_prompt.
-        self.prompt_sampler = PromptSampler(
+        # task_type is re-synced per-episode inside PromptSamplerLearnedPolicy.get_prompt.
+        self.prompt_sampler = PromptSamplerLearnedPolicy(
             task_type=exp_config.task_type,
             prompt_templates=exp_config.policy_config.prompt_templates,
             prompt_object_word_num=exp_config.policy_config.prompt_object_word_num,

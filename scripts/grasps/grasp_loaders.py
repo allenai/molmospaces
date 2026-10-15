@@ -15,7 +15,7 @@ class GraspLoader(ABC):
         self,
         object_name: str,
         num_grasps: int = 1000
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """Load grasps for a static/pickup object.
 
         Args:
@@ -36,7 +36,7 @@ class GraspLoader(ABC):
         object_name: str,
         joint_name: str,
         num_grasps: int = 1000
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """Load grasps for an articulated object joint.
 
         Args:
@@ -68,7 +68,7 @@ class FileBasedGraspLoader(GraspLoader):
         self,
         object_name: str,
         num_grasps: int = 1000
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """Load grasps from files for a static object."""
         return self._load_grasps_for_object(object_name, num_grasps=num_grasps)
 
@@ -77,7 +77,7 @@ class FileBasedGraspLoader(GraspLoader):
         object_name: str,
         joint_name: str,
         num_grasps: int = 1000
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """Load grasps from files for an articulated object joint."""
         gripper, grasps = self._load_grasps_for_object_per_joint(
             object_name, joint_name, num_grasps=num_grasps
@@ -94,7 +94,7 @@ class PredictionModelGraspLoader(GraspLoader):
     Subclass this and implement the prediction logic.
     """
 
-    def __init__(self, model_path: Optional[str] = None, device: str = "cuda"):
+    def __init__(self, model_path: str | None = None, device: str = "cuda"):
         """Initialize the prediction model.
 
         Args:
@@ -111,7 +111,7 @@ class PredictionModelGraspLoader(GraspLoader):
         self,
         object_name: str,
         num_grasps: int = 1000
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """Predict grasps using the model for a static object.
 
         Args:
@@ -137,7 +137,7 @@ class PredictionModelGraspLoader(GraspLoader):
         object_name: str,
         joint_name: str,
         num_grasps: int = 1000
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """Predict grasps using the model for an articulated object joint.
 
         Args:

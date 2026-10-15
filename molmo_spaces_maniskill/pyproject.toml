@@ -10,7 +10,7 @@ dependencies = [
     "mujoco",
     "tyro",
     "msgspec",
-    "setuptools==80.8.0",
+    "setuptools>=83.0.0",
     "lmdb~=1.7.5",
     "zstandard~=0.25.0",
 ]

@@ -3,12 +3,16 @@ from pathlib import Path
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import FrankaDroidCameraSystem
 from molmo_spaces.configs.policy_configs import (
+    BasePolicyConfig,
     PackingPlannerPolicyConfig,
     PickAndPlacePlannerPolicyConfig,
 )
 from molmo_spaces.configs.robot_configs import BaseRobotConfig, CommonSenseFrankaRobotConfig
-from molmo_spaces.configs.task_configs import PackingTaskConfig
-from molmo_spaces.configs.task_sampler_configs import PackingTaskSamplerConfig
+from molmo_spaces.configs.task_configs import AllTaskConfigs, PackingTaskConfig
+from molmo_spaces.configs.task_sampler_configs import (
+    BaseMujocoTaskSamplerConfig,
+    PackingTaskSamplerConfig,
+)
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.tasks.packing_task import PackingTask
@@ -20,13 +24,13 @@ from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
 class PackingDataGenConfig(PickBaseConfig):
     task_type: str = "packing"
     num_workers: int = 1
-    task_sampler_config: PackingTaskSamplerConfig = PackingTaskSamplerConfig(
+    task_sampler_config: BaseMujocoTaskSamplerConfig = PackingTaskSamplerConfig(
         task_sampler_class=PackingTaskSampler,
         pickup_types=PICK_AND_PLACE_OBJECTS,
         samples_per_house=20,
     )
-    task_config: PackingTaskConfig = PackingTaskConfig(task_cls=PackingTask)
-    policy_config: PickAndPlacePlannerPolicyConfig = PickAndPlacePlannerPolicyConfig()
+    task_config: AllTaskConfigs = PackingTaskConfig(task_cls=PackingTask)
+    policy_config: BasePolicyConfig = PickAndPlacePlannerPolicyConfig()
 
 
 @register_config("FrankaPackingDroidDataGenConfig")
@@ -44,7 +48,7 @@ class FrankaPackingDroidDataGenConfig(PackingDataGenConfig):
 
     robot_config: BaseRobotConfig = CommonSenseFrankaRobotConfig()
     camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
-    policy_config: PackingPlannerPolicyConfig = PackingPlannerPolicyConfig(place_z_offset=0.05)
+    policy_config: BasePolicyConfig = PackingPlannerPolicyConfig(place_z_offset=0.05)
     output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "packing_droid_v1"
 
     @property

@@ -109,7 +109,7 @@ class SensorSuite:
         Data from all sensors packaged inside a Dict.
         """
         return {
-            uuid: sensor.get_observation(env=env, task=task, **kwargs)  # type: ignore
+            uuid: sensor.get_observation(env=env, task=task, **kwargs)
             for uuid, sensor in self.sensors.items()
         }
 

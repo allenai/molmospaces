@@ -34,7 +34,7 @@ from molmo_spaces.utils.articulation_utils import (
 from ithor_grasp_test import GraspTestEnvironment, add_robot_to_scene
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.editor.constants import ALL_ARTICULATION_TYPES_THOR
+from molmo_spaces.utils.constants.object_constants import ALL_ARTICULATION_TYPES_THOR
 
 EXTRA_ARTICULATION_TYPES_THOR = ALL_ARTICULATION_TYPES_THOR + [
     "cabinet",
@@ -71,7 +71,7 @@ def load_grasps_for_object_per_joint(
     for filename in grasp_files:
         print(f"Loading grasps from: {filename}")
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 json_data = json.load(f)
                 # transforms = json_data.get("transforms", [])
                 # transforms = json_data.get("root_transforms", [])

@@ -1,9 +1,27 @@
 """Task sampler configuration classes for MolmoSpaces experiments."""
 
 import math
+from enum import StrEnum
 
 from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.utils.constants.object_constants import RECEPTACLE_TYPES_THOR
+from molmo_spaces.utils.license_policy import LicensePolicy
+
+
+class OccupancyMapImpl(StrEnum):
+    """Which occupancy-map implementation an env hands back from
+    get_occupancy_map().
+
+    THOR  utils/scene_maps.ProcTHORMap / iTHORMap -- molmo_spaces' own, the
+          default for every task and robot. has a room map
+          (room_ids_to_name, get_free_points_by_room, room-scoped label_at).
+    AABB  utils/scene_maps_aabb.AABBMap -- from the FetchMan (g1_molmo) repo.
+          Mostly 99% similar to THORMap, slighlty more permissive in floor labeling
+          and slighly faster.
+    """
+
+    THOR = "thor"
+    AABB = "aabb"
 
 
 class BaseMujocoTaskSamplerConfig(Config):
@@ -26,6 +44,40 @@ class BaseMujocoTaskSamplerConfig(Config):
     randomize_textures_all: bool = False  # Whether to randomize the textures of the scene
     randomize_robot_textures: bool = False  # Whether to randomize the textures of the robot
     randomize_dynamics: bool = False  # Whether to randomize the dynamics of the scene
+
+    # Which occupancy-map implementation this experiment's env should serve
+    # from get_occupancy_map(). Leave it at the default for everything except
+    # G1/FetchMan experiments -- the two grids disagree cell for cell, so
+    # switching silently changes which cells a robot considers standable.
+    occupancy_map_impl: OccupancyMapImpl = OccupancyMapImpl.THOR
+
+    # How many (impl, scene, agent_radius, px_per_m) maps one env keeps in
+    # memory. Both impls coexist in that cache, so a task/task sampler can hold
+    # one of each -- and several radii -- without evicting one another. Four
+    # covers the usual "placement map + policy nav map, per impl" pattern while
+    # bounding a ~8MB-per-map footprint.
+    occupancy_map_cache_size: int = 4
+
+    # --- pre-compile MjSpec transforms (molmo_spaces/env/scene/spec_ops.py) ---
+    # Gold's own scene-build steps, shared with the FetchMan port so a natively
+    # built model of a house and the port's are the same physical system. Each
+    # is on by default (bar `cap_freejoint_damping`, see below) and can be
+    # switched off per experiment.
+    #
+    # NOTE `freeze_non_mobile` is on but INERT until `mobile_object_regex` is
+    # set: with no regex every body stays mobile, which is the behaviour every
+    # scene had before these flags existed.
+    freeze_non_mobile: bool = True
+    mobile_object_regex: str | None = None  # None = freeze nothing
+    articulated_object_regex: str | None = None  # subtrees kept fully intact
+    add_grasp_probe: bool = True
+    weld_robot_base: bool = True  # no-op unless the robot has a `pelvis` body
+    enable_scene_sleep: bool = True
+    # Off by default: unlike the others this one rewrites the physics of every
+    # free joint in the scene, so switching it on globally moves the qpos of
+    # tasks that never asked for it (RUM open/close drifts ~3mm by step 10).
+    # Scenes that want gold's anti-tumble damping opt in.
+    cap_freejoint_damping: bool = False
 
     # Failure recovery parameters (used by ParallelRolloutRunner)
     max_allowed_sequential_task_sampler_failures: int = 10
@@ -50,6 +102,9 @@ class BaseMujocoTaskSamplerConfig(Config):
     # Scene configuration
     enable_texture_randomization: bool = False
     house_variant: str = "ceiling"
+
+    # When not NONE, filter non-commercial Objaverse assets.
+    license_policy: LicensePolicy = LicensePolicy.NONE
 
 
 class ObjectCentricTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
@@ -129,11 +184,11 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
 
     # House iteration configuration
     house_inds: list[int] | None = list(range(0, 4))  # order of house indices to iterate over
-    samples_per_house: int = 2  # number of tasks to sample per house before advancing
+    samples_per_house: int | None = 2  # number of tasks to sample per house before advancing
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
     # Receptacle selection
-    receptacle_types: list[str] = tuple(RECEPTACLE_TYPES_THOR)
+    receptacle_types: list[str] = RECEPTACLE_TYPES_THOR
     # Resolved at runtime
     receptacle_name: str | None = None
     placement_volume_name: str | None = None
@@ -160,6 +215,36 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         0.0,
         0.7,
     )  # Radius to sample robot base pose around receptacle
+
+    # Per-episode, drop the pickup object's supporting surface (and the object
+    # with it) to a triangular-sampled height (port of g1_molmo's
+    # env._randomize_target_support_height). Off by default -- it shifts the
+    # reachability distribution of already-tuned pick configs; only
+    # fetchman enables it, to match g1_molmo. favored=0.95 is g1_molmo's
+    # default: above most objects' natural height, so the mode usually clips to
+    # the current height and only occasional draws go much lower.
+    randomize_height: bool = False
+    randomize_height_min: float = 0.0
+    randomize_height_favored: float = 0.95
+    randomize_height_max: float | None = None
+
+    # Per-episode, sample the robot's initial WBC height command uniformly
+    # instead of the controller default (port of g1_molmo's env
+    # randomize_robot_height). g1_molmo applies it only for spawn_at_grasp (no
+    # walk leg), modelled here by fetchman's tight
+    # base_pose_sampling_radius_range; we apply it unconditionally, having no
+    # nav vs grasp-only distinction.
+    randomize_robot_height: bool = False
+    randomize_robot_height_min: float = 0.7
+    randomize_robot_height_max: float = 0.793
+
+    # At reset, reject an (object, placement) attempt whose best-ranked grasp
+    # candidate is not plausibly IK-reachable from the sampled robot pose,
+    # rather than sampling an episode that is a guaranteed rollout failure
+    # (port of g1_molmo's agent.precheck_grasp). G1-only, see
+    # PickTaskSampler._precheck_grasp_reachable. Off by default: it costs a
+    # whole-body mink IK solve per attempt.
+    reset_precheck_grasp: bool = False
 
     # -- Added pickup objects (pick-from-set mode) --
     # When not None, external objects matching these synsets/categories/UIDs are added to the
@@ -203,6 +288,32 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
             self.added_pickup_objects = all_uids
         if self.added_pickup_objects:
             self.objaverse_oversampling_factor = 1
+
+
+class PickWithAvatarsTaskSamplerConfig(PickTaskSamplerConfig):
+    """PickTaskSamplerConfig plus scattering humanoid avatars (scene
+    population / soft obstacles) around a Pick episode, placed via the same
+    occupancy-map machinery used for robot placement."""
+
+    # True (default): articulated ragdolls (ASSETS_DIR/avatars_articulated,
+    # ~20-body ball-joint chain). False: static mannequins
+    # (ASSETS_DIR/avatars, single free-jointed body). Both need
+    # scripts/assets/convert_rocketbox_avatars.py run first (articulate/convert
+    # --all respectively) -- see molmo_spaces/tasks/pick_with_avatars_task_sampler.py.
+    avatar_articulated: bool = True
+    # None = auto-discover every UID in the registered avatar user asset library.
+    avatar_uids: list[str] | None = None
+    num_avatars: int = 10
+    avatar_namespace: str = "avatar/"
+    # Occupancy-map dilation radius used to find candidate points for avatars --
+    # deliberately separate from robot_safety_radius (tuned for a small stationary
+    # arm base): avatars are human-sized (~0.2m capsule radius), so a point that's
+    # "free" for the robot's much smaller radius often isn't wide enough to also
+    # fit a standing person without a placement collision.
+    avatar_agent_radius: float = 0.3
+    avatar_placement_radius: float = 0.15  # mirrors trajectory_obstacle_placement_radius
+    avatar_min_spacing: float = 0.6  # min distance between two avatars' sampled points
+    max_avatar_point_attempts: int = 20  # per-avatar retry budget for a valid map point
 
 
 class OpenTaskSamplerConfig(PickTaskSamplerConfig):
@@ -278,7 +389,9 @@ class PackingTaskSamplerConfig(PickAndPlaceTaskSamplerConfig):
 class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
     """Configuration for RBY1 door opening task sampler."""
 
-    task_sampler_class: type = None  # Will be set by importing module to avoid circular imports
+    task_sampler_class: type | None = (
+        None  # Will be set by importing module to avoid circular imports
+    )
     sim_settle_timesteps: int = 500
     verbose: bool = False  # Whether to print verbose debug info
     fixed_door_name: str | None = None  # e.g., "door|2|8_Doorway_Double_7_doorway_door_7"
@@ -292,7 +405,7 @@ class DoorOpeningTaskSamplerConfig(BaseMujocoTaskSamplerConfig):
         range(0, 22)
     )  # List of thor house indices to iterate through (first 20 for demo)
     scene_xml_paths: list[str] | None = None
-    samples_per_house: int = 1  # Number of tasks per house
+    samples_per_house: int | None = 1  # Number of tasks per house
     task_batch_size: int = 1
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
@@ -344,7 +457,7 @@ class NavToObjTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     house_inds: (
         list[int] | None
     ) = []  # list(range(0, 20))  # List of thor house indices to iterate through (first 20 for demo)
-    samples_per_house: int = 1  # Number of tasks per house
+    samples_per_house: int | None = 1  # Number of tasks per house
     max_tasks: float = math.inf  # total tasks to sample; inf means unbounded
 
     robot_safety_radius: float = 0.3  # Radius around robot to avoid collisions
@@ -359,3 +472,32 @@ class NavToObjTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
     verbose: bool = False  # Whether to print verbose debug info
 
     max_valid_candidates: int = 6  # maximum number of instances of type in scene to accept the task
+
+    # Base-motion evaluation: with this probability (0-100), place the robot near a
+    # randomly sampled scene object other than the nav target (mirroring how
+    # pick-and-place places one object near another), instead of always starting
+    # near the nav target itself. 0 (default) preserves prior behavior exactly.
+    start_near_object_probability: float = 0.0
+    min_start_object_dist: float = 2.0  # meters; kept above succ_pos_threshold's default
+    max_start_object_dist: float = 5.0  # meters
+    # Radius range for placing the robot around the sampled start object. Deliberately
+    # tighter than base_pose_sampling_radius_range (whose (1.0, 10.0) default is tuned
+    # for "start far from the nav target"): confirmed empirically that reusing that
+    # wide range let the robot land closer to the goal than to the intended start
+    # object, defeating the point of a start-to-goal traversal.
+    start_object_sampling_radius_range: tuple[float, float] = (0.5, 1.5)
+
+    # Trajectory obstacles: scatter random scene objects along the robot's actual
+    # start->goal path to make navigation harder (force detours instead of a clear
+    # line). Off by default -- opt in explicitly, since it mutates scene contents.
+    sample_trajectory_obstacles: bool = False
+    num_trajectory_obstacles: int = 3
+    trajectory_obstacle_lateral_jitter: float = 0.5  # meters, perpendicular to the line
+    trajectory_obstacle_min_frac: float = 0.15  # fraction along start->goal line
+    trajectory_obstacle_max_frac: float = 0.85  # (avoid placing right on either endpoint)
+    trajectory_obstacle_placement_radius: float = 0.15  # meters, passed to place_object_near
+    # Height above the floor to drop obstacles from, regardless of the object's
+    # original resting surface (counter, floor, etc.) -- physics settles the rest
+    # once the episode steps. Small enough to settle quickly, large enough to
+    # clear typical floor clutter without spawning inside it.
+    trajectory_obstacle_drop_height: float = 0.1

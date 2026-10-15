@@ -35,12 +35,17 @@ from molmo_spaces.utils.depth_utils import (
     visualize_depth_error,
     visualize_depth_image,
 )
+from molmo_spaces.utils.plotting_utils import pyplot_available
 from molmo_spaces.utils.test_utils import (
     run_task_for_steps_with_observations,
     verify_and_compare_camera_observations,
     verify_and_compare_camera_observations_after_steps,
     verify_video_fps,
 )
+
+# Saving the debug figures below needs matplotlib, i.e. the `visualization` extra;
+# the assertions in these tests do not.
+SAVE_DEBUG_FIGURES = pyplot_available()
 
 TEST_DATA_DIR = get_resource_manager().symlink_dir / "test_data" / "franka_pick_and_place"
 TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "test_output"
@@ -550,46 +555,47 @@ def test_depth_mp4_roundtrip_accuracy(gopro_task, gopro_policy_results):
         f"    Max: {max_error * 1000:.3f} mm (initial: {max_error_initial * 1000:.3f} mm, final: {max_error_final * 1000:.3f} mm)"
     )
 
-    # Save visualizations for both frames (use clipped versions for fair comparison)
-    visualize_depth_image(
-        initial_depth_clipped,
-        "Original Wrist Depth - Initial (Clipped to 5-55cm encoding range)",
-        save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_original_initial.png",
-    )
-    visualize_depth_image(
-        decoded_initial,
-        "Decoded Wrist Depth - Initial After MP4 (CRF 18)",
-        save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_decoded_initial.png",
-    )
+    if SAVE_DEBUG_FIGURES:
+        # Save visualizations for both frames (use clipped versions for fair comparison)
+        visualize_depth_image(
+            initial_depth_clipped,
+            "Original Wrist Depth - Initial (Clipped to 5-55cm encoding range)",
+            save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_original_initial.png",
+        )
+        visualize_depth_image(
+            decoded_initial,
+            "Decoded Wrist Depth - Initial After MP4 (CRF 18)",
+            save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_decoded_initial.png",
+        )
 
-    # Visualize error/delta for initial frame
-    visualize_depth_error(
-        initial_depth_clipped,
-        decoded_initial,
-        error_initial,
-        "Compression Error - Initial Frame",
-        save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_error_initial.png",
-    )
+        # Visualize error/delta for initial frame
+        visualize_depth_error(
+            initial_depth_clipped,
+            decoded_initial,
+            error_initial,
+            "Compression Error - Initial Frame",
+            save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_error_initial.png",
+        )
 
-    visualize_depth_image(
-        final_depth_clipped,
-        "Original Wrist Depth - Final (Clipped to 5-55cm encoding range)",
-        save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_original_final.png",
-    )
-    visualize_depth_image(
-        decoded_final,
-        "Decoded Wrist Depth - Final After MP4 (CRF 18)",
-        save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_decoded_final.png",
-    )
+        visualize_depth_image(
+            final_depth_clipped,
+            "Original Wrist Depth - Final (Clipped to 5-55cm encoding range)",
+            save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_original_final.png",
+        )
+        visualize_depth_image(
+            decoded_final,
+            "Decoded Wrist Depth - Final After MP4 (CRF 18)",
+            save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_decoded_final.png",
+        )
 
-    # Visualize error/delta for final frame
-    visualize_depth_error(
-        final_depth_clipped,
-        decoded_final,
-        error_final,
-        "Compression Error - Final Frame",
-        save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_error_final.png",
-    )
+        # Visualize error/delta for final frame
+        visualize_depth_error(
+            final_depth_clipped,
+            decoded_final,
+            error_final,
+            "Compression Error - Final Frame",
+            save_path=DEBUG_IMAGES_DIR / "depth_mp4_roundtrip_error_final.png",
+        )
 
     # Assert compression maintains accuracy within D405 camera spec
     # D405 spec: ±1.4% at 20cm = ±2.8mm natural camera error
@@ -758,11 +764,12 @@ def test_gopro_depth_observations(gopro_task):
 
     # Print detailed stats and visualize
     print_depth_stats(depth_obs, f"{depth_sensor} (wrist camera)")
-    visualize_depth_image(
-        depth_obs,
-        f"{depth_sensor} - Initial Observation",
-        save_path=DEBUG_IMAGES_DIR / f"gopro_{depth_sensor}_initial.png",
-    )
+    if SAVE_DEBUG_FIGURES:
+        visualize_depth_image(
+            depth_obs,
+            f"{depth_sensor} - Initial Observation",
+            save_path=DEBUG_IMAGES_DIR / f"gopro_{depth_sensor}_initial.png",
+        )
 
     # Verify depth range
     depth_min = depth_obs.min()
@@ -845,17 +852,18 @@ def test_gopro_depth_observations_after_steps(gopro_task, gopro_policy_results):
         print_depth_stats(initial_obs, f"{depth_sensor} (initial)")
         print_depth_stats(final_obs, f"{depth_sensor} (after steps)")
 
-        # Visualize both observations
-        visualize_depth_image(
-            initial_obs,
-            f"{depth_sensor} - After Steps (Initial)",
-            save_path=DEBUG_IMAGES_DIR / f"gopro_{depth_sensor}_after_steps_initial.png",
-        )
-        visualize_depth_image(
-            final_obs,
-            f"{depth_sensor} - After Steps (Final)",
-            save_path=DEBUG_IMAGES_DIR / f"gopro_{depth_sensor}_after_steps_final.png",
-        )
+        if SAVE_DEBUG_FIGURES:
+            # Visualize both observations
+            visualize_depth_image(
+                initial_obs,
+                f"{depth_sensor} - After Steps (Initial)",
+                save_path=DEBUG_IMAGES_DIR / f"gopro_{depth_sensor}_after_steps_initial.png",
+            )
+            visualize_depth_image(
+                final_obs,
+                f"{depth_sensor} - After Steps (Final)",
+                save_path=DEBUG_IMAGES_DIR / f"gopro_{depth_sensor}_after_steps_final.png",
+            )
 
         # Verify both observations are valid
         assert not np.any(np.isnan(initial_obs)), f"{depth_sensor} initial has NaN values"

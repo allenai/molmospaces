@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 """Camera configuration classes for MolmoSpaces experiments."""
 
 import logging
@@ -10,8 +12,40 @@ logger = logging.getLogger(__name__)
 
 from molmo_spaces.configs.abstract_config import Config
 
+# Re-exported: these live in utils/camera_utils.py so env/camera_manager.py can
+# import them without pulling in the configs package (see the note there).
+from molmo_spaces.utils.camera_utils import (  # noqa: F401
+    CameraNoiseModel,
+    CameraResetCadence,
+)
+
 T = TypeVar("T")
 Triple: TypeAlias = tuple[T, T, T]
+
+
+class FisheyeImpl(StrEnum):
+    """Which implementation renders a warped camera's image; see
+    CameraConfig.fisheye_impl. Ignored unless the camera sets is_warped.
+
+    CUBEMAP  utils/fisheye_cubemap.py. Composites five wide tile cameras through
+             an OpenCV fisheye model calibrated on the real lens. Needs the five
+             tile cameras present in the MJCF, which is its only real cost. Use
+             this for any new warped camera. The G1 head is the only one today;
+             see FisheyeMjcfCameraConfig.
+    WARPING  DEPRECATED -- utils/fisheye_warping.py. Post-distorts one pinhole
+             render with a radial k1..k4 model. Do not use for new cameras.
+
+    At matched lens, FOV and render budget CUBEMAP is 5.1x sharper (variance of
+    Laplacian 5476 vs 1070), marginally faster (5.90 vs 6.24 ms/frame), and
+    reaches the G1 head lens's 72.8 deg half-FOV, which WARPING's k1..k4
+    polynomial caps at 68.26 deg (mlspaces_tests/component_tests/
+    compare_fisheye_renderers.py). WARPING stays the default only so existing
+    configs keep their recorded behaviour; nothing renders through it today.
+    """
+
+    CUBEMAP = "cubemap"
+    # Deprecated; see the class docstring. Kept so existing configs still load.
+    WARPING = "warping"
 
 
 class CameraConfig(Config, ABC):
@@ -28,6 +62,14 @@ class CameraConfig(Config, ABC):
     skip_erosion: bool = (
         False  # Skip erosion for object point sampling (useful for wide FOV cameras)
     )
+
+    # Only read when `is_warped`; see FisheyeImpl.
+    fisheye_impl: FisheyeImpl = FisheyeImpl.WARPING
+
+    # Every camera type carries noise fields, so the cadence lives on the base.
+    # See CameraResetCadence.
+    # TODO(max): switch to episode reset cadence per default.
+    reset_cadence: CameraResetCadence = CameraResetCadence.SETUP
 
     # Visibility constraints for robot placement validation (optional)
     # Maps body names to minimum visibility thresholds (0.0 to 1.0)
@@ -46,6 +88,24 @@ class MjcfCameraConfig(CameraConfig):
     mjcf_name: str  # Full name of camera in MJCF (may include namespace)
     robot_namespace: str | None = None  # If specified, prepends to mjcf_name (e.g., "robot_0/")
 
+    # Render through the model's own camera (mujoco.Renderer.update_scene with
+    # this camera's id) rather than CPUMujocoEnv's free-camera path, which
+    # positions a free camera from the tracked Camera pose.
+    #
+    # These are NOT equivalent. The free-camera path renders the *noised*
+    # mounting that _setup_mjcf_camera stored on the Camera; the MJCF path
+    # renders whatever is in `model.cam_*`, so a per-episode randomizer has to
+    # write the noise into the model for it to show up (G1TaskSampler does;
+    # CameraManager's own setup-time noise does not). Leave this False unless
+    # the sampler owns model.cam_*. Fisheye cameras always take the MJCF path.
+    render_via_mjcf: bool = False
+
+    # Scene-option geomgroup toggles applied when rendering through this
+    # camera, as {group index: 0 or 1}, over MuJoCo's default [1,1,1,0,0,0].
+    # Lets a camera hide its own mount, or reveal a group that is off by
+    # default, without touching the model.
+    geomgroup_overrides: dict[int, int] | None = None
+
     # Optional noise for MJCF cameras (applied to their fixed mounting)
     pos_noise_range: tuple[float, float] | tuple[Triple[float], Triple[float]] | None = (
         None  # Add noise to camera position (min, max)
@@ -54,6 +114,93 @@ class MjcfCameraConfig(CameraConfig):
         None  # Random rotation noise in degrees
     )
     fov_noise_degrees: tuple[float, float] | None = None  # Add noise to FOV (min, max)
+
+    # How the three noise fields above are drawn and applied; see
+    # CameraNoiseModel.
+    noise_model: CameraNoiseModel = CameraNoiseModel.CAMERA_LOCAL_EULER
+
+
+class FisheyeMjcfCameraConfig(MjcfCameraConfig):
+    """MJCF camera carrying the parameters FisheyeImpl.CUBEMAP needs.
+
+    Only worth using with `fisheye_impl=CUBEMAP` -- the WARPING default reads
+    none of these fields. The G1 head is the one camera wide enough to need it;
+    see G1CameraSystem.
+
+    `fov` stays the pinhole camera's FOV and `tile_fov` the tile cameras', so
+    both render paths take their FOV from this config and neither drifts.
+    """
+
+    # (cubemap) Suffixes appended to mjcf_name to find the tile cameras. Order is
+    # load-bearing: FisheyeRenderer's LUT assumes center/up/down/left/right.
+    tile_suffixes: tuple[str, str, str, str, str] = ("center", "up", "down", "left", "right")
+    # Vertical FOV of each tile camera, degrees. FisheyeRenderer requires >=90
+    # (it has to cover the fisheye circle with five tiles); g1_dex.xml declares
+    # 100 on each head_pov_tile_* camera and g1_molmo renders them as authored.
+    tile_fov: float = 100.0
+    # (cubemap) Off-screen render size per tile. g1_molmo's render_fisheye default.
+    tile_size: int = 512
+    # (cubemap) Cosine-falloff exponent blending overlapping tiles; FisheyeRenderer default.
+    weight_power: float = 4.0
+    # (cubemap) OpenCV fisheye calibration and the (W, H) it was measured at.
+    # Defaults are the G1's real head lens -- the values g1_molmo renders with,
+    # and the only lens this impl renders today; a different lens must say so
+    # here. They used to be HEAD_FISHEYE_* defaults inside
+    # utils/fisheye_cubemap.py, where the renderer's copy silently won for any
+    # caller that forgot to pass K/D; the renderer now has no fallback.
+    fisheye_K: list[list[float]] = [
+        [801.6382129934864, 0.0, 976.1246839545557],
+        [0.0, 802.1081824931498, 542.7122090223202],
+        [0.0, 0.0, 1.0],
+    ]
+    fisheye_D: list[float] = [
+        -0.02559442829261663,
+        0.008371943913215045,
+        -0.006921566406199126,
+        0.0010132813066123071,
+    ]
+    fisheye_image_size: tuple[int, int] = (1920, 1080)
+
+    # (cubemap) Per-episode randomization the fisheye lens has and a pinhole one
+    # does not, so it has nowhere to live on the base config:
+    #
+    # `distortion_noise` scales every OpenCV distortion coefficient by
+    # 1 +/- this fraction of its OWN magnitude -- proportional, not absolute, so
+    # k1 moves ~20x more than k4 and the model stays self-consistent instead of
+    # scrambling the image edge. g1_molmo calls this head_camera_distortion_noise.
+    distortion_noise: float | None = None
+    #
+    # On a fisheye, `fov_noise_degrees` cannot move cam_fovy -- the pinhole FOV
+    # is not what sets the projection, the calibrated focal length is. g1_molmo
+    # instead scales K's fx/fy by 1 + u/90 for u drawn over that range, which is
+    # what this divisor is. Both are applied by rebuilding the renderer's LUT
+    # (FisheyeRenderer.set_intrinsics), not by touching the MJCF camera.
+    fov_noise_focal_divisor: float = 90.0
+
+    def tile_camera_names(self) -> list[str]:
+        """Fully-qualified MJCF names of the five tile cameras ("cubemap" backend)."""
+        prefix = self.robot_namespace or ""
+        return [f"{prefix}{self.mjcf_name}_tile_{s}" for s in self.tile_suffixes]
+
+    def cubemap_renderer_kwargs(self, output_h: int, output_w: int) -> dict:
+        """Every FisheyeRenderer argument except the MuJoCo model, so callers
+        construct one straight from config rather than restating its parameters.
+
+        Output size stays a call argument: it is the resolution the caller wants
+        this frame (CameraSystemConfig.img_resolution), not a property of the
+        lens.
+        """
+        return {
+            "tile_cam_names": self.tile_camera_names(),
+            "K": self.fisheye_K,
+            "D": self.fisheye_D,
+            "image_size": self.fisheye_image_size,
+            "tile_size": self.tile_size,
+            "tile_fovy": self.tile_fov,
+            "weight_power": self.weight_power,
+            "output_h": output_h,
+            "output_w": output_w,
+        }
 
 
 class RobotMountedCameraConfig(CameraConfig):
@@ -151,9 +298,9 @@ class EvalExocentricCameraConfig(FixedExocentricCameraConfig):
     """
 
     # Override parent required fields with None defaults (resolved at runtime)
-    pos: list[float] | None = None
-    forward: list[float] | None = None
-    up: list[float] | None = None
+    pos: list[float] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    forward: list[float] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    up: list[float] | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
 
     # Spherical perturbation ranges (around the reference shoulder-mount pose)
     azimuth_range: tuple[float, float] | None = None  # radians, symmetric around ref azimuth
@@ -174,7 +321,10 @@ class EvalExocentricCameraConfig(FixedExocentricCameraConfig):
 
 
 AllCameraTypes: TypeAlias = (
-    MjcfCameraConfig
+    # Before MjcfCameraConfig: it is a subclass, and pydantic resolves a union
+    # left to right, so the base would swallow it and drop the fisheye fields.
+    FisheyeMjcfCameraConfig
+    | MjcfCameraConfig
     | RobotMountedCameraConfig
     | FixedExocentricCameraConfig
     | RandomizedExocentricCameraConfig
@@ -194,7 +344,7 @@ class CameraSystemConfig(Config):
     img_resolution: tuple[int, int] = (640, 480)  # (width, height)
 
     # Individual camera specifications
-    cameras: list[AllCameraTypes] = []
+    cameras: list[CameraConfig] = []
 
     def add_camera(self, camera_spec: CameraConfig) -> None:
         """Add a camera specification to the system."""
@@ -212,7 +362,7 @@ class RBY1MjcfCameraSystem(CameraSystemConfig):
     """Camera system using RBY1's built-in MJCF cameras."""
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         MjcfCameraConfig(
             name="head_camera",
             mjcf_name="head_camera",
@@ -261,7 +411,7 @@ class RBY1GoProD455CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (1024, 576)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Head camera - GoPro analogue (4:3, VFOV ~94deg for wide mode)
         # Crop to 768x576 in post-processing to get 4:3 aspect ratio
         MjcfCameraConfig(
@@ -299,6 +449,89 @@ class RBY1GoProD455CameraSystem(CameraSystemConfig):
     ]
 
 
+class G1CameraSystem(CameraSystemConfig):
+    """G1 humanoid: head fisheye + right wrist camera, matching g1_molmo's
+    camera setup (its bowl config and the base FOVs in g1_dex.xml).
+    `head_camera` owns every fisheye parameter, including the lens
+    calibration; CameraManager builds the cubemap FisheyeRenderer from it on
+    request. Both cameras set `render_via_mjcf`, so CPUMujocoEnv.render_rgb_frame
+    draws them through their MJCF camera ids -- the head as its cubemap
+    composite, not the raw `head_pov` pinhole.
+    """
+
+    # g1_molmo's camera_size=(224, 384) is (height, width); img_resolution is
+    # (width, height) -- see CameraSensor, which unpacks `width, height`.
+    img_resolution: tuple[int, int] = (384, 224)
+    cameras: list[AllCameraTypes] = [
+        FisheyeMjcfCameraConfig(
+            name="head_camera",
+            mjcf_name="head_pov",
+            robot_namespace="robot_0/",
+            # fov=None takes the MJCF's own fovy (68 for head_pov, 37.956 for
+            # right_wrist_camera), which is the base g1_molmo perturbs around
+            # -- rather than restating it here and silently drifting from the
+            # robot asset. The previous wrist value (70.0) came from the
+            # commented-out camera_mount block in g1_dex.xml, not the live
+            # camera, and was ~1.8x too wide.
+            fov=None,
+            # The real head camera is a fisheye.
+            is_warped=True,
+            # g1_molmo renders this head as a cubemap composite, so WARPING
+            # would not reproduce its recordings however well it is tuned.
+            fisheye_impl=FisheyeImpl.CUBEMAP,
+            # G1TaskSampler writes the per-episode camera noise into model.cam_*
+            # itself, so the MJCF path is the one that reproduces g1_molmo.
+            render_via_mjcf=True,
+            # g1_molmo's render_fisheye drops group 5 (robot head shell + logo)
+            # so the head does not occlude its own view. 5 is off by default,
+            # stated here because the wrist camera turns it on.
+            geomgroup_overrides={5: 0},
+            # g1_molmo's render_fisheye(tile_size=512) over the five fovy=100
+            # head_pov_tile_* cameras, on the default G1 head lens below.
+            tile_fov=100.0,
+            tile_size=512,
+            # head_camera_pos_noise=0.01, head_camera_rot_noise=0.0349 rad.
+            # G1TaskSampler already redraws these per episode; camera_manager
+            # does not, so on that path EPISODE states intent, not behavior.
+            noise_model=CameraNoiseModel.BODY_FRAME_AXIS_ANGLE,
+            reset_cadence=CameraResetCadence.EPISODE,
+            orientation_noise_degrees=2.0,
+            pos_noise_range=(-0.01, 0.01),
+            # head_camera_distortion_noise=0.2, and the /90 focal scaling that
+            # g1_molmo's fovy noise uses on a fisheye.
+            distortion_noise=0.2,
+            fov_noise_focal_divisor=90.0,
+            # head_camera_fovy_noise=2.0. On the fisheye g1_molmo applies this by
+            # scaling K's focal lengths by 1 + u/90 rather than moving cam_fovy;
+            # on molmo_spaces' pinhole path it perturbs the FOV instead.
+            fov_noise_degrees=(-2.0, 2.0),
+        ),
+        MjcfCameraConfig(
+            name="wrist_camera",
+            mjcf_name="right_wrist_camera",
+            robot_namespace="robot_0/",
+            fov=None,
+            # See head_camera.
+            render_via_mjcf=True,
+            # g1_molmo shows group 5 (wrist_mount) on every camera but this one,
+            # and hides group 1 here so the mount and camera body are not in the
+            # wrist camera's own image.
+            geomgroup_overrides={1: 0, 5: 1},
+            # g1_molmo records RGB video only -- its LeRobotRecorder builds one
+            # "video" feature per camera and no depth feature at all.
+            record_depth=False,
+            # wrist_camera_pos_noise=0.01, wrist_camera_rot_noise=0.0349 rad;
+            # same caveat as head_camera above.
+            noise_model=CameraNoiseModel.BODY_FRAME_AXIS_ANGLE,
+            reset_cadence=CameraResetCadence.EPISODE,
+            orientation_noise_degrees=2.0,
+            pos_noise_range=(-0.01, 0.01),
+            # wrist_camera_fovy_noise=2.0
+            fov_noise_degrees=(-2.0, 2.0),
+        ),
+    ]
+
+
 class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     """Camera system for Franka pick-and-place tasks with wrist cam and 2 randomized exo cams.
 
@@ -308,7 +541,7 @@ class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -361,7 +594,7 @@ class FrankaDroidCameraSystem(CameraSystemConfig):
         640,
         368,
     )  # 16:9 aspect ratio and divisible by 16px for video encoding
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera (with depth for D405 simulation)
         MjcfCameraConfig(
             name="wrist_camera",
@@ -394,7 +627,7 @@ class FrankaEasyRandomizedDroidCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -445,7 +678,7 @@ class FrankaOmniPurposeCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera_zed_mini",
@@ -525,7 +758,7 @@ class FrankaRandomizedDroidCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist-mounted camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -592,7 +825,7 @@ class FrankaGoProD405D455CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # D405-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -649,7 +882,7 @@ class FrankaGoProD405RandomizedCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # D405-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -703,7 +936,7 @@ class FrankaRobotiq2f85CameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Robotiq 2f85-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -739,7 +972,7 @@ class I2rtYamCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 480)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Robotiq 2f85-style wrist camera with noise
         MjcfCameraConfig(
             name="wrist_camera",
@@ -771,7 +1004,7 @@ class BimanualYamCameraSystem(CameraSystemConfig):
     """
 
     img_resolution: tuple[int, int] = (640, 368)
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Left wrist camera (defined in yam.xml, attached to left_link_6)
         MjcfCameraConfig(
             name="left_wrist_camera",
@@ -825,8 +1058,15 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
 
     img_resolution: tuple[int, int] = (640, 368)
 
+    # TODO(wilbert): uhmmm, for this part make the internal type either a dataclass or a typeddict
+    # LOL(wilbert): This pydantic stuff is very janky
     ref_level_ranges: ClassVar[
-        list[tuple[float, dict[str, dict[str, float | tuple[float, ...]]]]]
+        list[
+            tuple[
+                float,
+                dict[str, dict[str, float | tuple[float, ...] | tuple[tuple[float, ...], ...]]],
+            ]
+        ]
     ] = [
         (
             0.0,
@@ -921,7 +1161,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
     ]
 
     # Calibrated (level 0) camera specs only; no randomization params.
-    cameras: list[AllCameraTypes] = [
+    cameras: list[CameraConfig] = [
         # Wrist camera
         MjcfCameraConfig(
             name="wrist_camera",
@@ -944,6 +1184,7 @@ class FrankaEvalCameraSystem(CameraSystemConfig):
 AllCameraSystems: TypeAlias = (
     RBY1MjcfCameraSystem
     | RBY1GoProD455CameraSystem
+    | G1CameraSystem
     | FrankaRandomizedD405D455CameraSystem
     | FrankaEasyRandomizedDroidCameraSystem
     | FrankaDroidCameraSystem

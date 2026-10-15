@@ -39,15 +39,16 @@ molmo_spaces/
 │   ├── main.py                     # Entry point for data generation
 │   └── pipeline.py                 # Parallel rollout runner
 ├── env/                            # Environment abstractions
-│   ├── arena/                      # Scene construction and randomization
-│   │   ├── randomization/          # Domain randomization (lighting, texture, dynamics)
-│   │   ├── arena_utils.py
-│   │   ├── bathroom.py
-│   │   ├── cabinet.py
-│   │   ├── drawer.py
-│   │   ├── kitchen.py
-│   │   ├── procthor_types.py
-│   │   └── scene_tweaks.py
+│   ├── scene/                      # Scene construction from MJCF
+│   │   ├── thor/                   # iTHOR/ProcTHOR asset fixups and articulations
+│   │   │   ├── fixups.py           # MjSpec repairs for THOR houses
+│   │   │   ├── physical_properties.py
+│   │   │   ├── bathroom.py
+│   │   │   ├── cabinet.py
+│   │   │   ├── drawer.py
+│   │   │   └── kitchen.py
+│   │   └── containment.py          # Body-within-site geometry predicates
+│   ├── randomization/              # Domain randomization (lighting, texture, dynamics)
 │   ├── abstract_sensors.py         # Base sensor interface
 │   ├── camera_manager.py           # Camera lifecycle management
 │   ├── data_views.py               # Data view utilities
@@ -83,7 +84,6 @@ molmo_spaces/
 │   ├── rby1_kinematics.py         # RBY1-specific kinematics
 │   └── stretch_kinematics.py
 ├── planner/                        # Motion planning
-│   ├── robot_specific/            # Robot-specific planners
 │   ├── abstract.py                # Base planner interface
 │   ├── astar_planner.py           # A* path planner (navigation)
 │   ├── curobo_planner.py          # CuRobo integration

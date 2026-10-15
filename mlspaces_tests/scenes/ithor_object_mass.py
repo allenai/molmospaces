@@ -9,7 +9,7 @@ import mujoco.viewer
 import numpy as np
 from tqdm import tqdm
 
-from molmo_spaces.editor.constants import ALL_PICKUP_TYPES_THOR
+from molmo_spaces.utils.constants.object_constants import ALL_PICKUP_TYPES_THOR
 
 # from molmo_spaces.tasks.util_samplers.grasp_sampler import TopDownGraspPoseSampler
 from tests.ithor_object_mass_est import ithor_estimated_masses
@@ -84,7 +84,7 @@ def add_gripper_to_scene(
 ):
     # gripper_path = "assets/franka_fr3/fr3_gripper.xml"
 
-    editor = ThorMjModelEditor.from_xml_path(scene_path)
+    editor = ThorSceneBuilder.from_xml_path(scene_path)
     editor.set_options()
     editor.set_size(size=5000)
     editor.set_compiler()

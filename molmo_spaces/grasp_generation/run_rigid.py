@@ -47,7 +47,7 @@ if args.num_workers == 0:
 if not os.path.exists(args.objects_list):
     raise FileNotFoundError(f"Objects list file not found: {args.objects_list}")
 
-with open(args.objects_list, "r") as f:
+with open(args.objects_list) as f:
     data = json.load(f)
 
 print(f"Total objects in dataset: {len(data)}")

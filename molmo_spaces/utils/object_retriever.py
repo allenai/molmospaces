@@ -2,16 +2,23 @@ import numpy as np
 from molmospaces_resources import PickleLMDBMap
 
 from molmo_spaces.env.object_manager import clip_sim, compute_text_clip
-from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_license_policy
+from molmo_spaces.utils.license_policy import LicensePolicy, filter_uids
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
 
 class ObjectRetriever:
     storage_path = ASSETS_DIR / ".lmdb" / "object_retriever"
 
-    def __init__(self, sim_thres: float = 0.5, max_results: int = 50):
+    def __init__(
+        self,
+        sim_thres: float = 0.5,
+        max_results: int = 50,
+        license_policy: LicensePolicy | None = None,
+    ):
         self.thres = sim_thres
         self.max_results = max_results
+        self.license_policy = license_policy
         self.tk, self.ik, self.v = self.get_keys_values()
 
     def get_keys_values(self):
@@ -60,6 +67,13 @@ class ObjectRetriever:
 
         uids = self.v[mask][rank]
         sims = sim[mask][rank]
+
+        policy = self.license_policy if self.license_policy is not None else get_license_policy()
+        if policy != LicensePolicy.NONE:
+            allowed = set(filter_uids(uids, policy))
+            keep = np.array([uid in allowed for uid in uids])
+            uids = uids[keep]
+            sims = sims[keep]
 
         return uids, sims
 
