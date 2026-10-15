@@ -11,8 +11,8 @@ from molmo_spaces.planner.astar_planner import AStarPlannerConfig
 
 class FetchmanPickPlannerPolicyConfig(PickPlannerPolicyConfig):
     """G1 pick with mink whole-body IK (waist + pelvis height assist the reach)
-    and a walk phase. Requires G1Config's WBC-walking mode (use_holo_base=False).
-    Values are g1_molmo's unless a comment says why they differ.
+    and a walk phase. Requires G1Config's WBC-walking mode. Values are g1_molmo's
+    unless a comment says why they differ.
     """
 
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports

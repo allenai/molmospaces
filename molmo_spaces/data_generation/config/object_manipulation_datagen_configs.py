@@ -1022,27 +1022,6 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
         return "interactive_shell_g1"
 
 
-@register_config("InteractiveShellG1Holo")
-class InteractiveShellG1HoloDataGenConfig(InteractiveShellG1DataGenConfig):
-    """InteractiveShellG1 variant using G1's holo-base mode instead of whole-body walking.
-
-    Run with:
-        python scripts/datagen/run_pipeline.py --config InteractiveShellG1Holo --viewer
-
-    legs_waist holds a static pose (no active balance) and the base is moved
-    directly via a mocap-weld target (see G1HoloBaseGroup) -- nav_to()'s absolute
-    waypoints map onto this directly, unlike the velocity-integration bridge the
-    whole-body-walking mode needs.
-    """
-
-    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_holo"
-    robot_config: BaseRobotConfig = G1Config(use_holo_base=True)
-
-    @property
-    def tag(self) -> str:
-        return "interactive_shell_g1_holo"
-
-
 @register_config("FrankaPickBatchTestConfig")
 class FrankaPickBatchTestConfig(PickBaseConfig):
     """Minimal config to test local batch-based work distribution.

@@ -48,44 +48,13 @@ _WBC_OBS_DIM = 86
 _WBC_BODY = _JOINTS[:29]  # legs(12) + waist(3) + arms(14); gripper tendon-controlled.
 _WBC_N = 29
 
-_WBC_KP = np.array(
-    [
-        150,
-        150,
-        150,
-        200,
-        40,
-        40,
-        150,
-        150,
-        150,
-        200,
-        40,
-        40,
-        250,
-        250,
-        250,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ],
-    dtype=np.float32,
-)
-_WBC_KD = np.array(
-    [2, 2, 2, 4, 2, 2, 2, 2, 2, 4, 2, 2, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    dtype=np.float32,
-)
+# fmt: off
+_WBC_KP_VALUES = (150, 150, 150, 200, 40, 40, 150, 150, 150, 200, 40, 40, 250, 250, 250, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+_WBC_KD_VALUES = (  2,   2,   2,   4,  2,  2,   2,   2,   2,   4,  2,  2,   5,   5,   5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+# fmt: on
+
+_WBC_KP = np.array(_WBC_KP_VALUES, dtype=np.float32)
+_WBC_KD = np.array(_WBC_KD_VALUES, dtype=np.float32)
 
 
 def _gravity_orientation(quat):

@@ -32,10 +32,6 @@ from molmo_spaces.robots.robot_views.abstract import (
 from molmo_spaces.utils.linalg_utils import normalize_ang_error
 from molmo_spaces.utils.mj_model_and_data_utils import body_pose
 
-# Name of the mocap body G1Robot.add_robot_to_scene adds (weld-constrained to the
-# pelvis) when use_holo_base=True. See G1HoloBaseGroup.
-HOLO_BASE_TARGET_BODY_NAME = "g1_target_base_pose"
-
 # Dex gripper: positive qpos closes the fingers, negative opens (matches the
 # actuator's ctrlrange and the MJCF <equality joint1="right_Joint1_1"
 # joint2="right_Joint2_1" polycoef="0 1 0 0 0"/>, i.e. joint2 = joint1).
@@ -219,7 +215,7 @@ class G1RobotView(RobotView):
     no `left_gripper` move group (no hardware exists for it).
     """
 
-    def __init__(self, mj_data: MjData, namespace: str = "", use_holo_base: bool = False) -> None:
+    def __init__(self, mj_data: MjData, namespace: str = "") -> None:
         self._namespace = namespace
         base = G1BaseGroup(mj_data, namespace=namespace)
         move_groups: dict[str, MoveGroup] = {

@@ -368,16 +368,13 @@ class RBY1MOpenCloseConfig(RBY1MConfig):
 class G1Config(BaseRobotConfig):
     """Configuration for the Unitree G1 humanoid robot.
 
-    Two base control modes (see `use_holo_base`):
-    - Whole-body walking (default): the combined `legs_waist` move group is
+    One base control mode:
+    - Whole-body walking: the combined `legs_waist` move group is
       driven by the WBC (a PD-torque law plus an ONNX walking policy --
       see `molmo_spaces.controllers.g1_wbc`), commanded via
       `set_target([vx, vy, yaw_rate, height, waist_yaw, waist_roll,
       waist_pitch])`. The base has no actuators (free-floating pelvis
       integrated directly by MuJoCo's physics).
-    - Holo base (`use_holo_base=True`): legs_waist instead holds a static pose
-      via a plain JointPosController (no active balance), and the base is
-      moved directly through a mocap-weld target (see `G1HoloBaseGroup`).
 
     Both arms and the right gripper always stay on plain JointPosControllers,
     relying on the MJCF's own tuned PD actuator gains.
@@ -432,16 +429,6 @@ class G1Config(BaseRobotConfig):
     # of 0.002s. Applied in G1Robot.__init__. g1_wbc.py's _WBC_CONTROL_DEC (4)
     # is set to match -- change both together or the WBC leaves its ~50Hz.
     physics_timestep: float = 0.005
-
-    # Toggle between the two base control modes:
-    #   False (default): whole-body walking via LegsWaistController -- legs_waist
-    #     actively balances/walks, base is a passive free-floating pelvis.
-    #   True: legs_waist holds a static pose (plain JointPosController, no active
-    #     balance) and the base is instead moved directly, mocap-weld driven like
-    #     FloatingRUMRobotConfig ("similar to RBY1" in spirit -- base motion
-    #     decoupled from leg actuation -- though RBY1 itself drives real
-    #     holonomic joint actuators rather than a weld target).
-    use_holo_base: bool = False
 
     # The WBC (or, in holo-base mode, G1HoloBaseGroup's mocap weld) holds the
     # pelvis at a constant height wherever the robot is placed, so unlike RBY1

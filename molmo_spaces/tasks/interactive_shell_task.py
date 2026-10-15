@@ -814,11 +814,7 @@ class InteractiveShellTask(BaseMujocoTask):
     def _nav_planner_name(self, nav_only: bool = False) -> str:
         """Which base planner `nav_to(object)` drives this robot with. Also
         tells the direct-drive moves whose velocity law they should match."""
-        if (
-            self.config.robot_config.name == "g1"
-            and not self.config.robot_config.use_holo_base
-            and not nav_only
-        ):
+        if self.config.robot_config.name == "g1" and not nav_only:
             return "fetchman"
         return "astar"
 
@@ -1194,7 +1190,6 @@ class InteractiveShellTask(BaseMujocoTask):
             planner_policy_config_cls = (
                 FetchmanPickPlannerPolicyConfig
                 if self.config.robot_config.name == "g1"
-                and not self.config.robot_config.use_holo_base
                 else PickPlannerPolicyConfig
             )
 

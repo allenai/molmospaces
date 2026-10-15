@@ -255,13 +255,6 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.ctrl_dt_ms = 5.0
         datagen_cfg.sim_dt_ms = 5.0
         if isinstance(datagen_cfg.policy_config, AStarNavToObjPolicyConfig):
-            # WBC mode (the default): G1Robot.update_control only reads a
-            # "base_velocity" [vx, vy, yaw_rate] action -- AStar's pre-baked
-            # waypoint schedule doesn't produce that, no matter how it's
-            # tuned. FetchManBasePlannerPolicy (a live per-step velocity-
-            # command controller, ported from g1_molmo) does, and is the
-            # default InteractiveShellTask.nav_to() already picks for this
-            # exact case (robot_config.name == "g1" and not use_holo_base).
             datagen_cfg.policy_config = FetchManBasePlannerPolicyConfig()
     elif robot == "yam":
         datagen_cfg.robot_config = I2rtYamRobotConfig()

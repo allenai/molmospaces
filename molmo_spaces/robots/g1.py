@@ -431,11 +431,7 @@ class G1Robot(Robot):
                 G1RobotView as _NativeG1RobotView,
             )
 
-            self._native_robot_view = _NativeG1RobotView(
-                self.data,
-                self._namespace,
-                use_holo_base=getattr(self.robot_config, "use_holo_base", False),
-            )
+            self._native_robot_view = _NativeG1RobotView(self.data, self._namespace)
         return self._native_robot_view
 
     @property
