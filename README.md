@@ -86,10 +86,21 @@ uv pip install -e ".[g1_humanoid,torch-cpu]"
 
 First, clone the project.
 
+> [!WARNING]
+> Use version 0.2.9, as it's the stable version used for all benchmarks and leaderboard
+
 ```bash
-git clone git@github.com:allenai/molmospaces.git
+git clone --branch v0.2.9 https://github.com/allenai/molmospaces.git
 cd molmospaces
 ```
+
+If you want to use the latest state of the codebase, just clone from the main branch:
+
+```bash
+git clone https://github.com/allenai/molmospaces.git
+cd molmospaces
+```
+
 
 Then, set up the virtual environment and install.
 
