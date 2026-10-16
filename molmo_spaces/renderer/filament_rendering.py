@@ -29,6 +29,10 @@ class MjFilamentRenderer(MjAbstractRenderer):
         self._depth_rendering = False
         self._segmentation_rendering = False
 
+        # MuJoCo's renderer requires an active GL context before MjrContext
+        # initialization. Without this, Filament jobs fail with gladLoadGL.
+        self._gl_context = mj.GLContext(width, height)
+        self._gl_context.make_current()
         self._mjr_context = mj.MjrContext(model, mj.mjtFontScale.mjFONTSCALE_150.value)
         # mj.mjr_resizeOffscreen(width, height, self._mjr_context)
         mj.mjr_setBuffer(mj.mjtFramebuffer.mjFB_OFFSCREEN.value, self._mjr_context)
@@ -68,6 +72,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
+        self._gl_context.make_current()
         assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
 
         height = height or self._height
@@ -190,6 +195,8 @@ class MjFilamentRenderer(MjAbstractRenderer):
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
 
+        out[:] = np.flipud(out)
+
         return out
 
     def render_rgb(
@@ -199,6 +206,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
+        self._gl_context.make_current()
         assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
 
         height = height or self._height
@@ -252,9 +260,12 @@ class MjFilamentRenderer(MjAbstractRenderer):
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
             mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
 
+        out[:] = np.flipud(out)
+
         return out
 
     def upload_textures(self) -> None:
+        self._gl_context.make_current()
         assert self._mjr_context, "MjrContext must be created by now, but it's None"
         if self.model.ntex == 0:
             return
@@ -271,6 +282,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
         camera: int | str | mj.MjvCamera = -1,
         scene_option: mj.MjvOption | None = None,
     ) -> None:
+        self._gl_context.make_current()
         assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
 
         if not isinstance(camera, mj.MjvCamera):
@@ -308,6 +320,9 @@ class MjFilamentRenderer(MjAbstractRenderer):
         if hasattr(self, "_mjr_context") and self._mjr_context:
             self._mjr_context.free()
         self._mjr_context = None
+        if hasattr(self, "_gl_context") and self._gl_context:
+            self._gl_context.free()
+        self._gl_context = None
 
 
 if __name__ == "__main__":

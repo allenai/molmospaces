@@ -31,7 +31,11 @@ import datetime
 from pathlib import Path
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
-from molmo_spaces.configs.policy_configs import BrownianMotionPolicyConfig, DummyPolicyConfig
+from molmo_spaces.configs.policy_configs import (
+    BrownianMotionPolicyConfig,
+    DummyPolicyConfig,
+    PackingPlannerPolicyConfig,
+)
 from molmo_spaces.configs.policy_configs_baselines import (
     CAPPolicyConfig,
     DreamZeroPolicyConfig,
@@ -59,6 +63,7 @@ from molmo_spaces.data_generation.config.nav_to_obj_configs import NavToObjDataG
 from molmo_spaces.data_generation.config.object_manipulation_datagen_configs import (
     FrankaPickAndPlaceDataGenConfig,
 )
+from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.policy.dummy_policy import BrownianMotionPolicy, DummyPolicy
 from molmo_spaces.tasks.nav_task import NavToObjTask
 from molmo_spaces.tasks.nav_task_sampler import NavToObjTaskSampler
@@ -188,10 +193,10 @@ class DummyBenchmarkEvalConfig(JsonBenchmarkEvalConfig):
         self.robot_config.action_noise_config = ActionNoiseConfig(enabled=False)
 
 
+@register_config("PiPolicyEvalConfig")
 class PiPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: PiPolicyConfig = PiPolicyConfig()
-    # policy_dt_ms: float = 200.0  # Match your model's expected control rate
     policy_dt_ms: float = 66.0  # ~15hz
     end_on_success: bool = True  # End episode immediately upon success, ignoring task_horizon
 
@@ -204,6 +209,9 @@ class CAPPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaCAPRobotConfig = FrankaCAPRobotConfig()
     policy_config: CAPPolicyConfig = CAPPolicyConfig()
     policy_dt_ms: float = 500.0  # Match your model's expected control rate
+    # Stop as soon as success is detected, as PiPolicyEvalConfig
+    # do. Without this, an episode that succeeds can keep running and undo its own success.
+    end_on_success: bool = True
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
@@ -299,10 +307,24 @@ class BrownianMotionPickPlaceColorEvalConfig(BrownianMotionPickPlaceEvalConfig):
     )
 
 
+@register_config("DreamZeroPolicyEvalConfig")
 class DreamZeroPolicyEvalConfig(JsonBenchmarkEvalConfig):
     robot_config: FrankaRobotConfig = FrankaRobotConfig()
     policy_config: DreamZeroPolicyConfig = DreamZeroPolicyConfig()
     policy_dt_ms: float = 66.0
+    end_on_success: bool = True  # End episode immediately upon success, ignoring task_horizon
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.robot_config.action_noise_config.enabled = False
+
+
+@register_config("PackingPlannerEvalConfig")
+class PackingPlannerEvalConfig(JsonBenchmarkEvalConfig):
+    robot_config: FrankaRobotConfig = FrankaRobotConfig()
+    policy_config: PackingPlannerPolicyConfig = PackingPlannerPolicyConfig()
+    task_horizon: int = 1500
+    policy_dt_ms: float = 200.0
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
