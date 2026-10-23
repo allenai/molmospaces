@@ -50,6 +50,8 @@ def main() -> int:
 
     robot_info = ROBOTS_INFO[args.robot_id]
     robot_config = robot_info.config
+    if action_noise_config := robot_config.action_noise_config:
+        action_noise_config.enabled = False
     robot_cls = robot_config.robot_cls
     robot_view_factory = robot_config.robot_view_factory
     assert robot_cls, f"Robot class from config of robot '{args.robot_id}' not defined"
@@ -153,7 +155,9 @@ def main() -> int:
 
                     if ik_res:
                         qpos_dict = {key: val.tolist() for key, val in ik_res.items()}
-                        robot_view.set_qpos_dict(qpos_dict)
+                        qpos_dict.pop(gripper_movegroup_id)
+                        robot.update_control(qpos_dict)
+                        robot.compute_control()
 
                 t_start = data.time
                 while data.time - t_start < 1.0 / 60.0:
