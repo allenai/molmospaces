@@ -4,8 +4,10 @@ import mujoco as mj
 import mujoco.viewer as mjviewer  # ty: ignore
 import numpy as np
 import tyro
+from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
+from molmo_spaces.robots.robot_views.abstract import GripperGroup
 
 from .common import ROBOTS_INFO, ExampleBaseArgs
 
@@ -16,10 +18,31 @@ MOCAP_TARGET_NAME = "target"
 
 @dataclass
 class Args(ExampleBaseArgs):
-    pass
+    paused: bool = False
+
+
+@dataclass
+class SimOptions:
+    running: bool = True
+    reset: bool = False
+
+
+OPTIONS = SimOptions()
+
+
+def key_callback(keycode: int) -> None:
+    global OPTIONS
+
+    match keycode:
+        case 32:  # SPACE == Toggle Pause
+            OPTIONS.running = not OPTIONS.running
+        case 82:  # R = Reset
+            OPTIONS.reset = True
 
 
 def main() -> int:
+    global OPTIONS
+
     args = tyro.cli(Args)
 
     if args.robot_id not in ROBOTS_INFO:
@@ -74,37 +97,69 @@ def main() -> int:
     robot_init_qpos = {key: np.array(val) for key, val in robot_config.init_qpos.items()}
     robot_view.set_qpos_dict(robot_init_qpos)
 
+    mj.mj_forward(model, data)
+
+    target_id = model.body(MOCAP_TARGET_NAME).mocapid[0].item()
+
+    def reset_target(gg_id: str) -> None:
+        gripper_group = robot_view.get_gripper(gg_id)
+        assert isinstance(gripper_group, GripperGroup)
+
+        tcp_pose = gripper_group.leaf_frame_to_world
+        data.mocap_pos[target_id] = tcp_pose[:3, 3]
+        data.mocap_quat[target_id] = R.from_matrix(tcp_pose[:3, :3]).as_quat(scalar_first=True)
+
+        mj.mj_forward(model, data)
+
+    gripper_movegroup_id: str | None = None
+    if movegroup_ids := robot_view.get_gripper_movegroup_ids():
+        gripper_movegroup_id = movegroup_ids[0]
+        reset_target(gripper_movegroup_id)
+
+    OPTIONS.running = not args.paused
+
     with mjviewer.launch_passive(
-        model, data, key_callback=None, show_left_ui=False, show_right_ui=False
+        model, data, key_callback=key_callback, show_left_ui=False, show_right_ui=False
     ) as viewer:
         viewer.opt.frame = mj.mjtFrame.mjFRAME_SITE
         while viewer.is_running():
-            t_start = data.time
+            if OPTIONS.reset:
+                mj.mj_resetData(model, data)
 
-            if movegroup_ids := robot_view.get_gripper_movegroup_ids():
-                # TODO(wilbert): handle multiple arms|grippers (bimanual setups)
+                robot_view.set_qpos_dict(robot_init_qpos)
+                mj.mj_forward(model, data)
 
-                gripper_movegroup_id = movegroup_ids[0]
+                if gripper_movegroup_id:
+                    reset_target(gripper_movegroup_id)
 
-                target_pose = np.eye(4)
-                target_pose[:3, 3] = data.body(MOCAP_TARGET_NAME).xpos
-                target_pose[:3, :3] = data.body(MOCAP_TARGET_NAME).xmat.reshape(3, 3).T
+                OPTIONS.reset = False
 
-                ik_res = robot.kinematics.ik(
-                    gripper_movegroup_id,
-                    target_pose,
-                    unlocked_move_group_ids=None,
-                    q0=robot_view.get_qpos_dict(),
-                    base_pose=robot_view.base.pose,
-                    rel_to_base=False,
-                )
+            if OPTIONS.running:
+                if gripper_movegroup_id:
+                    # TODO(wilbert): handle multiple arms|grippers (bimanual setups)
 
-                if ik_res:
-                    qpos_dict = {key: val.tolist() for key, val in ik_res.items()}
-                    robot_view.set_qpos_dict(qpos_dict)
+                    target_pose = np.eye(4)
+                    target_pose[:3, 3] = data.body(MOCAP_TARGET_NAME).xpos
+                    target_pose[:3, :3] = data.body(MOCAP_TARGET_NAME).xmat.reshape(3, 3)
 
-            while data.time - t_start < 1.0 / 60.0:
-                mj.mj_step(model, data)
+                    ik_res = robot.kinematics.ik(
+                        gripper_movegroup_id,
+                        target_pose,
+                        unlocked_move_group_ids=None,
+                        q0=robot_view.get_qpos_dict(),
+                        base_pose=robot_view.base.pose,
+                        rel_to_base=False,
+                    )
+
+                    if ik_res:
+                        qpos_dict = {key: val.tolist() for key, val in ik_res.items()}
+                        robot_view.set_qpos_dict(qpos_dict)
+
+                t_start = data.time
+                while data.time - t_start < 1.0 / 60.0:
+                    mj.mj_step(model, data)
+            else:
+                mj.mj_forward(model, data)
 
             viewer.sync()
 
