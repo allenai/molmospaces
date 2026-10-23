@@ -64,6 +64,8 @@ _SKIP_REASONS = {
     "molmo_spaces.renderer.opengl_context": (
         "requires PYOPENGL_PLATFORM=egl; CI runs mujoco with MUJOCO_GL=osmesa"
     ),
+    # New rendering module requires mujoco >= 3.15.0
+    "molmo_spaces.experimental.renderer": "New mujoco.rendering module requires latest mujoco version",
 }
 
 # Whole subpackages skipped because CI never installs their extras: `grasp`
