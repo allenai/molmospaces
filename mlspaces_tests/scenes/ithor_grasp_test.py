@@ -79,7 +79,7 @@ def extract_base_object_names(model, metadata: dict):
             asset_id = object_dict.get("asset_id", None)
             object_body_map[asset_id] = body_name
             base_names.add(asset_id)
-        """
+        r"""
         if body_name:
             if ITHOR:
                 match = object_pattern.match(body_name)
@@ -132,7 +132,7 @@ def load_grasps_for_object(object_name, num_grasps=50, grasp_dir="assets/grasps"
     for filename in grasp_files:
         print(f"Loading grasps from: {filename}")
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 npz_data = np.load(filename)
                 transforms = npz_data.get("transforms", [])
                 # transforms = json.load(f)

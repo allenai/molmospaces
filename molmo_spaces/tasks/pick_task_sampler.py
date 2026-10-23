@@ -676,7 +676,16 @@ class PickTaskSampler(BaseMujocoTaskSampler):
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("sample_place_robot")
 
+            if not self._check_placement_walk_reachable(env, pickup_obj_name):
+                log.info(f"Robot placement not walk-reachable for {pickup_obj_name}")
+                self.report_grasp_failure(pickup_obj_name)
+                continue
+
             mujoco.mj_forward(env.current_model, env.current_data)
+
+            if not self._post_placement_setup(env, pickup_obj_name, supporting_geom_id):
+                self.report_grasp_failure(pickup_obj_name)
+                continue
 
             # Check grasp feasibility
             if self._datagen_profiler is not None:
@@ -832,12 +841,20 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("sample_task_create")
 
-        task = PickTask(env, self.config)
+        task = self._task_cls()(env, self.config)
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("sample_task_create")
 
         return task
+
+    def _task_cls(self) -> type[PickTask]:
+        """Hook: task class to instantiate in _sample_task. Override to swap
+        in a task with different success/reward semantics -- see
+        a task with g1_molmo's own success criteria instead of this class's
+        own (fetchman's PickTask is that task).
+        """
+        return PickTask
 
     def _get_scene_objects(self, env: CPUMujocoEnv, mass_limit=100) -> list[MlSpacesObject]:
         """
@@ -992,14 +1009,23 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         else:
             raise ValueError(f"Invalid pickup object type: {type(pickup_obj)}")
 
-        initial_robot_z = (
-            target_pos[2]
-            + self.config.task_sampler_config.robot_object_z_offset
-            + np.random.uniform(
-                self.config.task_sampler_config.robot_object_z_offset_random_min,
-                self.config.task_sampler_config.robot_object_z_offset_random_max,
+        fixed_base_height = self.config.robot_config.fixed_base_height
+        if fixed_base_height is not None:
+            # This robot's base height is held constant by its own controller
+            # regardless of placement (see BaseRobotConfig.fixed_base_height) --
+            # deriving a target-relative spawn height below would place it
+            # somewhere physics/the controller immediately corrects away from,
+            # silently invalidating any grasp/reach poses planned against it.
+            initial_robot_z = fixed_base_height
+        else:
+            initial_robot_z = (
+                target_pos[2]
+                + self.config.task_sampler_config.robot_object_z_offset
+                + np.random.uniform(
+                    self.config.task_sampler_config.robot_object_z_offset_random_min,
+                    self.config.task_sampler_config.robot_object_z_offset_random_max,
+                )
             )
-        )
 
         # place robot near receptacle - this is the expensive call with collision/visibility checks
         if self._datagen_profiler is not None:
@@ -1007,7 +1033,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         robot_placed = env.place_robot_near(
             robot_view=robot_view,
             target=pickup_obj,
-            max_tries=10,  # Use config value or reasonable default
+            max_tries=self.config.task_sampler_config.max_robot_placement_attempts,
             sampling_radius_range=self.config.task_sampler_config.base_pose_sampling_radius_range,
             robot_safety_radius=self.config.task_sampler_config.robot_safety_radius,
             preserve_z=initial_robot_z,
@@ -1035,6 +1061,46 @@ class PickTaskSampler(BaseMujocoTaskSampler):
         task_cfg.pickup_obj_goal_pose = pickup_obj_goal_pose.tolist()
 
         log.info(f"Supporting receptacle: {self.config.task_config.receptacle_name}")
+
+    def _check_placement_walk_reachable(self, env: CPUMujocoEnv, pickup_obj_name: str) -> bool:
+        """Hook: verify the just-placed robot can reach a walk standoff point
+        near the pickup object, using the same nav-goal-sampling + A*/line-of-sight
+        machinery a walk-phase policy uses at reset(). Rejecting here retries with a
+        freshly sampled position, instead of discovering the mismatch during
+        policy.reset() after height randomization, camera setup and grasp
+        feasibility have already been paid for.
+
+        Placement (occupancy-map-based, and weighing visibility/exclusion zones) and
+        walk-goal sampling (a policy's NavGoalSampler/AStarPlanner) are independent
+        computations with no guarantee of agreeing on what is reachable. g1_molmo
+        sidesteps this by spawning at the standoff point so start == goal; lacking
+        that architecture, this validates consistency after the fact.
+
+        No-op by default (True) -- meaningful only for configs with a walk phase;
+        fetchman's G1TaskSampler does its own.
+        """
+        return True
+
+    def _post_placement_setup(
+        self, env: CPUMujocoEnv, pickup_obj_name: str, supporting_geom_id: int
+    ) -> bool:
+        """Hook: last chance to mutate scene state for, or reject outright,
+        this (object, placement) attempt -- after the robot has been placed
+        and forward-kinematics run, but before any grasp feasibility work is
+        paid for.
+
+        Returning False rejects the attempt (the caller reports a grasp
+        failure and retries with a freshly sampled object/placement), so an
+        override may both randomize state and veto, in whichever order it
+        needs -- state it mutates must therefore be consistent with a
+        subsequent rejection.
+
+        No-op by default (True). `PickTaskSamplerG1`
+        (tasks/pick_task_sampler_g1.py) overrides it with g1_molmo's
+        reset-time support/robot height randomization plus grasp
+        reachability precheck.
+        """
+        return True
 
     def _place_target_near_object(
         self, env: CPUMujocoEnv, object_pos: np.ndarray, placement_region=None

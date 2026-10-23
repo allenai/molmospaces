@@ -1386,7 +1386,7 @@ def aggregate_statistics_across_floorplans(output_dir=SAVE_DIR_PATH):
     all_cat_force_applied = []
     for metric_file in metric_files:
         try:
-            with open(metric_file, "r") as f:
+            with open(metric_file) as f:
                 data = json.load(f)
 
             # Aggregate overall statistics

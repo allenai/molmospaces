@@ -8,11 +8,10 @@ for use in the data generation pipeline.
 from pathlib import Path
 from typing import Any
 
-from molmo_spaces.configs import BasePolicyConfig, BaseRobotConfig
 from molmo_spaces.configs.base_nav_to_obj_config import NavToObjBaseConfig
 from molmo_spaces.configs.camera_configs import CameraSystemConfig, RBY1MjcfCameraSystem
-from molmo_spaces.configs.policy_configs import AStarNavToObjPolicyConfig
-from molmo_spaces.configs.robot_configs import RBY1Config
+from molmo_spaces.configs.policy_configs import AStarNavToObjPolicyConfig, BasePolicyConfig
+from molmo_spaces.configs.robot_configs import BaseRobotConfig, RBY1Config
 from molmo_spaces.configs.task_sampler_configs import (
     BaseMujocoTaskSamplerConfig,
     NavToObjTaskSamplerConfig,

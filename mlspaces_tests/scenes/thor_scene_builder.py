@@ -6,7 +6,7 @@ call sequence, same resulting XML, but built with `mujoco.MjSpec` the way the
 rest of the repo constructs scenes -- `spec.worldbody.add_frame(pos, quat)` then
 `frame.attach_body(root, prefix, "")`, as in
 `molmo_spaces/robots/abstract.py::add_robot_to_scene` and
-`fetchman/scene_g1ms.py`.
+`projects/fetchman/scene_g1ms.py`.
 
 The compiler/option/size defaults below are not invented: they are what the
 scenes the resource manager ships already carry, so `set_compiler`,

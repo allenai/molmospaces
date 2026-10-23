@@ -71,7 +71,7 @@ def load_grasps_for_object_per_joint(
     for filename in grasp_files:
         print(f"Loading grasps from: {filename}")
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 json_data = json.load(f)
                 # transforms = json_data.get("transforms", [])
                 # transforms = json_data.get("root_transforms", [])

@@ -150,7 +150,7 @@ def test_single_grasp(grasp_data, object_name, model=None, data=None, viewer=Non
         root.append(include)
         xml_content = ET.tostring(root, encoding="unicode")
         gripper_xml_path = str(ASSETS_DIR / "robots/floating_robotiq/model_rigid.xml")
-        with open(gripper_xml_path, "r") as f:
+        with open(gripper_xml_path) as f:
             additional_xml_content = f.read()
         xml_content = merge_xml_contents(xml_content, additional_xml_content)
         tree = ET.ElementTree(ET.fromstring(xml_content))
@@ -315,7 +315,7 @@ def test_single_grasp(grasp_data, object_name, model=None, data=None, viewer=Non
 
 
 def run_simulation_with_viewer(xml_content, object_name, use_viewer):
-    with open(args.grasps_path, "r") as f:
+    with open(args.grasps_path) as f:
         grasp_data = json.load(f)
     transforms = np.array(grasp_data["transforms"])
     qualities = np.array(grasp_data.get("quality_antipodal", [1.0] * len(transforms)))
@@ -605,7 +605,7 @@ if __name__ == "__main__":
     root.append(include)
     xml_content = ET.tostring(root, encoding="unicode")
     gripper_xml_path = str(ASSETS_DIR / "robots/floating_robotiq/model_rigid.xml")
-    with open(gripper_xml_path, "r") as f:
+    with open(gripper_xml_path) as f:
         additional_xml_content = f.read()
     xml_content = merge_xml_contents(xml_content, additional_xml_content)
     model = mujoco.MjModel.from_xml_string(xml_content)
@@ -621,7 +621,7 @@ if __name__ == "__main__":
 
     # Save metadata as object_info.json
     output_path_json = args.grasps_path.replace(".json", "_object_info.json")
-    with open(args.grasps_path, "r") as original_f:
+    with open(args.grasps_path) as original_f:
         original_data = json.load(original_f)
     with open(output_path_json, "w") as f:
         json.dump(

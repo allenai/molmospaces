@@ -123,7 +123,7 @@ def get_only_failed_bodies_from_previous_run(
     house_name: str, settings: TestSettings, model: mj.MjModel
 ) -> np.ndarray:
     failed_bodies_ids = []
-    with open(settings.results_filepath, "r") as fhandle:
+    with open(settings.results_filepath) as fhandle:
         data = json.load(fhandle)
 
     all_results = data.get("results", {})
@@ -145,7 +145,7 @@ def get_only_failed_scenes_from_previous_run(
     if not settings.results_filepath.exists():
         return houses_xmls
 
-    with open(settings.results_filepath, "r") as fhandle:
+    with open(settings.results_filepath) as fhandle:
         data = json.load(fhandle)
     all_results = data.get("results", {})
 
@@ -488,7 +488,7 @@ def run_lift_force_test(house_filepath: Path) -> tuple[bool, dict[str, Any], Cou
 def add_test_settings(settings: TestSettings) -> None:
     if settings.results_filepath.exists():
         data = {}
-        with open(settings.results_filepath, "r") as fhandle:
+        with open(settings.results_filepath) as fhandle:
             data = json.load(fhandle)
             data["settings"] = asdict(settings)
 
@@ -536,7 +536,7 @@ def show_results_summary(settings: TestSettings) -> None:
 
         build_settings_filepath = settings.houses_folder / "housegen_build_settings.json"
         if build_settings_filepath.is_file():
-            with open(build_settings_filepath, "r") as fhandle:
+            with open(build_settings_filepath) as fhandle:
                 data = json.load(fhandle)
             print("Parameters:")
             if "param_geom_margin" in data:
@@ -844,7 +844,7 @@ def main() -> int:
 
     results_all = dict(results=dict(), settings=asdict(SETTINGS), categories=dict())
     if SETTINGS.results_filepath.is_file():
-        with open(SETTINGS.results_filepath, "r") as fhandle:
+        with open(SETTINGS.results_filepath) as fhandle:
             results_all = json.load(fhandle)
 
     if args.house != "":

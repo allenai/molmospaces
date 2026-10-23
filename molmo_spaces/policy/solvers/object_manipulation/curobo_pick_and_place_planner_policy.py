@@ -15,7 +15,10 @@ from molmo_spaces.policy.solvers.object_manipulation.pick_and_place_planner_poli
 )
 from molmo_spaces.tasks.pick_and_place_task import PickAndPlaceTask
 from molmo_spaces.tasks.task import BaseMujocoTask
-from molmo_spaces.utils.constants.object_constants import RECEPTACLE_TYPES_THOR
+from molmo_spaces.utils.constants.object_constants import (
+    ALL_PICKUP_TYPES_THOR,
+    RECEPTACLE_TYPES_THOR,
+)
 from molmo_spaces.utils.grasps import get_pickup_grasps
 from molmo_spaces.utils.mj_model_and_data_utils import body_aabb
 from molmo_spaces.utils.pose import pose_mat_to_7d
@@ -221,8 +224,6 @@ class CuroboPickAndPlacePlannerPolicy(CuroboPlannerPolicy, PickAndPlacePlannerPo
 
         support_below = om.get_support_below(pickup_obj_name, RECEPTACLE_TYPES_THOR)
         target_object_names.add(support_below)
-
-        from molmo_spaces.editor.constants import ALL_PICKUP_TYPES_THOR
 
         objects_on_surface_below = om.get_objects_that_are_on_top_of_object(
             support_below, pickup_types=ALL_PICKUP_TYPES_THOR

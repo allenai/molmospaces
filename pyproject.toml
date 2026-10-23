@@ -37,7 +37,12 @@ dependencies = [
     "moviepy",
     "msgpack>=1.0.6",
     "msgpack-numpy",
-    "mujoco-warp",
+    # mujoco-warp tracks MuJoCo's own version and reads enum members that MuJoCo
+    # moves between releases (mjENBL_MULTICCD became mjDSBL_MULTICCD), so it
+    # fails at import against a mujoco it does not match. mujoco's own version is
+    # pinned per extra below, so the matching mujoco-warp minor is pinned there
+    # too; this floor only rules out the pre-3.x releases.
+    "mujoco-warp>=3.5",
     "warp-lang",
     "nbstripout>=0.7.0",
     "nltk~=3.9.2",
@@ -62,8 +67,6 @@ dependencies = [
     "tensorboard>=2.20.0",
     "teledex",
     "termcolor>=2.0.0",
-    "torch~=2.7.0", # torch 2.8.x is brand new and has some regressions vs 2.7.x - prefer to hold back for now - this installs nvidia_cuda_nvrtc_cu12-12.6.77 by default, not 12.8
-    "torchvision>=0.22.0,<0.23.0",
     "tqdm>=4.65.0",
     "trimesh>=4.7.3",
     "wandb>=0.18.10",
@@ -103,11 +106,31 @@ housegen = [
 curobo = [
     "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
 ]
+torch-cpu = [
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+]
+torch-cu12 = [
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+]
+torch-cu13 = [
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+]
+g1_humanoid = [
+    "ml-collections", # molmo_spaces/utils/prompt_samplers.py's g1_molmo-ported sampler
+    # mink>=1.0 declares mujoco>=3.8.1, so it can pull mujoco forward.
+    "mink", # G1 whole-body IK: robots/g1.py, pick_task_sampler_g1.py, pick_planner_policy_g1.py
+    "onnxruntime>=1.18.0", # G1 whole-body controller's learned policy: controllers/g1_wbc.py
+]
 mujoco = [
     "mujoco~=3.5.0",
+    "mujoco-warp~=3.5.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-filament = [
     "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco-warp~=3.7.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-experimental = [
     "mujoco-warp>=3.14.0",
@@ -145,10 +168,35 @@ extra-index-url = ["https://pypi.org/simple", "https://test.pypi.org/simple/"]
 
 [tool.uv.sources]
 bpy = { index = "bpy" }
+torch = [
+    { index = "pytorch-cu12", extra = "torch-cu12", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cu13", extra = "torch-cu13", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cpu", extra = "torch-cpu", marker = "platform_system == 'Darwin' or platform_system == 'Linux'" },
+]
+torchvision = [
+    { index = "pytorch-cu12", extra = "torch-cu12", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cu13", extra = "torch-cu13", marker = "platform_system == 'Linux'" },
+    { index = "pytorch-cpu", extra = "torch-cpu", marker = "platform_system == 'Darwin' or platform_system == 'Linux'" },
+]
 
 [[tool.uv.index]]
 name = "bpy"
 url = "https://download.blender.org/pypi/"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu12"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu13"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [project.scripts]
@@ -156,6 +204,9 @@ generate-houses = "molmo_spaces.housegen.exporter:main"
 
 [tool.setuptools.packages.find]
 where = ["./"]
+# `projects/fetchman` is deliberately absent: it is the FetchMan reference
+# port, a leaf nothing in molmo_spaces imports, and its scripts expect a
+# g1_molmo checkout most installs do not have. See projects/fetchman/README.md.
 include = ["molmo_spaces*"]
 exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
 
@@ -215,6 +266,7 @@ target-version = "py311"
 line-length = 100
 exclude = [
  "scripts/",
+ "projects/fetchman/scripts/",
  "tests/",
  "mlspaces_tests/scenes/",
 ]

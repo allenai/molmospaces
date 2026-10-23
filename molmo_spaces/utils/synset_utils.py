@@ -930,12 +930,12 @@ def generate_all_hypernyms_with_exclusions(
     if isinstance(synset, str):
         synset = get_wordnet().synset(synset)
 
-    return set(
+    return {
         h
         for hp in synset.hypernym_paths()
         for h in hp
         if (include_self_synset or h != synset) and h.name() not in excluded
-    )
+    }
 
 
 @lru_cache(maxsize=10000, typed=True)
@@ -1003,10 +1003,10 @@ def filter_synsets_to_remove_hyponyms(synsets: Sequence[str] | Sequence[Synset])
 
 def get_all_synsets_in_metadata() -> list[Synset]:
     anns = ObjectMeta.annotation()
-    synsets = set(ann["synset"] for ann in anns.values() if "synset" in ann) | set(
+    synsets = {ann["synset"] for ann in anns.values() if "synset" in ann} | set(
         AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET.values()
     )
-    synsets = sorted(list(set([get_wordnet().synset(s) for s in synsets])), key=lambda s: s.name())
+    synsets = sorted(list({get_wordnet().synset(s) for s in synsets}), key=lambda s: s.name())
     return synsets
 
 
@@ -1054,7 +1054,7 @@ def get_singleton_highest_hypernyms():
     for syn in get_all_synsets_in_metadata():
         highest_hypernyms[get_highest_relevant_hypernym(syn)] += 1
 
-    return set([h for h in highest_hypernyms if highest_hypernyms[h] < 2])
+    return {h for h in highest_hypernyms if highest_hypernyms[h] < 2}
 
 
 def get_highest_relevant_hypernym(
