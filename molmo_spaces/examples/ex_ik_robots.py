@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as R
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
 from molmo_spaces.robots.robot_views.abstract import GripperGroup
 
-from .common import ROBOTS_INFO, ExampleBaseArgs
+from .common import ROBOTS_SINGLE_ARMS_INFO, ExampleBaseArgs
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
@@ -45,10 +45,10 @@ def main() -> int:
 
     args = tyro.cli(Args)
 
-    if args.robot_id not in ROBOTS_INFO:
+    if args.robot_id not in ROBOTS_SINGLE_ARMS_INFO:
         return 1
 
-    robot_info = ROBOTS_INFO[args.robot_id]
+    robot_info = ROBOTS_SINGLE_ARMS_INFO[args.robot_id]
     robot_config = robot_info.config
     if action_noise_config := robot_config.action_noise_config:
         action_noise_config.enabled = False
