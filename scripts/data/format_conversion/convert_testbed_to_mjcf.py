@@ -192,6 +192,8 @@ def main() -> None:
         geoms.append(vis_geom(name))
 
     # ---- Door: hinge on the CAD slab's hinge edge, re-posed from its open CAD pose to closed.
+    # It opens toward +x, the start side (rules PDF, 'view from the starting location'), so the
+    # hinge axis is -z: positive angle swings the free edge toward +x.
     slab = parts(DOOR_NODE)[0][0]
     v = slab.vertices
     hinge = v[v[:, 0] < v[:, 0].min() + 0.03].mean(0)
@@ -253,8 +255,8 @@ def main() -> None:
     sp = spindle_closed - hinge_pos  # handle origin in the door frame
     door_xml = (
         f'<body name="door" pos="{hinge_pos[0]:g} {hinge_pos[1]:g} 0">\n'
-        f'        <joint name="door_hinge" type="hinge" axis="0 0 1" range="0 {np.degrees(1.9):.1f}" '
-        'stiffness="8" damping="4" springref="0"/>\n        '
+        f'        <joint name="door_hinge" type="hinge" axis="0 0 -1" range="0 {np.degrees(1.9):.1f}" '
+        'stiffness="1.5" damping="8" springref="0"/>\n        '
         + "\n        ".join(door_geoms)
         + f'\n        <body name="door_handle" pos="{sp[0]:g} {sp[1]:g} {sp[2]:g}">\n'
         f'          <joint name="door_handle_turn" type="hinge" axis="1 0 0" '

@@ -29,6 +29,7 @@ from molmo_spaces.configs.camera_configs import (
     FrankaRandomizedD405D455CameraSystem,
     FrankaRandomizedDroidCameraSystem,
     G1CameraSystem,
+    G1Dex3CameraSystem,
     RBY1GoProD455CameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
@@ -43,6 +44,7 @@ from molmo_spaces.configs.robot_configs import (
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
     G1Config,
+    G1Dex3Config,
     RBY1MConfig,
     RBY1MOpenCloseConfig,
 )
@@ -1102,6 +1104,34 @@ class InteractiveShellG1ChallengeKeypadDoorDataGenConfig(InteractiveShellG1Chall
     @property
     def tag(self) -> str:
         return "interactive_shell_g1_challenge_keypad_door"
+
+
+@register_config("InteractiveShellG1Dex3ChallengeKeypadDoor")
+class InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig(
+    InteractiveShellG1ChallengeKeypadDoorDataGenConfig
+):
+    """InteractiveShellG1ChallengeKeypadDoor with the dual-Dex3 G1 (`g1_dex3`): same head fisheye
+    and wrist cameras (plus a left wrist camera), a Dex3-1 hand on each wrist.
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \\
+            --config InteractiveShellG1Dex3ChallengeKeypadDoor
+        >>> solve_keypad()
+    """
+
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_dex3_challenge"
+    )
+    robot_config: BaseRobotConfig = G1Dex3Config()
+    camera_config: G1CameraSystem = G1Dex3CameraSystem()
+    # The Dex3 index fingertip reaches ~6cm further than the Dex1 gripper: stand further back.
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = (
+        InteractiveShellG1ChallengeKeypadDoorDataGenConfig.model_fields["task_sampler_config"]
+        .default.model_copy(update={"robot_start_xy_yaw": (9.1, 1.945, 180.0)})
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_dex3_challenge"
 
 
 @register_config("FrankaPickBatchTestConfig")

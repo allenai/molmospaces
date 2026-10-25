@@ -14,7 +14,7 @@ not turned, the hinge's joint range is clamped to [0, 0].
 
 Use via the interactive shell (config InteractiveShellG1ChallengeKeypadDoor): `status()`
 plus `press(digit)` / `solve_keypad()` and the usual `nav_to_xy` / `rotate` / ... skills. The
-keypad has a scripted solver (`press` / `solve_keypad`); the lever and door do not yet.
+scripted solvers: `press` / `solve_keypad` and `solve_door` / `solve_all`.
 """
 
 import logging
@@ -70,6 +70,10 @@ class ChallengeKeypadDoorTask(InteractiveShellTask):
         self.traversed = False
         self.door_closed_after = False
         self.fell = False
+        # The arm pose the episode starts in, which the door solver returns to.
+        self.rest_arm = np.asarray(
+            env.current_robot.robot_view.get_move_group("right_arm").joint_pos, dtype=np.float32
+        ).copy()
 
     # ---- state readers -------------------------------------------------------------------
     def _q(self, joint: str) -> float:
@@ -174,15 +178,23 @@ class ChallengeKeypadDoorTask(InteractiveShellTask):
 
     # ---- shell hooks ---------------------------------------------------------------------
     def _shell_extras(self) -> dict:
-        return {"status": self.status, "press": self.press, "solve_keypad": self.solve_keypad}
+        return {
+            "status": self.status,
+            "press": self.press,
+            "solve_keypad": self.solve_keypad,
+            "solve_door": self.solve_door,
+            "solve_all": self.solve_all,
+        }
 
     def _press_solver(self):
         from molmo_spaces.policy.solvers.object_manipulation.keypad_press_solver import (
+            Dex3KeypadPressSolver,
             KeypadPressSolver,
         )
 
         if getattr(self, "_solver", None) is None:
-            self._solver = KeypadPressSolver(self)
+            dex3 = "right_hand" in self._env.current_robot.robot_view.move_group_ids()
+            self._solver = (Dex3KeypadPressSolver if dex3 else KeypadPressSolver)(self)
         return self._solver
 
     def press(self, digit: int) -> bool:
@@ -193,6 +205,22 @@ class ChallengeKeypadDoorTask(InteractiveShellTask):
         """Press this episode's code, in order (see KeypadPressSolver)."""
         return self._press_solver().solve(self.code)
 
+    def solve_door(self) -> bool:
+        """Turn the lever, push through the door, let it close (see DoorTraversalSolver)."""
+        from molmo_spaces.policy.solvers.object_manipulation.door_traversal_solver import (
+            DoorTraversalSolver,
+        )
+
+        if getattr(self, "_door_solver", None) is None:
+            self._door_solver = DoorTraversalSolver(self)
+        return self._door_solver.traverse()
+
+    def solve_all(self) -> bool:
+        """Keypad, then door."""
+        self.solve_keypad()
+        self.solve_door()
+        return self.status()["success"]
+
     def _shell_banner_extra(self) -> list[str]:
         return [
             " challenge (keypad + door):",
@@ -200,4 +228,6 @@ class ChallengeKeypadDoorTask(InteractiveShellTask):
             "  status()                               - keypad / lever / door / traversal progress",
             "  press(digit)                           - right-hand press of keypad button 1-9",
             "  solve_keypad()                         - press the whole code, in order",
+            "  solve_door()                           - lever, push through the door, let it close",
+            "  solve_all()                            - keypad, then door",
         ]
