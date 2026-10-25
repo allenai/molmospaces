@@ -16,6 +16,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
 
+from molmo_spaces.tasks.challenge_keypad_door_task import KEY_RELEASED_DEPTH
+
 log = logging.getLogger(__name__)
 
 # Grasp-site frame for pushing along the base's forward axis: z forward, x up (right hand).
@@ -34,9 +36,14 @@ class KeypadPressSolver:
     PUSH_TICKS = 30
     RETRACT_TICKS = 20
     HOLD_TICKS = 4
-    MAX_ATTEMPTS = 3
+    PUSH_STEP = 0.002  # m the push target advances per tick
+    LATERAL_GAIN = 0.06  # share of the live lateral error added to the push target per tick
+    MAX_LATERAL = 0.04  # m, cap on the correction accumulated during one push
+    MAX_OVERTRAVEL = 0.03  # m past the key face the hand may go before the push is abandoned
+    MAX_ATTEMPTS = 1  # one push per key; no retries
     debug = False
     gripper_open = False  # the keypad is pressed with a closed gripper
+    hand = "right"  # which arm/hand does the work ("left" or "right")
     keep_station = True  # walk the base back toward where it stood; off = stand still
     COMP_GAIN = 0.8  # share of the tracking error added to the IK target
     MAX_COMP = 0.05  # m, cap on that correction
@@ -54,7 +61,7 @@ class KeypadPressSolver:
 
     def _site(self) -> tuple[np.ndarray, np.ndarray]:
         model, data = self.task._env.current_model, self.task._env.current_data
-        sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "robot_0/right_grasp")
+        sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, f"robot_0/{self.hand}_grasp")
         return data.site_xpos[sid].copy(), data.site_xmat[sid].reshape(3, 3).copy()
 
     def _yaw_rot(self) -> np.ndarray:
@@ -100,7 +107,7 @@ class KeypadPressSolver:
             arm, waist, ik_h, ik_err = robot.kinematics_wbc(
                 pos + self.COMP_GAIN * lag,
                 slerp(t).as_matrix(),
-                hand="right",
+                hand=self.hand,
                 avoid_self_collision=True,
                 precision=precision,
             )
@@ -119,7 +126,7 @@ class KeypadPressSolver:
             self._height_cmd += HEIGHT_GAIN * (ik_h - self._height_cmd)
             task._step_and_record(
                 {
-                    "right_arm": arm,
+                    f"{self.hand}_arm": arm,
                     "legs_waist": np.array([*base_cmd, self._height_cmd, *waist], dtype=np.float32),
                     **hand_action,
                 }
@@ -157,7 +164,7 @@ class KeypadPressSolver:
 
     # ---- skills ----------------------------------------------------------------------------
     def press(self, digit: int) -> bool:
-        """Press button `digit` once, retrying a little deeper if it does not register."""
+        """Press button `digit` once."""
         task = self.task
         self._hold = None  # hold wherever the base stands now
         face = self._face(digit)
@@ -165,35 +172,45 @@ class KeypadPressSolver:
         rot = self._push_rot()
         pre = face + [self.STANDOFF, 0.0, 0.0]
         self._move(pre, rot, self.APPROACH_TICKS)
-        ok = False
         registered = lambda: len(task.press_log) > presses_before  # noqa: E731
-        for attempt in range(self.MAX_ATTEMPTS):
-            goal = face - [self.PUSH_DEPTH + 0.004 * attempt, 0, 0]
-            ok = self._move(goal, self._push_rot(), self.PUSH_TICKS, precision=True, until=registered)
-            ok = ok or registered()  # the press that registered is checked by solve()
-            if ok:
-                break
-            log.info(f"key {digit} not registered (attempt {attempt + 1}), pushing deeper")
-        self._move(pre, self._push_rot(), self.RETRACT_TICKS)
+        ok = self._push(face, registered)
+        self._release(digit, pre)
         print(f"press({digit}): {'registered' if ok else 'MISSED'}")
         return ok
 
-    def solve(self, code: list[int] | None = None, max_restarts: int = 2) -> bool:
-        """Press the whole code in order. A wrong digit resets the keypad's sequence, so the
-        code is then restarted from its first digit (up to `max_restarts` times).
-        """
+    def _push(self, face: np.ndarray, registered) -> bool:
+        """One continuous push: line the fingertip up with the key, then advance the target along
+        -x each tick from the live state until the key's own slide joint registers the press.
+        Aborts if the base falls or the hand goes `MAX_OVERTRAVEL` past the face."""
+        task = self.task
+        pre, _ = self._site()
+        off, _ = self._servo(np.array([pre[0], face[1], face[2]]), self._push_rot)
+        off = off0 = off * [0, 1, 1]
+        x = pre[0]
+        while x > face[0] - self.MAX_OVERTRAVEL:
+            x -= self.PUSH_STEP
+            # The arm sags further as it pushes: keep integrating the lateral error.
+            off = off + self.LATERAL_GAIN * (face - self._site()[0]) * [0, 1, 1]
+            off = np.clip(off, off0 - self.MAX_LATERAL, off0 + self.MAX_LATERAL)
+            if self._move(np.array([x, face[1], face[2]]) + off, self._push_rot(), 1, precision=True, until=registered):
+                return True
+            if task._env.current_robot.robot_view.base.pose[2, 3] < 0.5:
+                return False
+        return registered()
+
+    def _release(self, digit: int, pre: np.ndarray) -> None:
+        """Retract to the standoff, then keep going until the key is back up past the release depth."""
+        task = self.task
+        up = lambda: -task._q(f"key{digit}_slide") <= KEY_RELEASED_DEPTH  # noqa: E731
+        self._move(pre, self._push_rot(), self.RETRACT_TICKS, until=up)
+        self._move(pre, self._push_rot(), self.RETRACT_TICKS)
+
+    def solve(self, code: list[int] | None = None) -> bool:
+        """Press the whole code in order, one push per digit. No retries: a missed or wrong
+        key is left as is and the caller moves on (the door does not depend on the keypad)."""
         code = list(self.task.code if code is None else code)
-        for _ in range(1 + max_restarts):
-            for i, digit in enumerate(code):
-                if not self.press(digit):  # missed entirely: try that digit once more
-                    self.press(digit)
-                if self.task.keypad_done:
-                    break
-                if self.task.entered != code[: i + 1]:  # wrong key hit: sequence was reset
-                    print(f"keypad sequence reset after digit {digit}; restarting")
-                    break
-            if self.task.keypad_done:
-                break
+        for digit in code:
+            self.press(digit)
         done = self.task.keypad_done
         print(f"keypad {'solved' if done else 'NOT solved'}: entered={self.task.entered}")
         return done
