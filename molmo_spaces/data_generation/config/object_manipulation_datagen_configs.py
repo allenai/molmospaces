@@ -65,6 +65,7 @@ from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_path
 from molmo_spaces.tasks.interactive_shell_task_sampler import (
     ChallengeKeypadDoorTaskSampler,
+    ChallengeLightbulbTaskSampler,
     InteractiveShellChallengeTaskSampler,
     InteractiveShellPickTaskSampler,
     InteractiveShellTaskSampler,
@@ -1078,7 +1079,7 @@ class InteractiveShellG1ChallengeKeypadDoorDataGenConfig(InteractiveShellG1Chall
         >>> status()
         >>> solve_keypad()   # the robot spawns in front of the keypad
 
-    The 5-digit code is on the screen above the keypad and in the task description.
+    The 2-digit code is on the screen above the keypad and in the task description.
     """
 
     output_dir: Path = (
@@ -1132,6 +1133,60 @@ class InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig(
     @property
     def tag(self) -> str:
         return "interactive_shell_g1_dex3_challenge"
+
+
+@register_config("InteractiveShellG1Dex3ChallengeDoor")
+class InteractiveShellG1Dex3ChallengeDoorDataGenConfig(
+    InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig
+):
+    """The dual-Dex3 G1 at the door: spawns right of the doorway, left fingertip in line with
+    the lever bar (door sequence: `solve_door()`).
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \\
+            --config InteractiveShellG1Dex3ChallengeDoor
+    """
+
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = (
+        InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig.model_fields["task_sampler_config"]
+        .default.model_copy(update={"robot_start_xy_yaw": (9.1, 1.86, 180.0)})
+    )
+    # NB: for the full task use InteractiveShellG1Dex3ChallengeKeypadDoor (keypad spawn) and call
+    # solve_keypad() then solve_door(); the door solver walks to the lever on its own.
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_dex3_challenge_door"
+
+
+@register_config("InteractiveShellG1Dex3ChallengeLightbulb")
+class InteractiveShellG1Dex3ChallengeLightbulbDataGenConfig(
+    InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig
+):
+    """Challenge manipulation task 3 (lightbulb turning) for the dual-Dex3 G1: spawns in front of
+    the wall and floor light boards (where the robot ends up after the door and the right turn).
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \\
+            --config InteractiveShellG1Dex3ChallengeLightbulb
+        >>> status()
+        >>> solve_lightbulb()    # or turn_bulb(i) / place_bulb(i)
+    """
+
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_dex3_challenge_lightbulb"
+    )
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = (
+        InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig.model_fields["task_sampler_config"]
+        .default.model_copy(
+            update={
+                "task_sampler_class": ChallengeLightbulbTaskSampler,
+                "robot_start_xy_yaw": (7.75, 0.65, 0.0),  # facing the boards on the wall at x=8.43
+            }
+        )
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_dex3_challenge_lightbulb"
 
 
 @register_config("FrankaPickBatchTestConfig")

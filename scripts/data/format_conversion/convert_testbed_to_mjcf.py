@@ -15,7 +15,9 @@ Writes ``<out_dir>/testbed.xml`` plus ``<out_dir>/meshes/*.obj`` (and a loadable
   so concave parts (e.g. hollow cabinets) become solid. The CAD has no mass/friction data.
 
 Task parts are cut out of the static mesh into articulated bodies (see TASK PARTS below):
-the door (hinge, return spring) with its lever handle, and the nine keypad push buttons.
+the door (hinge, return spring) with its lever handle, the nine keypad push buttons, and the
+lightbulb task (task 3): ten threaded light fixtures on two boards (a wall board and a 45-degree
+floor board), their bulbs, and ten spare bulbs standing in the rail rack.
 
 The DAE is in inches, Z-up; the output is in metres, Z-up, with the apparatus' min corner
 at x=0, y=0 and its walking deck at z=0 (the CAD base is at z=-0.10).
@@ -39,6 +41,40 @@ KEYPAD_NODES = {
     4: ("ID5789", "ID5796"), 5: ("ID5747", "ID5754"), 6: ("ID5768", "ID5775"),
     7: ("ID5810", "ID5817"), 8: ("ID5831", "ID5838"), 9: ("ID5852", "ID5859"),
 }  # fmt: skip
+# ---- LIGHTBULB TASK (rules PDF task 3): 3D-printed bulbs screwed into light fixtures on boards ----
+# The CAD has ten fixtures: five on a vertical wall board (0-4, quincunx) and five on a 45-degree
+# tilted floor board (5-9). Each carries a bulb (a white mesh plus an identical black outline shell),
+# and ten more bulbs stand in a rail rack (the "box" they are retrieved from).
+FIXTURE_NODES = [
+    "ID5098", "ID5107", "ID5114", "ID5121", "ID5128",  # wall board
+    "ID5397", "ID5404", "ID5411", "ID5418", "ID5425",  # floor board
+]  # fmt: skip
+INSTALLED_BULB_NODES = [  # (white, black outline) of the bulb the CAD screws into each fixture above
+    ("ID5136", "ID5136_1"), ("ID5136_8", "ID5136_9"), ("ID5136_2", "ID5136_3"),
+    ("ID5136_4", "ID5136_5"), ("ID5136_6", "ID5136_7"),
+    ("ID5136_10", "ID5136_11"), ("ID5437",), ("ID5136_12", "ID5136_13"),
+    ("ID5136_14", "ID5136_15"), ("ID5136_16", "ID5136_17"),
+]  # fmt: skip
+SPARE_BULB_NODES = [(f"ID5136_{k}", f"ID5136_{k + 1}") for k in range(18, 36, 2)] + [("ID5437_1",)]
+# Fixtures that start empty (the bulb is not built): the bottom row of the wall board.
+EMPTY_FIXTURES = (2, 4)
+# Zero-size outline/dimension markers around the bulbs (2-6 faces); as 1 cm boxes they would collide.
+MARKER_PREFIXES = ("ID5144", "ID5150", "ID5443", "ID5449")
+RACK_PLATE_NODES = ["ID5897", "ID5897_1"]  # rack plate the spare bulbs hang through
+RACK_COLLAR_NODES = [f"ID{n}{s}" for n in range(5912, 5992, 8) for s in ("", "_1")]
+RACK_HOLE = 0.017  # m, half-width of the (square) hole each spare bulb stands in
+THREAD_PITCH = 0.001  # m of travel into the fixture per full turn
+SEAT_DEG = 270.0  # turn at which a bulb counts as tightened / seated (task module: BULB_SEATED_DEG)
+STOP_DEG = 285.0  # hard stop of the thread (bottomed out)
+# Sim values, not CAD data: the thread has to hold a bulb against the few newtons of incidental finger
+# contact, yet be turnable by a three-digit grip, and the (light) bulb joint needs rotor inertia and
+# damping to stay smooth under contact; hence a high-friction ("rubberised") bulb surface.
+THREAD_FRICTION = 0.25  # N m, dry friction of the thread joint
+THREAD_DAMPING = 0.05  # N m s/rad
+THREAD_ARMATURE = 0.004  # kg m^2, rotor inertia of the thread joint
+BULB_FRICTION = 6.0  # sliding friction coefficient of the bulb's contact geoms
+BULB_MASS = 0.06  # kg, 3D-printed hollow bulb
+BULB_TIP_LEN = 0.105  # m, base to tip
 DECK_TOP = 0.10  # m, walking surface height above the CAD's base; the output puts it at z=0
 KEY_TRAVEL = 0.008  # m, push depth (along -x)
 
@@ -264,6 +300,13 @@ def main() -> None:
         if any(node == t or node.startswith(t + "_") for t in take_prefix):
             taken[node] = world.pop(node)
 
+    # Lightbulb task parts: fixtures, bulbs and the rack plate leave the static hull set.
+    bulb_ids = [n for pair in INSTALLED_BULB_NODES + SPARE_BULB_NODES for n in pair]
+    markers = [n for n in world if n.startswith(MARKER_PREFIXES) and len(world[n][0].faces) <= 6]
+    bulb_src = {n: world.pop(n) for n in FIXTURE_NODES + bulb_ids + RACK_PLATE_NODES + RACK_COLLAR_NODES}
+    for n in markers:
+        del world[n]
+
     def parts(*ids):
         return [taken[n] for n in taken if any(n == i or n.startswith(i + "_") for i in ids)]
 
@@ -298,7 +341,14 @@ def main() -> None:
         geoms.append(f'<geom name="{name}" type="mesh" mesh="{name}" group="3" rgba="0 0 0 0"/>')
 
     # Static visual meshes.
-    for name in write_visual("vis", list(world.values()), mesh_dir, out, args.visual_faces):
+    # Flat white box shells (outline/edge duplicates lying in the deck and sheet tops, e.g. ID85_1,
+    # ID4347_1) z-fight with the textured sheet they trace; they are collision-only.
+    flat_shells = [
+        n for n, (m, r) in world.items()
+        if len(m.faces) <= 18 and m.extents[2] < 0.02 and tuple(r) == (1.0, 1.0, 1.0, 1.0)
+    ]  # fmt: skip
+    visible = [v for n, v in world.items() if n not in flat_shells]
+    for name in write_visual("vis", visible, mesh_dir, out, args.visual_faces):
         geoms.append(vis_geom(name))
 
     # ---- Door: hinge on the CAD slab's hinge edge, re-posed from its open CAD pose to closed.
@@ -426,15 +476,165 @@ def main() -> None:
         )
         excludes.append(f'<exclude body1="testbed" body2="key{digit}"/>')
 
+
+    # ---- Lightbulb task: threaded fixtures + bulbs. Every bulb shares one local mesh (frame: origin
+    # at the base end, +z along the bulb toward its tip). A fixture's carrier body `thread{i}` has a
+    # hinge about -z (positive = tightening, a right-hand thread) and a slide along -z tied to it by
+    # THREAD_PITCH per turn; at turn 0 it sits backed out, at SEAT_DEG its frame is the CAD pose. An
+    # installed bulb's geoms ride on its carrier. A spare bulb is a free body; once the task sees it
+    # aligned in an empty fixture it activates the weld `seat_{spare}_{fixture}` to that fixture's
+    # carrier, so turning the bulb screws it in.
+    from scipy.spatial.transform import Rotation as Rot
+
+    def bulb_frame(meshes, expect):
+        """(base-end centre, unit tip axis, 3x3 frame with z = axis) of a CAD bulb."""
+        v = np.concatenate([m.vertices for m in meshes])
+        c = v.mean(0)
+        a = np.linalg.svd(v - c, full_matrices=False)[2][0]
+        t = (v - c) @ a
+        radius = np.linalg.norm((v - c) - np.outer(t, a), axis=1)
+        end = lambda sel: radius[sel].max()  # noqa: E731
+        if end(t > t.max() - 0.006) < end(t < t.min() + 0.006):  # the tip end is the round, wide one
+            a = -a
+            t = -t
+        base = v[t < t.min() + 0.002].mean(0)
+        assert a @ expect > 0.9, (a, expect)
+        x = np.cross([0, 0, 1.0], a)
+        x = x / np.linalg.norm(x) if np.linalg.norm(x) > 1e-6 else np.array([1.0, 0, 0])
+        return base, a, np.stack([x, np.cross(a, x), a], axis=1)
+
+    def mat4(Rm, origin):
+        T = np.eye(4)
+        T[:3, :3], T[:3, 3] = Rm, origin
+        return T
+
+    def quat_wxyz(Rm):
+        q = Rot.from_matrix(Rm).as_quat()
+        return f"{q[3]:g} {q[0]:g} {q[1]:g} {q[2]:g}"
+
+    wall_up = np.array([-1.0, 0, 0])  # wall-board bulbs point out of the wall, toward the robot
+    floor_up = np.array([-1.0, 0, 1.0]) / np.sqrt(2)
+    frames = []  # per fixture: (base, axis, R)
+    for i, ids in enumerate(INSTALLED_BULB_NODES):
+        frames.append(bulb_frame([bulb_src[ids[0]][0]], wall_up if i < 5 else floor_up))
+    spare_frames = [
+        bulb_frame([bulb_src[ids[0]][0]], np.array([0, 0, 1.0])) for ids in SPARE_BULB_NODES
+    ]
+    # One shared local bulb mesh (decimated visual + a base hull and a globe hull for contact).
+    t_bulb = mat4(spare_frames[0][2], spare_frames[0][0])
+    bulb_local = to_frame(bulb_src[SPARE_BULB_NODES[0][0]][0], t_bulb)
+    bulb_rgba = bulb_src[SPARE_BULB_NODES[0][0]][1]
+    bulb_vis = [
+        vis_geom(n)
+        for n in write_visual("bulb_vis", [(bulb_local, bulb_rgba)], mesh_dir, dout, face_budget=8000)
+    ]
+    face_z = bulb_local.vertices[bulb_local.faces][:, :, 2].mean(1)
+    bulb_col = []
+    for k, (lo_z, hi_z) in enumerate([(-1.0, 0.045), (0.040, 1.0)]):  # thread + neck, globe
+        sel = (face_z >= lo_z) & (face_z < hi_z)
+        hull = trimesh.PointCloud(np.unique(bulb_local.vertices[bulb_local.faces[sel]].reshape(-1, 3), axis=0)).convex_hull
+        hull.export(mesh_dir / f"bulb_col_{k}.obj")
+        assets.append(f'<mesh name="bulb_col_{k}" file="meshes/bulb_col_{k}.obj"/>')
+        bulb_col.append(
+            f'<geom name="@@_col_{k}" type="mesh" mesh="bulb_col_{k}" mass="{BULB_MASS / 2:g}" '
+            f'friction="{BULB_FRICTION:g} 0.02 0.002" group="3" rgba="0 0 0 0"/>'
+        )
+    print(f"bulb mesh: extents {np.round(bulb_local.extents, 4)}, tip at {bulb_local.bounds[1][2]:.3f}")
+
+    seat_rad = np.radians(SEAT_DEG)
+    slide_max = THREAD_PITCH * seat_rad / (2 * np.pi)
+    inertial = f'<inertial pos="0 0 0.06" mass="{BULB_MASS:g}" diaginertia="3e-5 3e-5 1.5e-5"/>'
+    fixture_xml, thread_xml, bulb_excludes, bulb_eq = [], [], [], []
+    for i, node in enumerate(FIXTURE_NODES):
+        fm, frgba = bulb_src[node]
+        names = write_visual(f"fixture{i}_vis", [(fm, frgba)], mesh_dir, dout, face_budget=6000)
+        fg = [vis_geom(n) for n in names]
+        hull_or_box(fm).export(mesh_dir / f"fixture{i}_col.obj")
+        assets.append(f'<mesh name="fixture{i}_col" file="meshes/fixture{i}_col.obj"/>')
+        fg.append(
+            f'<geom name="fixture{i}_col" type="mesh" mesh="fixture{i}_col" group="3" rgba="0 0 0 0"/>'
+        )
+        fixture_xml.append("\n      ".join(fg))
+        base, a, Rm = frames[i]
+        p0 = base + a * slide_max  # carrier frame at turn 0: backed out by the travel to the seat
+        geoms_i = (
+            [] if i in EMPTY_FIXTURES
+            else [g.replace("<geom name=\"bulb_vis", f"<geom name=\"bulb{i}_vis") for g in bulb_vis]
+            + [g.replace("@@", f"bulb{i}") for g in bulb_col]
+        )  # fmt: skip
+        thread_xml.append(
+            f'<body name="thread{i}" pos="{p0[0]:g} {p0[1]:g} {p0[2]:g}" quat="{quat_wxyz(Rm)}">\n'
+            f'        <joint name="thread{i}_slide" type="slide" axis="0 0 -1" range="0 {slide_max:g}"/>\n'
+            f'        <joint name="thread{i}_turn" type="hinge" axis="0 0 -1" '
+            f'range="0 {STOP_DEG:g}" frictionloss="{THREAD_FRICTION:g}" damping="{THREAD_DAMPING:g}" armature="{THREAD_ARMATURE:g}"/>\n        '
+            + inertial + "\n        " + "\n        ".join(geoms_i) + "\n      </body>"
+        )  # fmt: skip
+        bulb_eq.append(
+            f'<joint joint1="thread{i}_slide" joint2="thread{i}_turn" '
+            f'polycoef="0 {THREAD_PITCH / (2 * np.pi):g} 0 0 0" solref="0.004 1" solimp="0.99 0.99 0.001"/>'
+        )
+        bulb_excludes.append(f'<exclude body1="fixture{i}" body2="thread{i}"/>')
+    # `range` of a hinge is in degrees (compiler default); polycoef couples radians -- the slide
+    # travel per turn is THREAD_PITCH, so q_slide = THREAD_PITCH / 2pi * q_turn(rad).
+
+    spare_xml = []
+    for k, (base, a, Rm) in enumerate(spare_frames):
+        spare_xml.append(
+            f'<body name="spare{k}" pos="{base[0]:g} {base[1]:g} {base[2]:g}" quat="{quat_wxyz(Rm)}">\n'
+            f'        <freejoint name="spare{k}_free"/>\n        ' + inertial + "\n        "
+            + "\n        ".join(
+                [g.replace("<geom name=\"bulb_vis", f"<geom name=\"spare{k}_vis") for g in bulb_vis]
+                + [g.replace("@@", f"spare{k}") for g in bulb_col]
+            )
+            + "\n      </body>"
+        )  # fmt: skip
+        for j in EMPTY_FIXTURES:
+            bulb_excludes.append(f'<exclude body1="fixture{j}" body2="spare{k}"/>')
+            bulb_eq.append(
+                f'<weld name="seat_{k}_{j}" body1="spare{k}" body2="thread{j}" active="false" '
+                'relpose="0 0 0 1 0 0 0" anchor="0 0 0" '
+                'solref="0.008 1" solimp="0.95 0.99 0.001"/>'
+            )
+
+    # Rack plate: a plate with a square hole per spare bulb (a hull would be a solid slab).
+    (px0, py0, pz0), (px1, py1, pz1) = bulb_src[RACK_PLATE_NODES[0]][0].bounds
+    hx = sorted(b[0] for b, _, _ in spare_frames)
+    hy = float(np.mean([b[1] for b, _, _ in spare_frames]))
+    cuts = [(px0, hx[0] - RACK_HOLE)] + [
+        (u + RACK_HOLE, v - RACK_HOLE) for u, v in zip(hx[:-1], hx[1:])
+    ] + [(hx[-1] + RACK_HOLE, px1)]
+    boxes = [((px0, px1), (py0, hy - RACK_HOLE)), ((px0, px1), (hy + RACK_HOLE, py1))]
+    boxes += [((u, v), (hy - RACK_HOLE, hy + RACK_HOLE)) for u, v in cuts]
+    for n, ((u0, u1), (v0, v1)) in enumerate(boxes):
+        geoms.append(
+            f'<geom name="rack_plate_{n}" type="box" pos="{(u0 + u1) / 2:g} {(v0 + v1) / 2:g} {(pz0 + pz1) / 2:g}" '
+            f'size="{(u1 - u0) / 2:g} {(v1 - v0) / 2:g} {(pz1 - pz0) / 2:g}" group="3" rgba="0 0 0 0"/>'
+        )
+    for name in write_visual(
+        "rack_vis",
+        [bulb_src[n] for n in RACK_PLATE_NODES + RACK_COLLAR_NODES],
+        mesh_dir,
+        out,
+        args.visual_faces,
+    ):
+        geoms.append(vis_geom(name))
+    excludes += bulb_excludes
+
     textures, mats = out["textures"], out["mats"]
 
     xml = (
         '<mujoco model="loco_manipulation_testbed">\n'
         "  <asset>\n    " + "\n    ".join(textures + mats + assets) + "\n  </asset>\n"
         "  <contact>\n    " + "\n    ".join(excludes) + "\n  </contact>\n"
+        "  <equality>\n    " + "\n    ".join(bulb_eq) + "\n  </equality>\n"
         "  <worldbody>\n"
         '    <body name="testbed">\n      ' + "\n      ".join(geoms) + "\n    </body>\n"
-        "    " + door_xml + "\n    " + "\n    ".join(key_xml) + "\n"
+        + "".join(
+            f'    <body name="fixture{i}">\n      {g}\n    </body>\n'
+            for i, g in enumerate(fixture_xml)
+        )
+        + "    " + door_xml + "\n    " + "\n    ".join(key_xml) + "\n"
+        "    " + "\n    ".join(thread_xml) + "\n    " + "\n    ".join(spare_xml) + "\n"
         "  </worldbody>\n</mujoco>\n"
     )
     (args.out_dir / "testbed.xml").write_text(xml)

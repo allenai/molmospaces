@@ -1,6 +1,6 @@
 """IEEE Humanoids 2026 Loco-Manipulation Challenge, manipulation tasks 1 and 2.
 
-1. Keypad: a 5-digit code is shown on the screen above the keypad; press the matching
+1. Keypad: a 2-digit code is shown on the screen above the keypad; press the matching
    buttons (3x3 grid, 1 top-left .. 9 bottom-right) in order. A button "lights up"
    (turns green) once pushed in far enough.
 2. Door traversal: turn the lever handle, push the door open, walk through the doorway,

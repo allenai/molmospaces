@@ -120,7 +120,7 @@ class InteractiveShellChallengeTaskSampler(InteractiveShellPickTaskSampler):
 
 class ChallengeKeypadDoorTaskSampler(InteractiveShellChallengeTaskSampler):
     """Challenge testbed, manipulation tasks 1-2 (keypad, door): spawns the robot at the
-    start location, draws a fresh 5-digit code on the screen above the keypad, and hands
+    start location, draws a fresh 2-digit code on the screen above the keypad, and hands
     back a `ChallengeKeypadDoorTask`."""
 
     SCREEN_POS = (8.595, 2.145, 1.46)  # on the wall panel, above the keypad
@@ -129,7 +129,7 @@ class ChallengeKeypadDoorTaskSampler(InteractiveShellChallengeTaskSampler):
     def add_auxiliary_objects(self, spec) -> None:
         super().add_auxiliary_objects(spec)
         seed = self.config.seed if self.config.seed is not None else np.random.randint(1 << 30)
-        self._code = [int(d) for d in np.random.default_rng(seed).integers(1, 10, 5)]
+        self._code = [int(d) for d in np.random.default_rng(seed).integers(1, 10, 2)]
         out_dir = Path(self.config.output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         png = out_dir / "keypad_code.png"
@@ -172,6 +172,29 @@ class ChallengeKeypadDoorTaskSampler(InteractiveShellChallengeTaskSampler):
         return task
 
 
+class ChallengeLightbulbTaskSampler(InteractiveShellChallengeTaskSampler):
+    """Challenge testbed, manipulation task 3 (lightbulbs): spawns the robot in front of the light
+    boards, jittered a little by the seed (+-3 cm, +-3 deg), and hands back a `ChallengeLightbulbTask`."""
+
+    START_JITTER = (0.03, 0.03, 3.0)
+
+    def _sample_task(self, env: CPUMujocoEnv):
+        from molmo_spaces.tasks.challenge_lightbulb_task import ChallengeLightbulbTask
+
+        seed = self.config.seed if self.config.seed is not None else 0
+        rng = np.random.default_rng(seed)
+        sampler_cfg = self.config.task_sampler_config
+        if not hasattr(self, "_nominal_start"):
+            self._nominal_start = tuple(sampler_cfg.robot_start_xy_yaw)
+        sampler_cfg.robot_start_xy_yaw = tuple(
+            float(v + rng.uniform(-j, j)) for v, j in zip(self._nominal_start, self.START_JITTER)
+        )
+        self._place_robot(env)
+        task = ChallengeLightbulbTask(env, self.config)
+        log.info(f"Sampled task '{task.get_task_description()}'")
+        return task
+
+
 # Every sampler that hands off to InteractiveShellTask.run_shell(). scripts/
 # datagen/run_pipeline.py dispatches on this rather than on one class, so a
 # config may pick either shell sampler.
@@ -180,4 +203,5 @@ INTERACTIVE_SHELL_SAMPLERS: tuple[type, ...] = (
     InteractiveShellPickTaskSampler,
     InteractiveShellChallengeTaskSampler,
     ChallengeKeypadDoorTaskSampler,
+    ChallengeLightbulbTaskSampler,
 )
