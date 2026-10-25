@@ -7,6 +7,7 @@ for use in the data generation pipeline.
 
 import math
 from functools import cache
+import os
 from pathlib import Path
 from typing import Any
 
@@ -61,6 +62,8 @@ from molmo_spaces.configs.task_sampler_configs import (
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_path
 from molmo_spaces.tasks.interactive_shell_task_sampler import (
+    ChallengeKeypadDoorTaskSampler,
+    InteractiveShellChallengeTaskSampler,
     InteractiveShellPickTaskSampler,
     InteractiveShellTaskSampler,
 )
@@ -1020,6 +1023,85 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
     @property
     def tag(self) -> str:
         return "interactive_shell_g1"
+
+
+class InteractiveShellChallengeSamplerConfig(PickAndPlaceTaskSamplerConfig):
+    """Sampler config for a fixed arena scene: where the robot spawns."""
+
+    robot_start_xy_yaw: tuple[float, float, float] = (0.0, 0.0, 0.0)  # metres, metres, degrees
+
+
+@register_config("InteractiveShellG1Challenge")
+class InteractiveShellG1ChallengeDataGenConfig(InteractiveShellG1DataGenConfig):
+    """InteractiveShellG1 in the IEEE Humanoids 2026 Loco-Manipulation Challenge testbed.
+
+    Convert the CAD once (scripts/data/format_conversion/convert_testbed_to_mjcf.py), then
+    point CHALLENGE_TESTBED_XML at the scene (default: ASSETS_DIR/
+    ieee_humanoids_2026/challenge_scene.xml) and run:
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --config InteractiveShellG1Challenge
+        >>> nav_to_xy(4.5, 1.3)
+    """
+
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_challenge"
+    scene_dataset: str = "user"
+    data_split: str = "val"
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = InteractiveShellChallengeSamplerConfig(
+        task_sampler_class=InteractiveShellChallengeTaskSampler,
+        scene_xml_paths=[
+            os.environ.get(
+                "CHALLENGE_TESTBED_XML",
+                str(ASSETS_DIR / "ieee_humanoids_2026" / "challenge_scene.xml"),
+            )
+        ],
+        house_inds=[0],
+        house_variant="base",
+        pickup_types=[],
+        samples_per_house=1,
+        check_robot_placement_visibility=False,
+        robot_safety_radius=0.3,
+        robot_start_xy_yaw=(2.0, 1.3, 0.0),
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_challenge"
+
+
+@register_config("InteractiveShellG1ChallengeKeypadDoor")
+class InteractiveShellG1ChallengeKeypadDoorDataGenConfig(InteractiveShellG1ChallengeDataGenConfig):
+    """Challenge manipulation tasks 1-2 (keypad, then door traversal) for the G1.
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \
+            --config InteractiveShellG1ChallengeKeypadDoor
+        >>> status()
+        >>> solve_keypad()   # the robot spawns in front of the keypad
+
+    The 5-digit code is on the screen above the keypad and in the task description.
+    """
+
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_challenge_keypad_door"
+    )
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = InteractiveShellChallengeSamplerConfig(
+        task_sampler_class=ChallengeKeypadDoorTaskSampler,
+        scene_xml_paths=[
+            os.environ.get(
+                "CHALLENGE_TESTBED_XML",
+                str(ASSETS_DIR / "ieee_humanoids_2026" / "challenge_scene.xml"),
+            )
+        ],
+        house_inds=[0],
+        house_variant="base",
+        pickup_types=[],
+        samples_per_house=1,
+        check_robot_placement_visibility=False,
+        robot_safety_radius=0.3,
+        robot_start_xy_yaw=(9.0, 1.915, 180.0),  # in front of the keypad, facing the wall
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_challenge_keypad_door"
 
 
 @register_config("FrankaPickBatchTestConfig")

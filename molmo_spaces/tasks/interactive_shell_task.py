@@ -1132,6 +1132,146 @@ class InteractiveShellTask(BaseMujocoTask):
         print(f"{'done' if success else 'FAILED'} - Nav {direction} {dist:.2f}m")
         return success
 
+    def _xy_obstacle_grid(
+        self, res: float = 0.05, z_range: tuple[float, float] = (0.05, 1.5)
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Boolean world-frame obstacle grid (True = blocked) from the static collision
+        geoms, inflated by the robot safety radius. Returns (grid, origin_xy); cell
+        (i, j) covers x = origin[0] + i*res, y = origin[1] + j*res.
+
+        A geom blocks if its world AABB overlaps `z_range` (above a walkable deck, below head
+        height), so a <5cm deck seam/curb is walkable and anything taller is an obstacle. Robot and plane geoms are skipped.
+        """
+        import mujoco
+        from scipy import ndimage
+
+        model, data = self._env.current_model, self._env.current_data
+        robot_geoms = self._robot_geom_ids()
+        boxes = []
+        for gid in range(model.ngeom):
+            if (
+                gid in robot_geoms
+                or model.geom_type[gid] == mujoco.mjtGeom.mjGEOM_PLANE
+                or (model.geom_contype[gid] == 0 and model.geom_conaffinity[gid] == 0)
+                or model.body_dofnum[model.geom_bodyid[gid]] > 0  # movable
+            ):
+                continue
+            c = data.geom_xpos[gid] + data.geom_xmat[gid].reshape(3, 3) @ model.geom_aabb[gid, :3]
+            half = np.abs(data.geom_xmat[gid].reshape(3, 3)) @ model.geom_aabb[gid, 3:]
+            lo, hi = c - half, c + half
+            if hi[2] > z_range[0] and lo[2] < z_range[1]:
+                boxes.append((lo[:2], hi[:2]))
+        if not boxes:
+            raise RuntimeError("No static collision geoms found to build an obstacle grid from")
+        lo_xy = np.min([b[0] for b in boxes], axis=0) - 2.0
+        hi_xy = np.max([b[1] for b in boxes], axis=0) + 2.0
+        shape = np.ceil((hi_xy - lo_xy) / res).astype(int) + 1
+        grid = np.zeros(shape, dtype=bool)
+        for lo, hi in boxes:
+            i0, j0 = np.floor((lo - lo_xy) / res).astype(int)
+            i1, j1 = np.ceil((hi - lo_xy) / res).astype(int)
+            grid[i0 : i1 + 1, j0 : j1 + 1] = True
+        radius = int(np.ceil(self.config.task_sampler_config.robot_safety_radius / res))
+        disk = np.hypot(*np.mgrid[-radius : radius + 1, -radius : radius + 1]) <= radius
+        return ndimage.binary_dilation(grid, structure=disk), lo_xy
+
+    def nav_to_xy(self, x: float, y: float, yaw_deg: float | None = None, res: float = 0.05) -> bool:
+        """Walk the base to world position (x, y) metres along a grid-A* path around
+        the scene's static geometry, ending at heading `yaw_deg` (default: the
+        current heading).
+
+        The obstacle grid is built once per task (see `_xy_obstacle_grid`); a goal
+        inside an obstacle is snapped to the nearest free cell.
+        """
+        import heapq
+
+        from scipy import ndimage
+
+        if getattr(self, "_xy_grid", None) is None:
+            self._xy_grid = self._xy_obstacle_grid(res)
+        grid, origin = self._xy_grid
+        sx, sy, _ = self._base_xy_yaw()
+
+        def to_cell(px: float, py: float) -> tuple[int, int]:
+            return (int(round((px - origin[0]) / res)), int(round((py - origin[1]) / res)))
+
+        start, goal = to_cell(sx, sy), to_cell(x, y)
+        for name, c in (("start", start), ("goal", goal)):
+            if not (0 <= c[0] < grid.shape[0] and 0 <= c[1] < grid.shape[1]):
+                raise ValueError(f"{name} ({c}) is outside the navigable map")
+        # Free the start (robot may spawn inside the inflation zone); snap the goal.
+        grid = grid.copy()
+        grid[max(start[0] - 4, 0) : start[0] + 5, max(start[1] - 4, 0) : start[1] + 5] = False
+        if grid[goal]:
+            _, idx = ndimage.distance_transform_edt(grid, return_indices=True)
+            goal = (int(idx[0][goal]), int(idx[1][goal]))
+            print(f"Goal blocked; snapped to ({origin[0] + goal[0] * res:.2f}, {origin[1] + goal[1] * res:.2f})")
+
+        moves = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        dist = {start: 0.0}
+        prev: dict[tuple[int, int], tuple[int, int]] = {}
+        heap = [(0.0, start)]
+        while heap:
+            _, cur = heapq.heappop(heap)
+            if cur == goal:
+                break
+            for di, dj in moves:
+                nxt = (cur[0] + di, cur[1] + dj)
+                if not (0 <= nxt[0] < grid.shape[0] and 0 <= nxt[1] < grid.shape[1]) or grid[nxt]:
+                    continue
+                nd = dist[cur] + np.hypot(di, dj)
+                if nd < dist.get(nxt, np.inf):
+                    dist[nxt], prev[nxt] = nd, cur
+                    heapq.heappush(heap, (nd + np.hypot(goal[0] - nxt[0], goal[1] - nxt[1]), nxt))
+        if goal not in dist:
+            print("FAILED - no path to goal")
+            return False
+        cells = [goal]
+        while cells[-1] != start:
+            cells.append(prev[cells[-1]])
+        path = np.array(cells[::-1], dtype=float) * res + origin
+        # Drop collinear points so the chain is only as fine as the turns require.
+        keep = [0] + [
+            i for i in range(1, len(path) - 1) if np.abs(np.cross(path[i] - path[i - 1], path[i + 1] - path[i])) > 1e-9
+        ] + [len(path) - 1]
+        path = path[keep]
+        path[-1] = (x, y) if not grid[to_cell(x, y)] else path[-1]
+
+        step_dist, lead = self._direct_drive_pacing()
+        xys = np.concatenate(
+            [path[:1]]
+            + [split_by_max_dist(path[i : i + 2], step_dist)[1:] for i in range(len(path) - 1)]
+        )
+        end_yaw = self._base_xy_yaw()[2] if yaw_deg is None else np.radians(yaw_deg)
+        # Face the direction of travel along the way, ending at end_yaw.
+        d = np.diff(xys, axis=0, prepend=xys[:1])
+        yaws = np.arctan2(d[:, 1], d[:, 0])
+        yaws[0] = self._base_xy_yaw()[2]
+        yaws = np.unwrap(np.append(yaws, end_yaw))[:-1]
+        waypoints = np.concatenate([xys, yaws[:, None]], axis=1)
+        waypoints = np.vstack([waypoints, [*xys[-1], np.unwrap([yaws[-1], end_yaw])[-1]]])
+
+        success = self._drive_base_waypoints(
+            waypoints,
+            label="nav_to_xy",
+            threshold=0.15,
+            max_ticks=300 + 4 * len(waypoints),
+            lead=lead,
+        )
+        # The position test above is loose on heading; turn in place to the goal yaw.
+        fx, fy, fyaw = self._base_xy_yaw()
+        err = (end_yaw - fyaw + np.pi) % (2 * np.pi) - np.pi
+        if success and abs(err) > np.radians(10):
+            self._drive_base_waypoints(
+                np.array([[fx, fy, fyaw + err]]), label="nav_to_xy:turn", threshold=0.1
+            )
+        fx, fy, fyaw = self._base_xy_yaw()
+        print(
+            f"{'done' if success else 'FAILED'} - Nav to ({x:.2f}, {y:.2f}); "
+            f"now at ({fx:.2f}, {fy:.2f})"
+        )
+        return success
+
     def rotate(
         self, angle_deg: float, max_ticks: int | None = None, threshold: float = 0.1
     ) -> bool:
@@ -1338,6 +1478,14 @@ class InteractiveShellTask(BaseMujocoTask):
 
     # -- Shell --
 
+    def _shell_extras(self) -> dict[str, Any]:
+        """Extra names subclasses expose in the shell namespace."""
+        return {}
+
+    def _shell_banner_extra(self) -> list[str]:
+        """Extra help lines subclasses add to the shell banner."""
+        return []
+
     def run_shell(self, commands: list[str] | None = None) -> None:
         """Drop into an interactive Python shell exposing the skills as functions.
 
@@ -1354,6 +1502,7 @@ class InteractiveShellTask(BaseMujocoTask):
                 "  nav_to(object=dir, dist=.25)           - step dist meters in the base frame, at the",
                 "                                           same pace as a planned nav; dir is",
                 "                                           'forward(s)'/'backward(s)'/'left'/'right'",
+                "  nav_to_xy(x, y, yaw_deg=None)          - walk to a world (x, y) in metres, A* around static geometry",
                 "  rotate(angle_deg)                      - rotate the base in place (+ccw), no path planning",
                 "  noop(ticks=50)                         - hold current position/pose, do nothing",
                 "  pick(object=name, max_attempts=3)      - pick up and lift an object, retrying",
@@ -1371,6 +1520,7 @@ class InteractiveShellTask(BaseMujocoTask):
                 "  whereis(object=name)                   - object pos + distance/bearing from base and gripper",
                 "  contacts(object=None)                  - active robot contacts w/ forces; is the gripper touching?",
                 "  look(camera=None, save=None)           - render a camera frame to a PNG",
+                *self._shell_banner_extra(),
                 " state:",
                 "  snapshot(name) / restore(name)         - save/replay the sim state; snapshots() lists them",
                 "  help()                                 - re-print this message",
@@ -1387,6 +1537,9 @@ class InteractiveShellTask(BaseMujocoTask):
 
         def nav_to(object, **kwargs):
             return self.nav_to(object, **kwargs)
+
+        def nav_to_xy(x, y, **kwargs):
+            return self.nav_to_xy(x, y, **kwargs)
 
         def rotate(angle_deg, **kwargs):
             return self.rotate(angle_deg, **kwargs)
@@ -1453,6 +1606,7 @@ class InteractiveShellTask(BaseMujocoTask):
         enable_g1_trace()
 
         namespace = dict(globals(), **locals())
+        namespace.update(self._shell_extras())
         # Printed here, not handed to code.interact(), which writes its banner
         # to stderr -- so under a pipe it landed out of order with everything
         # the seeded commands print to stdout (a startup list_objects() looked
