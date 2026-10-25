@@ -9,7 +9,8 @@
 
 The scene comes from scripts/data/format_conversion/convert_testbed_to_mjcf.py, which cuts
 the door ("door", "door_handle") and the nine buttons ("key1".."key9") out of the CAD as
-articulated bodies. The latch is simulated here: while the door is shut and the lever is
+articulated bodies. The scene uses its default `dexterity` layout (mobility terrain removed, flat
+deck behind the door). The latch is simulated here: while the door is shut and the lever is
 not turned, the hinge's joint range is clamped to [0, 0].
 
 Use via the interactive shell (config InteractiveShellG1ChallengeKeypadDoor): `status()`
@@ -71,9 +72,12 @@ class ChallengeKeypadDoorTask(InteractiveShellTask):
         self.door_closed_after = False
         self.fell = False
         # The arm pose the episode starts in, which the door solver returns to.
-        self.rest_arm = np.asarray(
-            env.current_robot.robot_view.get_move_group("right_arm").joint_pos, dtype=np.float32
-        ).copy()
+        view = env.current_robot.robot_view
+        self.rest_arms = {
+            side: np.asarray(view.get_move_group(f"{side}_arm").joint_pos, dtype=np.float32).copy()
+            for side in ("left", "right")
+        }
+        self.rest_arm = self.rest_arms["right"]
 
     # ---- state readers -------------------------------------------------------------------
     def _q(self, joint: str) -> float:
@@ -211,6 +215,8 @@ class ChallengeKeypadDoorTask(InteractiveShellTask):
             DoorTraversalSolver,
         )
 
+        if "left_hand" not in self._env.current_robot.robot_view.move_group_ids():
+            raise NotImplementedError("solve_door needs the dual-Dex3 G1 (config *G1Dex3*)")
         if getattr(self, "_door_solver", None) is None:
             self._door_solver = DoorTraversalSolver(self)
         return self._door_solver.traverse()

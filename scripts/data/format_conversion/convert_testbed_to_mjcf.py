@@ -3,6 +3,9 @@
     python scripts/data/format_conversion/convert_testbed_to_mjcf.py \
         --dae <challenge repo>/CAD-Files/LocoManipulationTestbed.dae --out_dir <dir>
 
+Add ``--layout dexterity|mobility|full`` (default dexterity: the manipulation-trial apparatus, with the
+mobility terrain removed and a flat deck; see LAYOUTS below).
+
 Writes ``<out_dir>/testbed.xml`` plus ``<out_dir>/meshes/*.obj`` (and a loadable
 ``challenge_scene.xml`` + metadata for the InteractiveShellG1Challenge config):
 
@@ -38,6 +41,82 @@ KEYPAD_NODES = {
 }  # fmt: skip
 DECK_TOP = 0.10  # m, walking surface height above the CAD's base; the output puts it at z=0
 KEY_TRAVEL = 0.008  # m, push depth (along -x)
+
+# ---- LAYOUTS: which CAD nodes the scene keeps (rules PDF 'Mobility Tasks' / 'Manipulation Tasks'). ----
+# The CAD is the *mobility* apparatus: manipulation stations plus the mobility terrain (ramps, stairs,
+# wall obstacle). In Manipulation (dexterity) Trials the terrain is removed and the deck is flat from the
+# start to the stations, so `dexterity` (default) edits the CAD with the tables below. `mobility` and
+# `full` keep every CAD node (the mobility trial and the loco-manipulation trial use the same hardware;
+# they only differ in the tasks scored). All node ids are exact CAD node names; heights are metres in
+# the output frame (deck top z=0.003 on the 2.5-4.9 m and start-side sheets).
+LAYOUTS = ("dexterity", "mobility", "full")
+# 8ft x 8ft 15-degree hill/pinwheel section (x 4.93-7.37): wedge tiles (raised tops up to 0.19 m), their
+# edge skins/plates and the cleat blocks under them. Deleted in `dexterity`. (Ids found by bounds: x 4.92-7.37,
+# y 0.07-2.52, z 0.0135-0.2.)
+PINWHEEL_TERRAIN_NODES = [
+    "ID3522", "ID3536", "ID3550", "ID3559", "ID3567", "ID3576", "ID3576_1", "ID3576_10",
+    "ID3576_11", "ID3576_12", "ID3576_13", "ID3576_14", "ID3576_15", "ID3576_16", "ID3576_17",
+    "ID3576_18", "ID3576_19", "ID3576_2", "ID3576_20", "ID3576_21", "ID3576_22", "ID3576_23",
+    "ID3576_24", "ID3576_25", "ID3576_26", "ID3576_27", "ID3576_28", "ID3576_29", "ID3576_3",
+    "ID3576_30", "ID3576_31", "ID3576_4", "ID3576_5", "ID3576_6", "ID3576_7", "ID3576_8",
+    "ID3576_9", "ID3587", "ID3596", "ID3605", "ID3614", "ID3622", "ID3632", "ID3641", "ID3650",
+    "ID3659", "ID3667", "ID3677", "ID3686", "ID3695", "ID3704", "ID3712", "ID3732", "ID3741",
+    "ID3750", "ID3759", "ID3767", "ID3777", "ID3786", "ID3795", "ID3804", "ID3812", "ID3822",
+    "ID3831", "ID3840", "ID3849", "ID3857", "ID3867", "ID3876", "ID3885", "ID3894", "ID3902",
+    "ID3922", "ID3931", "ID3940", "ID3949", "ID3957", "ID3967", "ID3976", "ID3985", "ID3994",
+    "ID4002", "ID4012", "ID4021", "ID4030", "ID4039", "ID4047", "ID4057", "ID4066", "ID4075",
+    "ID4084", "ID4092", "ID4112", "ID4121", "ID4130", "ID4139", "ID4147", "ID4157", "ID4166",
+    "ID4175", "ID4184", "ID4192", "ID4202", "ID4211", "ID4220", "ID4229", "ID4237", "ID4247",
+    "ID4256", "ID4265", "ID4274", "ID4282",
+]  # fmt: skip
+SMALL_WALL_NODES = ["ID5049"]  # mobility C: 0.79 m partition across half the flat section (x=3.71)
+RAMP_EDGE_WALL_NODES = ["ID3174"]  # 0.8 m plate on the pinwheel's first edge (x=4.93, y<1.3); deleted too
+# mobility A: the two 4"x4" lumber lengths laid across the walkway behind the door (each is two stacked
+# 2x4-thick orange beams, 0.10 m tall, forming a V with its apex at the pinwheel partition).
+LUMBER_NODES = ["ID4842", "ID4851", "ID4858", "ID4865"]
+DEXTERITY_REMOVE_NODES = (
+    PINWHEEL_TERRAIN_NODES + SMALL_WALL_NODES + RAMP_EDGE_WALL_NODES + LUMBER_NODES
+)
+
+# Deck panels that sit above the 0.003 m deck of the rest of the apparatus: the pinwheel's base sheets
+# (top 0.014) and the sheet behind the door wall (top 0.029, on joists). Lowered so the floor is flat
+# and continuous at the z of the start-side deck.
+PINWHEEL_BASE_NODES = ["ID3722", "ID4102", "ID3507", "ID3912"]
+BEHIND_DOOR_DECK_NODES = [
+    "ID4302", "ID4293", "ID4336", "ID66_8", "ID75_8", "ID4319", "ID4310", "ID4327",  # joists
+    "ID4347", "ID4347_1", "ID4355", "ID4355_1",  # sheet + its lines
+]  # fmt: skip
+# Pieces resting on the behind-the-door sheet (x 7.37-8.59): backing panel of the button boards, floor
+# braces, wall sill blocks and the lightbulb board with its bulbs. Lowered with the sheet.
+BEHIND_DOOR_FIXTURE_NODES = [
+    "ID4805", "ID4814", "ID3408", "ID3353", "ID5059",
+    "ID5068", "ID5077", "ID5089", "ID5098", "ID5107", "ID5114", "ID5121", "ID5128", "ID5136",
+    "ID5136_1", "ID5136_10", "ID5136_11", "ID5136_12", "ID5136_13", "ID5136_14", "ID5136_15",
+    "ID5136_16", "ID5136_17", "ID5136_2", "ID5136_3", "ID5136_4", "ID5136_5", "ID5136_6",
+    "ID5136_7", "ID5136_8", "ID5136_9", "ID5144", "ID5144_1", "ID5144_2", "ID5144_3",
+    "ID5144_4", "ID5144_5", "ID5144_6", "ID5144_7", "ID5144_8", "ID5150", "ID5150_1",
+    "ID5150_2", "ID5150_3", "ID5150_4", "ID5150_5", "ID5150_6", "ID5150_7", "ID5150_8",
+    "ID5388", "ID5397", "ID5404", "ID5411", "ID5418", "ID5425", "ID5437", "ID5443", "ID5449",
+]  # fmt: skip
+# Button boards (floor-level tilted board + wall board on a post) stand on a raised pinwheel tile
+# (top 0.192). Lowered onto the deck once the tile is gone.
+BUTTON_BOARD_NODES = [
+    "ID4528", "ID4543", "ID4550", "ID4550_1", "ID4573", "ID4580", "ID4580_1", "ID4594",
+    "ID4601", "ID4601_1", "ID4615", "ID4622", "ID4622_1", "ID4636", "ID4643", "ID4643_1",
+    "ID4657", "ID4666", "ID4680", "ID4691", "ID4701", "ID4708", "ID4708_1", "ID4722", "ID4729",
+    "ID4729_1", "ID4743", "ID4750", "ID4750_1", "ID4764", "ID4771", "ID4771_1", "ID4785",
+    "ID4792", "ID4792_1",
+]  # fmt: skip
+# Door-wall studs/sheets (bottom at z=0.029, on the behind-the-door sheet). Their bottoms are extended
+# down instead of moving them, so the keypad panel and doorframe keep their coordinates.
+DOOR_WALL_NODES = ["ID3399", "ID3417", "ID3432", "ID3432_1", "ID3344", "ID3362", "ID3371", "ID3306"]
+# Zero-thickness seam lines on the behind-the-door sheet; as 1 cm boxes they would be a 5 mm lip across the
+# walkway, so in `dexterity` they are visual only (no collision).
+SEAM_LINE_NODES = ["ID4355", "ID4355_1"]
+DECK_LOW_TOP = 0.003  # m, deck top of the sheets that stay in place (ID85*, start-side)
+PINWHEEL_BASE_DZ = 0.003 - 0.014  # sheet top -> deck top
+BEHIND_DOOR_DZ = 0.003 - 0.029
+BUTTON_BOARD_DZ = 0.003 - 0.192
 
 
 def write_visual(prefix, items, mesh_dir, out, face_budget=None):
@@ -122,10 +201,36 @@ def material_rgba(geom: trimesh.Trimesh) -> tuple[float, ...]:
     return tuple(np.round(np.asarray(col if col is not None else [200, 200, 200, 255]) / 255, 2))
 
 
+def apply_dexterity_layout(world: dict) -> None:
+    """Remove the mobility terrain from `world` {node: (mesh, rgba)} and flatten the deck (in place)."""
+    missing = [n for n in DEXTERITY_REMOVE_NODES if n not in world]
+    assert not missing, f"layout tables out of date, unknown nodes: {missing}"
+    for n in DEXTERITY_REMOVE_NODES:
+        del world[n]
+    for ids, dz in (
+        (PINWHEEL_BASE_NODES, PINWHEEL_BASE_DZ),
+        (BEHIND_DOOR_DECK_NODES + BEHIND_DOOR_FIXTURE_NODES, BEHIND_DOOR_DZ),
+        (BUTTON_BOARD_NODES, BUTTON_BOARD_DZ),
+    ):
+        for n in ids:
+            world[n][0].apply_translation([0, 0, dz])
+    for n in DOOR_WALL_NODES:  # extend the bottom (verts at the old deck height) down to the new deck
+        v = world[n][0].vertices
+        v[v[:, 2] < 0.0295, 2] += BEHIND_DOOR_DZ
+    print(f"dexterity layout: removed {len(DEXTERITY_REMOVE_NODES)} terrain nodes")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dae", type=Path, required=True)
     ap.add_argument("--out_dir", type=Path, required=True)
+    ap.add_argument(
+        "--layout",
+        choices=LAYOUTS,
+        default="dexterity",
+        help="dexterity: manipulation-trial apparatus, terrain removed and deck flat (default); "
+        "mobility / full: the CAD as modelled (mobility terrain + all stations)",
+    )
     ap.add_argument("--visual_faces", type=int, default=60000, help="face budget per colour group")
     args = ap.parse_args()
 
@@ -147,6 +252,9 @@ def main() -> None:
     shift[2] -= DECK_TOP  # the G1 stack assumes the floor is at z=0
     for m, _ in world.values():
         m.apply_translation(shift)
+    if args.layout == "dexterity":
+        apply_dexterity_layout(world)
+    print(f"layout={args.layout}")
     print(f"{len(world)} instances; extent {np.max([m.bounds[1] for m, _ in world.values()], axis=0)}")
 
     # Cut the task parts out of the static scene.
@@ -166,6 +274,8 @@ def main() -> None:
     # would plug the doorway).
     for i, (node, (m, _)) in enumerate(world.items()):
         name = f"col_{i}"
+        if args.layout == "dexterity" and node in SEAM_LINE_NODES:
+            continue
         if node in DOORFRAME_NODES:
             if node.endswith("_1"):
                 continue
@@ -245,18 +355,35 @@ def main() -> None:
         "handle_vis", [(closed_local(m, T_handle), r) for m, r in handle_items], mesh_dir, dout
     ):
         handle_geoms.append(vis_geom(name))
-    for k, (m, _) in enumerate(handle_items):
-        hull_or_box(closed_local(m, T_handle)).export(mesh_dir / f"handle_col_{k}.obj")
+    # Collision: a convex hull of the L-shaped lever grip would fill the gap between the bar and
+    # the door, which a finger has to hook into. Split the grip (the handle part with the longest
+    # reach along y) into its neck + rose and its bar -- one box each -- and keep hulls for the
+    # rest. In the handle frame the bar runs toward -y from the spindle.
+    local_parts = [closed_local(m, T_handle) for m, _ in handle_items]
+    grip_k = int(np.argmax([lm.extents[1] if lm.extents[0] > 0.05 else 0 for lm in local_parts]))
+    for k, lm in enumerate(local_parts):
+        if k == grip_k:
+            v = lm.vertices
+            for suffix, sel in (("bar", v[:, 1] < -0.015), ("neck", v[:, 1] >= -0.015)):
+                lo_, hi_ = v[sel].min(0), v[sel].max(0)
+                c_, h_ = (lo_ + hi_) / 2, np.maximum((hi_ - lo_) / 2, 0.003)
+                handle_geoms.append(
+                    f'<geom name="handle_col_{k}_{suffix}" type="box" '
+                    f'pos="{c_[0]:g} {c_[1]:g} {c_[2]:g}" size="{h_[0]:g} {h_[1]:g} {h_[2]:g}" '
+                    'mass="0.03" group="3" rgba="0 0 0 0"/>'
+                )
+            continue
+        hull_or_box(lm).export(mesh_dir / f"handle_col_{k}.obj")
         assets.append(f'<mesh name="handle_col_{k}" file="meshes/handle_col_{k}.obj"/>')
         handle_geoms.append(
-            f'<geom name="handle_col_{k}" type="mesh" mesh="handle_col_{k}" mass="0.05" '
+            f'<geom name="handle_col_{k}" type="mesh" mesh="handle_col_{k}" mass="0.02" '
             'group="3" rgba="0 0 0 0"/>'
         )
     sp = spindle_closed - hinge_pos  # handle origin in the door frame
     door_xml = (
         f'<body name="door" pos="{hinge_pos[0]:g} {hinge_pos[1]:g} 0">\n'
         f'        <joint name="door_hinge" type="hinge" axis="0 0 -1" range="0 {np.degrees(1.9):.1f}" '
-        'stiffness="1.5" damping="8" springref="0"/>\n        '
+        'stiffness="0.6" damping="25" springref="0"/>\n        '
         + "\n        ".join(door_geoms)
         + f'\n        <body name="door_handle" pos="{sp[0]:g} {sp[1]:g} {sp[2]:g}">\n'
         f'          <joint name="door_handle_turn" type="hinge" axis="1 0 0" '
@@ -318,6 +445,7 @@ def main() -> None:
     cx, cy = (np.max([m.bounds[1] for m, _ in world.values()], axis=0)[:2] / 2)
     (args.out_dir / "challenge_scene.xml").write_text(
         f'''<mujoco model="ieee_humanoids_2026_challenge">
+  <!-- layout: {args.layout} -->
   <include file="testbed.xml"/>
   <visual><global offwidth="1920" offheight="1080"/><headlight ambient="0.5 0.5 0.5" diffuse="0.6 0.6 0.6"/></visual>
   <asset>
@@ -331,7 +459,7 @@ def main() -> None:
 </mujoco>
 '''
     )
-    (args.out_dir / "challenge_scene_metadata.json").write_text('{"objects": {}}\n')
+    (args.out_dir / "challenge_scene_metadata.json").write_text(f'{{"layout": "{args.layout}", "objects": {{}}}}\n')
     print("wrote", args.out_dir / "challenge_scene.xml")
 
 

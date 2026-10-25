@@ -1,19 +1,17 @@
-"""Scripted solver for the challenge door: turn the lever, pull the door open, walk through.
+"""Scripted door traversal for the dual-Dex3 G1 (`g1_dex3`): lever, open, walk through.
 
-WORK IN PROGRESS: grasping and turning the lever works (Dex1 gripper, jaws vertical); the
-pull-through is not finished or verified end to end.
+The door opens toward the start side (rules PDF, "view from the starting location"): hinged on
+the left (low y), lever on the right, so from the start it is a pull door. From a stand to the
+right of the doorway the robot's *left* hand lines up with the lever bar.
 
-The door opens toward the start side (rules PDF, "view from the starting location"), hinged on
-the left (low y) with the lever on the right, so from the start it is a pull door. The hand is
-one-handed, so the lever has to be *grasped*: the jaws straddle the thin grip bar, close on it,
-turn it down, and then carry the door open by the bar. Reuses KeypadPressSolver's closed-loop
-hand controller (`_move`).
+1. Left hand: palm down, fingers forward, over the thin grip bar; close the fingers so the
+   curled fingertips go behind the bar (a hook) and the palm presses on top of it.
+2. Pull the bar down (turning the lever, releasing the latch), then drag it back along the
+   door's arc with the base following, until the door stands open.
+3. Release, arms back to rest, walk around the leaf's free edge into the doorway and through,
+   clear of the swing arc; the hinge spring closes the door behind.
 
-1. Walk to a stand in front of the lever, straddle the grip bar with the open jaws and close.
-2. Pull the bar down (turning the lever, releasing the latch), then drag it back along the arc
-   to ~70 deg, walking the base after it.
-3. Return the arm to rest, walk around the leaf's free edge into the doorway and through it,
-   clearing the swing arc. The hinge spring then closes the door behind the robot.
+Reuses KeypadPressSolver's closed-loop hand controller (`_move`, `_servo`).
 """
 
 import logging
@@ -26,25 +24,53 @@ from molmo_spaces.tasks.challenge_keypad_door_task import LEVER_TURNED
 
 log = logging.getLogger(__name__)
 
-HAND_Y_OFFSET = 0.226  # right hand sits this far to the robot's right of the base origin
+# Left-hand site frame while hooking the lever: z = forward (finger direction), y = the side the
+# fingers curl toward = down, x = y cross z. Robot-local (forward +x, left +y, up +z).
+HOOK_ROT_LOCAL = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]], dtype=float)
+
+# thumb_0..2, index_0..1, middle_0..1 -- left hand curls with negative index/middle angles.
+OPEN_POSE = np.zeros(7, dtype=np.float32)
+HOOK_POSE = np.array([0.0, 0.0, 0.0, -1.35, -1.5, -1.35, -1.5], dtype=np.float32)
 
 
 class DoorTraversalSolver(KeypadPressSolver):
+    hand = "left"
     keep_station = False  # base corrections with the arm out tip the robot over
-    STAND_X = 9.0  # base x for the lever press (door plane is at x~8.59)
     LEVER_PRESS_ANGLE = 0.45  # rad the lever is turned to (latch needs LEVER_TURNED)
-    LEVER_DROP = 0.04  # m the grip is pulled down to turn the lever
-    EMPTY_WIDTH = -0.0195  # m: inter-finger distance reads -0.0245 when closed on nothing
-    GRASP_DEPTH = 0.015  # m the fingertips go below the bar's centre
-    PULL_TO = 1.2  # rad (~70 deg): the free edge is then clear of the right jamb
+    LEVER_DROP = 0.045  # m the hooked grip is pulled down to turn the lever
+    OVER_BAR = 0.025  # m the fingertip site starts above the bar's top surface
+    FINGER_REACH = 0.04  # m the fingertip sits past the bar, toward the door, before closing
+    PULL_TO = 1.15  # rad (~66 deg): the free edge is then well clear of the right jamb
     PULL_RATE = 0.012  # rad of door angle commanded per policy tick
-    THROUGH_X = 7.3  # base x that is clear of the door's swing arc
-    THROUGH_Y = 1.40  # walk-through line in the doorway (centre 1.30; keep off the hinge side)
+    PULL_MAX_TICKS = 300
+    WALK_GAIN = 2.0  # base step toward the hand's target per metre of hand error
+    LEVER_HOLD = 0.45  # rad the lever is held at while pulling (limit is 0.9)
+    LIFT_GAIN = 0.02  # m of hand height correction per rad of lever error per tick
+    THROUGH_X = 8.0  # base x just past the door plane (x=8.59); the swing arc is on the start side.
+    # Behind the door the dexterity layout's deck is flat (mobility terrain removed in the scene converter).
+    THROUGH_Y = 1.40  # walk-through line in the doorway (centre 1.30, lever side is y=1.75)
+
+    _pose = OPEN_POSE
+
+    def _push_rot(self) -> np.ndarray:
+        return self._yaw_rot() @ HOOK_ROT_LOCAL
+
+    def _hand_action(self) -> dict:
+        return {"left_hand": self._pose}
+
+    def _set_pose(self, pose: np.ndarray, ticks: int) -> None:
+        """Ramp the left hand's fingers to `pose` while the arm holds where it is."""
+        a = self._pose.copy()
+        pos, rot = self._site()
+        for i in range(1, ticks + 1):
+            self._pose = a + (pose - a) * (i / ticks)
+            self._move(pos, rot, 1, precision=True, comp=False)
+        self._pose = pose.copy()
 
     # ---- geometry ---------------------------------------------------------------------------
     def _lever_bounds(self) -> tuple[np.ndarray, np.ndarray]:
-        """World AABB (min, max) of the lever grip: the handle collision geom reaching furthest
-        out from the door (+x). It extends toward the hinge (-y) from the spindle."""
+        """World AABB (min, max) of the lever's grip bar: the handle collision geom reaching
+        furthest out from the door (+x). It extends toward the hinge (-y) from the neck."""
         model, data = self.task._env.current_model, self.task._env.current_data
         best = None
         for gid in range(model.ngeom):
@@ -63,171 +89,207 @@ class DoorTraversalSolver(KeypadPressSolver):
         return data.xpos[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "door")][:2].copy()
 
     # ---- phases -----------------------------------------------------------------------------
-    def _rest_arm(self, ticks: int = 30) -> None:
-        """Ramp the right arm and waist back to the pose the episode started in, gripper open,
-        and the standing height back up."""
-        task = self.task
-        robot = task._env.current_robot
-        a0 = np.asarray(robot.robot_view.get_move_group("right_arm").joint_pos, dtype=np.float32)
-        gripper = robot.robot_view.get_gripper("right_gripper")
-        gripper.set_gripper_ctrl_open(True)
-        grip = np.asarray(gripper.ctrl, dtype=np.float32).copy()
-        h0 = float(robot._low_level._height_cmd)
-        for i in range(1, ticks + 1):
-            f = i / ticks
-            task._step_and_record(
-                {
-                    "right_arm": a0 + f * (task.rest_arm - a0),
-                    "legs_waist": np.array(
-                        [0, 0, 0, h0 + f * (0.793 - h0), 0, 0, 0], dtype=np.float32
-                    ),
-                    "right_gripper": grip,
-                }
-            )
-            if task.viewer is not None:
-                task.viewer.sync()
-        self._height_cmd = None
-
-    def _hold_hand(self, ticks: int) -> None:
-        """Keep the hand where it is for `ticks` (e.g. while the gripper opens or closes)."""
-        pos, rot = self._site()
-        self._move(pos, rot, ticks)
-
-    def grasp_lever(self) -> bool:
-        """Walk to the lever, straddle the grip bar with the open jaws (hand rolled so they
-        open vertically) and close on it. True once holding."""
+    def hook_lever(self) -> bool:
+        """Stand at the lever, hand over the bar, close the fingers behind it."""
         task = self.task
         lo, hi = self._lever_bounds()
-        bar = (lo + hi) / 2
-        self._bar = np.array([hi[0] - 0.02, lo[1] + 0.04, bar[2]])  # mid-bar, clear of the neck at y>1.74  # the bar is ~1cm thick at x~8.67
-        self._bar_z = bar[2]
-        stand = np.array([self.STAND_X, self._bar[1] - HAND_Y_OFFSET])
+        self._bar = np.array([(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, hi[2]])  # bar centre, top face
+        # Stand so the left fingertip is in line with the bar.
+        base = np.array(task._base_xy_yaw()[:2])
+        off = self._site()[0][:2] - base
+        stand = np.array([base[0], self._bar[1] - off[1]])
         x, y, yaw = task._base_xy_yaw()
-        if np.linalg.norm(stand - [x, y]) > 0.1 or abs(np.degrees(yaw) % 360 - 180) > 8:
+        if abs(stand[1] - y) > 0.06 or abs(np.degrees(yaw) % 360 - 180) > 6:
             task.nav_to_xy(stand[0], stand[1], yaw_deg=180)
-        x, y, yaw = task._base_xy_yaw()
-        err = (np.pi - yaw + np.pi) % (2 * np.pi) - np.pi
-        if abs(err) > np.radians(4):
-            task.rotate(np.degrees(err))
         self._hold = None
-        self.gripper_open = True
-        rot = self._grasp_rot()
-        pre = self._bar + [0.0, 0.0, 0.12]  # above the bar, hand pointing down
-        self._move(pre, rot, self.APPROACH_TICKS, comp=True)
-        off, e = self._servo(pre, self._grasp_rot)  # exact height in free air, before going in
+        self._pose = OPEN_POSE
+        over = self._bar + [-self.FINGER_REACH, 0.0, self.OVER_BAR + 0.05]
+        self._move(over, self._push_rot(), self.APPROACH_TICKS, comp=True)
+        off3, e = self._servo(over, self._push_rot)
         if self.debug:
-            print(f"  pre servo: err={e * 100:.1f}cm off={np.round(off * 100, 1)} site={np.round(self._site()[0], 3)} pre={np.round(pre, 3)}")
-        # Site (the fingertips) goes past the bar toward the door so the bar sits between the
-        # fingers, which straddle it above and below.
-        grasp = self._bar - [0.0, 0.0, self.GRASP_DEPTH]  # fingertips just below the bar
-        self._move(grasp + off, self._grasp_rot(), self.PUSH_TICKS, precision=True, comp=False)
-        self._servo(grasp, self._grasp_rot, offset=off)
+            print(
+                f"  hook pre: err={e * 100:.1f}cm site={np.round(self._site()[0], 3)} "
+                f"bar={np.round(self._bar, 3)}"
+            )
+        low = over - [0.0, 0.0, 0.05]
+        self._move(low + off3, self._push_rot(), self.PUSH_TICKS, precision=True, comp=False)
+        off3, e = self._servo(low, self._push_rot, offset=off3)
+        self._grasp_offset = off3
         if self.debug:
-            sp, sR = self._site()
-            print(f"  at grasp: site={np.round(sp, 3)} bar={np.round(self._bar, 3)} err={np.round((sp - grasp) * 100, 1)}cm "
-                  f"finger_w={task._env.current_robot.robot_view.get_gripper('right_gripper').inter_finger_dist:.3f}")
-        if self.debug:
-            m, d = task._env.current_model, task._env.current_data
-            sp, sR = self._site()
-            print("  site R (rows=site axes in world):", np.round(sR.T, 2).tolist())
-            for b in range(m.nbody):
-                n = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, b) or ""
-                if n.startswith("robot_0/right_Link"):
-                    print("   ", n, "world", np.round(d.xpos[b], 3))
-        self.gripper_open = False
-        self._hold_hand(25)
-        gripper = task._env.current_robot.robot_view.get_gripper("right_gripper")
-        width = float(gripper.inter_finger_dist)
-        held = width > self.EMPTY_WIDTH  # fingers stopped on the bar instead of closing fully
-        print(f"door: grip width {width * 1000:.0f} mm -> {'holding the lever' if held else 'MISSED the lever'}")
-        return held
+            print(f"  hook low: err={e * 100:.1f}cm site={np.round(self._site()[0], 3)}")
+        self._set_pose(HOOK_POSE, 30)
+        data = task._env.current_data
+        model = task._env.current_model
+        q = [
+            data.qpos[
+                model.jnt_qposadr[
+                    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"robot_0/left_hand_{n}_joint")
+                ]
+            ]
+            for n in ("index_0", "index_1", "middle_0", "middle_1")
+        ]
+        print(f"door: fingers closed to {np.round(q, 2)} (commanded {HOOK_POSE[3:]})")
+        # Fingers stopped short of their command => something (the bar) is in the curl.
+        caught = bool(abs(q[0]) < abs(HOOK_POSE[3]) - 0.15 or abs(q[2]) < abs(HOOK_POSE[5]) - 0.15)
+        if not caught:
+            print("door: fingers closed fully (bar probably not in the curl); continuing anyway")
+        return caught
 
     def turn_lever(self) -> bool:
-        """Pull the grasped grip down until the latch releases."""
         task = self.task
-        target = self._bar - [0.0, 0.0, self.GRASP_DEPTH + self.LEVER_DROP]
+        site = self._site()[0]
+        target = site - [0.0, 0.0, self.LEVER_DROP]
         self._move(
-            target, self._grasp_rot(), self.PUSH_TICKS * 2, precision=True,
-            until=lambda: task.lever_angle() >= self.LEVER_PRESS_ANGLE,
+            target + self._grasp_offset, self._push_rot(), self.PUSH_TICKS * 2, precision=True,
+            comp=False, until=lambda: task.lever_angle() >= self.LEVER_PRESS_ANGLE,
         )  # fmt: skip
         print(f"door: lever at {task.lever_angle():.2f} rad (needs {LEVER_TURNED})")
         return task.lever_angle() >= LEVER_TURNED
 
     def pull_door(self) -> bool:
-        """Drag the held grip back along the door's arc, base following, to PULL_TO."""
+        """Carry the hooked grip along the door's arc by walking the base, arm frozen.
+
+        Dragging the hand with the arm alone runs out of reach after ~15 deg (the arm folds
+        toward the body). Instead the arm/waist/fingers hold the hooked configuration and the
+        base walks and turns so the hand tracks a point moving along the arc; the base also yaws
+        with the door so the hook keeps its orientation to the bar.
+        """
         task = self.task
         robot = task._env.current_robot
+        view = robot.robot_view
         hinge = self._hinge_xy()
         site = self._site()[0]
         rel = site[:2] - hinge
         radius = float(np.linalg.norm(rel))
         phi0 = np.arctan2(rel[0], rel[1])  # angle from +y toward +x
         q0 = task.door_angle()
-        base_off = np.array(task._base_xy_yaw()[:2]) - site[:2]  # keep the same stance
-        z = site[2]
-        rot0 = self._grasp_rot()
+        arm_hold = np.asarray(view.get_move_group("left_arm").joint_pos, dtype=np.float32)
+        model, data = task._env.current_model, task._env.current_data
+        waist_qa = [
+            model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"robot_0/waist_{a}_joint")]
+            for a in ("yaw", "roll", "pitch")
+        ]
+        waist_hold = data.qpos[waist_qa].astype(np.float32)
+        height = float(robot._low_level._height_cmd)
         q_cmd = q0
-        for i in range(300):
+        for i in range(self.PULL_MAX_TICKS):
             # Only run the command ahead of the door by a little, so a slipping hand stalls it.
             q_cmd = min(q_cmd + self.PULL_RATE, task.door_angle() + 0.12, self.PULL_TO)
             phi = phi0 + (q_cmd - q0)
-            hand = np.array([hinge[0] + radius * np.sin(phi), hinge[1] + radius * np.cos(phi), z])
-            c, s_ = np.cos(-(q_cmd - q0)), np.sin(-(q_cmd - q0))  # hand turns with the door
-            rot = np.array([[c, -s_, 0], [s_, c, 0], [0, 0, 1]]) @ rot0
-            base_goal = hand[:2] + base_off
-            cmd = robot.waypoint_to_velocity_target([base_goal[0], base_goal[1], np.pi])
-            self._move(hand, rot, 1, precision=True, base_cmd=cmd)
-            if self.debug and (i % 10 == 0 or i < 14):
-                bx, by, byaw = task._base_xy_yaw()
+            want = hinge + radius * np.array([np.sin(phi), np.cos(phi)])
+            err = want - self._site()[0][:2]
+            bx, by, byaw = task._base_xy_yaw()
+            goal = np.array([bx, by]) + np.clip(self.WALK_GAIN * err, -0.5, 0.5)
+            yaw_goal = np.pi - (q_cmd - q0)
+            cmd = robot.waypoint_to_velocity_target([goal[0], goal[1], yaw_goal])
+            task._step_and_record(
+                {
+                    "left_arm": arm_hold,
+                    "legs_waist": np.array([*cmd, height, *waist_hold], dtype=np.float32),
+                    "left_hand": self._pose,
+                }
+            )
+            if task.viewer is not None:
+                task.viewer.sync()
+            if self.debug and (i % 10 == 0 or i < 8):
                 print(
                     f"  pull q={np.degrees(task.door_angle()):.0f} cmd={np.degrees(q_cmd):.0f} "
                     f"lever={task.lever_angle():.2f} base=({bx:.2f},{by:.2f},{np.degrees(byaw):.0f}) "
-                    f"z={robot.robot_view.base.pose[2, 3]:.2f} w={robot.robot_view.get_gripper('right_gripper').inter_finger_dist * 1000:.0f}mm "
-                    f"site_err={np.linalg.norm(self._site()[0] - hand) * 100:.0f}cm"
+                    f"z={robot.robot_view.base.pose[2, 3]:.2f} hand_err={np.linalg.norm(err) * 100:.0f}cm"
                 )
+            if self.debug and task.lever_angle() < 0.25 and not getattr(self, "_dumped", False):
+                self._dumped = True
+                self._dump_hand_vs_handle()
             if task.door_angle() >= self.PULL_TO:
                 break
         ok = task.door_angle() > 0.8
         print(f"door: pulled to {np.degrees(task.door_angle()):.0f} deg {'ok' if ok else 'FAILED'}")
         return ok
 
-    def walk_through(self) -> bool:
-        """Arm to rest, then around the free edge into the doorway and straight through it."""
-        from molmo_spaces.policy.solvers.navigation.astar_planner_policy import split_by_max_dist
+    def _dump_hand_vs_handle(self) -> None:
+        """Debug: left-hand link positions in the (unturned) handle frame at the moment of a slip."""
+        model, data = self.task._env.current_model, self.task._env.current_data
+        hb = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "door_handle")
+        R, p = data.xmat[hb].reshape(3, 3), data.xpos[hb]
+        print("  SLIP: handle frame; bar box (local) y[-0.095,-0.015] x[0.068,0.088] z+-0.012")
+        for n in ("left_wrist_yaw_link", "left_hand_index_0_link", "left_hand_index_1_link",
+                  "left_hand_middle_0_link", "left_hand_middle_1_link"):  # fmt: skip
+            b = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"robot_0/{n}")
+            print("   ", n, np.round(R.T @ (data.xpos[b] - p), 3))
 
+    def _rest_arms(self, ticks: int = 30) -> None:
+        """Release the lever and return both arms, fingers and standing height to rest."""
         task = self.task
-        self._rest_arm()
-        x, y, yaw = task._base_xy_yaw()
-        step, lead = task._direct_drive_pacing()
-        # Around the leaf's free edge (right of it), then line up on the doorway and go through.
-        tip_y = self._hinge_xy()[1] + 0.91 * np.cos(task.door_angle())
-        via_y = max(tip_y + 0.45, 1.75)
-        path = np.array(
-            [[x, y], [max(x, 9.3), via_y], [9.0, self.THROUGH_Y], [self.THROUGH_X, self.THROUGH_Y]]
-        )
-        xys = np.concatenate(
-            [path[:1]] + [split_by_max_dist(path[i : i + 2], step)[1:] for i in range(len(path) - 1)]
-        )
-        d = np.diff(xys, axis=0, prepend=xys[:1])
-        yaws = np.unwrap(np.arctan2(d[:, 1], d[:, 0]))
-        yaws[0] = yaw
-        wps = np.concatenate([xys, yaws[:, None]], axis=1)
-        ok = True
-        for k in range(0, len(wps), 15):
-            ok = task._drive_base_waypoints(
-                wps[k : k + 15], "door_walk", threshold=0.12, max_ticks=80, lead=lead
-            )
+        robot = task._env.current_robot
+        view = robot.robot_view
+        a0 = {
+            s: np.asarray(view.get_move_group(f"{s}_arm").joint_pos, np.float32)
+            for s in ("left", "right")
+        }
+        h0 = float(robot._low_level._height_cmd)
+        p0 = self._pose.copy()
+        for i in range(1, ticks + 1):
+            f = i / ticks
+            action = {
+                "legs_waist": np.array([0, 0, 0, h0 + f * (0.793 - h0), 0, 0, 0], dtype=np.float32),
+                "left_hand": p0 + f * (OPEN_POSE - p0),
+            }
+            for s in ("left", "right"):
+                action[f"{s}_arm"] = a0[s] + f * (task.rest_arms[s] - a0[s])
+            task._step_and_record(action)
+            if task.viewer is not None:
+                task.viewer.sync()
+        self._pose = OPEN_POSE
+        self._height_cmd = None
+
+    def walk_through(self) -> bool:
+        """Arms to rest, then around the leaf's free edge and straight through the doorway.
+
+        Direct waypoint driving, not the grid planner: that treats the door leaf as absent, and
+        the CAD's rough-terrain section (which the rules remove for manipulation trials) starts
+        right behind the door and reads as blocked. The path goes from where the pull left the
+        robot, round the +y side of the leaf's free edge, then through the doorway.
+        """
+        task = self.task
+        self._rest_arms()
+        x, y, _ = task._base_xy_yaw()
+        tip = self._hinge_xy() + 0.91 * np.array([np.sin(task.door_angle()), np.cos(task.door_angle())])
+        via = np.array([tip[0] + 0.15, tip[1] + 0.40])  # clear of the free edge, on its +y side
+        path = np.array([[x, y], via, [9.0, self.THROUGH_Y], [self.THROUGH_X, self.THROUGH_Y]])
+        ok = task._follow_xy_path(path, 180, label="door_walk")
         print(f"door: walk-through {'reached' if ok else 'stopped'} at x={task._base_xy_yaw()[0]:.2f}")
         return ok
 
-    def traverse(self) -> bool:
-        """Lever, pull, walk through, wait for the door to close."""
+    def _release_and_lift(self) -> None:
+        """Open the fingers and raise the hand clear of the lever, ready to re-approach."""
+        self._set_pose(OPEN_POSE, 20)
+        pos, rot = self._site()
+        self._move(pos + [0.05, 0.0, 0.10], self._push_rot(), 20, comp=True)
+
+    def traverse(self, attempts: int = 3) -> bool:
+        """Hook the lever, turn it, pull the door open, walk through, wait for it to close.
+
+        The finger-stall check in `hook_lever` is advisory (the palm turns the lever even when the
+        fingers miss it); what decides success is whether the lever turned and the door opened,
+        so a miss is retried from a fresh approach.
+        """
         task = self.task
-        if not self.grasp_lever() or not self.turn_lever():
+        for attempt in range(attempts):
+            self.hook_lever()
+            if self.turn_lever():
+                break
+            print(f"door: lever not turned (attempt {attempt + 1}/{attempts}), re-hooking")
+            self._release_and_lift()
+        else:
+            print("door: giving up, the lever never turned")
             return False
         if not self.pull_door():
+            print("door: giving up, the door did not open far enough")
             return False
         self.walk_through()
-        task.noop(ticks=100)  # the hinge spring shuts the door
+        for _ in range(60):  # the weak, damped hinge spring takes a couple of minutes to shut
+            task.noop(ticks=50)
+            if task.door_closed_after:
+                break
         task.status()
         return task.traversed and task.door_closed_after
