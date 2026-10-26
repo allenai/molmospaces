@@ -17,15 +17,12 @@ resolved -- disambiguating *which object*, not *how the instruction reads*.
 import gzip
 import json
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from molmo_spaces.configs.semantic_pick_prompts import (
-    VALID_PROMPT_LEVELS,
-    get_semantic_pick_prompt,
-)
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.utils.object_metadata import ObjectMeta
 
@@ -121,6 +118,11 @@ def get_config():
     )
 
 
+# Ablation levels a learned policy's `prompt_level` may take; see
+# PromptSamplerLearnedPolicy.TASK_PROMPT_BUILDERS.
+VALID_PROMPT_LEVELS = (1, 2, 3)
+
+
 class PromptSamplerLearnedPolicy:
     """The production prompt sampler for learned/VLM policies. Differs from
     `PromptSamplerSimple` in four ways:
@@ -137,6 +139,11 @@ class PromptSamplerLearnedPolicy:
     Used by the pi and dreamzero learned policies when
     `policy_config.use_prompt_sampler` is set.
     """
+
+    # task_type -> builder(category=, object_name=, level=) -> prompt, for task types
+    # whose prompt depends on `prompt_level`. Projects register their own (e.g.
+    # projects/commonsense registers semantic_grasp_pick on import).
+    TASK_PROMPT_BUILDERS: dict[str, Callable[..., str]] = {}
 
     DEFAULT_TEMPLATES_BY_TASK = {
         "pick": [
@@ -178,12 +185,10 @@ class PromptSamplerLearnedPolicy:
             prompt_object_word_num: The number of words to use for the object name in the prompt.
             disambiguate_distractors_by_pos: Whether to disambiguate distractors by position in the prompt.
                 This relies on functionality only present when using a frozen config.
-            prompt_level: For ``semantic_grasp_pick``, selects the per-object
-                prompt level from ``configs/semantic_pick_prompts.py``:
-                1 = basic ("pick up the {object}."),
-                2 = existing semantic prompts (default; preserves prior behavior),
-                3 = "pick up the {object} by the {part}.".
-                Ignored for other task types.
+            prompt_level: Passed to the TASK_PROMPT_BUILDERS entry for the task type, if
+                any (e.g. ``semantic_grasp_pick``, registered by projects/commonsense:
+                1 = basic ("pick up the {object}."), 2 = existing semantic prompts
+                (default), 3 = "pick up the {object} by the {part}."). Ignored otherwise.
         """
         if prompt_templates is not None and task_type in ["pick", "pick_and_place"]:
             self.prompt_templates = prompt_templates
@@ -354,9 +359,9 @@ class PromptSamplerLearnedPolicy:
             self._cached_prompt = self.prompt_templates[self.current_index].format(
                 object_name, receptacle_name
             )
-        elif self.task_type == "semantic_grasp_pick":
+        elif self.task_type in self.TASK_PROMPT_BUILDERS:
             category = target_name.split("_")[0]
-            self._cached_prompt = get_semantic_pick_prompt(
+            self._cached_prompt = self.TASK_PROMPT_BUILDERS[self.task_type](
                 category=category,
                 object_name=object_name,
                 level=self.prompt_level,

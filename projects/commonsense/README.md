@@ -10,24 +10,38 @@ under `molmo_spaces/` imports it. It is imported as the top-level package
 ```
 projects/commonsense/
 ├── configs/
-│   ├── commonsense_configs.py              datagen configs (registered by name)
+│   ├── commonsense_configs.py              datagen configs (registered by name),
+│   │                                       CommonSenseFrankaRobotConfig
+│   ├── commonsense_eval_configs.py         PackingPlannerEvalConfig (registered)
+│   ├── commonsense_policy_configs.py       BlockStacking / PackingPlanner policy configs
 │   ├── commonsense_task_configs.py         task configs
-│   └── commonsense_task_sampler_configs.py task sampler configs
+│   ├── commonsense_task_sampler_configs.py task sampler configs
+│   └── semantic_pick_prompts.py            semantic_grasp_pick prompt_level ablation
+├── policies/
+│   ├── block_stacking_planner_policy.py
+│   └── packing_planner_policy.py           packs every clutter object into the box
 ├── tasks/
-│   ├── __init__.py                         registers the tasks with JSON benchmark eval
+│   ├── __init__.py                         registers tasks, specs and prompt builders
+│   ├── specs.py                            BlockSupportTaskSpec, MugBallPickTaskSpec
 │   ├── block_support_task.py               + block_support_task_sampler.py
 │   ├── mug_ball_pick_task.py               + mug_ball_pick_task_sampler.py
-│   └── semantic_grasp_pick_task.py         + semantic_grasp_pick_task_sampler.py
+│   ├── semantic_grasp_pick_task.py         + semantic_grasp_pick_task_sampler.py
+│   └── packing_task_sampler.py             CommonSense packing datagen (core PackingTask)
 ├── object_permanence_pointing.py           prompts/schema shared by the pointing eval
 └── scripts/                                entrypoints, VLM rollout evals, paper plots
 ```
 
 The general-purpose pieces these tasks rely on stay in `molmo_spaces/`, because
-other tasks can use them too: the packing and block-stacking planner policies,
-`utils/primitive_object_utils.py`, `configs/semantic_pick_prompts.py` (used by
-`PromptSamplerLearnedPolicy`'s `prompt_level`), the `BlockSupportTaskSpec` /
-`MugBallPickTaskSpec` benchmark schema entries, and the env/object-manager and
-eval-runner additions.
+core code or other tasks use them too:
+- `utils/primitive_object_utils.py` (generic primitive replay in JSON eval);
+- `PackingTask`'s multi-object success (the published `bench_pack_*` JSONs name the core task);
+- the clutter options on `PickTaskSampler`;
+- the semantic-grasp filter in the pick planner;
+- `prompt_level` on the learned policies;
+- the env/object-manager and eval-runner additions.
+
+The covering/occlusion/containment pick benchmarks use the core `PickTask`, with
+clutter stored in each episode, so they need nothing from this package at eval time.
 
 ## How molmo_spaces finds it
 
@@ -40,8 +54,10 @@ eval-runner additions.
   `task_cls: "molmo_spaces.tasks.commonsense_tasks.<module>.<Class>"`.
   `EpisodeSpec.get_task_cls()` rewrites that prefix to `commonsense.tasks.`,
   so the published `molmospaces-commonsense-bench` keeps loading unchanged.
-- **Datagen.** The three datagen configs are `@register_config`'d, so the core
-  `run_pipeline.py` picks them up by name once they are imported.
+- **Prompts.** `commonsense.tasks` also registers the `semantic_grasp_pick` builder in
+  `PromptSamplerLearnedPolicy.TASK_PROMPT_BUILDERS`, which `prompt_level` selects from.
+- **Datagen / eval configs.** These are `@register_config`'d, so core `run_pipeline.py` and
+  `eval_main` pick them up by name once the wrappers below have imported them.
 
 ## Running it
 
@@ -52,11 +68,14 @@ From the repo root:
 python projects/commonsense/scripts/run_pipeline.py --config BlockSupportConfig
 python projects/commonsense/scripts/run_pipeline.py --config MugBallPickConfig
 python projects/commonsense/scripts/run_pipeline.py --config SemanticGraspPickConfig
+python projects/commonsense/scripts/run_pipeline.py --config FrankaPackingDroidDataGenConfig --clutter
 
 # eval -- same arguments as molmo_spaces.evaluation.eval_main
 python projects/commonsense/scripts/eval.py \
     molmo_spaces.configs.policy_configs_baselines:<EvalConfig> \
     --benchmark_dir <molmospaces-commonsense-bench>/<task>
+python projects/commonsense/scripts/eval.py PackingPlannerEvalConfig \
+    --benchmark_dir <molmospaces-commonsense-bench>/procthor-10k/bench_pack_covering/<run>
 ```
 
 Every entrypoint imports [`scripts/_bootstrap.py`](scripts/_bootstrap.py) first,

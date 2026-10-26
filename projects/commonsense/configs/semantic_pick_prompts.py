@@ -17,6 +17,8 @@ preserves today's surface text for Level 2.
 Categories covered match those present in the semantic_grasp_pick benchmark.
 """
 
+from molmo_spaces.utils.prompt_samplers import VALID_PROMPT_LEVELS
+
 # {object} is filled in at format time with the rendered object name.
 # The Level 3 template additionally needs a `part` value supplied per-category.
 LEVEL_TEMPLATES: dict[int, str] = {
@@ -74,9 +76,6 @@ SEMANTIC_PICK_PROMPTS: dict[str, dict[int, str]] = {
         3: "pick up the {object} by the handle.",
     },
 }
-
-
-VALID_PROMPT_LEVELS = (1, 2, 3)
 
 
 def get_semantic_pick_prompt(category: str, object_name: str, level: int) -> str:

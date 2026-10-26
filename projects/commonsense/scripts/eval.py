@@ -10,6 +10,9 @@ Takes the same arguments as eval_main, e.g.:
 
 import _bootstrap  # noqa: F401  -- must precede any molmo_spaces or commonsense import
 
+import commonsense.configs.commonsense_eval_configs  # noqa: F401  -- registers the eval configs
+import commonsense.tasks  # noqa: F401  -- registers the tasks and prompt builders
+
 from molmo_spaces.evaluation.eval_main import main
 
 if __name__ == "__main__":

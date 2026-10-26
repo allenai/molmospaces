@@ -32,7 +32,6 @@ from molmo_spaces.configs.policy_configs import (
     AStarNavToObjPolicyConfig,
     FetchManBasePlannerPolicyConfig,
     OpenClosePlannerPolicyConfig,
-    PackingPlannerPolicyConfig,
     PickAndPlaceNextToPlannerPolicyConfig,
     PickAndPlacePlannerPolicyConfig,
     PickPlannerPolicyConfig,
@@ -182,7 +181,7 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
         datagen_cfg.policy_config = PickAndPlaceNextToPlannerPolicyConfig()
     elif task_type == "packing":
         datagen_cfg = PackingDataGenConfig()
-        datagen_cfg.policy_config = PackingPlannerPolicyConfig(place_z_offset=0.05)
+        datagen_cfg.policy_config = PickAndPlacePlannerPolicyConfig()
     elif task_type == "nav_to_obj":
         datagen_cfg = NavToObjBaseConfig()
         datagen_cfg.policy_config = AStarNavToObjPolicyConfig()
@@ -198,7 +197,7 @@ def setup_config(args: argparse.ArgumentParser) -> MlSpacesExpConfig:
     datagen_cfg.data_split = getattr(args, "data_split", "train")  # train or test
     datagen_cfg.task_type = task_type
 
-    datagen_cfg.task_horizon = 1500 if task_type == "packing" else 300
+    datagen_cfg.task_horizon = 300
     if args.task_horizon is not None:
         datagen_cfg.task_horizon = args.task_horizon
     target_types = getattr(args, "target_types", None)
@@ -378,6 +377,8 @@ def main(args: argparse.ArgumentParser) -> None:
             exp_config.task_sampler_config.samples_per_house = args.samples_per_house
         if args.task_horizon is not None:
             exp_config.task_horizon = args.task_horizon
+        if args.clutter:
+            exp_config.task_sampler_config.clutter_scene_around_target_object = True
     else:  # 3) create config from arguments
         exp_config = setup_config(args)
 
@@ -504,7 +505,7 @@ if __name__ == "__main__":
         "--task_horizon",
         type=int,
         default=None,
-        help="override max steps per episode (defaults: 1500 for packing, 300 otherwise)",
+        help="override max steps per episode (default: 300, or the --config's own value)",
     )
     args.add_argument(
         "--filter_for_successful_trajectories",

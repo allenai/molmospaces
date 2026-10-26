@@ -48,6 +48,7 @@ from molmo_spaces.env.data_views import (
 )
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.evaluation.benchmark_schema import (
+    ALL_TASK_SPEC_CLASSES,
     BaseTaskSpec,
     DoorOpeningTaskSpec,
     EpisodeSpec,
@@ -124,6 +125,9 @@ def register_json_eval_task(
     TASK_CLASS_TO_CONFIG_CLASS[task_cls.__name__] = config_cls
     if spec_cls is not None:
         TASK_CLASS_TO_SPEC_CLASS[task_cls.__name__] = spec_cls
+        # get_task_spec_field_names() copies only fields of known spec classes.
+        if spec_cls not in ALL_TASK_SPEC_CLASSES:
+            ALL_TASK_SPEC_CLASSES.append(spec_cls)
 
 
 def import_class_from_string(class_path: str) -> type:

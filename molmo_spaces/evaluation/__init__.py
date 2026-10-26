@@ -16,7 +16,6 @@ See run_evaluation() for full documentation.
 from molmo_spaces.evaluation.benchmark_schema import (
     BaseTaskSpec,
     BenchmarkMetadata,
-    BlockSupportTaskSpec,
     CameraSpec,
     EpisodeSpec,
     ExocentricCameraSpec,
@@ -47,7 +46,6 @@ __all__ = [
     # Benchmark schema types
     "BaseTaskSpec",
     "BenchmarkMetadata",
-    "BlockSupportTaskSpec",
     "CameraSpec",
     "EpisodeSpec",
     "ExocentricCameraSpec",

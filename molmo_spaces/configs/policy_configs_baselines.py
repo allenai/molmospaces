@@ -13,7 +13,7 @@ class PiPolicyConfig(BasePolicyConfig):
     prompt_object_word_num: int = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
     # When True, every episode's prompt is produced by PromptSamplerLearnedPolicy
-    # (templates in utils/prompt_samplers.py + semantic_pick_prompts.py).
+    # (templates in utils/prompt_samplers.py; semantic_grasp_pick from projects/commonsense).
     # When False, fall back to task.get_task_description() — i.e. the
     # benchmark's referral expressions for pick/pick_and_place tasks.
     use_prompt_sampler: bool = True

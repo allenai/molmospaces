@@ -2,6 +2,11 @@
 
 from pathlib import Path
 
+import numpy as np
+from commonsense.configs.commonsense_policy_configs import (
+    BlockStackingPolicyConfig,
+    PackingPlannerPolicyConfig,
+)
 from commonsense.configs.commonsense_task_configs import (
     BlockSupportTaskConfig,
     MugBallPickTaskConfig,
@@ -20,25 +25,49 @@ from commonsense.tasks.mug_ball_pick_task import MugBallPickTask
 from commonsense.tasks.mug_ball_pick_task_sampler import (
     MugBallPickTaskSampler,
 )
+from commonsense.tasks.packing_task_sampler import (
+    CommonSensePackingTaskSampler,
+    CommonSensePackingTaskSamplerConfig,
+)
 from commonsense.tasks.semantic_grasp_pick_task import SemanticGraspPickTask
 from commonsense.tasks.semantic_grasp_pick_task_sampler import (
     SemanticGraspPickTaskSampler,
 )
 
 from molmo_spaces.configs.abstract_config import Config
+from molmo_spaces.configs.base_packing_configs import PackingDataGenConfig
 from molmo_spaces.configs.base_pick_config import PickBaseConfig
 from molmo_spaces.configs.camera_configs import (
     AllCameraSystems,
     FrankaDroidCameraSystem,
     FrankaRandomizedD405D455CameraSystem,
 )
-from molmo_spaces.configs.policy_configs import (
-    BlockStackingPolicyConfig,
-    PickPlannerPolicyConfig,
-)
-from molmo_spaces.configs.robot_configs import BaseRobotConfig, CommonSenseFrankaRobotConfig
+from molmo_spaces.configs.policy_configs import BasePolicyConfig, PickPlannerPolicyConfig
+from molmo_spaces.configs.robot_configs import BaseRobotConfig, FrankaRobotConfig
+from molmo_spaces.configs.task_sampler_configs import BaseMujocoTaskSamplerConfig
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
+from molmo_spaces.utils.constants.object_constants import PICK_AND_PLACE_OBJECTS
+
+
+class CommonSenseFrankaRobotConfig(FrankaRobotConfig):
+    """Franka config for CommonSense benchmark datagen.
+
+    Uses a raised-elbow home pose (clears tall clutter and open box flaps) and
+    disables initial-pose noise so every episode starts from the exact same arm
+    configuration. Kept as an override so the shared FrankaRobotConfig defaults
+    stay unchanged for other users.
+    """
+
+    init_qpos: dict[str, list[float]] = {
+        "arm": [0, -1 / 5 * np.pi, 0, -4 / 5 * np.pi, 0, 3 / 5 * np.pi, 0.0],
+        "gripper": [0.00296, 0.00296],
+    }
+    init_qpos_noise_range: dict[str, list[float]] | None = {
+        # Arm noise disabled (was [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175] rad,
+        # Jacobian-weighted to keep TCP displacement <=10cm).
+        "arm": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    }
 
 
 @register_config("BlockSupportConfig")
@@ -210,3 +239,31 @@ class SemanticGraspPickConfig(PickBaseConfig):
         robot_config: BaseRobotConfig | None = None
         task_config: SemanticGraspPickTaskConfig | None = None
         task_cls_str: str | None = None
+
+
+@register_config("FrankaPackingDroidDataGenConfig")
+class FrankaPackingDroidDataGenConfig(PackingDataGenConfig):
+    """Data generation config for Franka packing task with DROID-style fixed cameras.
+
+    Mirrors FrankaPickDroidDataGenConfig but for the packing task. Bakes in
+    robot_config + camera_config so distributed launchers like
+    manager_multi_machine_sqs_beaker.py - which don't take a `--robot` flag -
+    get a fully populated config instead of crashing in setup_robot_scene with
+    `'NoneType' object has no attribute 'name'`. Also bakes in the packing
+    planner policy and the CommonSense packing sampler (robot placed near both the
+    object and the box, scene cluttered, every clutter object packed).
+    """
+
+    task_sampler_config: BaseMujocoTaskSamplerConfig = CommonSensePackingTaskSamplerConfig(
+        task_sampler_class=CommonSensePackingTaskSampler,
+        pickup_types=PICK_AND_PLACE_OBJECTS,
+        samples_per_house=20,
+    )
+    robot_config: BaseRobotConfig = CommonSenseFrankaRobotConfig()
+    camera_config: FrankaDroidCameraSystem = FrankaDroidCameraSystem()
+    policy_config: BasePolicyConfig = PackingPlannerPolicyConfig(place_z_offset=0.05)
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "packing_droid_v1"
+
+    @property
+    def tag(self) -> str:
+        return "franka_packing_droid_datagen"
