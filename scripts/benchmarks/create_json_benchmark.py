@@ -57,10 +57,6 @@ import importlib
 import io
 
 import h5py
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -954,6 +950,12 @@ def write_balancing_stats(
             log.info(f"  ... ({len(vc) - 20} more bins)")
 
         if output_path is not None:
+            # Lazy: only needed for the histogram files, and not a core dependency.
+            import matplotlib
+
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+
             fig, ax = plt.subplots(figsize=(max(6.0, min(16.0, len(vc) * 0.3)), 4.0))
             vc.plot(kind="bar", ax=ax)
             ax.set_title(f"{title} ({int(vc.sum())} episodes, {len(vc)} bins)")
