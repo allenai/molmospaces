@@ -826,6 +826,26 @@ def compute_num_nearby_graspable(frozen_config, radius_m: float) -> int | None:
     return count
 
 
+def compute_nearby_density(df_all: pd.DataFrame, args) -> None:
+    """Add num_nearby_graspable / nearby_density_bin columns (for --balance_density)."""
+    log.info(
+        f"Computing num_nearby_graspable (radius={args.nearby_radius_m:.3f} m, "
+        f"max_bin={args.nearby_density_max_bin}) for {len(df_all)} episodes"
+    )
+    df_all["num_nearby_graspable"] = df_all["frozen_config"].apply(
+        lambda fc: compute_num_nearby_graspable(fc, args.nearby_radius_m)
+    )
+    df_all["nearby_density_bin"] = df_all["num_nearby_graspable"].apply(
+        lambda c: bin_num_nearby_count(c, args.nearby_density_max_bin)
+    )
+    n_unknown = (df_all["num_nearby_graspable"].isna()).sum()
+    if n_unknown:
+        log.warning(
+            f"{n_unknown}/{len(df_all)} episodes have no computable "
+            f"num_nearby_graspable (missing pickup pose / object_poses)"
+        )
+
+
 def bin_num_nearby_count(count, max_bin: int) -> str:
     """Bin a raw graspable count into a label. Counts >= max_bin collapse to '>=N'."""
     if count is None or (isinstance(count, float) and np.isnan(count)):
@@ -1043,12 +1063,21 @@ def main():
         help="Task horizon in seconds (default: 30)",
     )
     parser.add_argument(
+        "--balance_density",
+        action="store_true",
+        help=(
+            "Also balance the selection by nearby-graspable density (weighted above "
+            "object category), and write per-axis stats, histograms and density "
+            "metadata. Off by default: balance by category, house and instance only."
+        ),
+    )
+    parser.add_argument(
         "--nearby_radius_m",
         type=float,
         default=0.12,
         help=(
             "Radius (meters, 3D Euclidean) used to count graspable objects near "
-            "the pickup object. Default: 0.12"
+            "the pickup object (with --balance_density). Default: 0.12"
         ),
     )
     parser.add_argument(
@@ -1057,7 +1086,8 @@ def main():
         default=5,
         help=(
             "Cap for nearby-graspable density bins. Counts >= this value collapse "
-            "into a single '>=N' bin during balancing/stats. Default: 5"
+            "into a single '>=N' bin during balancing/stats (with --balance_density). "
+            "Default: 5"
         ),
     )
     parser.add_argument(
@@ -1067,11 +1097,14 @@ def main():
         help=(
             "If > 0, create <benchmark>/debug_num_episodes/<bin>/ and symlink "
             "this many sample videos per nearby-density bin (sampled from the "
-            "full filtered pool, not the balanced selection). Default: 0 (off)."
+            "full filtered pool, not the balanced selection). Requires "
+            "--balance_density. Default: 0 (off)."
         ),
     )
 
     args = parser.parse_args()
+    if args.debug_num_episodes > 0 and not args.balance_density:
+        parser.error("--debug_num_episodes requires --balance_density")
 
     # Override settings in test mode
     if args.test:
@@ -1118,22 +1151,8 @@ def main():
 
     # Compute per-episode "number of nearby graspable objects" — counted in
     # 3D Euclidean distance from the pickup object's start position.
-    log.info(
-        f"Computing num_nearby_graspable (radius={args.nearby_radius_m:.3f} m, "
-        f"max_bin={args.nearby_density_max_bin}) for {len(df_all)} episodes"
-    )
-    df_all["num_nearby_graspable"] = df_all["frozen_config"].apply(
-        lambda fc: compute_num_nearby_graspable(fc, args.nearby_radius_m)
-    )
-    df_all["nearby_density_bin"] = df_all["num_nearby_graspable"].apply(
-        lambda c: bin_num_nearby_count(c, args.nearby_density_max_bin)
-    )
-    n_unknown = (df_all["num_nearby_graspable"].isna()).sum()
-    if n_unknown:
-        log.warning(
-            f"{n_unknown}/{len(df_all)} episodes have no computable "
-            f"num_nearby_graspable (missing pickup pose / object_poses)"
-        )
+    if args.balance_density:
+        compute_nearby_density(df_all, args)
 
     # Filter for successful episodes (use task_progress threshold if provided). Either way,
     # drop episodes already successful at step 0: the policy did nothing to succeed.
@@ -1219,22 +1238,25 @@ def main():
             cur_house_freq = dfs["house"].value_counts(normalize=True)
             cur_category_freq = dfs["object_category"].value_counts(normalize=True)
             cur_obj_inst_freq = dfs["model_instance"].value_counts(normalize=True)
-            cur_density_freq = dfs["nearby_density_bin"].value_counts(normalize=True)
 
             # Compute scores (lower is better for selection).
             # Priority (high → low):
             #   1. Avoid reusing (house, model_instance) pairs (hard penalty)
-            #   2. Balance nearby-graspable density (the headline difficulty axis)
+            #   2. With --balance_density: balance nearby-graspable density
             #   3. Balance object categories
             #   4. Balance houses
             #   5. Balance model instances
             df.loc[:, "score"] = (
                 df.apply(row2used_score, axis=1) * 1000
-                + df["nearby_density_bin"].map(cur_density_freq).fillna(0) * 500
                 + df["object_category"].map(cur_category_freq).fillna(0) * 100
                 + df["house"].map(cur_house_freq).fillna(0) * 10
                 + df["model_instance"].map(cur_obj_inst_freq).fillna(0) * 1
             )
+            if args.balance_density:
+                cur_density_freq = dfs["nearby_density_bin"].value_counts(normalize=True)
+                df.loc[:, "score"] += (
+                    df["nearby_density_bin"].map(cur_density_freq).fillna(0) * 500
+                )
 
             unselected = df[~df["selected"]]
             if len(unselected) == 0:
@@ -1266,7 +1288,13 @@ def main():
     ]
 
     if args.print_stats:
-        write_balancing_stats(dfs, output_path=None, axes=balancing_axes)
+        if args.balance_density:
+            write_balancing_stats(dfs, output_path=None, axes=balancing_axes)
+        else:
+            log.info("Category distribution:")
+            log.info(dfs["object_category"].value_counts())
+            log.info("House distribution:")
+            log.info(dfs["house"].value_counts())
         return
 
     # Create output directory
@@ -1385,37 +1413,40 @@ def main():
     else:
         episode_length_stats = None
 
-    # Log distribution summaries and save a histogram PNG per balancing axis.
-    log.info("=" * 60)
-    log.info("Final distribution across balancing axes:")
-    log.info("=" * 60)
-    balancing_axis_counts = write_balancing_stats(
-        dfs, output_path=benchmark_path, axes=balancing_axes
-    )
+    balancing_axis_counts = None
+    nearby_graspable_stats = None
+    if args.balance_density:
+        # Log distribution summaries and save a histogram PNG per balancing axis.
+        log.info("=" * 60)
+        log.info("Final distribution across balancing axes:")
+        log.info("=" * 60)
+        balancing_axis_counts = write_balancing_stats(
+            dfs, output_path=benchmark_path, axes=balancing_axes
+        )
 
-    # Optionally save sample videos per nearby_density_bin for visual sanity.
-    save_debug_videos_per_density_bin(
-        df=df,
-        benchmark_path=benchmark_path,
-        n_per_bin=args.debug_num_episodes,
-    )
+        # Optionally save sample videos per nearby_density_bin for visual sanity.
+        save_debug_videos_per_density_bin(
+            df=df,
+            benchmark_path=benchmark_path,
+            n_per_bin=args.debug_num_episodes,
+        )
 
-    # Raw num_nearby_graspable stats (pre-binning) for reporting.
-    nn = dfs["num_nearby_graspable"].dropna().astype(int)
-    if len(nn):
-        nearby_graspable_stats = {
-            "radius_m": float(args.nearby_radius_m),
-            "max_bin": int(args.nearby_density_max_bin),
-            "min": int(nn.min()),
-            "max": int(nn.max()),
-            "mean": float(nn.mean()),
-            "median": float(nn.median()),
-        }
-    else:
-        nearby_graspable_stats = {
-            "radius_m": float(args.nearby_radius_m),
-            "max_bin": int(args.nearby_density_max_bin),
-        }
+        # Raw num_nearby_graspable stats (pre-binning) for reporting.
+        nn = dfs["num_nearby_graspable"].dropna().astype(int)
+        if len(nn):
+            nearby_graspable_stats = {
+                "radius_m": float(args.nearby_radius_m),
+                "max_bin": int(args.nearby_density_max_bin),
+                "min": int(nn.min()),
+                "max": int(nn.max()),
+                "mean": float(nn.mean()),
+                "median": float(nn.median()),
+            }
+        else:
+            nearby_graspable_stats = {
+                "radius_m": float(args.nearby_radius_m),
+                "max_bin": int(args.nearby_density_max_bin),
+            }
 
     # Write optional metadata (as separate file for human readability)
     metadata = BenchmarkMetadata(
