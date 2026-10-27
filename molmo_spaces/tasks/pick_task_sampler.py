@@ -1632,7 +1632,7 @@ class PickTaskSampler(BaseMujocoTaskSampler):
                 theta = np.random.uniform(0, 2 * np.pi)  # Azimuthal angle (full circle)
 
                 # Polar angle sampling depends on covering vs occlusion mode
-                if self.config.task_sampler_config.covering:
+                if self.config.task_sampler_config.clutter_covering:
                     # Covering: sample from above (0 to pi/4 = 0 to 45 degrees from vertical)
                     phi = np.random.uniform(0, np.pi / 4)
                 else:

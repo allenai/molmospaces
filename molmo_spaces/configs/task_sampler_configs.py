@@ -166,7 +166,7 @@ class PickTaskSamplerConfig(ObjectCentricTaskSamplerConfig):
         False  # set True to clutter the scene around the pickup object (occlusion/covering
         # benchmarks); run_pipeline.py exposes this as --clutter
     )
-    covering: bool = (
+    clutter_covering: bool = (
         False  # If you want objects sampled on top of pickup object as opposed to around
     )
     clutter_with_taller_objects: bool = False  # If you want the surrounding clutter to be taller.
