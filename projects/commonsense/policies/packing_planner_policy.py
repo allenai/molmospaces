@@ -286,8 +286,19 @@ class PackingPlannerPolicy(PickAndPlacePlannerPolicy):
             self.action_primitives = []
             self.action_idx = 0
 
+    def get_phase(self) -> str:
+        if not self.action_primitives:
+            return "done"
+        return super().get_phase()
+
     def get_action(self, info: dict[str, Any]) -> dict[str, Any]:
-        action = super().get_action(info)
+        if not self.action_primitives:
+            # reset() leaves no primitives once every object is packed or skipped. End
+            # the episode instead of letting the base planner treat that as a failure
+            # and retry; the no-op ctrl keeps the rollout's action application well-formed.
+            action = {**self.robot_view.get_noop_ctrl_dict(), "done": True}
+        else:
+            action = super().get_action(info)
 
         if action.get("done"):
             self._current_object_index += 1

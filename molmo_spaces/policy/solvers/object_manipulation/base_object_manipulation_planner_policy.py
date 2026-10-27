@@ -509,11 +509,6 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                     ]
 
     def get_action(self, info: dict[str, Any]) -> dict[str, Any]:
-        if not self.action_primitives:
-            # No-op ctrl keeps the rollout loop's action application well-formed
-            # (e.g. packing with every object already in the receptacle).
-            return {**self.robot_view.get_noop_ctrl_dict(), "done": True}
-
         if self._check_for_failures():
             return self._handle_failure()
 
@@ -536,8 +531,6 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
         return action
 
     def get_phase(self) -> str:
-        if not self.action_primitives:
-            return "done"
         if self.action_idx < len(self.action_primitives):
             act_prim = self.action_primitives[self.action_idx]
         else:
