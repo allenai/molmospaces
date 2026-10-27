@@ -811,18 +811,10 @@ class _PickleMissingClass:
 
 class _ConfigUnpickler(pickle.Unpickler):
     """Decode legacy pickle-format frozen_configs (mirrors create_json_benchmark)."""
-    name_remap = {"MjThorExpConfig": "MlSpacesExpConfig"}
 
     def find_class(self, module, name):
         if module.startswith("mujoco_thor."):
             module = module.replace("mujoco_thor.", "molmo_spaces.", 1)
-        for old, new in self.name_remap.items():
-            if name == old:
-                name = new
-                break
-            if name.startswith(old + "."):
-                name = new + name[len(old):]
-                break
         try:
             mod = importlib.import_module(module)
             cls = mod

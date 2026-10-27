@@ -117,23 +117,10 @@ def parse_obs_scene(obs_scene_data) -> dict:
 
 class ConfigUnpickler(pickle.Unpickler):
     moved_name_to_module = {}
-    # Class renames for backward compat with older pickles (e.g. rollout H5
-    # files saved before the experiment-config base class was renamed).
-    name_remap = {
-        "MjThorExpConfig": "MlSpacesExpConfig",
-    }
 
     def find_class(self, module, name):
         if module.startswith("mujoco_thor."):
             module = module.replace("mujoco_thor.", "molmo_spaces.", 1)
-
-        for old, new in self.name_remap.items():
-            if name == old:
-                name = new
-                break
-            if name.startswith(old + "."):
-                name = new + name[len(old):]
-                break
 
         if name in self.moved_name_to_module:
             module = self.moved_name_to_module[name]
