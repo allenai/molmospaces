@@ -572,8 +572,8 @@ def analyze_single_hdf5_for_json(
                 log.debug(f"{traj_key}: failed to parse task_info: {e}")
             episode_data["task_progress"] = task_progress
 
-            # Success/failure - prefer the recorded success field; episodes with only
-            # task_progress are kept here and filtered by --task_progress_thresh later.
+            # Success/failure: the recorded success field. Episodes with only task_progress
+            # are not successes; they count only via an explicit --task_progress_thresh.
             # first_success: step of the first recorded success (None if it never succeeds);
             # episodes already successful at step 0 are dropped below.
             episode_data["first_success"] = None
@@ -585,7 +585,7 @@ def analyze_single_hdf5_for_json(
                 if success_array.any():
                     episode_data["first_success"] = int(np.argmax(success_array))
             elif task_progress is not None:
-                episode_data["success"] = True  # will be filtered by task_progress_thresh later
+                episode_data["success"] = False
             else:
                 raise ValueError(f"Trajectory {traj_key} missing both 'task_progress' and 'success'")
 
@@ -1022,7 +1022,9 @@ def main():
         "--task_progress_thresh",
         type=float,
         default=None,
-        help="Minimum task_progress to consider an episode successful (e.g., 0.5 = at least half objects packed). If not set, uses the 'success' field.",
+        help="Opt in to partial credit: keep episodes with task_progress >= this value (e.g. 0.5 = "
+        "at least half the objects packed) instead of requiring a recorded success. "
+        "Default: only episodes whose recorded 'success' is true.",
     )
     parser.add_argument(
         "--test",
