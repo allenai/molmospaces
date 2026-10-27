@@ -73,7 +73,6 @@ class CommonSensePackingTaskSampler(PackingTaskSampler):
         robot_placed = env.place_robot_near_multiple(
             robot_view=robot_view,
             targets=[pickup_obj, box_obj],
-            face_target_index=0,
             max_tries=10,
             sampling_radius_range=self.config.task_sampler_config.base_pose_sampling_radius_range,
             robot_safety_radius=self.config.task_sampler_config.robot_safety_radius,

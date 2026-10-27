@@ -191,7 +191,6 @@ class BlockSupportTaskSampler(PickTaskSampler):
         robot_placed = env.place_robot_near_multiple(
             robot_view=robot_view,
             targets=cube_objects,
-            face_target_index=0,
             max_tries=10,
             sampling_radius_range=task_sampler_config.base_pose_sampling_radius_range,
             robot_safety_radius=task_sampler_config.robot_safety_radius,

@@ -1242,7 +1242,6 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self,
         robot_view,
         targets: list,
-        face_target_index: int = 0,
         max_tries: int = 10,
         sampling_radius_range: tuple[float, float] = (0.0, 1.0),
         robot_safety_radius: float = 0.35,
@@ -1257,11 +1256,10 @@ class CPUMujocoEnv(BaseMujocoEnv):
         """Place robot within reach of multiple targets (intersection of annuli).
 
         Mirrors place_robot_near but samples from the intersection of annuli
-        around all targets. The robot faces the target at face_target_index.
+        around all targets. With face_target, the robot faces the targets' centroid.
 
         Args:
             targets: List of targets (np.ndarray, Object, or str).
-            face_target_index: Index into targets for orientation.
             (remaining args identical to place_robot_near)
 
         Returns:
@@ -1373,7 +1371,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
                                 )
                             continue
 
-                    # Calculate orientation facing face_target_index
+                    # Calculate orientation facing the targets' centroid
                     if face_target:
                         xy_vec = face_pos[:2] - robot_base_pos[:2]
                         if np.linalg.norm(xy_vec) > 1e-6:
