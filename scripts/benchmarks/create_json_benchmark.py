@@ -564,8 +564,11 @@ def analyze_single_hdf5_for_json(
                         f"{traj_key}: obs/extra keys={list(extra_group.keys())}, "
                         f"'task_info' not found"
                     )
-            except (KeyError, json.JSONDecodeError, UnicodeDecodeError) as e:
-                log.debug(f"{traj_key}: failed to parse task_info: {e}")
+            except KeyError as e:
+                # No obs/extra group: nothing to parse, same as task_info being absent.
+                log.debug(f"{traj_key}: no task_info to read ({e})")
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                log.warning(f"{traj_key}: failed to parse task_info, ignoring task_progress: {e}")
             episode_data["task_progress"] = task_progress
 
             # Success/failure: the recorded success field. Episodes with only task_progress
