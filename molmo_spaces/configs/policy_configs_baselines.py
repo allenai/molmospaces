@@ -12,11 +12,10 @@ class PiPolicyConfig(BasePolicyConfig):
     remote_config: dict | None = dict(host="localhost", port=8080)
     prompt_object_word_num: int = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
-    # When True, every episode's prompt is produced by PromptSamplerLearnedPolicy
-    # (templates in utils/prompt_samplers.py; semantic_grasp_pick from projects/commonsense).
-    # When False, fall back to task.get_task_description() — i.e. the
-    # benchmark's referral expressions for pick/pick_and_place tasks.
-    use_prompt_sampler: bool = True
+    # Prompt source. False (default): task.get_task_description(), like every other
+    # policy. True: PromptSamplerLearnedPolicy (templates in utils/prompt_samplers.py;
+    # needed for the prompt_level ablation below).
+    use_prompt_sampler: bool = False
     # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
     # 1 = basic pick prompt, 2 = existing semantic prompts (default),
     # 3 = "pick up the {object} by the {part}.".
@@ -46,6 +45,8 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
     remote_config: dict = dict(host="localhost", port=0000)
     prompt_object_word_num: int = 1  # number of words as the object name
     prompt_templates: list[str] | None = None
+    # Prompt source; see PiPolicyConfig.use_prompt_sampler.
+    use_prompt_sampler: bool = False
     # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
     # 1 = basic pick prompt, 2 = existing semantic prompts (default),
     # 3 = "pick up the {object} by the {part}.".
@@ -61,27 +62,6 @@ class DreamZeroPolicyConfig(BasePolicyConfig):
     def model_post_init(self, _context: Any) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
         super().model_post_init(_context)
-        if self.policy_cls is None:
-            from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
-
-            self.policy_cls = DreamZero_Policy
-            self.policy_factory = make_lenient(DreamZero_Policy)
-
-
-class RumPolicyConfig(BasePolicyConfig):
-    name: str = "rum"
-    checkpoint_path: str = "checkpoints/rum/rum_final.pt"
-    remote_config: dict = {"host": "localhost", "port": 8765}
-    use_molmo: bool = True
-    grasping_threshold: float = 0.7
-    grasping_style: str = "binary"
-
-    policy_cls: type = None
-    policy_type: str = "learned"
-
-    def model_post_init(self, __context) -> None:
-        """Set policy_cls after initialization to avoid circular imports."""
-        super().model_post_init(__context)
         if self.policy_cls is None:
             from molmo_spaces.policy.learned_policy.dreamzero_policy import DreamZero_Policy
 

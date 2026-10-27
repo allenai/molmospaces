@@ -328,7 +328,8 @@ def get_args():
         type=int,
         choices=[1, 2, 3],
         default=None,
-        help="Override policy_config.prompt_level (semantic_grasp_pick ablation). "
+        help="Override policy_config.prompt_level (semantic_grasp_pick ablation); also "
+        "turns on policy_config.use_prompt_sampler. "
         "1=basic 'pick up the {object}.', 2=existing semantic prompts, "
         "3='pick up the {object} by the {part}.'. If unset, uses the value from the eval config.",
     )
@@ -778,6 +779,8 @@ def run_evaluation(
                 f"has no prompt_level field."
             )
         exp_config.policy_config.prompt_level = prompt_level
+        # prompt_level only takes effect through the prompt sampler, which is opt-in.
+        exp_config.policy_config.use_prompt_sampler = True
 
     # Viewer
     if viewer:

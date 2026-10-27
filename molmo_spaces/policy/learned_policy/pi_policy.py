@@ -35,9 +35,9 @@ class PI_Policy(InferencePolicy, StatefulPolicy):
         self.chunk_size = exp_config.policy_config.chunk_size
         self.grasping_threshold = exp_config.policy_config.grasping_threshold
         self.use_prompt_sampler = exp_config.policy_config.use_prompt_sampler
-        # PromptSamplerLearnedPolicy is the prompt source whenever use_prompt_sampler is
-        # True (default): it pulls per-object templates from utils/prompt_samplers.py
-        # for generic tasks and from a registered builder for semantic_grasp_pick
+        # Prompts come from task.get_task_description() unless use_prompt_sampler is set,
+        # in which case PromptSamplerLearnedPolicy builds them: per-object templates from
+        # utils/prompt_samplers.py, or a registered builder for semantic_grasp_pick
         # (projects/commonsense, driven by policy_config.prompt_level). The
         # construction-time exp_config.task_type is whatever the eval config
         # defaults to (e.g. "pick" for JsonBenchmarkEvalConfig); the actual

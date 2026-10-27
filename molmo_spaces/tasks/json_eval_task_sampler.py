@@ -149,9 +149,6 @@ def import_class_from_string(class_path: str) -> type:
         raise ValueError(f"Invalid class path: {class_path}. Expected 'module.ClassName' format.")
 
     module_path, class_name = parts
-    # Remap legacy mujoco_thor paths to molmo_spaces
-    if module_path.startswith("mujoco_thor."):
-        module_path = module_path.replace("mujoco_thor.", "molmo_spaces.", 1)
     module = importlib.import_module(module_path)
     return getattr(module, class_name)
 
@@ -383,8 +380,6 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.packing_task.PackingTask": "packing",
         }
 
-        # Older benchmark JSONs use the legacy mujoco_thor package prefix.
-        task_cls = task_cls.replace("mujoco_thor.", "molmo_spaces.", 1)
         if task_cls in task_cls_to_type:
             return task_cls_to_type[task_cls]
 

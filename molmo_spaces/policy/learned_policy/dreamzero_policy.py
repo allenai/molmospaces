@@ -112,6 +112,8 @@ class DreamZero_Policy(InferencePolicy):
     ) -> None:
         super().__init__(exp_config)
         self.remote_config = exp_config.policy_config.remote_config
+        # Same prompt source switch as PI_Policy.
+        self.use_prompt_sampler = exp_config.policy_config.use_prompt_sampler
         self.prompt_sampler = PromptSamplerLearnedPolicy(
             task_type=exp_config.task_type,
             prompt_templates=exp_config.policy_config.prompt_templates,
@@ -172,7 +174,10 @@ class DreamZero_Policy(InferencePolicy):
         # self.render(obs)
         if isinstance(obs, list):
             obs = obs[0]
-        prompt = self.prompt_sampler.get_prompt(self.task)
+        if self.use_prompt_sampler:
+            prompt = self.prompt_sampler.get_prompt(self.task)
+        else:
+            prompt = self.task.get_task_description()
         grip = np.clip(obs["qpos"]["gripper"][0] / 0.824033, 0, 1)
         if grip < 0.1:
             grip = 0.00
@@ -253,7 +258,10 @@ class DreamZero_Policy(InferencePolicy):
         info["policy_buffer_length"] = self.chunk_size
         info["policy_grasping_threshold"] = self.grasping_threshold
         info["policy_grasping_type"] = self.grasping_type
-        info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        if self.use_prompt_sampler:
+            info["prompt"] = self.prompt_sampler.get_prompt(self.task)
+        else:
+            info["prompt"] = self.task.get_task_description()
         info["session_id"] = self.session_id
         info["time_spent"] = time.time() - self.starting_time if self.starting_time else None
         info["timestamp"] = time.time()

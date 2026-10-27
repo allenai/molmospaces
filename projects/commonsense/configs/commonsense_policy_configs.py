@@ -8,6 +8,8 @@ from molmo_spaces.configs.policy_configs import (
 
 class PackingPlannerPolicyConfig(PickAndPlacePlannerPolicyConfig):
     policy_cls: type = None  # Will be set in model_post_init to avoid circular imports
+    # The box centre is often out of reach even when the rest of the box is not.
+    max_placement_retries: int = 5
 
     def model_post_init(self, __context) -> None:
         """Set policy_cls after initialization to avoid circular imports."""
