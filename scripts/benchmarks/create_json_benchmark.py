@@ -574,11 +574,16 @@ def analyze_single_hdf5_for_json(
 
             # Success/failure - prefer the recorded success field; episodes with only
             # task_progress are kept here and filtered by --task_progress_thresh later.
+            # first_success: step of the first recorded success (None if it never succeeds);
+            # episodes already successful at step 0 are dropped below.
+            episode_data["first_success"] = None
             if "success" in traj_group:
                 success_array = np.array(traj_group["success"])
                 if len(success_array) == 0:
                     raise ValueError(f"Trajectory {traj_key} has empty 'success' array")
                 episode_data["success"] = bool(success_array[-1])
+                if success_array.any():
+                    episode_data["first_success"] = int(np.argmax(success_array))
             elif task_progress is not None:
                 episode_data["success"] = True  # will be filtered by task_progress_thresh later
             else:
@@ -1123,16 +1128,20 @@ def main():
             f"num_nearby_graspable (missing pickup pose / object_poses)"
         )
 
-    # Filter for successful episodes (use task_progress threshold if provided)
+    # Filter for successful episodes (use task_progress threshold if provided). Either way,
+    # drop episodes already successful at step 0: the policy did nothing to succeed.
+    not_step0_success = df_all["first_success"] != 0
+    log.info(f"Dropping {(~not_step0_success).sum()} episodes that succeed at step 0")
     if args.task_progress_thresh is not None and "task_progress" in df_all.columns:
         mask = df_all["task_progress"].notna() & (df_all["task_progress"] >= args.task_progress_thresh)
+        mask &= not_step0_success
         df_succ = df_all[mask].copy()
         log.info(
             f"Filtering by task_progress >= {args.task_progress_thresh}: "
             f"{mask.sum()}/{len(df_all)} episodes pass"
         )
     else:
-        df_succ = df_all[df_all["success"] == True].copy()
+        df_succ = df_all[(df_all["success"] == True) & not_step0_success].copy()
 
     # Exclude laptops for open/close tasks (based on current script logic)
     if "Open" in args.base_path or "Close" in args.base_path:
