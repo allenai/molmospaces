@@ -24,6 +24,7 @@ at x=0, y=0 and its walking deck at z=0 (the CAD base is at z=-0.10).
 """
 
 import argparse
+import hashlib
 from pathlib import Path
 
 import fast_simplification
@@ -181,8 +182,11 @@ def write_visual(prefix, items, mesh_dir, out, face_budget=None):
                 f.writelines(f"v {x:.5f} {y:.5f} {z:.5f}\n" for x, y, z in verts)
                 f.writelines(f"vt {u:.5f} {v:.5f}\n" for u, v in uvs)
                 f.writelines(f"f {a}/{a} {b}/{b} {c}/{c}\n" for a, b, c in faces + 1)
-            tex.convert("RGB").save(mesh_dir / f"{name}.png")
-            out["textures"].append(f'<texture name="{name}" type="2d" file="meshes/{name}.png"/>')
+            # The CAD reuses a handful of images for hundreds of parts: store each image once.
+            img = tex.convert("RGB")
+            digest = hashlib.md5(img.tobytes() + str(img.size).encode()).hexdigest()[:12]
+            img.save(mesh_dir / f"tex_{digest}.png")
+            out["textures"].append(f'<texture name="{name}" type="2d" file="meshes/tex_{digest}.png"/>')
             out["mats"].append(f'<material name="{name}" texture="{name}"/>')
         else:
             merged = trimesh.util.concatenate(

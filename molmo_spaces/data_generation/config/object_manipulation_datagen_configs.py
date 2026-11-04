@@ -1034,6 +1034,14 @@ class InteractiveShellChallengeSamplerConfig(PickAndPlaceTaskSamplerConfig):
     robot_start_xy_yaw: tuple[float, float, float] = (0.0, 0.0, 0.0)  # metres, metres, degrees
 
 
+def _default_challenge_scene() -> str:
+    """The NIST testbed scene: a converted copy in ASSETS_DIR if there is one, else the one shipped
+    in molmo_spaces/resources/ieee_humanoids_2026 (set CHALLENGE_TESTBED_XML to override both)."""
+    local = ASSETS_DIR / "ieee_humanoids_2026" / "challenge_scene.xml"
+    shipped = Path(__file__).resolve().parents[2] / "resources" / "ieee_humanoids_2026" / "challenge_scene.xml"
+    return str(local if local.exists() else shipped)
+
+
 @register_config("InteractiveShellG1Challenge")
 class InteractiveShellG1ChallengeDataGenConfig(InteractiveShellG1DataGenConfig):
     """InteractiveShellG1 in the IEEE Humanoids 2026 Loco-Manipulation Challenge testbed.
@@ -1053,7 +1061,7 @@ class InteractiveShellG1ChallengeDataGenConfig(InteractiveShellG1DataGenConfig):
         scene_xml_paths=[
             os.environ.get(
                 "CHALLENGE_TESTBED_XML",
-                str(ASSETS_DIR / "ieee_humanoids_2026" / "challenge_scene.xml"),
+                _default_challenge_scene(),
             )
         ],
         house_inds=[0],
@@ -1090,7 +1098,7 @@ class InteractiveShellG1ChallengeKeypadDoorDataGenConfig(InteractiveShellG1Chall
         scene_xml_paths=[
             os.environ.get(
                 "CHALLENGE_TESTBED_XML",
-                str(ASSETS_DIR / "ieee_humanoids_2026" / "challenge_scene.xml"),
+                _default_challenge_scene(),
             )
         ],
         house_inds=[0],

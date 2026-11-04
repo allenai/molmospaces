@@ -5,12 +5,16 @@ interactive shell. Rules: `Humanoid-Conference-Competition-Rules.pdf` in the cha
 
 ## Setup
 
-Convert the CAD once (the scene is written to `<assets>/ieee_humanoids_2026/`; rerun after any
-converter change):
+The converted scene ships in the repo (`molmo_spaces/resources/ieee_humanoids_2026/`, 52 MB: 14 unique
+textures, shared by all parts), and the configs use it by default. A converted copy in
+`<assets>/ieee_humanoids_2026/` takes precedence, and `CHALLENGE_TESTBED_XML` overrides both. The robot
+assets come from the usual molmospaces asset download.
+
+To regenerate it from the CAD (needed only after changing the converter):
 
     python scripts/data/format_conversion/convert_testbed_to_mjcf.py \
         --dae <challenge repo>/CAD-Files/LocoManipulationTestbed.dae \
-        --out_dir <assets>/ieee_humanoids_2026            # --layout dexterity (default) | mobility | full
+        --out_dir molmo_spaces/resources/ieee_humanoids_2026   # --layout dexterity (default) | mobility | full
 
 `dexterity` removes the mobility terrain (ramps, lumber, wall obstacle) and flattens the deck, as in
 the rules' manipulation trials.
