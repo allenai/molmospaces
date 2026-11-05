@@ -22,10 +22,12 @@ from molmo_spaces.robots.floating_robotiq import FloatingRobotiqRobot
 from molmo_spaces.robots.floating_rum import FloatingRUMRobot
 from molmo_spaces.robots.franka import FrankaRobot
 from molmo_spaces.robots.g1 import G1Robot
+from molmo_spaces.robots.g1_dex3 import G1Dex3Robot
 from molmo_spaces.robots.i2rt_yam import I2rtYamRobot
 from molmo_spaces.robots.mobile_franka import MobileFrankaRobot
 from molmo_spaces.robots.rby1 import RBY1
 from molmo_spaces.robots.robot_views.abstract import RobotViewFactory
+from molmo_spaces.robots.robot_views.g1_dex3_view import G1Dex3RobotView
 from molmo_spaces.robots.robot_views.bimanual_yam_view import BimanualYamRobotView
 from molmo_spaces.robots.robot_views.franka_cap_view import (
     FrankaCAPRobotView,
@@ -449,6 +451,35 @@ class G1Config(BaseRobotConfig):
     # g1_dex.xml (only grouped by an MJCF `class`, which isn't queryable on the
     # compiled model). See molmo_spaces/robots/g1.py for the matching logic.
     gripper_friction: tuple[float, float, float] | None = None
+
+
+class G1Dex3Config(G1Config):
+    """The Unitree G1 with a Dex3-1 three-finger hand on each wrist (`g1_dex3`).
+
+    Identical to `G1Config` (walking WBC, arms, head fisheye / wrist cameras) except the right
+    Dex1 gripper is replaced by two 7-joint hands, move groups `left_hand` and `right_hand`
+    (order: thumb_0..2, index_0..1, middle_0..1; 0 = fingers extended, positive/negative
+    flexion per hand), and the left arm is actively controlled instead of hanging limp.
+    Build the robot asset with scripts/data/format_conversion/build_g1_dex3.py.
+    """
+
+    robot_cls: type[G1Robot] | None = G1Dex3Robot
+    robot_factory: Callable[[mj.MjData, Any], Robot] | None = G1Dex3Robot.from_mj_data
+    robot_view_factory: RobotViewFactory | None = G1Dex3RobotView
+    name: str = "g1_dex3"
+    robot_xml_path: Path = Path("g1_dex3.xml")
+    init_qpos: dict[str, np.ndarray] = {
+        "legs_waist": G1Config.model_fields["init_qpos"].default["legs_waist"],
+        "left_arm": np.array([0.212, -0.017, 0.062, 1.216, 0.005, 0.258, 0.006]),
+        "right_arm": np.array([0.2, -0.2, 0.0, -0.2, 0.0, 0.0, 0.0]),
+        "left_hand": np.zeros(7),
+        "right_hand": np.zeros(7),
+    }
+    command_mode: dict[str, str | None] = {
+        "legs_waist": "joint_position",
+        "arm": "joint_position",
+        "hand": "joint_position",
+    }
 
 
 class FloatingRUMRobotConfig(BaseRobotConfig):

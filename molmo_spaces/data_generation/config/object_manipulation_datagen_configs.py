@@ -7,6 +7,7 @@ for use in the data generation pipeline.
 
 import math
 from functools import cache
+import os
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ from molmo_spaces.configs.camera_configs import (
     FrankaRandomizedD405D455CameraSystem,
     FrankaRandomizedDroidCameraSystem,
     G1CameraSystem,
+    G1Dex3CameraSystem,
     RBY1GoProD455CameraSystem,
 )
 from molmo_spaces.configs.policy_configs import (
@@ -42,6 +44,7 @@ from molmo_spaces.configs.robot_configs import (
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
     G1Config,
+    G1Dex3Config,
     RBY1MConfig,
     RBY1MOpenCloseConfig,
 )
@@ -61,6 +64,9 @@ from molmo_spaces.configs.task_sampler_configs import (
 from molmo_spaces.data_generation.config_registry import register_config
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR, get_robot_path
 from molmo_spaces.tasks.interactive_shell_task_sampler import (
+    ChallengeKeypadDoorTaskSampler,
+    ChallengeLightbulbTaskSampler,
+    InteractiveShellChallengeTaskSampler,
     InteractiveShellPickTaskSampler,
     InteractiveShellTaskSampler,
 )
@@ -1020,6 +1026,175 @@ class InteractiveShellG1DataGenConfig(InteractiveShellDataGenConfig):
     @property
     def tag(self) -> str:
         return "interactive_shell_g1"
+
+
+class InteractiveShellChallengeSamplerConfig(PickAndPlaceTaskSamplerConfig):
+    """Sampler config for a fixed arena scene: where the robot spawns."""
+
+    robot_start_xy_yaw: tuple[float, float, float] = (0.0, 0.0, 0.0)  # metres, metres, degrees
+
+
+def _default_challenge_scene() -> str:
+    """The NIST testbed scene: a converted copy in ASSETS_DIR if there is one, else the one shipped
+    in molmo_spaces/resources/ieee_humanoids_2026 (set CHALLENGE_TESTBED_XML to override both)."""
+    local = ASSETS_DIR / "ieee_humanoids_2026" / "challenge_scene.xml"
+    shipped = Path(__file__).resolve().parents[2] / "resources" / "ieee_humanoids_2026" / "challenge_scene.xml"
+    return str(local if local.exists() else shipped)
+
+
+@register_config("InteractiveShellG1Challenge")
+class InteractiveShellG1ChallengeDataGenConfig(InteractiveShellG1DataGenConfig):
+    """InteractiveShellG1 in the IEEE Humanoids 2026 Loco-Manipulation Challenge testbed.
+
+    Convert the CAD once (scripts/data/format_conversion/convert_testbed_to_mjcf.py), then
+    point CHALLENGE_TESTBED_XML at the scene (default: ASSETS_DIR/
+    ieee_humanoids_2026/challenge_scene.xml) and run:
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --config InteractiveShellG1Challenge
+        >>> nav_to_xy(4.5, 1.3)
+    """
+
+    output_dir: Path = ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_challenge"
+    scene_dataset: str = "user"
+    data_split: str = "val"
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = InteractiveShellChallengeSamplerConfig(
+        task_sampler_class=InteractiveShellChallengeTaskSampler,
+        scene_xml_paths=[
+            os.environ.get(
+                "CHALLENGE_TESTBED_XML",
+                _default_challenge_scene(),
+            )
+        ],
+        house_inds=[0],
+        house_variant="base",
+        pickup_types=[],
+        samples_per_house=1,
+        check_robot_placement_visibility=False,
+        robot_safety_radius=0.3,
+        robot_start_xy_yaw=(2.0, 1.3, 0.0),
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_challenge"
+
+
+@register_config("InteractiveShellG1ChallengeKeypadDoor")
+class InteractiveShellG1ChallengeKeypadDoorDataGenConfig(InteractiveShellG1ChallengeDataGenConfig):
+    """Challenge manipulation tasks 1-2 (keypad, then door traversal) for the G1.
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \
+            --config InteractiveShellG1ChallengeKeypadDoor
+        >>> status()
+        >>> solve_keypad()   # the robot spawns in front of the keypad
+
+    The 2-digit code is on the screen above the keypad and in the task description.
+    """
+
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_challenge_keypad_door"
+    )
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = InteractiveShellChallengeSamplerConfig(
+        task_sampler_class=ChallengeKeypadDoorTaskSampler,
+        scene_xml_paths=[
+            os.environ.get(
+                "CHALLENGE_TESTBED_XML",
+                _default_challenge_scene(),
+            )
+        ],
+        house_inds=[0],
+        house_variant="base",
+        pickup_types=[],
+        samples_per_house=1,
+        check_robot_placement_visibility=False,
+        robot_safety_radius=0.3,
+        robot_start_xy_yaw=(9.0, 1.915, 180.0),  # in front of the keypad, facing the wall
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_challenge_keypad_door"
+
+
+@register_config("InteractiveShellG1Dex3ChallengeKeypadDoor")
+class InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig(
+    InteractiveShellG1ChallengeKeypadDoorDataGenConfig
+):
+    """InteractiveShellG1ChallengeKeypadDoor with the dual-Dex3 G1 (`g1_dex3`): same head fisheye
+    and wrist cameras (plus a left wrist camera), a Dex3-1 hand on each wrist.
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \\
+            --config InteractiveShellG1Dex3ChallengeKeypadDoor
+        >>> solve_keypad()
+    """
+
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_dex3_challenge"
+    )
+    robot_config: BaseRobotConfig = G1Dex3Config()
+    camera_config: G1CameraSystem = G1Dex3CameraSystem()
+    # The Dex3 index fingertip reaches ~6cm further than the Dex1 gripper: stand further back.
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = (
+        InteractiveShellG1ChallengeKeypadDoorDataGenConfig.model_fields["task_sampler_config"]
+        .default.model_copy(update={"robot_start_xy_yaw": (9.1, 1.945, 180.0)})
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_dex3_challenge"
+
+
+@register_config("InteractiveShellG1Dex3ChallengeDoor")
+class InteractiveShellG1Dex3ChallengeDoorDataGenConfig(
+    InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig
+):
+    """The dual-Dex3 G1 at the door: spawns right of the doorway, left fingertip in line with
+    the lever bar (door sequence: `solve_door()`).
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \\
+            --config InteractiveShellG1Dex3ChallengeDoor
+    """
+
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = (
+        InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig.model_fields["task_sampler_config"]
+        .default.model_copy(update={"robot_start_xy_yaw": (9.1, 1.86, 180.0)})
+    )
+    # NB: for the full task use InteractiveShellG1Dex3ChallengeKeypadDoor (keypad spawn) and call
+    # solve_keypad() then solve_door(); the door solver walks to the lever on its own.
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_dex3_challenge_door"
+
+
+@register_config("InteractiveShellG1Dex3ChallengeLightbulb")
+class InteractiveShellG1Dex3ChallengeLightbulbDataGenConfig(
+    InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig
+):
+    """Challenge manipulation task 3 (lightbulb turning) for the dual-Dex3 G1: spawns in front of
+    the wall and floor light boards (where the robot ends up after the door and the right turn).
+
+        PYTHONPATH=. mjpython scripts/datagen/run_pipeline.py --viewer --seed 0 \\
+            --config InteractiveShellG1Dex3ChallengeLightbulb
+        >>> status()
+        >>> solve_lightbulb()    # or turn_bulb(i) / place_bulb(i)
+    """
+
+    output_dir: Path = (
+        ASSETS_DIR / "experiment_output" / "datagen" / "interactive_shell_g1_dex3_challenge_lightbulb"
+    )
+    task_sampler_config: PickAndPlaceTaskSamplerConfig = (
+        InteractiveShellG1Dex3ChallengeKeypadDoorDataGenConfig.model_fields["task_sampler_config"]
+        .default.model_copy(
+            update={
+                "task_sampler_class": ChallengeLightbulbTaskSampler,
+                "robot_start_xy_yaw": (7.75, 0.65, 0.0),  # facing the boards on the wall at x=8.43
+            }
+        )
+    )
+
+    @property
+    def tag(self) -> str:
+        return "interactive_shell_g1_dex3_challenge_lightbulb"
 
 
 @register_config("FrankaPickBatchTestConfig")

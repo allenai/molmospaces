@@ -1,0 +1,13 @@
+<mujoco model="ieee_humanoids_2026_challenge">
+  <!-- layout: dexterity -->
+  <include file="testbed.xml"/>
+  <visual><global offwidth="1920" offheight="1080"/><headlight ambient="0.5 0.5 0.5" diffuse="0.6 0.6 0.6"/></visual>
+  <asset>
+    <texture name="floor_tex" type="2d" builtin="checker" rgb1="0.75 0.75 0.75" rgb2="0.65 0.65 0.65" width="256" height="256"/>
+    <material name="floor_mat" texture="floor_tex" texrepeat="12 12" texuniform="true"/>
+  </asset>
+  <worldbody>
+    <light pos="5.96102 1.3081 6" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+    <geom name="floor" type="plane" pos="5.96102 1.3081 -0.1" size="12 8 0.1" material="floor_mat"/>
+  </worldbody>
+</mujoco>
