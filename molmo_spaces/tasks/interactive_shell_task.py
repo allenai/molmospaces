@@ -1237,6 +1237,13 @@ class InteractiveShellTask(BaseMujocoTask):
         path = path[keep]
         path[-1] = (x, y) if not grid[to_cell(x, y)] else path[-1]
 
+        return self._follow_xy_path(path, yaw_deg, label="nav_to_xy")
+
+    def _follow_xy_path(self, path: np.ndarray, yaw_deg: float | None, label: str = "path") -> bool:
+        """Walk the base along `path` (N x [x, y], first row = where it stands), facing the
+        direction of travel and ending at `yaw_deg` (default: the current heading). The execution
+        half of `nav_to_xy`, usable with a hand-made path that avoids the grid planner."""
+        x, y = path[-1]
         step_dist, lead = self._direct_drive_pacing()
         xys = np.concatenate(
             [path[:1]]
@@ -1253,7 +1260,7 @@ class InteractiveShellTask(BaseMujocoTask):
 
         success = self._drive_base_waypoints(
             waypoints,
-            label="nav_to_xy",
+            label=label,
             threshold=0.15,
             max_ticks=300 + 4 * len(waypoints),
             lead=lead,
