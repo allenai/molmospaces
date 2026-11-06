@@ -1,0 +1,20 @@
+<mujoco model="custom_assets_scene">
+  <option integrator="implicit" timestep="0.002"/>
+
+  <asset>
+    <model name="red_block_model" file="asset_library/red_block/red_block.xml"/>
+    <texture name="floor_checker" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" width="512" height="512"/>
+    <material name="floor_checker_mat" texture="floor_checker" texrepeat="4 4" texuniform="true" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="2 2 0.1" pos="0 0 0" material="floor_checker_mat"/>
+
+    <light name="key_light" pos="1 -1 2" dir="-0.5 0.5 -1" directional="true" diffuse="0.8 0.8 0.8"/>
+    <light name="fill_light" pos="-1 1 2" dir="0.5 -0.5 -1" directional="true" diffuse="0.4 0.4 0.4"/>
+
+    <frame pos="0.4 0 0.025">
+      <attach model="red_block_model" prefix=""/>
+    </frame>
+  </worldbody>
+</mujoco>

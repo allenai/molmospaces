@@ -1,0 +1,8 @@
+<mujoco model="red_block">
+  <worldbody>
+    <body name="red_block" pos="0 0 0">
+      <freejoint/>
+      <geom name="red_block_geom" type="box" size="0.025 0.025 0.025" rgba="1 0 0 1"/>
+    </body>
+  </worldbody>
+</mujoco>

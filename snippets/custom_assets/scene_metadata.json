@@ -1,0 +1,10 @@
+{
+    "objects": {
+        "red_block": {
+            "asset_id": "red_block",
+            "object_id": "red_block",
+            "category": "block",
+            "is_static": false
+        }
+    }
+}
