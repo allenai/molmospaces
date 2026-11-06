@@ -35,7 +35,6 @@ from molmo_spaces.molmo_spaces_constants import (
     get_scenes_root,
 )
 
-MJC_VERSION = tuple(map(int, mujoco.__version__.split(".")))
 FILAMENT_ATTR_ENV_LIGHT_INTENSITY = "filament.fallback.environment_light_intensity"
 
 
@@ -556,15 +555,13 @@ class BaseMujocoTaskSampler:
 
         spec = MjSpec.from_file(str(scene_file_path))
 
-        # Hack(wilbert): only run on 3.5.1 onwards for now (custom mujoco wheel)
-        if MJC_VERSION >= (3, 5, 1):
-            # This custom arg is used by the filament renderer to set the default intensity of the environment light
-            spec.add_numeric(
-                FILAMENT_ATTR_ENV_LIGHT_INTENSITY,
-                [environment_light_intensity],
-                1,
-                "Filament default env light intensity",
-            )
+        # Read by the Filament renderer as the intensity of its fallback environment light.
+        spec.add_numeric(
+            FILAMENT_ATTR_ENV_LIGHT_INTENSITY,
+            [environment_light_intensity],
+            1,
+            "Filament default env light intensity",
+        )
 
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_xml_load")

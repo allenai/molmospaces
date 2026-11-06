@@ -123,9 +123,8 @@ source .venv/bin/activate
 uv pip install -e ".[mujoco]"
 ```
 
-One of the following options must be provided:
-- `mujoco` to use the classic MuJoCo renderer
-- `mujoco-filament` to use the improved Filament renderer for MuJoCo
+The `mujoco` option must be provided. It installs MuJoCo with both the classic OpenGL
+renderer (default) and the Filament renderer (`--use-filament` / `use_filament=True`).
 
 The optional installation options are:
 - `dev` installs dependencies for code development.
@@ -139,14 +138,6 @@ Currently `molmospaces` supports Linux and Mac.
 We provide simulation assets for Mujoco, Isaac, and ManiSkill.
 Data generation and benchmarking are only supported for Mujoco.
 
-
-### Installing the Filament renderer (optional)
-
-If using `uv`, simply run:
-
-```bash
-uv pip install -e .[mujoco-filament]
-```
 
 ### Installing cuRobo (optional, used only for RB-Y1 tasks)
 
