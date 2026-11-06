@@ -1077,8 +1077,7 @@ class ParallelRolloutRunner:
                 except HouseInvalidForTask as e:
                     traceback.print_exc()
                     worker_logger.warning(
-                        f"Worker {worker_id} house {house_id} episode {episode_idx} "
-                        f"HouseInvalidForTask: {e.reason}"
+                        f"Worker {worker_id} house {house_id} episode {episode_idx} {e}"
                     )
                     house_invalid = True
                     if datagen_profiler is not None:
