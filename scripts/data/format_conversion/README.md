@@ -5,7 +5,7 @@ This converts pre-recorded data from the MolmoSpaces h5 data format to the LeRob
 **Note:** This script currently only works with Franka-DROID robots, not RB-Y1.
 
 ```bash
-pip install "lerobot==0.3.3" h5py decord pillow scipy tqdm zstandard datasets huggingface_hub
+pip install "lerobot==0.3.3" h5py torchcodec pillow scipy tqdm zstandard datasets huggingface_hub
 ```
 
 Output schema:

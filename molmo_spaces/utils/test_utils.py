@@ -6,7 +6,6 @@ import json
 import logging
 from pathlib import Path
 
-import decord
 import h5py
 import numpy as np
 from PIL import Image
@@ -1088,9 +1087,10 @@ def assert_obs_scene_match(g1: h5py.Group, g2: h5py.Group, atol=0.001):
 
 def verify_video_fps(dir: Path, expected_fps: float):
     """Assert all videos in a directory have the expected FPS."""
+    from torchcodec.decoders import VideoDecoder  # needs torch + FFmpeg; keep module importable
+
     for vid_file in dir.glob("*.mp4"):
-        vr = decord.VideoReader(str(vid_file))
-        fps = vr.get_avg_fps()
+        fps = VideoDecoder(str(vid_file)).metadata.average_fps
         assert np.isclose(fps, expected_fps, atol=1e-2), (
             f"Expected {vid_file} to be {expected_fps} fps, got {fps}"
         )
@@ -1141,6 +1141,8 @@ def compare_lerobot_to_h5(lerobot_root: Path, h5_file: h5py.File, atol=1e-5, lab
         atol: Absolute tolerance for the numeric columns.
         label: Name for the h5 side in assertion messages.
     """
+    from torchcodec.decoders import VideoDecoder  # needs torch + FFmpeg; keep module importable
+
     assert lerobot_root.is_dir(), f"LeRobot dataset missing: {lerobot_root}"
     info, episodes, tasks, frames = _lerobot_episode_frames(lerobot_root)
 
@@ -1225,6 +1227,6 @@ def compare_lerobot_to_h5(lerobot_root: Path, h5_file: h5py.File, atol=1e-5, lab
                 episode_chunk=idx // info["chunks_size"], video_key=video_key, episode_index=idx
             )
             assert path.is_file(), f"traj_{idx}: missing LeRobot video {path}"
-            assert len(decord.VideoReader(str(path))) == episode["length"], (
+            assert len(VideoDecoder(str(path))) == episode["length"], (
                 f"traj_{idx}: {video_key} frame count != episode length {episode['length']}"
             )

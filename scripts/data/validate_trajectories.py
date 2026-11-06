@@ -10,8 +10,7 @@ import traceback
 import numpy as np
 import h5py
 from tqdm import tqdm
-import decord
-from decord.ndarray import DECORDContext
+from torchcodec.decoders import VideoDecoder
 
 
 VALID_TRAJECTORY_KEY = "valid_traj_mask"
@@ -64,7 +63,7 @@ def get_args():
 
 
 def is_traj_valid(
-    args, data_file_path: Path, traj_idx: int, traj_group: h5py.Group, decord_ctx: DECORDContext
+    args, data_file_path: Path, traj_idx: int, traj_group: h5py.Group
 ) -> bool:
     if "actions" not in traj_group:
         print(f"Trajectory {traj_idx} in {data_file_path} does not have an actions group")
@@ -196,8 +195,8 @@ def is_traj_valid(
                 )
                 return False
             try:
-                vr = decord.VideoReader(str(video_path), ctx=decord_ctx)
-                n_frames = len(vr)
+                decoder = VideoDecoder(str(video_path))
+                n_frames = len(decoder)
                 traj_len = traj_group["obs/agent/qpos"].shape[0]
                 if n_frames != traj_len:
                     print(
@@ -207,8 +206,8 @@ def is_traj_valid(
                 frame_idxs = np.round(np.linspace(0, n_frames - 1, args.frames_to_check)).astype(
                     int
                 )
-                vr.get_batch(frame_idxs)
-            except (decord.DECORDError, RuntimeError) as e:
+                decoder.get_frames_at(frame_idxs.tolist())
+            except (ValueError, RuntimeError) as e:
                 print(
                     f"Error reading video file {video_filename} for trajectory {traj_idx} in {data_file_path}: {e}"
                 )
@@ -232,10 +231,9 @@ def process_data_file(args, data_file_path: Path) -> tuple[int, int]:
             if traj_idxs != list(range(len(traj_idxs))):
                 print(f"Trajectory indices are not consecutive in {data_file_path}")
             else:
-                decord_ctx = decord.cpu() if not args.no_video else None
                 for i, traj_idx in enumerate(traj_idxs):
                     valid_traj_mask[i] = is_traj_valid(
-                        args, data_file_path, traj_idx, f[f"traj_{traj_idx}"], decord_ctx
+                        args, data_file_path, traj_idx, f[f"traj_{traj_idx}"]
                     )
 
             if not args.dry_run:

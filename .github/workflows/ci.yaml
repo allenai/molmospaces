@@ -72,7 +72,7 @@ jobs:
             return 1
           }
           retry sudo apt-get update
-          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
+          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev ffmpeg
 
       - name: Set MuJoCo rendering backend
         if: runner.os == 'Linux'
@@ -173,7 +173,7 @@ jobs:
             return 1
           }
           retry sudo apt-get update
-          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
+          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev ffmpeg
 
       - name: Set MuJoCo rendering backend
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
@@ -275,7 +275,7 @@ jobs:
               -O /tmp/cuda-keyring.deb
             sudo dpkg -i /tmp/cuda-keyring.deb
             retry sudo apt-get update
-            retry sudo apt-get install -y --fix-missing cuda-toolkit-12-8
+            retry sudo apt-get install -y --fix-missing cuda-toolkit-12-8 ffmpeg
           fi
           echo "CUDA_HOME=/usr/local/cuda-12.8" >> "$GITHUB_ENV"
           /usr/local/cuda-12.8/bin/nvcc --version
@@ -305,6 +305,7 @@ jobs:
           uv pip install --no-cache "torch==2.7.1+cu128" "torchvision==0.22.1+cu128" \
             --index-url https://download.pytorch.org/whl/cu128 \
             --index-strategy unsafe-best-match
+          uv pip install --no-cache "torchcodec~=0.5.0"  # pins the torch minor: 0.5 <-> 2.7
           # curobo's [build-system] requires setuptools_scm to compute its version
           # from git metadata. With build isolation skipped below, uv no longer
           # auto-installs that build-time requirement into a throwaway env, so

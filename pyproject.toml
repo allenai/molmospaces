@@ -24,8 +24,6 @@ dependencies = [
     "boto3>=1.35.0",
     "coacd>=1.0.7",
     "compress-json>=1.1.1",
-    "decord; sys_platform == 'linux'", # For Linux
-    "decord2; sys_platform == 'darwin'", # For macOS (eva-decord has no cp312+ wheels; decord2 is a drop-in `decord` replacement with cp312+ macOS wheels)
     "einops>=0.8.1",
     "ffmpeg-python>=0.2.0",
     "future>=1.0.0",
@@ -109,14 +107,17 @@ curobo = [
 torch-cpu = [
     "torch==2.7.1",
     "torchvision==0.22.1",
+    "torchcodec~=0.5.0",  # torchcodec pins the torch minor: 0.5 <-> 2.7
 ]
 torch-cu12 = [
     "torch==2.7.1",
     "torchvision==0.22.1",
+    "torchcodec~=0.5.0",  # torchcodec pins the torch minor: 0.5 <-> 2.7
 ]
 torch-cu13 = [
     "torch==2.11.0",
     "torchvision==0.26.0",
+    "torchcodec~=0.11.0",  # torchcodec pins the torch minor: 0.11 <-> 2.11
 ]
 g1_humanoid = [
     "ml-collections", # molmo_spaces/utils/prompt_samplers.py's g1_molmo-ported sampler
@@ -125,8 +126,8 @@ g1_humanoid = [
     "onnxruntime>=1.18.0", # G1 whole-body controller's learned policy: controllers/g1_wbc.py
 ]
 mujoco = [
-    "mujoco~=3.13.0",
-    "mujoco-warp~=3.13.0",  # keep the same minor as mujoco (see mujoco-warp above)
+    "mujoco~=3.17.0",
+    "mujoco-warp~=3.17.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-filament = [
     "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
