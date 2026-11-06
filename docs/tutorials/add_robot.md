@@ -445,7 +445,7 @@ Results in data such as [this](./add_robot/datagen.mp4).
 
 ## Full example code
 
-Full example code (without modified robot models) is provided [here](https://github.com/allenai/molmospaces/blob/940313c6432a4de998e6c3a85b50e51171474b75/examples/add_robot/).
+Full example code (without modified robot models) is provided [here](../snippets/add_robot/).
 
 ## Additional resources
 
