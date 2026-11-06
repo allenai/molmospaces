@@ -751,7 +751,8 @@ def _is_transparent(material) -> bool:
 # The shader reads only the red channel of the roughness and metallic maps, but the
 # pre-4.0 custom Filament wheel's texture upload sized its KTX buffer for three
 # channels and aborted with "KTX buffer is too small" on a single-channel texture, so
-# the value is replicated across RGB. Harmless on MuJoCo 4.0, which is not affected.
+# the value is replicated across RGB. Three channels also work on MuJoCo 4.0 (whether
+# one would is unchecked).
 _TEXTURE_CHANNELS = 3
 
 
