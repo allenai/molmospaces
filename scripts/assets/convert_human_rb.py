@@ -1,6 +1,6 @@
 """Download and convert the Microsoft Rocketbox avatar library
 (github.com/microsoft/Microsoft-Rocketbox, MIT license) into MJCF assets usable
-by molmospaces' PickWithHumanRB task sampler.
+by molmospaces' task samplers (task_sampler_config.num_humans).
 
 Output is written to ``ROBOTS_DIR / "humans_rocketbox_static"`` (gitignored, like every other
 locally-cached asset category under ``assets/``) rather than committed to the
@@ -678,7 +678,7 @@ def _add_inertia_fallback_geoms(bodies: dict, uid: str) -> None:
 def _add_pelvis_collision(bodies: dict, uid: str, bone_world_pos, height, half_width) -> None:
     """Single collision proxy on the pelvis (root) -- a per-limb-segment collider
     would let a ~20-body chain self-collide and destabilize; a modest torso
-    capsule is enough for PickWithHumanRBTaskSampler's place_object_near contact
+    capsule is enough for utils.human_rb_population's place_object_near contact
     check, which only needs *some* geom on the kinematic tree."""
     import mujoco as mj
     import numpy as np
@@ -879,7 +879,7 @@ def _add_bbox_markers(bodies: dict, uid: str, bone_world_pos, height: float) -> 
     so the "bottom" of a skinned avatar reads as its ankle joints rather than the
     soles of its feet, the body lands ~9cm low, the collision capsule ends up
     through the floor, and every candidate placement is rejected as colliding
-    (PickWithHumanRBTaskSampler: "Could not place ... after 20 attempts").
+    (utils.human_rb_population: "Could not place ... after 20 attempts").
 
     Kept as two 1cm spheres rather than one bbox-sized box on purpose: they have
     to sit in a *visible* group (0-2) to count toward the AABB, and anything in
@@ -921,7 +921,7 @@ def _fill_skin(skin, verts, texcoords, faces, bones) -> None:
     skinned vertices each. Inline is used anyway because a file-backed skin does
     not survive `MjSpec.attach`: the bone-to-body links of a `.skn` are resolved
     from the file at compile time, so attaching the avatar under a namespace
-    (which is how PickWithHumanRBTaskSampler stages avatars into a scene) leaves
+    (which is how utils.human_rb_population stages avatars into a scene) leaves
     them pointing at unprefixed body names and the scene fails to compile with
     "unknown body ... in skin". Inline bone names are held in the spec, so attach
     renames them along with the bodies.
