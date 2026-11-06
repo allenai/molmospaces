@@ -100,32 +100,12 @@ class EvalTaskSampler(PickTaskSampler):
         # set the pickup object joint positions
         om = env.object_managers[env.current_batch_index]
         pickup_obj = om.get_object_by_name(self.config.task_config.pickup_obj_name)
-        from molmo_spaces.utils.grasps import get_joint_grasp_path
-
         if not isinstance(pickup_obj, MlSpacesArticulationObject):
             return
         # only do MlSpacesArticulationObject
 
         # initialize the task target state
         joint_names = pickup_obj.joint_names
-        joint_names_with_grasp_file = []
-        for joint_name in joint_names:
-            thor_object_name = (
-                env.current_scene_metadata.get("objects", {})
-                .get(pickup_obj.name, {})
-                .get("asset_id", None)
-            )
-            thor_joint_name = (
-                env.current_scene_metadata.get("objects", {})
-                .get(pickup_obj.name, {})
-                .get("name_map", {})
-                .get("joints", {})
-                .get(joint_name, None)
-            )
-            if get_joint_grasp_path(thor_object_name, thor_joint_name) is not None:
-                joint_names_with_grasp_file.append(joint_name)
-        if len(joint_names_with_grasp_file) == 0:
-            raise ValueError(f"No joints with grasp file found for {pickup_obj.name}")
 
         target_joint_name = None
         try:
@@ -134,6 +114,8 @@ class EvalTaskSampler(PickTaskSampler):
             log.warning(f"Not setting joint of {pickup_obj}")
             return
 
+        if target_joint_name not in joint_names:
+            raise ValueError(f"Joint {target_joint_name} not found on {pickup_obj.name}")
         target_joint_index = list(joint_names).index(target_joint_name)
         try:
             joint_start_position = self.config.task_config.joint_start_position
