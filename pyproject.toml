@@ -104,7 +104,8 @@ housegen = [
     # "bpy==3.6.0; os_name == 'Linux'", # removed because of challenges with docker builds - is installed separately in needed docker images
 ]
 curobo = [
-    "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
+    # cuRoboV2 v0.9.0
+    "nvidia-curobo[cu12] @ git+https://github.com/NVlabs/curobo.git@42498cf4e7d0d6fbd4ef9fbcec1243c00c888a83",
 ]
 torch-cpu = [
     "torch==2.7.1",
