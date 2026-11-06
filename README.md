@@ -320,7 +320,6 @@ The repositories related to this project can be found here:
 |---|---|
 | [ai2_robot_infra](https://github.com/allenai/ai2_robot_infra) | Real robot infrastructure and utilities for experiments |
 | [MolmoBot](https://github.com/allenai/MolmoBot) | MolmoBot policy code |
-| [curobo](https://github.com/allenai/curobo) | Ai2 cuRobo branch |
 
 
 ## Projects using MolmoSpaces

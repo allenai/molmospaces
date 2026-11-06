@@ -6,8 +6,7 @@ from typing import Any
 
 import mujoco
 import numpy as np
-from curobo.geom.types import WorldConfig
-from curobo.wrap.reacher.motion_gen import MotionGenStatus
+from curobo.scene import Scene
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -179,8 +178,13 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
         old_stdout = sys.stdout
         sys.stdout = io.StringIO()
         try:
-            world_cfg = WorldConfig.from_dict(world_config_dict)
-            world_cfg = WorldConfig.create_collision_support_world(world_cfg)
+            world_cfg = Scene.create(world_config_dict)
+            world_cfg = Scene.create_collision_support_world(world_cfg)
+            # cuRobo v1 meshed cylinders here; v2 keeps them, so mesh them to match.
+            world_cfg.mesh = (world_cfg.mesh or []) + [
+                c.get_mesh() for c in world_cfg.cylinder or []
+            ]
+            world_cfg.cylinder = None
         finally:
             sys.stdout = old_stdout
         if self.config.policy_config.verbose:
@@ -189,7 +193,7 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
                 f"{len(world_cfg.cuboid) if world_cfg.cuboid else 0} cuboids"
             )
 
-        self._get_motion_planner().motion_gen.update_world(world_cfg)
+        self._get_motion_planner().set_world(world_cfg)
 
         self._world_cfg = world_cfg
         if self.config.policy_config.verbose:
@@ -340,7 +344,7 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = f"world_config_mesh_{timestamp}"
         obj_path = f"{file_name}.obj"
-        world_cfg.save_world_as_mesh(obj_path)
+        world_cfg.save_scene_as_mesh(obj_path)
 
         log.info(f"Successfully saved world config mesh to {obj_path}")
 
@@ -612,7 +616,7 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
         self.trajectory_index = 0
         self.steps_spent_in_waypoint = 0
 
-        if planning_result.success.item() is True:
+        if planning_result is not None and planning_result.success.any().item():
             log.debug(
                 f"[PLANNING] Motion planning successful with trajectory length: "
                 f"{len(self.planned_trajectory)}"
@@ -620,17 +624,22 @@ class DoorOpeningPlannerPolicy(CuroboPlannerPolicy):
             if self.config.policy_config.plan_in_robot_frame:
                 self._transform_traj_to_world_frame(self.planned_trajectory)
         else:
-            log.warning(f"Planning failed with status: {planning_result.status}")
+            ik_failed = planning_result is None
+            log.warning(f"Planning failed ({'IK' if ik_failed else 'trajopt'} failure)")
             self.planning_failures += 1
             self.planned_trajectory = None
             failure_action = self._get_stationary_action()
             if self.planning_failures >= self.config.policy_config.max_planning_failures:
                 log.warning("Stopping planning. Switching to complete state")
                 self.current_phase = DoorOpeningPhase.COMPLETE
-            elif planning_result.status == MotionGenStatus.IK_FAIL:
+            elif ik_failed:
                 log.warning("Will re-plan...")
-            elif planning_result.status == MotionGenStatus.INVALID_START_STATE_WORLD_COLLISION:
-                log.warning("Start state is in collision. Switching to recovery motion...")
+            # cuRoboV2 does not report an invalid start state; fall back to recovery motion
+            # whenever trajopt fails, which is the v1 start-in-collision branch's action.
+            else:
+                log.warning(
+                    "Trajopt failed (start may be in collision). Switching to recovery motion..."
+                )
                 self.current_phase = DoorOpeningPhase.RECOVERY
                 failure_action = self._get_recovery_action()
             return failure_action

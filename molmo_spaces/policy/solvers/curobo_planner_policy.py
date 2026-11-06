@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 import torch
-from curobo.geom.types import WorldConfig
+from curobo.scene import Scene
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -560,14 +560,14 @@ class CuroboPlannerPolicy(PlannerPolicy):
             log.info(
                 f"Planning batch of {batch_len} {current_phase} poses with {self.arm_side} arm"
             )
-            result = self.planner.plan_batch(
+            successes, trajectories = self.planner.plan_batch(
                 start_states,
                 batch_base_frame_7d,
                 verbose=False,
             )
 
             # Check for successes
-            successes = result.success.cpu().numpy()
+            successes = np.array(successes)
             log.info(
                 f"{self.arm_side.capitalize()} arm: {np.sum(successes)}/{batch_len} "
                 f"{current_phase} planning successes"
@@ -575,20 +575,11 @@ class CuroboPlannerPolicy(PlannerPolicy):
 
             # Process successful trajectories
             if np.any(successes):
-                optimized_plan = result.optimized_plan
-                position = optimized_plan.position
-                if position.ndim == 2:
-                    position = position.unsqueeze(0)
-
                 for i in range(batch_len):
                     if not successes[i]:
                         continue
 
-                    trajectory = []
-                    for t in range(position.shape[1]):
-                        waypoint = position[i, t].cpu().tolist()
-                        trajectory.append(waypoint)
-
+                    trajectory = trajectories[i]
                     self._transform_traj_to_world_frame(trajectory)
                     all_successful_trajectories.append(trajectory)
 
@@ -616,16 +607,16 @@ class CuroboPlannerPolicy(PlannerPolicy):
 
     # ========== Visualization ==========
 
-    def visualize_world_config_mesh(self, world_cfg: WorldConfig) -> None:
+    def visualize_world_config_mesh(self, world_cfg: Scene) -> None:
         """Visualize the world configuration as a mesh file.
 
         Args:
-            world_cfg: Curobo WorldConfig to visualize.
+            world_cfg: Curobo Scene to visualize.
         """
         from datetime import datetime
 
         import trimesh
-        from curobo.geom.types import WorldConfig
+        from curobo.scene import Scene
 
         current_phase = getattr(self, "current_phase", "unknown")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -645,8 +636,8 @@ class CuroboPlannerPolicy(PlannerPolicy):
                     config_for_mesh[:3] = 0.0
                     q_tensor = torch.tensor(config_for_mesh).unsqueeze(0).float().cuda()
 
-                    robot_spheres_batch = self.planner.motion_gen.kinematics.get_robot_as_spheres(
-                        q_tensor
+                    robot_spheres_batch = (
+                        self.planner.motion_planner.kinematics.get_robot_as_spheres(q_tensor)
                     )
                     if robot_spheres_batch and len(robot_spheres_batch) > 0:
                         robot_spheres = robot_spheres_batch[0]
@@ -669,7 +660,7 @@ class CuroboPlannerPolicy(PlannerPolicy):
 
             # Add world obstacles to the scene
             try:
-                world_scene = WorldConfig.get_scene_graph(world_cfg, process_color=True)
+                world_scene = Scene.get_scene_graph(world_cfg, process_color=True)
                 for geom_name, geom in world_scene.geometry.items():
                     transform = world_scene.graph.get(geom_name)[0]
                     combined_scene.add_geometry(
