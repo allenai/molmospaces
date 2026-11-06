@@ -467,7 +467,7 @@ class G1Dex3Config(G1Config):
     Dex1 gripper is replaced by two 7-joint hands, move groups `left_hand` and `right_hand`
     (order: thumb_0..2, index_0..1, middle_0..1; 0 = fingers extended, positive/negative
     flexion per hand), and the left arm is actively controlled instead of hanging limp.
-    Build the robot asset with scripts/data/format_conversion/build_g1_dex3.py.
+    Build the robot asset with scripts/asset_conversion/build_g1_dex3.py.
     """
 
     robot_cls: type[G1Robot] | None = G1Dex3Robot

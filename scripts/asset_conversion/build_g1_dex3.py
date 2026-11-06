@@ -1,6 +1,6 @@
 """Build the `g1_dex3` robot: the molmospaces G1 (g1_dex.xml) with a Unitree Dex3-1 hand on each wrist.
 
-    python scripts/data/format_conversion/build_g1_dex3.py [--out_dir <ROBOTS_DIR>/g1_dex3]
+    python scripts/asset_conversion/build_g1_dex3.py [--out_dir <ROBOTS_DIR>/g1_dex3]
 
 The body, arms, cameras and walking-controller actuators are g1_dex.xml's, unchanged. The Dex1
 parallel gripper on the right wrist is replaced, and a hand is added on the left (which had a

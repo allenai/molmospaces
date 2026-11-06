@@ -2,7 +2,7 @@
 
 Same body, walking controller, arms and cameras as `G1Robot`; the right Dex1 gripper is replaced
 by two 7-joint Dex3 hands (`left_hand` / `right_hand` move groups) and the left arm is actively
-controlled. Built from g1_dex.xml by scripts/data/format_conversion/build_g1_dex3.py.
+controlled. Built from g1_dex.xml by scripts/asset_conversion/build_g1_dex3.py.
 """
 
 from __future__ import annotations
