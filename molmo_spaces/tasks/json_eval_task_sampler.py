@@ -36,6 +36,7 @@ from molmo_spaces.configs.task_configs import (
     DoorOpeningTaskConfig,
     NavToObjTaskConfig,
     OpeningTaskConfig,
+    PackingTaskConfig,
     PickAndPlaceColorTaskConfig,
     PickAndPlaceNextToTaskConfig,
     PickAndPlaceTaskConfig,
@@ -47,6 +48,7 @@ from molmo_spaces.env.data_views import (
 )
 from molmo_spaces.env.env import CPUMujocoEnv
 from molmo_spaces.evaluation.benchmark_schema import (
+    ALL_TASK_SPEC_CLASSES,
     BaseTaskSpec,
     DoorOpeningTaskSpec,
     EpisodeSpec,
@@ -68,6 +70,11 @@ from molmo_spaces.utils.lazy_loading_utils import install_uid
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms
 from molmo_spaces.utils.object_metadata import ObjectMeta
 from molmo_spaces.utils.pose import pos_quat_to_pose_mat
+from molmo_spaces.utils.primitive_object_utils import (
+    add_primitive_to_spec,
+    primitive_metadata_entry,
+    primitive_spec_from_config_dict,
+)
 
 log = logging.getLogger(__name__)
 
@@ -82,6 +89,7 @@ TASK_CLASS_TO_CONFIG_CLASS: dict[str, type[BaseMujocoTaskConfig]] = {
     "OpeningTask": OpeningTaskConfig,
     "DoorOpeningTask": DoorOpeningTaskConfig,
     "NavToObjTask": NavToObjTaskConfig,
+    "PackingTask": PackingTaskConfig,
 }
 
 # Mapping from task class names to their benchmark schema spec classes.
@@ -96,6 +104,30 @@ TASK_CLASS_TO_SPEC_CLASS: dict[str, type[BaseTaskSpec]] = {
     "DoorOpeningTask": DoorOpeningTaskSpec,
     "NavToObjTask": NavToObjTaskSpec,
 }
+
+# Fully qualified task class -> task_type, for tasks registered from outside
+# molmo_spaces. Core tasks are listed in JsonEvalTaskSampler._infer_task_type.
+TASK_CLS_TO_TASK_TYPE: dict[str, str] = {}
+
+
+def register_json_eval_task(
+    task_cls: type,
+    task_type: str,
+    config_cls: type[BaseMujocoTaskConfig],
+    spec_cls: type[BaseTaskSpec] | None = None,
+) -> None:
+    """Make a task that lives outside molmo_spaces (e.g. under projects/) loadable
+    from a JSON benchmark. Call it when the task's module is imported: the
+    sampler imports the module named by an episode's task_cls before it looks
+    up any of these mappings.
+    """
+    TASK_CLS_TO_TASK_TYPE[f"{task_cls.__module__}.{task_cls.__qualname__}"] = task_type
+    TASK_CLASS_TO_CONFIG_CLASS[task_cls.__name__] = config_cls
+    if spec_cls is not None:
+        TASK_CLASS_TO_SPEC_CLASS[task_cls.__name__] = spec_cls
+        # get_task_spec_field_names() copies only fields of known spec classes.
+        if spec_cls not in ALL_TASK_SPEC_CLASSES:
+            ALL_TASK_SPEC_CLASSES.append(spec_cls)
 
 
 def import_class_from_string(class_path: str) -> type:
@@ -345,10 +377,16 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             "molmo_spaces.tasks.pick_and_place_color_task.PickAndPlaceColorTask": "pick_and_place_color",
             "molmo_spaces.tasks.opening_tasks.DoorOpeningTask": "door_opening",
             "molmo_spaces.tasks.nav_task.NavToObjTask": "nav_to_obj",
+            "molmo_spaces.tasks.packing_task.PackingTask": "packing",
         }
 
         if task_cls in task_cls_to_type:
             return task_cls_to_type[task_cls]
+
+        # Out-of-tree tasks register their task_type when their module is imported.
+        import_class_from_string(task_cls)
+        if task_cls in TASK_CLS_TO_TASK_TYPE:
+            return TASK_CLS_TO_TASK_TYPE[task_cls]
 
         raise ValueError(
             f"Cannot infer task_type from task_cls: {task_cls}. "
@@ -572,7 +610,25 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
 
             log.info(f"Added body to scene: {object_name}")
 
+        # Reconstruct procedurally-created primitive bodies (blocks, balls,
+        # anchors). These have no XML asset — the spec captures the exact
+        # add_body / add_freejoint / add_geom sequence used at datagen time.
+        # We also register a synthetic scene_metadata entry per primitive so
+        # learned-policy code that looks up pickup targets by asset_id
+        # doesn't KeyError on primitive bodies.
+        primitive_objects = self.episode_spec.scene_modifications.primitive_objects
+        for body_name, primitive_data in primitive_objects.items():
+            primitive = primitive_spec_from_config_dict(primitive_data)
+            add_primitive_to_spec(spec, primitive)
+            name_to_meta[body_name] = primitive_metadata_entry(primitive)
+            log.info(f"Added primitive body to scene: {body_name}")
+
         self._metadata_adder.update(name_to_meta)
+
+        # Add policy auxiliary objects (e.g. grasp collision bodies for planner policies)
+        policy_cls = self.config.policy_config.policy_cls
+        if hasattr(policy_cls, "add_auxiliary_objects"):
+            policy_cls.add_auxiliary_objects(self.config, spec)
 
     def randomize_scene(self, env: CPUMujocoEnv, robot_view) -> None:
         """
@@ -634,9 +690,11 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         mujoco.mj_forward(model, data)
         self.set_joint_values(env)
 
-        # Set robot joint positions from episode spec
         for group_name, qpos in self.episode_spec.robot.init_qpos.items():
+            if not qpos:
+                continue
             robot_view.get_move_group(group_name).joint_pos = np.array(qpos)
+
         mujoco.mj_forward(model, data)
 
         for robot in env.robots:
@@ -769,11 +827,16 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
         task_cls_str = self.episode_spec.get_task_cls()
         task_class_name = task_cls_str.rsplit(".", 1)[-1]  # e.g., "PickAndPlaceTask"
 
+        # Import before the lookups below: out-of-tree tasks register their
+        # config/spec classes on import (see register_json_eval_task).
+        task_cls = self._get_task_class()
+
         config_cls = TASK_CLASS_TO_CONFIG_CLASS.get(task_class_name)
         if config_cls is None:
             raise ValueError(
                 f"Unknown task class '{task_class_name}' - no mapping to task config class. "
-                f"Add it to TASK_CLASS_TO_CONFIG_CLASS in json_eval_task_sampler.py. "
+                f"Add it to TASK_CLASS_TO_CONFIG_CLASS in json_eval_task_sampler.py, "
+                f"or call register_json_eval_task() from the task's module. "
                 f"Available mappings: {list(TASK_CLASS_TO_CONFIG_CLASS.keys())}"
             )
 
@@ -787,7 +850,6 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             task_dict = validated_spec.model_dump()
 
         # Create new task config of the proper type with task_cls set
-        task_cls = self._get_task_class()
         task_config = config_cls(task_cls=task_cls)
 
         # Copy task fields from episode spec to task_config.
@@ -815,6 +877,15 @@ class JsonEvalTaskSampler(BaseMujocoTaskSampler):
             for name, path in self.episode_spec.scene_modifications.added_objects.items()
         }
         task_config.object_poses = self.episode_spec.scene_modifications.object_poses
+
+        # Propagate primitive_objects from scene_modifications to task_config
+        # so downstream task code sees the same view of the scene as at datagen.
+        # Values are plain dicts (PrimitiveObjectSpec.model_dump()) matching
+        # BaseMujocoTaskConfig.primitive_objects' declared type.
+        task_config.primitive_objects = {
+            name: primitive.model_dump() if hasattr(primitive, "model_dump") else primitive
+            for name, primitive in self.episode_spec.scene_modifications.primitive_objects.items()
+        }
 
         # Set referral expressions from language spec
         task_config.referral_expressions = self.episode_spec.language.referral_expressions

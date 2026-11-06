@@ -106,6 +106,17 @@ class BasePolicy(ABC):
         """
         return []
 
+    def close(self) -> None:
+        """Release anything the policy mutated outside its own state.
+
+        Called once the policy will not be stepped again. Matters when several
+        policies drive the *same* robot in turn (InteractiveShellTask runs one
+        per skill invocation): whatever a policy switched on for its own
+        control loop has to be switched back off here, or it leaks into the
+        next skill. No-op by default.
+        """
+        return None
+
 
 PolicyFactory: TypeAlias = Callable[..., BasePolicy]
 """

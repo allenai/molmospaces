@@ -436,7 +436,7 @@ class MlSpacesSceneBuilder:
 
         # Have to load from string, bc if loading from file the path will be set to the folder
         # location of that file, and that messes everyting up
-        with open(HOUSE_BASE_XML, "r") as fhandle:
+        with open(HOUSE_BASE_XML) as fhandle:
             xml_model_str = fhandle.read()
             self.spec = mj.MjSpec.from_string(xml_model_str)
             self.spec_opts = mj.MjSpec.from_string(xml_model_str)
@@ -850,7 +850,7 @@ class MlSpacesSceneBuilder:
             log.error(f"Path to house json '{thor_house_path.as_posix()}' is not valid")
             return
 
-        with open(thor_house_path, "r") as fhandle:
+        with open(thor_house_path) as fhandle:
             thor_house = json.load(fhandle)
         return self.load_from_json(
             thor_house=thor_house,

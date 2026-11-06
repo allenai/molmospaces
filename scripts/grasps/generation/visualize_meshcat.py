@@ -23,7 +23,7 @@ parser.add_argument('--articulable', action='store_true', help='Visualize articu
 parser.add_argument('--max_grasps_per_joint', type=int, default=10, help='Max grasps per joint for articulable objects')
 args = parser.parse_args()
 
-with open(args.objects_list, 'r') as f:
+with open(args.objects_list) as f:
     objects = json.load(f)
 
 available_objects = []
@@ -175,7 +175,7 @@ def display_object(idx):
         )
 
         json_path = obj['json']
-        with open(json_path, 'r') as f:
+        with open(json_path) as f:
             joint_grasps = json.load(f)
 
         colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff]

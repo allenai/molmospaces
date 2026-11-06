@@ -6,11 +6,14 @@ New registrations will not be visible until the caches are cleared.
 """
 
 import inspect
+import json
 import logging
+import os
 import random
+import re
 import zipfile
 from collections.abc import Sequence
-from functools import lru_cache, wraps
+from functools import cache, lru_cache, wraps
 from pathlib import Path
 
 import numpy as np
@@ -254,11 +257,49 @@ def flip_grasps(grasps: np.ndarray) -> np.ndarray:
     return grasps @ flip
 
 
+def filter_semantically_good_grasps(uid: str, grasps: np.ndarray) -> np.ndarray:
+    """
+    Keep only the grasps marked "semantically good" for a given object.
+
+    Classifications are produced by ``projects/commonsense/scripts/classify_grasps.py`` and are indexed
+    positionally against the object's full (unsampled) grasp array. If no classification
+    file exists for the object, all grasps are returned unchanged.
+
+    Args:
+        uid: The asset ID of the object
+        grasps: A numpy array of shape (N, 4, 4) of grasp poses
+
+    Returns:
+        The subset of ``grasps`` marked semantically good.
+    """
+    classification_path = ASSETS_DIR / f"grasps/droid/{uid}/{uid}_grasp_classifications.json"
+    if not classification_path.exists():
+        log.warning(f"[SEMANTIC GRASP] No classification file for {uid}, using all grasps")
+        return grasps
+
+    with open(classification_path, "r") as f:
+        classifications = json.load(f)
+    good_map = classifications.get("semantically_good_grasp", {})
+    good_mask = np.array(
+        [good_map.get(str(i), False) for i in range(len(grasps))],
+        dtype=bool,
+    )
+    n_before = len(grasps)
+    grasps = grasps[good_mask]
+    log.info(
+        f"[SEMANTIC GRASP] Filtered to {len(grasps)}/{n_before} semantically good grasps for {uid}"
+    )
+    if len(grasps) == 0:
+        raise ValueError(f"No semantically good grasps for {uid} (had {n_before} total grasps)")
+    return grasps
+
+
 def get_pickup_grasps(
     env: CPUMujocoEnv,
     obj: MlSpacesObject,
     include_flipped: bool = True,
     grasp_libraries: list[str] | None = None,
+    semantically_good_only: bool = False,
 ) -> np.ndarray:
     """
     Load the first available pickup grasps for a given object in the world frame.
@@ -268,6 +309,8 @@ def get_pickup_grasps(
         obj: The object
         include_flipped: Whether to include flipped grasps
         grasp_libraries: The grasp libraries to use (defaults to all available libraries for the object)
+        semantically_good_only: Restrict to grasps marked semantically good (see
+            :func:`filter_semantically_good_grasps`). Used by the ``semantic_grasp_pick`` task.
 
     Returns:
         A numpy array of shape (N, 4, 4) containing the grasp poses in the world frame.
@@ -284,6 +327,9 @@ def get_pickup_grasps(
     grasps = load_pickup_grasps(asset_id, grasp_libraries, num_grasps=int(1e6))
     if len(grasps) == 0:
         raise ValueError(f"No grasps found for {obj.name}")
+
+    if semantically_good_only:
+        grasps = filter_semantically_good_grasps(asset_id, grasps)
 
     grasps_world = obj.pose @ grasps
     if include_flipped:
@@ -350,3 +396,104 @@ def get_joint_grasps(
         + (" (including flipped versions)" if include_flipped else "")
     )
     return all_grasp_poses, joint_body_pose
+
+
+# ---------------------------------------------------------------------------
+# FetchMan (g1_molmo) grasp-file lookups
+#
+# Relocated verbatim from projects/fetchman/components/constants.py while
+# dissolving that package. Deliberately NOT folded into
+# get_joint_grasp_path/has_valid_pickup_grasps above: those resolve through the
+# registered grasp libraries, whereas FetchMan addresses files by raw on-disk
+# layout, accepts the flat grasps/<uid>/ form, and defaults a missing joint
+# name to "<obj>_joint". Its pick rollout is verified bit-exact against gold,
+# so these semantics are load-bearing until that gate is retired.
+# ---------------------------------------------------------------------------
+
+_fetchman_grasps_env = os.environ.get("MOLMOSPACES_GRASPS_DIR", "")
+FETCHMAN_GRASPS_DIR: Path = (
+    Path(_fetchman_grasps_env).expanduser() if _fetchman_grasps_env else ASSETS_DIR / "grasps"
+)
+
+
+@cache
+def fetchman_grasp_source_dir(source: str) -> Path:
+    """grasps/<source>, also accepting the raw molmospaces_resources cache
+    layout which nests a version dir (grasps/<source>/<YYYYMMDD>/<ID>/)."""
+    d = FETCHMAN_GRASPS_DIR / source if source else FETCHMAN_GRASPS_DIR
+    if d.is_dir():
+        versions = []
+        for k in d.iterdir():
+            if not (k.is_dir() and re.fullmatch(r"\d{8}", k.name)):
+                versions = []
+                break
+            versions.append(k)
+        if versions:
+            return max(versions, key=lambda k: k.name)
+    return d
+
+
+_FETCHMAN_VALID_GRASP_UIDS_CACHE = FETCHMAN_GRASPS_DIR / ".valid_uids.txt"
+
+
+@lru_cache(maxsize=1)
+def _fetchman_valid_grasp_uids() -> frozenset:
+    """Asset IDs with a *_grasps_filtered.npz on disk. Cached at
+    assets/grasps/.valid_uids.txt (delete to force a re-scan after adding new
+    grasps)."""
+    base = FETCHMAN_GRASPS_DIR
+    if not base.is_dir():
+        return frozenset()
+    if _FETCHMAN_VALID_GRASP_UIDS_CACHE.exists():
+        with open(_FETCHMAN_VALID_GRASP_UIDS_CACHE) as f:
+            return frozenset(line.strip() for line in f if line.strip())
+    uids = set()
+    for sub in (
+        fetchman_grasp_source_dir(""),
+        fetchman_grasp_source_dir("droid"),
+        fetchman_grasp_source_dir("droid_objaverse"),
+    ):
+        if not sub.is_dir():
+            continue
+        for d in sub.iterdir():
+            if not d.is_dir():
+                continue
+            if (d / f"{d.name}_grasps_filtered.npz").exists():
+                uids.add(d.name)
+    try:
+        with open(_FETCHMAN_VALID_GRASP_UIDS_CACHE, "w") as f:
+            for u in sorted(uids):
+                f.write(u + "\n")
+    except OSError:
+        pass
+    return frozenset(uids)
+
+
+def fetchman_has_valid_grasp(asset_id: str) -> bool:
+    """True iff a grasp transform file exists for this asset_id."""
+    if not asset_id:
+        return False
+    return asset_id in _fetchman_valid_grasp_uids()
+
+
+def fetchman_joint_grasp_path(thor_object_name: str, thor_joint_name: str = ""):
+    """Filesystem path for a per-joint grasp file. Mirrors upstream
+    molmospaces layout: `grasps/<obj_thor>/<joint_thor>_grasps_filtered.npz`,
+    with `grasps/droid/<obj_thor>/...` as fallback. Returns `None` if no file
+    exists. If `thor_joint_name` is empty, falls back to the convention
+    `<obj_thor>_joint` (works for objects whose primary joint is named that)."""
+    if not thor_object_name:
+        return None
+    jn = thor_joint_name or f"{thor_object_name}_joint"
+    candidates = [
+        fetchman_grasp_source_dir("") / thor_object_name / f"{jn}_grasps_filtered.npz",
+        fetchman_grasp_source_dir("droid") / thor_object_name / f"{jn}_grasps_filtered.npz",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
+
+def fetchman_has_joint_grasps(thor_object_name: str, thor_joint_name: str = "") -> bool:
+    return fetchman_joint_grasp_path(thor_object_name, thor_joint_name) is not None

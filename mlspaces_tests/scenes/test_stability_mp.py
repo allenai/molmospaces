@@ -373,7 +373,7 @@ def show_results_summary(settings: TestSettings) -> None:
 
         build_settings_filepath = settings.houses_folder / "housegen_build_settings.json"
         if build_settings_filepath.is_file():
-            with open(build_settings_filepath, "r") as fhandle:
+            with open(build_settings_filepath) as fhandle:
                 data = json.load(fhandle)
             print("House build parameters:")
             if "param_geom_margin" in data:
@@ -586,7 +586,7 @@ def main() -> int:
 
     results_all = dict(results=dict(), settings=asdict(SETTINGS), categories=dict())
     if SETTINGS.results_filepath.is_file():
-        with open(SETTINGS.results_filepath, "r") as fhandle:
+        with open(SETTINGS.results_filepath) as fhandle:
             results_all = json.load(fhandle)
 
     if args.house != "":

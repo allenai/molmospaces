@@ -82,6 +82,60 @@ class ExocentricCameraSpec(BaseModel):
 CameraSpec = RobotMountedCameraSpec | ExocentricCameraSpec
 
 
+# Supported MuJoCo geom primitives for procedurally-created bodies.
+PrimitiveGeomType = Literal["box", "sphere", "capsule", "cylinder", "ellipsoid"]
+
+
+class PrimitiveGeomSpec(BaseModel):
+    """A single MuJoCo geom inside a procedurally-created primitive body.
+
+    Mirrors the arguments passed to ``MjsBody.add_geom`` so the eval-time
+    loader can faithfully replay whatever the datagen sampler built.
+    """
+
+    # Suffix appended to the body name to form the geom name
+    # (e.g. "_visual", "_collision", "_geom").
+    name_suffix: str
+
+    geom_type: PrimitiveGeomType
+    # MuJoCo's geom size vector, zero-padded to length 3
+    # (e.g. box=[hx,hy,hz], sphere=[r,0,0], capsule=[r,h,0]).
+    size: list[float] = Field(..., min_length=3, max_length=3)
+    rgba: list[float] = Field(..., min_length=4, max_length=4)
+
+    # Optional MuJoCo attributes. None means "don't set — leave the MuJoCo
+    # default", so we don't inadvertently override compiler-computed values.
+    contype: int | None = None
+    conaffinity: int | None = None
+    friction: list[float] | None = None  # [slide, spin, roll]
+    mass: float | None = None  # None → auto-compute from geom volume+density
+
+
+class PrimitiveObjectSpec(BaseModel):
+    """A procedurally-created body composed of one or more primitive geoms.
+
+    Used for bodies that are added to the scene at spec time via
+    ``spec.worldbody.add_body`` + ``add_geom`` rather than loaded from an
+    XML asset. The JSON eval loader reconstructs these by replaying the
+    add-body / add-joint / add-geom sequence captured here.
+    """
+
+    body_name: str  # e.g. "block_1", "mug_ball_pick_ball"
+
+    # Position baked into the spec at build time. The authoritative initial
+    # pose for evaluation comes from ``SceneModificationsSpec.object_poses``;
+    # this is just the placeholder position the body is compiled with.
+    initial_pos: list[float] = Field(
+        default_factory=lambda: [0.0, 0.0, 0.0], min_length=3, max_length=3
+    )
+
+    add_freejoint: bool = True
+    freejoint_name: str | None = None  # None → MuJoCo default (unnamed)
+    freejoint_damping: float | None = None  # None → MuJoCo default (no damping)
+
+    geoms: list[PrimitiveGeomSpec]
+
+
 class SceneModificationsSpec(BaseModel):
     """Scene modifications required for this episode.
 
@@ -92,6 +146,11 @@ class SceneModificationsSpec(BaseModel):
     # Objects to add: name -> path relative to ASSETS_DIR
     # e.g. {"place_receptacle/0/Bowl_27": "objects/thor/Bowl_27.xml"}
     added_objects: dict[str, str] = Field(default_factory=dict)
+
+    # Procedurally-created primitive bodies (blocks, balls, anchors) that
+    # have no XML asset. Keyed by body name so entries line up with
+    # object_poses. Replayed at eval time by the JSON task sampler.
+    primitive_objects: dict[str, PrimitiveObjectSpec] = Field(default_factory=dict)
 
     # Object poses: name -> [x, y, z, qw, qx, qy, qz]
     # Includes both added objects and existing scene objects that need repositioning
@@ -161,6 +220,12 @@ class PickAndPlaceColorTaskSpec(PickAndPlaceTaskSpec):
     other_receptacle_start_poses: dict[str, list[float]] | None = None
 
 
+class PackingTaskSpec(PickAndPlaceTaskSpec):
+    """Task-specific parameters for packing tasks."""
+
+    packing_object_names: list[str] | None = None
+
+
 class OpenCloseTaskSpec(BaseTaskSpec):
     """Task-specific parameters for open/close tasks."""
 
@@ -203,6 +268,7 @@ class DoorOpeningTaskSpec(BaseTaskSpec):
 TaskSpec = (
     PickTaskSpec
     | PickAndPlaceTaskSpec
+    | PackingTaskSpec
     | PickAndPlaceColorTaskSpec
     | PickAndPlaceNextToTaskSpec
     | OpenCloseTaskSpec
@@ -216,10 +282,17 @@ ALL_TASK_SPEC_CLASSES: list[type[BaseTaskSpec]] = [
     PickAndPlaceTaskSpec,
     PickAndPlaceNextToTaskSpec,
     PickAndPlaceColorTaskSpec,
+    PackingTaskSpec,
     OpenCloseTaskSpec,
     NavToObjTaskSpec,
     DoorOpeningTaskSpec,
 ]
+
+# Benchmarks generated before a task moved keep its old module path in task_cls.
+# The commonsense tasks moved to projects/commonsense (importable as `commonsense`).
+_LEGACY_TASK_CLS_PREFIXES = {
+    "molmo_spaces.tasks.commonsense_tasks.": "commonsense.tasks.",
+}
 
 # Fields that are metadata about the task, not configuration to copy
 _TASK_METADATA_FIELDS = {"task_cls", "task_type"}
@@ -355,6 +428,9 @@ class EpisodeSpec(BaseModel):
         # if "molmo_spaces" in task_cls:  # TODO(rose): forking breanch
         #    print("XXX patching config molmo_spaces->mujoco_thor")
         #    task_cls = task_cls.replace("molmo_spaces", "mujoco_thor")
+        for old_prefix, new_prefix in _LEGACY_TASK_CLS_PREFIXES.items():
+            if task_cls.startswith(old_prefix):
+                return new_prefix + task_cls.removeprefix(old_prefix)
         return task_cls
 
 
@@ -391,6 +467,11 @@ class BenchmarkMetadata(BaseModel):
 
     # Camera system info
     camera_system_class: str | None = None  # CameraSystemConfig class name
+
+    # Density balancing info (written by create_json_benchmark when balancing by
+    # nearby-object density)
+    balancing_axis_counts: dict[str, dict] | None = None  # axis -> {bucket label: count}
+    nearby_graspable_stats: dict[str, float] | None = None  # radius_m, min/max/mean/median
 
     # Provenance dates
     source_data_date: str | None = None  # Approximate date source H5 files were created

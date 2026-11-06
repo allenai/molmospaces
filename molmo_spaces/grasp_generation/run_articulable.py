@@ -44,7 +44,7 @@ if args.num_workers == 0:
 if not os.path.exists(args.objects_list):
     raise FileNotFoundError(f"Objects list file not found: {args.objects_list}")
 
-with open(args.objects_list, "r") as f:
+with open(args.objects_list) as f:
     data = json.load(f)
 
 print(f"Total objects in dataset: {len(data)}")
@@ -136,7 +136,7 @@ def run_grasp_filtering_stage(
 
             summary_path = per_joint_grasps_json.replace(".json", "_filtered.json")
             if os.path.exists(summary_path):
-                with open(summary_path, "r") as f:
+                with open(summary_path) as f:
                     summary = json.load(f)
                 for entry in summary:
                     filtered_grasps_file = entry.get("filtered_grasps_file")
@@ -162,7 +162,6 @@ def run_grasp_filtering_stage(
                     ):
                         with open(
                             os.path.join(os.path.dirname(summary_path), grasps_file),
-                            "r",
                         ) as gf:
                             gdata = json.load(gf)
                         original_count = len(gdata.get("transforms", []))
@@ -245,7 +244,7 @@ def run_grasp_filtering_stage(
 def run_per_joint_grasp_generation(object_name, joint_meshes_json, output_dir, full_mesh):
     print(f"\nStage 2: Per-Joint Grasp Generation for {object_name}")
     if isinstance(joint_meshes_json, str):
-        with open(joint_meshes_json, "r") as f:
+        with open(joint_meshes_json) as f:
             joint_meshes_data = json.load(f)
     else:
         joint_meshes_data = joint_meshes_json
@@ -425,7 +424,7 @@ for i, obj in enumerate(data):
                     and os.path.exists(filtered_grasps_path)
                 ):
                     try:
-                        with open(filtered_grasps_path, "r") as f:
+                        with open(filtered_grasps_path) as f:
                             filtered_data = json.load(f)
                         for entry in filtered_data:
                             if "filtered_grasps_file" in entry:
@@ -444,7 +443,7 @@ for i, obj in enumerate(data):
                             if "grasps_file" in entry:
                                 grasp_file = os.path.join(object_output_dir, entry["grasps_file"])
                                 if os.path.exists(grasp_file):
-                                    with open(grasp_file, "r") as gf:
+                                    with open(grasp_file) as gf:
                                         grasp_data = json.load(gf)
                                     grasp_count += len(grasp_data.get("transforms", []))
                     except Exception as e:

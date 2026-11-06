@@ -32,6 +32,7 @@ from molmo_spaces.utils.mp_logging import (
 )
 from molmo_spaces.utils.profiler_utils import DatagenProfiler, Profiler
 from molmo_spaces.utils.save_utils import prepare_episode_for_saving, save_trajectories
+from molmo_spaces.utils.worker_device_utils import configure_worker_policy_device
 
 # Set multiprocessing context based on CUDA availability
 # forkserver is safer for CUDA, spawn for fallback
@@ -40,6 +41,8 @@ mp_context = mp.get_context("forkserver") if torch.cuda.is_available() else mp.g
 # Silence verbose third-party libraries
 logging.getLogger("curobo").setLevel(logging.WARNING)
 logging.getLogger("trimesh").setLevel(logging.WARNING)
+
+log = logging.getLogger(__name__)
 
 
 def get_process_memory():
@@ -254,6 +257,25 @@ def save_house_trajectories(
         )
         if datagen_profiler is not None:
             datagen_profiler.end("save_trajectories")
+
+        # Second format, same prepared episodes -- must run after
+        # save_trajectories, which is what writes the mp4s it copies.
+        if exp_config.save_lerobot:
+            from molmo_spaces.utils.lerobot_save_utils import save_trajectories_lerobot
+
+            if datagen_profiler is not None:
+                datagen_profiler.start("save_trajectories_lerobot")
+            save_trajectories_lerobot(
+                house_trajectory_data,
+                save_dir=house_output_dir,
+                fps=exp_config.fps,
+                save_file_suffix=batch_suffix,
+                robot_type=exp_config.robot_config.name or "unknown",
+                logger=worker_logger,
+            )
+            if datagen_profiler is not None:
+                datagen_profiler.end("save_trajectories_lerobot")
+
         t_save = time.perf_counter() - t_save_start
 
         total_time = time.perf_counter() - t_start
@@ -378,6 +400,12 @@ def house_processing_worker(
         filter_for_successful_trajectories: Whether to filter for successful trajectories only
         runner_class: Runner class with run_single_rollout and process_single_house static methods
     """
+    # Reinitialize logging in the child process so worker logs are written to
+    # running_log.log under forkserver/spawn multiprocessing as well.
+    init_logging(
+        human_log_level=exp_config.log_level, log_file=exp_config.output_dir / "running_log.log"
+    )
+
     # Create worker-specific logger
     worker_logger = get_worker_logger(worker_id)
 
@@ -403,10 +431,14 @@ def house_processing_worker(
     apply_license_policy_to_task_sampler_config(exp_config.task_sampler_config, policy)
     validate_datagen_license_policy(exp_config.scene_dataset, policy)
 
+    configure_worker_policy_device(exp_config, preloaded_policy, worker_id, worker_logger)
+
     # Normal datagen: create task sampler once for this worker (persists across all houses)
     # This allows the worker to track object diversity and other state across houses
+    worker_logger.info("Worker %s initializing task sampler", worker_id)
     assert exp_config.task_sampler_config.task_sampler_class is not None
     task_sampler = exp_config.task_sampler_config.task_sampler_class(exp_config)
+    worker_logger.info("Worker %s finished initializing task sampler", worker_id)
     # Set profiler on task sampler for sub-timing within sample_task
     task_sampler.set_datagen_profiler(datagen_profiler)
 
@@ -824,6 +856,7 @@ class ParallelRolloutRunner:
                 datagen_profiler.end("task_step")
             # Add termination if succ
             if end_on_success and "success" in infos[0] and infos[0]["success"]:
+                log.info(f"[ROLLOUT] Early termination: success detected at step {step_count}")
                 success = True
                 break
 
@@ -1044,8 +1077,7 @@ class ParallelRolloutRunner:
                 except HouseInvalidForTask as e:
                     traceback.print_exc()
                     worker_logger.warning(
-                        f"Worker {worker_id} house {house_id} episode {episode_idx} "
-                        f"HouseInvalidForTask: {e.reason}"
+                        f"Worker {worker_id} house {house_id} episode {episode_idx} {e}"
                     )
                     house_invalid = True
                     if datagen_profiler is not None:

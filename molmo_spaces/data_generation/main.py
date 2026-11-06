@@ -6,6 +6,7 @@ import os
 
 from molmo_spaces.data_generation.config_registry import get_config_class
 from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner
+from molmo_spaces.molmo_spaces_constants import log_data_versions
 
 """
 Main script entry for data generation.
@@ -76,6 +77,7 @@ def auto_import_configs() -> None:
 
 def main() -> None:
     args = get_args()
+    log_data_versions()
     exp_config_cls = args.exp_config_cls
 
     # np.random.seed(42)

@@ -32,12 +32,12 @@ class EpisodeResult:
     house_id: str
     episode_idx: int
     success: bool
-    task_instruction: Optional[str] = None
-    failure_category: Optional[str] = None  # One of: "placement_failed", "failed_to_grasp", "never_touched_target", or None if successful
+    task_instruction: str | None = None
+    failure_category: str | None = None  # One of: "placement_failed", "failed_to_grasp", "never_touched_target", or None if successful
 
 
 
-def _extract_goal_from_h5(video_dir: Path, traj_idx: int = 0) -> Optional[str]:
+def _extract_goal_from_h5(video_dir: Path, traj_idx: int = 0) -> str | None:
     """Extract goal/task_description from the trajectory h5 file in the same directory as the video."""
     # Look for trajectory h5 files in the video directory
     h5_files = list(video_dir.glob("trajectories*.h5"))
@@ -83,7 +83,7 @@ def _decode_dict_data(key_data):
     return decoded_data
 
 
-def _extract_failure_category_from_h5(video_dir: Path, traj_idx: int = 0) -> Optional[str]:
+def _extract_failure_category_from_h5(video_dir: Path, traj_idx: int = 0) -> str | None:
     """Extract failure category from the trajectory h5 file.
 
     Returns one of:
@@ -155,7 +155,7 @@ def _extract_failure_category_from_h5(video_dir: Path, traj_idx: int = 0) -> Opt
     return None
 
 
-def _extract_success_from_h5(video_dir: Path, traj_idx: int = 0) -> Optional[bool]:
+def _extract_success_from_h5(video_dir: Path, traj_idx: int = 0) -> bool | None:
     """Extract success status from the trajectory h5 file.
 
     Checks if success occurred at ANY time during the rollout (not just at the end),
@@ -308,8 +308,8 @@ def log_eval_results_to_wandb(
 def upload_videos_to_wandb(
     eval_dir: Path,
     wandb_project: str = "json-eval",
-    wandb_run_name: Optional[str] = None,
-    camera_names: Optional[list[str]] = None,
+    wandb_run_name: str | None = None,
+    camera_names: list[str] | None = None,
 ):
     """Upload evaluation videos to wandb in the same format as eval_main.py.
 

@@ -10,6 +10,16 @@ class PiPolicyConfig(BasePolicyConfig):
     # remote_config: None -> launch local server
     # or dict(host,port) -> attaches to remote server
     remote_config: dict | None = dict(host="localhost", port=8080)
+    prompt_object_word_num: int = 1  # number of words as the object name
+    prompt_templates: list[str] | None = None
+    # Prompt source. False (default): task.get_task_description(), like every other
+    # policy. True: PromptSamplerLearnedPolicy (templates in utils/prompt_samplers.py;
+    # needed for the prompt_level ablation below).
+    use_prompt_sampler: bool = False
+    # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
+    # 1 = basic pick prompt, 2 = existing semantic prompts (default),
+    # 3 = "pick up the {object} by the {part}.".
+    prompt_level: int = 2
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 8
@@ -30,7 +40,17 @@ class PiPolicyConfig(BasePolicyConfig):
 
 class DreamZeroPolicyConfig(BasePolicyConfig):
     checkpoint_path: str = "checkpoints/dreamzero"
+    # Point host/port at your DreamZero inference server (e.g. via
+    # eval_main's --policy_host/--policy_port overrides).
     remote_config: dict = dict(host="localhost", port=0000)
+    prompt_object_word_num: int = 1  # number of words as the object name
+    prompt_templates: list[str] | None = None
+    # Prompt source; see PiPolicyConfig.use_prompt_sampler.
+    use_prompt_sampler: bool = False
+    # Ablation switch for the semantic_grasp_pick task; ignored elsewhere.
+    # 1 = basic pick prompt, 2 = existing semantic prompts (default),
+    # 3 = "pick up the {object} by the {part}.".
+    prompt_level: int = 2
     grasping_type: str = "binary"
     grasping_threshold: float = 0.5
     chunk_size: int = 24

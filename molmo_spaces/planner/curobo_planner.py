@@ -24,42 +24,15 @@ from curobo.wrap.reacher.motion_gen import (
     MotionGenPlanConfig,
 )
 
-from molmo_spaces.configs.abstract_config import Config
 from molmo_spaces.env.data_views import MlSpacesObject
 from molmo_spaces.molmo_spaces_constants import ASSETS_DIR
 from molmo_spaces.planner.abstract import Planner
+
+# Re-exported for back-compat: the config lives in its own curobo-free module so
+# that naming it does not require importing this one (torch + curobo).
+from molmo_spaces.planner.curobo_planner_config import CuroboPlannerConfig  # noqa: F401
 from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.spatial_utils import Transform
-
-
-class CuroboPlannerConfig(Config):
-    # --- Curobo setup parameters ---
-    curobo_robot_config_path: str
-    world_config: WorldConfig = None
-    kinematics_config: dict = None
-    lock_joints: dict | None = None  # Override locked joint values: {joint_name: value}
-
-    # --- Robot asset paths (optional, defaults to rby1 for backward compatibility) ---
-    urdf_path: str | None = None
-    asset_root_path: str | None = None
-    usd_robot_root: str | None = None
-    collision_spheres_path: str | None = None
-
-    # --- Motion planner parameters ---
-    trajopt_tsteps: int = 20
-    interpolation_dt: float = 0.02  # Match control_dt for smooth execution in MuJoCo
-    time_dilation_factor: float = 1.0
-    collision_activation_distance: float = (
-        0.2  # collision cost calculated within this distance (metres)
-    )
-    num_ik_seeds: int = 64
-    num_trajopt_seeds: int = 4
-    fixed_iters_trajopt: bool = True
-    maximum_trajectory_dt: float = 0.5
-    max_attempts: int = 5
-    collision_cache: dict = {"mesh": 3, "obb": 80}
-    check_start_validity: bool = True
-    enable_finetune_trajopt: bool = True
 
 
 class CuroboPlanner(Planner):

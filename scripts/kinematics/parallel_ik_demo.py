@@ -6,17 +6,24 @@ On mac, run with mjpython.
 
 from collections import defaultdict
 
-import numpy as np
 import mujoco
-from mujoco import MjModel, MjData, MjSpec
+import numpy as np
+from mujoco import MjData, MjModel, MjSpec
 from mujoco.viewer import launch_passive
 
-from molmo_spaces.configs import BaseRobotConfig
-from molmo_spaces.configs.robot_configs import FrankaRobotConfig, I2rtYamRobotConfig, RBY1MConfig
+from molmo_spaces.configs.robot_configs import (
+    BaseRobotConfig,
+    FrankaRobotConfig,
+    I2rtYamRobotConfig,
+    RBY1MConfig,
+)
 from molmo_spaces.kinematics.parallel.warp_kinematics import SimpleWarpKinematics
 from molmo_spaces.robots.robot_views.abstract import RobotView
 
 N_ROBOTS = 4
+# RBY1's MJCF hardcodes the "robot_0/" namespace (RBY1.add_robot_to_scene asserts
+# it), so a scene can hold only one RBY1. Its IK still runs batched, with batch size 1.
+SINGLE_INSTANCE = {"rby1m": "robot_0/"}
 PERIOD = 3.0
 RADIUS = 0.1
 FPS = 20
@@ -53,12 +60,17 @@ def main():
     }
     robot_configs["rby1m"].init_qpos["base"] = [0.0, 2.0, 0.0]
 
-    for robot_config in robot_configs.values():
-        for i in range(N_ROBOTS):
+    def prefixes(name: str) -> list[str]:
+        if name in SINGLE_INSTANCE:
+            return [SINGLE_INSTANCE[name]]
+        return [f"{name}_{i}/" for i in range(N_ROBOTS)]
+
+    for name, robot_config in robot_configs.items():
+        for prefix in prefixes(name):
             robot_config.robot_cls.add_robot_to_scene(
                 robot_config,
                 spec,
-                prefix=f"{robot_config.name}_{i}/",
+                prefix=prefix,
                 pos=[0.0, 0.0, 0.0],
                 quat=[1.0, 0.0, 0.0, 0.0],
             )
@@ -70,8 +82,8 @@ def main():
     robot_views: dict[str, list[RobotView]] = {}
     for robot_idx, (name, robot_config) in enumerate(robot_configs.items()):
         views = []
-        for i in range(N_ROBOTS):
-            view = robot_config.robot_view_factory(data, f"{robot_config.name}_{i}/")
+        for prefix in prefixes(name):
+            view = robot_config.robot_view_factory(data, prefix)
             views.append(view)
             view.set_qpos_dict(robot_config.init_qpos)
             pose = view.base.pose.copy()
@@ -102,7 +114,6 @@ def main():
     kinematics = {name: SimpleWarpKinematics(rc) for name, rc in robot_configs.items()}
 
     t = 0.0
-    t_offsets = np.linspace(0, 2 * np.pi, N_ROBOTS, endpoint=False)
     with launch_passive(model, data) as viewer:
         while viewer.is_running():
             for name, views in robot_views.items():
@@ -111,8 +122,10 @@ def main():
 
             for name in gripper_init_poses:
                 kin = kinematics[name]
+                n = len(robot_views[name])
+                t_offsets = np.linspace(0, 2 * np.pi, n, endpoint=False)
                 for move_group_id, init_pose in gripper_init_poses[name].items():
-                    target_poses = np.repeat(init_pose[None], N_ROBOTS, axis=0)
+                    target_poses = np.repeat(init_pose[None], n, axis=0)
                     target_poses[:, 0, 3] += (
                         RADIUS * 1.5 * np.sin(t * 2 * np.pi / PERIOD / 4 + t_offsets)
                     )

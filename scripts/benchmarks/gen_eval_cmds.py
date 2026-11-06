@@ -1,4 +1,3 @@
-
 prefix = '''export MUJOCO_INSTALL_DIR="/weka/robots-default/datasets/mujoco/"
 export MUJOCO_GL=egl
 export PYOPENGL_PLATFORM=egl

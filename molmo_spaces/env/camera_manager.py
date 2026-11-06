@@ -8,13 +8,16 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+import mujoco
 import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.env.data_views import MlSpacesBody
+from molmo_spaces.utils.camera_utils import CameraNoiseModel, CameraResetCadence
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.camera_configs import (
@@ -31,8 +34,50 @@ log = logging.getLogger(__name__)
 DEFAULT_FOV: float = 45.0
 
 
+@dataclass
+class MjcfCameraInfo:
+    """What a Camera registered from an MjcfCameraConfig remembers about the
+    MJCF camera it stands for: its id in the model, its un-noised mounting
+    (the base a per-episode randomizer perturbs model.cam_* around), and, for
+    a FisheyeMjcfCameraConfig, the co-located tile cameras the cubemap
+    composite is rendered through. `fisheye` caches the FisheyeRenderer once
+    CameraManager.fisheye_renderer has built it.
+    """
+
+    camera_id: int
+    base_pos: NDArray
+    base_quat: NDArray
+    base_fovy: float
+    config: MjcfCameraConfig
+    tile_camera_ids: list[int] = field(default_factory=list)
+    tile_base_pos: list[NDArray] = field(default_factory=list)
+    tile_base_quat: list[NDArray] = field(default_factory=list)
+    fisheye: object | None = None
+
+    @property
+    def is_fisheye(self) -> bool:
+        return bool(self.tile_camera_ids)
+
+    @property
+    def rig_camera_ids(self) -> list[int]:
+        """The MJCF camera plus its fisheye tiles: every camera that has to move
+        together when the mounting is perturbed."""
+        return [self.camera_id, *self.tile_camera_ids]
+
+    @property
+    def rig_base_pos(self) -> list[NDArray]:
+        return [self.base_pos, *self.tile_base_pos]
+
+    @property
+    def rig_base_quat(self) -> list[NDArray]:
+        return [self.base_quat, *self.tile_base_quat]
+
+
 class Camera:
     """Base camera class with position and orientation."""
+
+    # Set by CameraManager._setup_mjcf_camera for cameras defined in the MJCF.
+    mjcf: MjcfCameraInfo | None = None
 
     # default fov set to 45, which is mujoco default
     def __init__(
@@ -279,6 +324,7 @@ class CameraManager:
         workspace_center=None,
         visibility_resolver: Callable[[str], list[str]] | None = None,
         deterministic_only: bool = False,
+        apply_mjcf_noise: bool = True,
     ) -> None:
         """Set up all cameras from a CameraSystemConfig.
 
@@ -290,6 +336,9 @@ class CameraManager:
             camera_system_config: CameraSystemConfig instance with all camera specs
             workspace_center: Optional workspace center position (np.ndarray) for camera placement
             visibility_resolver: Optional callable(key: str) -> str that resolves special visibility keys
+            apply_mjcf_noise: Apply the MJCF cameras' configured noise at setup.
+                False registers them at their MJCF pose without drawing RNG,
+                for an owner that re-noises them every episode (G1TaskSampler).
         """
         from molmo_spaces.configs.camera_configs import (
             FixedExocentricCameraConfig,
@@ -306,8 +355,9 @@ class CameraManager:
 
         # allow runtime errors to propagate here instead of catching them and logging
         for camera_spec in camera_system_config.cameras:
+            self._check_reset_cadence_supported(camera_spec)
             if isinstance(camera_spec, MjcfCameraConfig):
-                self._setup_mjcf_camera(env, camera_spec)
+                self._setup_mjcf_camera(env, camera_spec, apply_noise=apply_mjcf_noise)
             elif isinstance(camera_spec, RobotMountedCameraConfig):
                 self._setup_robot_mounted_camera(env, camera_spec)
             elif isinstance(camera_spec, FixedExocentricCameraConfig):
@@ -331,6 +381,48 @@ class CameraManager:
         log.info(f"[CAMERA SETUP] Successfully set up {len(self.registry.cameras)} cameras")
 
     @staticmethod
+    def mjcf_scene_option(camera: Camera) -> mujoco.MjvOption:
+        """Scene options for rendering through `camera`'s MJCF camera: MuJoCo's
+        defaults with the camera config's `geomgroup_overrides` applied."""
+        opt = mujoco.MjvOption()
+        mujoco.mjv_defaultOption(opt)
+        overrides = getattr(camera.mjcf.config, "geomgroup_overrides", None)
+        for group, enabled in (overrides or {}).items():
+            opt.geomgroup[int(group)] = int(enabled)
+        return opt
+
+    def fisheye_renderer(
+        self, env, camera_name: str, output_h: int | None = None, output_w: int | None = None
+    ):
+        """The cubemap FisheyeRenderer for a FisheyeMjcfCameraConfig camera, at
+        the env's observation image size (`env._render_size()`) unless another
+        is given. Built on first use from the config's own lens parameters
+        (FisheyeMjcfCameraConfig.cubemap_renderer_kwargs) and cached on the
+        camera; a different output size rebuilds it. Returned rather than
+        rendered with, because callers also read and perturb its intrinsics
+        (K/D, set_intrinsics) in place -- which is why the cache is per camera
+        rather than per call.
+        """
+        if output_h is None or output_w is None:
+            default_h, default_w = env._render_size()
+            output_h = default_h if output_h is None else output_h
+            output_w = default_w if output_w is None else output_w
+        output_h, output_w = int(output_h), int(output_w)
+        camera = self.registry[camera_name]
+        info = camera.mjcf
+        if info is None or not info.is_fisheye:
+            raise ValueError(f"camera {camera_name!r} is not a fisheye MJCF camera")
+        fisheye = info.fisheye
+        if fisheye is None or fisheye.output_h != output_h or fisheye.output_w != output_w:
+            from molmo_spaces.utils.fisheye_cubemap import FisheyeRenderer
+
+            fisheye = FisheyeRenderer(
+                env.current_model, **info.config.cubemap_renderer_kwargs(output_h, output_w)
+            )
+            info.fisheye = fisheye
+        return fisheye
+
+    @staticmethod
     def apply_mjcf_camera_noise(
         camera_pos: np.ndarray,
         camera_quat: np.ndarray,
@@ -350,6 +442,11 @@ class CameraManager:
         Returns:
             Tuple of (noised_pos, noised_quat, noised_fov).
         """
+        if camera_config.noise_model == CameraNoiseModel.BODY_FRAME_AXIS_ANGLE:
+            return CameraManager._apply_body_frame_axis_angle_noise(
+                camera_pos, camera_quat, camera_fov, camera_config, rng
+            )
+
         if camera_config.fov_noise_degrees is not None:
             noise = rng.uniform(
                 camera_config.fov_noise_degrees[0], camera_config.fov_noise_degrees[1]
@@ -383,8 +480,69 @@ class CameraManager:
 
         return camera_pos, camera_quat, camera_fov
 
-    def _setup_mjcf_camera(self, env, camera_config: MjcfCameraConfig) -> None:
-        """Set up a camera defined in MJCF file."""
+    @staticmethod
+    def _check_reset_cadence_supported(camera_config) -> None:
+        """Fail loudly on a reset_cadence this manager cannot honor: noise is
+        applied once at registration, so "episode" would silently narrow the
+        camera distribution to "setup". The G1 is exempt -- G1TaskSampler
+        redraws its cameras itself every reset.
+
+        TODO(max): make "episode" the default -- redraw on reset here, point
+        the G1 at it, and both the exemption and the "setup" default go away.
+        """
+        # noise_model lives on MjcfCameraConfig only; the other camera types have
+        # no G1 counterpart, so for them EPISODE is always unimplemented.
+        if (
+            camera_config.reset_cadence == CameraResetCadence.EPISODE
+            and getattr(camera_config, "noise_model", None)
+            != CameraNoiseModel.BODY_FRAME_AXIS_ANGLE
+        ):
+            raise NotImplementedError(
+                f"camera {camera_config.name!r} asks for reset_cadence=EPISODE, which "
+                "CameraManager does not implement -- it applies noise once at setup. Use "
+                "SETUP, or drive the per-reset randomization outside this class the way "
+                "fetchman's G1TaskSampler does for the G1 cameras."
+            )
+
+    @staticmethod
+    def _apply_body_frame_axis_angle_noise(
+        camera_pos: np.ndarray,
+        camera_quat: np.ndarray,
+        camera_fov: float,
+        camera_config: MjcfCameraConfig,
+        rng,
+    ) -> tuple[np.ndarray, np.ndarray, float]:
+        """g1_molmo's `_perturb_camera`: position offset in the parent body
+        frame, rotation as one random axis-angle composed parent-side, draws
+        in the order position -> axis -> angle -> FOV. Opt-in per camera; it
+        differs from "camera_local_euler" in each of those respects.
+        """
+        if camera_config.pos_noise_range is not None:
+            lo, hi = camera_config.pos_noise_range
+            camera_pos = camera_pos + rng.uniform(lo, hi, 3)
+
+        if camera_config.orientation_noise_degrees is not None:
+            axis = rng.uniform(-1, 1, 3)
+            axis = axis / max(float(np.linalg.norm(axis)), 1e-6)
+            limit = np.radians(camera_config.orientation_noise_degrees)
+            angle = float(rng.uniform(-limit, limit))
+            delta = R.from_rotvec(axis * angle)
+            camera_quat = (delta * R.from_quat(camera_quat, scalar_first=True)).as_quat(
+                scalar_first=True
+            )
+
+        if camera_config.fov_noise_degrees is not None:
+            camera_fov += float(
+                rng.uniform(camera_config.fov_noise_degrees[0], camera_config.fov_noise_degrees[1])
+            )
+
+        return camera_pos, camera_quat, camera_fov
+
+    def _setup_mjcf_camera(
+        self, env, camera_config: MjcfCameraConfig, apply_noise: bool = True
+    ) -> None:
+        """Register a camera defined in the MJCF as a tracking
+        RobotMountedCamera, and record its MJCF facts on it (MjcfCameraInfo)."""
         # Build full camera name with namespace if provided
         if camera_config.robot_namespace:
             full_mjcf_name = f"{camera_config.robot_namespace}{camera_config.mjcf_name}"
@@ -416,9 +574,19 @@ class CameraManager:
             camera_config.fov if camera_config.fov is not None else camera_obj.fovy[0]
         )  # this will raise an error if the fov is not set - desired behavior
 
-        camera_pos, camera_quat, camera_fov = self.apply_mjcf_camera_noise(
-            camera_pos, camera_quat, camera_fov, camera_config
-        )
+        # BODY_FRAME_AXIS_ANGLE also specifies WHICH stream it draws from -- the
+        # env's seeded one, so cameras reproduce from the episode seed as
+        # g1_molmo's do. The default model still draws from global np.random;
+        # changing that would reshuffle every other robot's cameras.
+        noise_rng = np.random
+        if camera_config.noise_model == CameraNoiseModel.BODY_FRAME_AXIS_ANGLE:
+            noise_rng = getattr(env, "np_random", np.random)
+
+        base_pos, base_quat, base_fov = camera_pos.copy(), camera_quat.copy(), float(camera_fov)
+        if apply_noise:
+            camera_pos, camera_quat, camera_fov = self.apply_mjcf_camera_noise(
+                camera_pos, camera_quat, camera_fov, camera_config, rng=noise_rng
+            )
 
         # Set up as robot-mounted camera (will track the body it's attached to)
         camera_obj_bodyid = camera_obj.bodyid.item()
@@ -429,6 +597,34 @@ class CameraManager:
             camera_offset=camera_pos,
             camera_quaternion=camera_quat,
             camera_fov=camera_fov,
+        )
+
+        # The MJCF side of this camera, for renderers that go through the
+        # model's own camera (mujoco.Renderer.update_scene(camera=id)) and for
+        # per-episode randomizers that perturb model.cam_* around the base.
+        camera = self.registry.cameras[camera_config.name]
+        tile_ids: list[int] = []
+        from molmo_spaces.configs.camera_configs import FisheyeMjcfCameraConfig
+
+        if isinstance(camera_config, FisheyeMjcfCameraConfig):
+            for tile_name in camera_config.tile_camera_names():
+                tile_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, tile_name)
+                if tile_id < 0:
+                    log.warning(
+                        f"[CAMERA SETUP] fisheye tile camera '{tile_name}' of "
+                        f"'{camera_config.name}' not found in model"
+                    )
+                    continue
+                tile_ids.append(int(tile_id))
+        camera.mjcf = MjcfCameraInfo(
+            camera_id=int(camera_id),
+            base_pos=base_pos,
+            base_quat=base_quat,
+            base_fovy=base_fov,
+            config=camera_config,
+            tile_camera_ids=tile_ids,
+            tile_base_pos=[model.cam_pos[i].copy() for i in tile_ids],
+            tile_base_quat=[model.cam_quat[i].copy() for i in tile_ids],
         )
 
         # Store visibility constraints on the camera object for later use during robot placement

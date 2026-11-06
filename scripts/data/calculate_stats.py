@@ -231,7 +231,7 @@ def process_data_file(args, data_file: str, traj_keys: list[str], keys: list[str
 def main():
     args = get_args()
     if args.keys_file is not None:
-        with open(args.keys_file, "r") as f:
+        with open(args.keys_file) as f:
             keys = f.read().splitlines()
     else:
         keys = args.keys
@@ -240,7 +240,7 @@ def main():
     if args.aggregate_only:
         args.dry_run = True
 
-    with open(os.path.join(args.data_root, "valid_trajectory_index.json"), "r") as f:
+    with open(os.path.join(args.data_root, "valid_trajectory_index.json")) as f:
         traj_index = json.load(f)
     data_file_trajs: dict[str, list[str]] = {}
     for data_file_dict in traj_index.values():

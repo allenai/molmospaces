@@ -1,9 +1,20 @@
+import logging
+import os
 import sys
 
 import mujoco as mj
 import numpy as np
 
 from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
+
+log = logging.getLogger(__name__)
+
+
+def should_use_software_gl_context() -> bool:
+    """Respect explicit software-rendering requests from the environment."""
+    mujoco_gl = os.environ.get("MUJOCO_GL", "").lower()
+    pyopengl_platform = os.environ.get("PYOPENGL_PLATFORM", "").lower()
+    return mujoco_gl == "osmesa" or pyopengl_platform == "osmesa"
 
 
 class MjOpenGLRenderer(MjAbstractRenderer):
@@ -18,7 +29,7 @@ class MjOpenGLRenderer(MjAbstractRenderer):
         # TODO(wilbert): remove this an use gpustat instead of full torch, and only
         # if using linux. On MacOS we don't have multi-gpu so makes no sense to try to
         # pass a device_id, right?
-        if device_id is None:
+        if device_id is None and not should_use_software_gl_context():
             try:
                 import torch
 
@@ -45,15 +56,31 @@ class MjOpenGLRenderer(MjAbstractRenderer):
 
         # TODO(nimrod): Figure out why pytype doesn't like gl_context.GLContext
         self._context_is_cgl = False
+        self._gl_backend = "software" if device_id is None else "egl"
         if device_id is None:
             from mujoco import gl_context
 
             self._gl_context = gl_context.GLContext(width, height)
             self._context_is_cgl = sys.platform == "darwin"
         else:
-            from molmo_spaces.renderer.opengl_context import EGLGLContext
+            try:
+                from molmo_spaces.renderer.opengl_context import EGLGLContext
 
-            self._gl_context = EGLGLContext(width, height, device_id)
+                self._gl_context = EGLGLContext(width, height, device_id)
+            except (ImportError, RuntimeError) as exc:
+                if not should_use_software_gl_context():
+                    raise
+
+                from mujoco import gl_context
+
+                log.warning(
+                    "Falling back to MuJoCo software rendering after EGL initialization failed: %s",
+                    exc,
+                )
+                self._gl_context = gl_context.GLContext(width, height)
+                self._context_is_cgl = sys.platform == "darwin"
+                self._gl_backend = "software"
+                self._device_id = None
         self._gl_context.make_current()
         self._mjr_context = mj.MjrContext(model, mj.mjtFontScale.mjFONTSCALE_150.value)
         mj.mjr_resizeOffscreen(width, height, self._mjr_context)

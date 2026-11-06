@@ -476,7 +476,7 @@ def run_simulation_with_viewer(
     primary_joint=None,
     handle_geoms=None,
 ):
-    with open(args.grasps_path, "r") as f:
+    with open(args.grasps_path) as f:
         grasp_data = json.load(f)
     transforms = np.array(grasp_data["transforms"])
     print(len(transforms), "grasps to evaluate")
@@ -761,7 +761,7 @@ def main_single_file_filtering(
     root = tree.getroot()
 
     try:
-        with open(xml_file, "r") as f:
+        with open(xml_file) as f:
             obj_xml_content = f.read()
         obj_tree = ET.fromstring(obj_xml_content)
         free_joints = obj_tree.findall(".//joint[@type='free']")
@@ -790,7 +790,7 @@ def main_single_file_filtering(
     xml_content = ET.tostring(root, encoding="unicode")
     robot_xml_path = str(ASSETS_DIR / "robots/floating_robotiq/model_articulate.xml")
 
-    with open(robot_xml_path, "r") as f:
+    with open(robot_xml_path) as f:
         robot_xml_content = f.read()
     xml_content = merge_xml_contents(xml_content, robot_xml_content)
 
@@ -818,7 +818,7 @@ def main_single_file_filtering(
         np.savez_compressed(output_path_npz, transforms=transforms_array)
 
     output_path_json = grasps_path.replace(".json", "_object_info.json")
-    with open(grasps_path, "r") as original_f:
+    with open(grasps_path) as original_f:
         original_data = json.load(original_f)
     with open(output_path_json, "w") as f:
         json.dump(
@@ -901,7 +901,7 @@ def main():
     if args.per_joint_summary_json:
         summary_path = os.path.abspath(args.per_joint_summary_json)
         os.chdir(os.path.dirname(summary_path))
-        with open(summary_path, "r") as f:
+        with open(summary_path) as f:
             summary = json.load(f)
         updated_summary = []
         for entry in summary:
