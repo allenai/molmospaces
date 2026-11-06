@@ -131418,7 +131418,7 @@ The blacklist path can be configured via MLSPACES_ASSET_BLACKLIST_PATH env var.<
     <div class="doc doc-contents ">
 
         <p>Extract the asset UID hash from an object name.</p>
-<p>Object names follow the pattern: {category}<em instance_ids="instance_ids">{md5_hash}</em>
+<p>Object names follow the pattern: {category}<em instance_ids>{md5_hash}</em>
 e.g., 'egg_458c762f78242a821082a457af28fe5c_1_0_2'</p>
 <p>Note: This extracts the MD5 hash of the UID, not the original UID.
 For physics errors where we only have the object name, this is sufficient
@@ -131812,7 +131812,7 @@ MLSPACES_ASSET_BLACKLIST_PATH but does not exist.</p>
             <td><code><a class="autorefs autorefs-internal" title="            HouseInvalidForTask (molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask)" href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask">HouseInvalidForTask</a></code></td>
             <td>
               <div class="doc-md-description">
-                <p>Exception raised when a house cannot be used for tasks due to physics constraints.</p>
+                <p>Exception raised when a house cannot be used for the task being sampled.</p>
               </div>
             </td>
           </tr>
@@ -131904,7 +131904,7 @@ MLSPACES_ASSET_BLACKLIST_PATH but does not exist.</p>
 
 
 <a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">HouseInvalidForTask</span><span class="p">(</span><span class="n">house_info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">HouseInvalidForTask</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">house_info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -131913,11 +131913,15 @@ MLSPACES_ASSET_BLACKLIST_PATH but does not exist.</p>
 
 
 
-        <p>Exception raised when a house cannot be used for tasks due to physics constraints.</p>
-<p>This is typically raised when:
-- House has snap-back behavior and no stable positions can be found
-- House has unstable physics that prevents reliable object placement
-- House cannot be compiled or analyzed for stability</p>
+        <p>Exception raised when a house cannot be used for the task being sampled.</p>
+<p>For example:
+- The house has no candidate objects of the requested types (no pickup
+  candidates, no doors, no nav targets)
+- No valid task could be sampled within the attempt budget
+- The house has unstable physics or cannot be compiled</p>
+<p><code>reason</code> is the one-line explanation and comes first, so the common
+<code>HouseInvalidForTask("No doors found in the scene")</code> reports it. <code>house_info</code>
+holds extra details (e.g. the compiler's error text).</p>
 
 
 
@@ -131992,31 +131996,31 @@ MLSPACES_ASSET_BLACKLIST_PATH but does not exist.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>molmo_spaces/tasks/task_sampler_errors.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-38">38</a></span>
-<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-39">39</a></span>
-<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-40">40</a></span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-40">40</a></span>
 <span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-41">41</a></span>
 <span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-42">42</a></span>
 <span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-43">43</a></span>
 <span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-44">44</a></span>
 <span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-45">45</a></span>
 <span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-47">47</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-35" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-35"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">house_info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-36" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-36"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">house_info</span> <span class="o">=</span> <span class="n">house_info</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-37" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-37"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="n">reason</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-38" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-38"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-39" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-39"></a>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-40" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-40"></a>    <span class="k">if</span> <span class="n">house_info</span> <span class="ow">and</span> <span class="n">reason</span><span class="p">:</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-41" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-41"></a>        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"House invalid for tasks: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">. Details: </span><span class="si">{</span><span class="n">house_info</span><span class="si">}</span><span class="s2">"</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-42" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-42"></a>    <span class="k">elif</span> <span class="n">reason</span><span class="p">:</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-43" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-43"></a>        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"House invalid for tasks: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-44" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-44"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-45" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-45"></a>        <span class="n">message</span> <span class="o">=</span> <span class="s2">"House invalid for tasks due to physics constraints"</span>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-46" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-46"></a>
-<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-47" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-47"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-52">52</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-40" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-40"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">house_info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-41" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-41"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">house_info</span> <span class="o">=</span> <span class="n">house_info</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-42" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-42"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="n">reason</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-43" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-43"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-44" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-44"></a>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-45" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-45"></a>    <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-46" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-46"></a>        <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-47" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-47"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="n">reason</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-48" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-48"></a>    <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"House invalid for tasks: </span><span class="si">{</span><span class="n">reason</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'no reason given'</span><span class="si">}</span><span class="s2">"</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-49" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-49"></a>    <span class="k">if</span> <span class="n">house_info</span><span class="p">:</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-50" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-50"></a>        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">". Details: </span><span class="si">{</span><span class="n">house_info</span><span class="si">}</span><span class="s2">"</span>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-51" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-51"></a>
+<a id="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-52" name="molmo_spaces.tasks.task_sampler_errors.HouseInvalidForTask--source--__codelineno-0-52"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
