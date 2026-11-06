@@ -24,24 +24,29 @@ class CameraPlacementError(RetriableError):
 
 class HouseInvalidForTask(Exception):
     """
-    Exception raised when a house cannot be used for tasks due to physics constraints.
+    Exception raised when a house cannot be used for the task being sampled.
 
-    This is typically raised when:
-    - House has snap-back behavior and no stable positions can be found
-    - House has unstable physics that prevents reliable object placement
-    - House cannot be compiled or analyzed for stability
+    For example:
+    - The house has no candidate objects of the requested types (no pickup
+      candidates, no doors, no nav targets)
+    - No valid task could be sampled within the attempt budget
+    - The house has unstable physics or cannot be compiled
+
+    `reason` is the one-line explanation and comes first, so the common
+    `HouseInvalidForTask("No doors found in the scene")` reports it. `house_info`
+    holds extra details (e.g. the compiler's error text).
     """
 
-    def __init__(self, house_info=None, reason=None, error=None) -> None:
+    def __init__(self, reason=None, house_info=None, error=None) -> None:
         self.house_info = house_info
         self.reason = reason
         self.error = error
 
-        if house_info and reason:
-            message = f"House invalid for tasks: {reason}. Details: {house_info}"
-        elif reason:
-            message = f"House invalid for tasks: {reason}"
-        else:
-            message = "House invalid for tasks due to physics constraints"
+        if reason is None and error is not None:
+            reason = f"{type(error).__name__}: {error}"
+            self.reason = reason
+        message = f"House invalid for tasks: {reason or 'no reason given'}"
+        if house_info:
+            message += f". Details: {house_info}"
 
         super().__init__(message)
