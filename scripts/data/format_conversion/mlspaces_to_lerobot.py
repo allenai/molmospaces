@@ -7,17 +7,15 @@ import argparse
 import json
 from pathlib import Path
 
-import decord
 import h5py
 import numpy as np
-from decord import VideoReader
+from torchcodec.decoders import VideoDecoder
 from PIL import Image
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
 
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
-decord.bridge.set_bridge("native")
 
 MLSPACES_GRIPPER_MAX_POS = 0.824033  # Franka DROID gripper max position
 GRIPPER_ACTION_SCALE = 255.0
@@ -58,10 +56,10 @@ def pose_quat_wxyz_to_eef9d(pose7: np.ndarray) -> np.ndarray:
 def load_video_frames(h5_dir: Path, traj_group: h5py.Group, ml_cam: str, count: int) -> np.ndarray:
     raw = traj_group[f"obs/sensor_data/{ml_cam}"][()]
     filename = (raw.tobytes() if isinstance(raw, np.ndarray) else raw).decode("utf-8").rstrip("\x00")
-    vr = VideoReader(str(h5_dir / filename))
-    if count > len(vr):
-        raise RuntimeError(f"Requested {count} frames but video {filename} has {len(vr)}")
-    return vr.get_batch(list(range(count))).asnumpy()  # (count, H, W, 3) RGB uint8
+    decoder = VideoDecoder(str(h5_dir / filename), dimension_order="NHWC")
+    if count > len(decoder):
+        raise RuntimeError(f"Requested {count} frames but video {filename} has {len(decoder)}")
+    return decoder.get_frames_at(list(range(count))).data.numpy()  # (count, H, W, 3) RGB uint8
 
 
 def resize_rgb(frame: np.ndarray, hw: tuple[int, int]) -> np.ndarray:

@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
 
     runs-on: ${{ matrix.os }}
 
@@ -148,7 +148,7 @@ jobs:
       fail-fast: true
       matrix:
         group: [1, 2, 3, 4]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
 
     runs-on: ${{ github.event.repository.private && '8-Core-XL-Runner-Ubuntu-Latest' || 'ubuntu-latest' }}
 
@@ -211,6 +211,14 @@ jobs:
           sudo apt-get install -y --no-download $PKGS
           mkdir -p "$DEBS"
           cp /var/cache/apt/archives/*.deb "$DEBS"/
+
+      - name: Install FFmpeg (torchcodec loads it at runtime)
+        # ~60 MB of .debs; the Azure mirror has stalled mid-download often enough
+        # to fail whole shards, so cache the packages across runs.
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: ffmpeg
+          version: 1
 
       - name: Set MuJoCo rendering backend
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
@@ -312,7 +320,7 @@ jobs:
               -O /tmp/cuda-keyring.deb
             sudo dpkg -i /tmp/cuda-keyring.deb
             retry sudo apt-get update
-            retry sudo apt-get install -y --fix-missing cuda-toolkit-12-8
+            retry sudo apt-get install -y --fix-missing cuda-toolkit-12-8 ffmpeg
           fi
           echo "CUDA_HOME=/usr/local/cuda-12.8" >> "$GITHUB_ENV"
           /usr/local/cuda-12.8/bin/nvcc --version
@@ -320,11 +328,11 @@ jobs:
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Create and setup virtual environment
         run: |
-          uv venv --python 3.11
+          uv venv --python 3.12
           source .venv/bin/activate
 
       - name: Install package
@@ -342,6 +350,7 @@ jobs:
           uv pip install --no-cache "torch==2.7.1+cu128" "torchvision==0.22.1+cu128" \
             --index-url https://download.pytorch.org/whl/cu128 \
             --index-strategy unsafe-best-match
+          uv pip install --no-cache "torchcodec~=0.5.0"  # pins the torch minor: 0.5 <-> 2.7
           # curobo's [build-system] requires setuptools_scm to compute its version
           # from git metadata. With build isolation skipped below, uv no longer
           # auto-installs that build-time requirement into a throwaway env, so
@@ -392,7 +401,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - uses: pre-commit/action@v3.0.1
         env:
