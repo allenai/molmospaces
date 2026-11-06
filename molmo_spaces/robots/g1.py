@@ -154,8 +154,8 @@ class G1RobotView:
     def zero_velocities(self):
         dadr = self.model.jnt_dofadr[self._freejoint_id]
         self.data.qvel[dadr : dadr + 6] = 0.0
-        for i in range(len(JOINT_NAMES)):
-            self.data.qvel[self._dof_ids[i]] = 0.0
+        for dof in self._dof_ids:
+            self.data.qvel[dof] = 0.0
 
     def get_xy(self):
         return self.data.xpos[self._body_id, :2].copy()
@@ -267,6 +267,19 @@ HAND_SITE = {side: f"{side}_grasp" for side in ("left", "right")}
 
 
 class G1Robot(Robot):
+    # Per-variant joint layout (subclasses with a different end effector override these; the
+    # first 29 entries -- legs, waist, both arms -- are the walking controller's and must stay).
+    JOINT_NAMES = JOINT_NAMES
+    DEFAULT_QPOS = DEFAULT_QPOS
+    ACTUATOR_NAME_MAP = ACTUATOR_NAME_MAP
+
+    @staticmethod
+    def _low_level_cls():
+        """The whole-body controller class this robot variant drives."""
+        from molmo_spaces.controllers.g1_wbc import G1WholeBodyController
+
+        return G1WholeBodyController
+
     def __init__(
         self,
         data: mj.MjData,
@@ -322,9 +335,7 @@ class G1Robot(Robot):
             # Deferred import -- controllers/g1_wbc.py imports JOINT_NAMES/
             # DEFAULT_QPOS from this module, so a module-level import here
             # would be circular.
-            from molmo_spaces.controllers.g1_wbc import G1WholeBodyController as _LowLevelController
-
-            low_level = _LowLevelController()
+            low_level = self._low_level_cls()()
         self._low_level = low_level
         self._low_level.setup(self.model, data, prefix=self._namespace)
 
@@ -366,7 +377,7 @@ class G1Robot(Robot):
                 self.model.jnt_qposadr[
                     mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{n}")
                 ]
-                for n in JOINT_NAMES
+                for n in self.JOINT_NAMES
             ]
         )
         self._dof_ids = np.array(
@@ -374,12 +385,12 @@ class G1Robot(Robot):
                 self.model.jnt_dofadr[
                     mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{n}")
                 ]
-                for n in JOINT_NAMES
+                for n in self.JOINT_NAMES
             ]
         )
 
         def _find_act(jname):
-            act_name = ACTUATOR_NAME_MAP.get(jname, jname)
+            act_name = self.ACTUATOR_NAME_MAP.get(jname, jname)
             aid = mj.mj_name2id(
                 self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}walk_{act_name}"
             )
@@ -389,7 +400,7 @@ class G1Robot(Robot):
                 )
             return aid
 
-        self.act_ids = np.array([_find_act(n) for n in JOINT_NAMES])
+        self.act_ids = np.array([_find_act(n) for n in self.JOINT_NAMES])
 
         self.right_gripper_aid = mj.mj_name2id(
             self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}right_grip"
@@ -1027,16 +1038,16 @@ class G1Robot(Robot):
                     m.geom_conaffinity[gid] = 15
 
     def set_defaults(self):
-        self.data.qpos[self._qpos_ids] = DEFAULT_QPOS
+        self.data.qpos[self._qpos_ids] = self.DEFAULT_QPOS
         valid = self.act_ids >= 0
-        self.data.ctrl[self.act_ids[valid]] = DEFAULT_QPOS[valid]
-        for i, name in enumerate(JOINT_NAMES):
+        self.data.ctrl[self.act_ids[valid]] = self.DEFAULT_QPOS[valid]
+        for i, name in enumerate(self.JOINT_NAMES):
             for prefix in ("walk_", "grasp_"):
                 aid = mj.mj_name2id(
                     self.model, mj.mjtObj.mjOBJ_ACTUATOR, f"{self._namespace}{prefix}{name}"
                 )
                 if aid >= 0:
-                    self.data.ctrl[aid] = DEFAULT_QPOS[i]
+                    self.data.ctrl[aid] = self.DEFAULT_QPOS[i]
         if self.right_gripper_aid >= 0:
             self.data.ctrl[self.right_gripper_aid] = GRIPPER_OPEN
         for jname, qval in (
@@ -1056,11 +1067,11 @@ class G1Robot(Robot):
         # Waist gets 0.4x the arm's noise range so the trunk stays closer to neutral.
         per_dim = np.full(len(idx), radius, dtype=np.float64)
         per_dim[:3] = radius * 0.4
-        sampled = DEFAULT_QPOS[idx] + np_random.uniform(-per_dim, per_dim)
+        sampled = self.DEFAULT_QPOS[idx] + np_random.uniform(-per_dim, per_dim)
         sampled[self._UPPER_GRIPPER_LOCAL] = float(np_random.uniform(GRIPPER_OPEN, GRIPPER_CLOSED))
         for i, jidx in enumerate(idx):
             jid = mj.mj_name2id(
-                self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{JOINT_NAMES[jidx]}"
+                self.model, mj.mjtObj.mjOBJ_JOINT, f"{self._namespace}{self.JOINT_NAMES[jidx]}"
             )
             if jid >= 0:
                 lo, hi = self.model.jnt_range[jid]
@@ -1085,7 +1096,7 @@ class G1Robot(Robot):
         right_Joint2_1 to right_Joint1_1."""
         if not joints_dict:
             return
-        for i, jname in enumerate(JOINT_NAMES):
+        for i, jname in enumerate(self.JOINT_NAMES):
             if jname in joints_dict:
                 self.data.qpos[self._qpos_ids[i]] = float(joints_dict[jname])
                 aid = int(self.act_ids[i])
