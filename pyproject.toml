@@ -302,6 +302,9 @@ ignore = [
     "E501", # don't complain about line-length (handled by line-length setting)
     "B006", # defaults shouldn't be mutable
     "UP015", # redundant mode arguments in open should be fine for now
+    "UP040", # keep TypeAlias: `type X = ...` makes a lazy TypeAliasType, which pydantic unions handle differently
+    "UP046", # PEP 695 generics: not worth a rewrite with the 3.12 bump
+    "UP047", # PEP 695 generics: not worth a rewrite with the 3.12 bump
     "SIM117", # allow nested with statements for now
     "SIM102", # don't be picky about nested if statements
     "SIM114", # don't be picky about merging if branches using or
