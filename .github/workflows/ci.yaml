@@ -52,27 +52,46 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache OSMesa packages
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: ~/osmesa-debs
+          # The .deb set depends on the runner image, so a new image gets a fresh cache.
+          key: osmesa-debs-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-v1
+
       - name: Install OSMesa dependencies
         if: runner.os == 'Linux'
         # A stalled mirror used to hang this step for hours: apt has no timeout of
-        # its own and the step had none either. Cap each attempt so a stall becomes
-        # a retry rather than a hang, and cap the step so we fail in 5 minutes
-        # instead of holding the runner.
-        timeout-minutes: 5
+        # its own. Cap each network attempt so a stall becomes a retry rather than a
+        # hang. The .debs are cached, so the mirror is only hit on a cache miss; the
+        # install itself runs offline so a slow download can't eat its time budget.
+        timeout-minutes: 10
         run: |
+          PKGS="libgl1-mesa-dev libglew-dev libosmesa6-dev"
+          DEBS="$HOME/osmesa-debs"
+          if ls "$DEBS"/*.deb >/dev/null 2>&1 && sudo dpkg -i "$DEBS"/*.deb; then
+            echo "Installed from cached .debs"
+            exit 0
+          fi
+          echo "No usable cached .debs; downloading from the mirror"
           retry() {
             for attempt in 1 2 3; do
-              timeout --kill-after=10s 100s "$@" && return 0
+              timeout --kill-after=10s 150s "$@" && return 0
               if [ "$attempt" -lt 3 ]; then
                 echo "'$*' failed or stalled (attempt ${attempt}/3); retrying in 5s" >&2
                 sleep 5
               fi
             done
-            echo "::error::'$*' did not succeed within the 5 minute budget" >&2
+            echo "::error::'$*' did not succeed after 3 attempts" >&2
             return 1
           }
           retry sudo apt-get update
-          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
+          # Partial downloads persist in /var/cache/apt/archives, so retries resume.
+          retry sudo apt-get install -y --fix-missing --download-only $PKGS
+          sudo apt-get install -y --no-download $PKGS
+          mkdir -p "$DEBS"
+          cp /var/cache/apt/archives/*.deb "$DEBS"/
 
       - name: Set MuJoCo rendering backend
         if: runner.os == 'Linux'
@@ -154,26 +173,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache OSMesa packages
+        uses: actions/cache@v4
+        with:
+          path: ~/osmesa-debs
+          # The .deb set depends on the runner image, so a new image gets a fresh cache.
+          key: osmesa-debs-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-v1
+
       - name: Install OSMesa dependencies
         # A stalled mirror used to hang this step for hours: apt has no timeout of
-        # its own and the step had none either. Cap each attempt so a stall becomes
-        # a retry rather than a hang, and cap the step so we fail in 5 minutes
-        # instead of holding the runner.
-        timeout-minutes: 5
+        # its own. Cap each network attempt so a stall becomes a retry rather than a
+        # hang. The .debs are cached, so the mirror is only hit on a cache miss; the
+        # install itself runs offline so a slow download can't eat its time budget.
+        timeout-minutes: 10
         run: |
+          PKGS="libgl1-mesa-dev libglew-dev libosmesa6-dev"
+          DEBS="$HOME/osmesa-debs"
+          if ls "$DEBS"/*.deb >/dev/null 2>&1 && sudo dpkg -i "$DEBS"/*.deb; then
+            echo "Installed from cached .debs"
+            exit 0
+          fi
+          echo "No usable cached .debs; downloading from the mirror"
           retry() {
             for attempt in 1 2 3; do
-              timeout --kill-after=10s 100s "$@" && return 0
+              timeout --kill-after=10s 150s "$@" && return 0
               if [ "$attempt" -lt 3 ]; then
                 echo "'$*' failed or stalled (attempt ${attempt}/3); retrying in 5s" >&2
                 sleep 5
               fi
             done
-            echo "::error::'$*' did not succeed within the 5 minute budget" >&2
+            echo "::error::'$*' did not succeed after 3 attempts" >&2
             return 1
           }
           retry sudo apt-get update
-          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
+          # Partial downloads persist in /var/cache/apt/archives, so retries resume.
+          retry sudo apt-get install -y --fix-missing --download-only $PKGS
+          sudo apt-get install -y --no-download $PKGS
+          mkdir -p "$DEBS"
+          cp /var/cache/apt/archives/*.deb "$DEBS"/
 
       - name: Set MuJoCo rendering backend
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
