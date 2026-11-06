@@ -7,7 +7,8 @@ their "unset" sentinel of -1 and the whole scene is shaded by one undifferentiat
 legacy response. This module fills that gap at load time, from the material
 composition already recorded in the objathor metadata.
 
-What the shipped Filament PBR shader (``bin/filament/assets/pbr.filamat``) actually
+What Filament's PBR shader (``pbr.filamat``; read from the pre-4.0 custom wheel's
+copy, MuJoCo 4.0 ships its own in ``mujoco/studio/assets``) actually
 does with the numbers we set -- this drives every decision below::
 
     material.roughness  = RoughnessFactor;                 // <- mat_roughness
@@ -747,10 +748,11 @@ def _is_transparent(material) -> bool:
     return float(material.rgba[3]) < 1.0
 
 
-# The shader reads only the red channel of the roughness and metallic maps, but
-# MuJoCo's filament texture upload sizes its KTX buffer for three channels and
-# aborts with "KTX buffer is too small" on a single-channel texture, so the value is
-# replicated across RGB.
+# The shader reads only the red channel of the roughness and metallic maps, but the
+# pre-4.0 custom Filament wheel's texture upload sized its KTX buffer for three
+# channels and aborted with "KTX buffer is too small" on a single-channel texture, so
+# the value is replicated across RGB. Three channels also work on MuJoCo 4.0 (whether
+# one would is unchecked).
 _TEXTURE_CHANNELS = 3
 
 

@@ -748,9 +748,7 @@ def main():
             renderer.close()
             if image is not None and render_px != args.tile_size:
                 image = np.asarray(
-                    Image.fromarray(image).resize(
-                        (args.tile_size, args.tile_size), Image.LANCZOS
-                    )
+                    Image.fromarray(image).resize((args.tile_size, args.tile_size), Image.LANCZOS)
                 )
             if image is None:
                 log.warning("Skipping %s: empty/degenerate AABB", instance.instance_key)
