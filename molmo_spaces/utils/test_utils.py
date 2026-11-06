@@ -1091,6 +1091,7 @@ def verify_video_fps(dir: Path, expected_fps: float):
 
     for vid_file in dir.glob("*.mp4"):
         fps = VideoDecoder(str(vid_file)).metadata.average_fps
+        assert fps is not None, "Must have valid fps in the metadata"
         assert np.isclose(fps, expected_fps, atol=1e-2), (
             f"Expected {vid_file} to be {expected_fps} fps, got {fps}"
         )
