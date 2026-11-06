@@ -72,7 +72,7 @@ jobs:
             return 1
           }
           retry sudo apt-get update
-          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev ffmpeg
+          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
 
       - name: Set MuJoCo rendering backend
         if: runner.os == 'Linux'
@@ -173,7 +173,19 @@ jobs:
             return 1
           }
           retry sudo apt-get update
-          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev ffmpeg
+          retry sudo apt-get install -y --fix-missing libgl1-mesa-dev libglew-dev libosmesa6-dev
+
+      - name: Install FFmpeg (torchcodec loads it at runtime)
+        # ~100 MB with recommends; on a slow mirror that alone blew the 5 minute
+        # OSMesa budget, so it gets its own step and a longer cap.
+        timeout-minutes: 10
+        run: |
+          for attempt in 1 2 3; do
+            timeout --kill-after=10s 180s sudo apt-get install -y --no-install-recommends --fix-missing ffmpeg && exit 0
+            echo "ffmpeg install failed or stalled (attempt ${attempt}/3); retrying in 5s" >&2
+            sleep 5
+          done
+          exit 1
 
       - name: Set MuJoCo rendering backend
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
