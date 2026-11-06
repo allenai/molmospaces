@@ -6,7 +6,7 @@ import tyro
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
 
-from .common import ROBOTS_INFO, ExampleBaseArgs
+from .common import ALL_ROBOTS_INFO, ExampleBaseArgs
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
@@ -19,10 +19,10 @@ class Args(ExampleBaseArgs):
 def main() -> int:
     args = tyro.cli(Args)
 
-    if args.robot_id not in ROBOTS_INFO:
+    if args.robot_id not in ALL_ROBOTS_INFO:
         return 1
 
-    robot_info = ROBOTS_INFO[args.robot_id]
+    robot_info = ALL_ROBOTS_INFO[args.robot_id]
     robot_config = robot_info.config
     robot_cls = robot_config.robot_cls
     assert robot_cls, f"Robot class from config of robot '{args.robot_id}' not defined"
