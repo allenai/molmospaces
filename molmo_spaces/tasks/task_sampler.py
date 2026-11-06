@@ -18,7 +18,6 @@ from typing import Any
 
 import mujoco
 import numpy as np
-import torch
 from mujoco import MjData, MjSpec
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig
@@ -26,12 +25,12 @@ from molmo_spaces.env.env import BaseMujocoEnv, CPUMujocoEnv
 from molmo_spaces.env.randomization.dynamics import DynamicsRandomizer
 from molmo_spaces.env.randomization.lighting import LightingRandomizer
 from molmo_spaces.env.randomization.texture import TextureRandomizer
+from molmo_spaces.env.scene import spec_ops
 from molmo_spaces.env.scene.thor.fixups import get_all_bodies_with_joints_as_mlspaces_objects
 
 # Dataset helpers for house index mapping
 from molmo_spaces.molmo_spaces_constants import (
     ABS_PATH_OF_TOP_LEVEL_MOLMO_SPACES_DIR,
-    DATA_TYPE_TO_SOURCE_TO_VERSION,
     get_scenes,
     get_scenes_root,
 )
@@ -312,16 +311,8 @@ class BaseMujocoTaskSampler:
         seed = self.config.seed if self.config.seed is not None else np.random.randint(0, 100000000)
         self.seed_task_sampling(seed)
 
-        # Log data versions being used
-        log.info(f"Data versions in use: {DATA_TYPE_TO_SOURCE_TO_VERSION}")
-
     @property
     def env(self) -> BaseMujocoEnv:
-        # """Get the environment instance, creating it if necessary."""
-        # if self._env is None:
-        #     # Create environment without any scene loaded
-        #     # Scene will be loaded via load_scene() when needed
-        #     self._env = self._create_env()
         return self._env
 
     def close(self) -> None:
@@ -429,7 +420,8 @@ class BaseMujocoTaskSampler:
         self.current_seed = seed
         random.seed(seed)
         np.random.seed(seed)
-        torch.manual_seed(seed)
+        # current task sampling does not use torch, but if you do remeber to seed it.
+        # torch.manual_seed(seed)
 
     def _create_robot(self, mj_data: MjData) -> Robot:
         # TODO(wilbert): uhmmm, there's way too much of these cases where an attribute of a config
@@ -614,6 +606,12 @@ class BaseMujocoTaskSampler:
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_robot_add")
 
+        # Freeze the house here, before add_auxiliary_objects: gold freezes the
+        # scene as loaded, and anything the task adds afterwards (place
+        # receptacles, added pickupables) must keep the freejoint its placement
+        # code moves it by.
+        self._freeze_house_bodies(spec, scene_file_path)
+
         # Track auxiliary object loading time (task-specific assets)
         if self._datagen_profiler is not None:
             self._datagen_profiler.start("compile_aux_objects")
@@ -648,6 +646,8 @@ class BaseMujocoTaskSampler:
 
         _delete_blacklisted_bodies(spec)
         _delete_license_blocked_bodies(spec)
+
+        self._apply_spec_ops(spec, scene_file_path, robot_config)
 
         # Compile and return the model
         try:
@@ -689,7 +689,83 @@ class BaseMujocoTaskSampler:
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_mujoco")
 
+        if self.config.task_sampler_config.cap_freejoint_damping:
+            spec_ops.cap_freejoint_damping(model)
+
         return model
+
+    def _freeze_house_bodies(self, spec, scene_file_path) -> None:
+        """Strip joints/collisions from house bodies that are not sampling
+        candidates -- gold's `Scene._optimize`, see spec_ops.
+
+        Inert unless `mobile_object_regex` is set. Called before
+        `add_auxiliary_objects` so task-added objects keep their joints.
+        """
+        tsc = self.config.task_sampler_config
+        if not tsc.freeze_non_mobile or tsc.mobile_object_regex is None:
+            return
+
+        from molmo_spaces.utils.scene_metadata_utils import get_scene_metadata
+
+        metadata = get_scene_metadata(scene_file_path) or {}
+        frozen = spec_ops.freeze_non_mobile_bodies(
+            spec,
+            metadata,
+            mobile_regex=tsc.mobile_object_regex,
+            articulated_regex=tsc.articulated_object_regex,
+            robot_prefix="robot_0/",
+        )
+        log.info(
+            "Froze %d non-mobile bodies (mobile_object_regex=%r)",
+            frozen,
+            tsc.mobile_object_regex,
+        )
+
+    def _apply_spec_ops(self, spec, scene_file_path, robot_config) -> None:
+        """Gold's remaining pre-compile MjSpec edits, each behind its own config
+        flag. The freeze already ran in `_freeze_house_bodies`;
+        `cap_freejoint_damping` is post-compile and runs in the caller.
+        """
+        tsc = self.config.task_sampler_config
+        prefix = "robot_0/"
+
+        if tsc.enable_scene_sleep:
+            spec_ops.enable_sleep(spec)
+
+        if tsc.add_grasp_probe:
+            # The single producer of grasp probes, for every shape. Which shapes,
+            # how many and what size all come from the policy that consumes them,
+            # so a scene carries only the probes something actually drives --
+            # each one is a freejointed body that costs DOF on every sim step.
+            # Policies that carry no grasp settings get gold's jaw defaults.
+            pc = self.config.policy_config
+            shapes = getattr(pc, "grasp_probe_shapes", (spec_ops.PROBE_SHAPE_JAW,))
+            jaw_kwargs = {}
+            if hasattr(pc, "grasp_width"):
+                jaw_kwargs = dict(
+                    count=pc.grasp_collision_batch_size,
+                    width=pc.grasp_width,
+                    length=pc.grasp_length,
+                    height=pc.grasp_height,
+                    base_pos=np.asarray(pc.grasp_base_pos, dtype=np.float64),
+                )
+            if spec_ops.PROBE_SHAPE_JAW in shapes:
+                spec_ops.add_grasp_probes(spec, shape=spec_ops.PROBE_SHAPE_JAW, **jaw_kwargs)
+            # The robot's own gripper model, when it ships one beside its MJCF.
+            # Only the policies that drive it ask for this shape; a missing file
+            # is a no-op, which is how a robot without a gripper model skips it.
+            if spec_ops.PROBE_SHAPE_GRIPPER_XML in shapes and hasattr(
+                robot_config, "get_robot_xml_path"
+            ):
+                spec_ops.add_grasp_probes(
+                    spec,
+                    count=1,
+                    shape=spec_ops.PROBE_SHAPE_GRIPPER_XML,
+                    gripper_xml=robot_config.get_robot_xml_path().parent / "gripper_probe.xml",
+                )
+
+        if tsc.weld_robot_base:
+            spec_ops.add_base_weld(spec, robot_prefix=prefix)
 
     def add_auxiliary_objects(self, spec: MjSpec | None) -> None:
         """Add add auxiliary objects to  a scene or make task specific model changes

@@ -81,7 +81,7 @@ class DoorOpeningDataGenConfig(MlSpacesExpConfig):
     def _init_policy_config(self) -> DoorOpeningPolicyConfig:
         """Initialize policy config with dynamically computed planner configs"""
         # Import GPU-requiring modules only when actually creating policy (requires GPU)
-        from molmo_spaces.planner.curobo_planner import CuroboPlannerConfig
+        from molmo_spaces.planner.curobo_planner_config import CuroboPlannerConfig
         from molmo_spaces.policy.solvers.opening_solver import DoorOpeningPlannerPolicy
 
         # Setup curobo planner configs with current ctrl_dt_ms

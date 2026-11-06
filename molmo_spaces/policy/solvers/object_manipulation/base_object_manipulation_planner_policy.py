@@ -16,7 +16,6 @@ from molmo_spaces.env.abstract_sensors import Sensor
 from molmo_spaces.policy.base_policy import PlannerPolicy
 from molmo_spaces.robots.robot_views.abstract import RobotView
 from molmo_spaces.tasks.task import BaseMujocoTask
-from molmo_spaces.utils.grasp_sample import add_grasp_collision_bodies
 from molmo_spaces.utils.linalg_utils import transform_to_twist, twist_to_transform
 from molmo_spaces.utils.pose import pose_mat_to_7d
 from molmo_spaces.utils.profiler_utils import Timer
@@ -48,11 +47,23 @@ class TCPMoveSegment(MoveSegment):
     start_pose: np.ndarray
     end_pose: np.ndarray
     speed: float
+    # rad/s -- caps how fast the segment's slerp asks the TCP to rotate. Only
+    # matters when a segment needs a large reorientation over a small
+    # translation (duration was previously sized from linear distance alone,
+    # discarding the angular twist component entirely -- forcing an
+    # arbitrarily fast implied rotation rate for e.g. a short pregrasp
+    # approach that still needs to swing the gripper 90+ degrees). Can only
+    # lengthen a segment relative to the old linear-only duration, never
+    # shorten it, so this is safe for controllers that already tracked fine.
+    angular_speed: float = 1.5
 
     @property
     def duration(self) -> float:
-        lin_vel, _ = transform_to_twist(np.linalg.inv(self.start_pose) @ self.end_pose)
-        return np.linalg.norm(lin_vel) / self.speed
+        lin_vel, ang_vel = transform_to_twist(np.linalg.inv(self.start_pose) @ self.end_pose)
+        return max(
+            np.linalg.norm(lin_vel) / self.speed,
+            np.linalg.norm(ang_vel) / self.angular_speed,
+        )
 
 
 @dataclass
@@ -83,6 +94,10 @@ class ActionPrimitive(ABC):
         self.robot_view = robot_view
         self.duration = duration
         self.start_time = None
+        # Set by check_failure() on the primitive it returns True for -- surfaced
+        # by BaseObjectManipulationPlannerPolicy._handle_failure() so "Failure
+        # detected!" logs say *why* instead of just *that*.
+        self.last_failure_reason: str = ""
 
     @abstractmethod
     def execute(self) -> bool:
@@ -183,13 +198,13 @@ class MoveSequence(ActionPrimitive):
         if self.is_holding_object:
             gripper_mg_id = self.robot_view.get_gripper_movegroup_ids()[0]
             gripper = self.robot_view.get_gripper(gripper_mg_id)
-            if (
-                gripper.inter_finger_dist
-                < gripper.inter_finger_dist_range[0] + self.gripper_empty_threshold
-            ):
-                log.info(
-                    f"Object is not in grasp! {gripper.inter_finger_dist:.05f} < {gripper.inter_finger_dist_range[0] + self.gripper_empty_threshold:05f}"
+            min_dist = gripper.inter_finger_dist_range[0] + self.gripper_empty_threshold
+            if gripper.inter_finger_dist < min_dist:
+                self.last_failure_reason = (
+                    f"object slipped out of grasp during '{self.get_current_phase()}': "
+                    f"inter_finger_dist={gripper.inter_finger_dist:.5f}m < {min_dist:.5f}m"
                 )
+                log.info(f"❌ {self.last_failure_reason}")
                 return True
 
         return False
@@ -266,7 +281,15 @@ class TCPMoveSequence(MoveSequence):
         trf = np.linalg.inv(gripper.leaf_frame_to_world) @ curr_target_pose
         pos_err = np.linalg.norm(trf[:3, 3])
         rot_err = R.from_matrix(trf[:3, :3]).magnitude()
-        return pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold
+        if pos_err > self.tcp_pos_err_threshold or rot_err > self.tcp_rot_err_threshold:
+            self.last_failure_reason = (
+                f"TCP tracking error exceeded threshold during '{self.get_current_phase()}': "
+                f"pos_err={pos_err:.4f}m (max {self.tcp_pos_err_threshold:.4f}m), "
+                f"rot_err={np.degrees(rot_err):.1f}deg (max {np.degrees(self.tcp_rot_err_threshold):.1f}deg)"
+            )
+            log.info(f"❌ {self.last_failure_reason}")
+            return True
+        return False
 
 
 class JointMoveSequence(MoveSequence):
@@ -504,6 +527,7 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
         else:
             action = self.action_primitives[-1].get_current_action()
             action["done"] = True
+            log.info("[POLICY] All action primitives completed, setting done=True")
         return action
 
     def get_phase(self) -> str:
@@ -520,18 +544,34 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
     def _check_for_failures(self) -> bool:
         # TODO(abhayd): check for collision with other objects
         if self.action_idx >= len(self.action_primitives):
+            log.debug(
+                f"[FAILURE CHECK] action_idx={self.action_idx} >= num_primitives={len(self.action_primitives)}, all primitives exhausted"
+            )
             return True
         action_primitive = self.action_primitives[self.action_idx]
         return action_primitive.check_failure()
 
     def _handle_failure(self) -> dict[str, Any]:
+        # Grab the reason before reset() below replaces action_primitives with a
+        # freshly recomputed trajectory (which starts with a blank
+        # last_failure_reason).
+        reason = (
+            self.action_primitives[self.action_idx].last_failure_reason
+            if self.action_idx < len(self.action_primitives)
+            else "ran out of action primitives without completing"
+        )
+
         if self.retry_count >= self.policy_config.max_retries:
-            log.info(f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed.")
+            log.info(
+                f"❌ Max retries ({self.policy_config.max_retries}) exceeded. Task failed. "
+                f"Last failure: {reason}"
+            )
             return {"done": True, "success": False}
 
         self._retry_count += 1
         log.info(
-            f"🔄 Failure detected! Initiating retry {self.retry_count}/{self.policy_config.max_retries}"
+            f"🔄 Failure detected ({reason})! Initiating retry "
+            f"{self.retry_count}/{self.policy_config.max_retries}"
         )
         self.reset(reset_retries=False)
 
@@ -541,8 +581,10 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
     def _tcp_to_jp_fn(self, mg_id: str, target_pose: np.ndarray) -> dict[str, Any]:
         kinematics = self.task.env.current_robot.kinematics
 
-        gripper_mgs = set(self.robot_view.get_gripper_movegroup_ids())
-        mgs_except_gripper = [x for x in self.robot_view.move_group_ids() if x not in gripper_mgs]
+        excluded_mgs = set(self.robot_view.get_gripper_movegroup_ids()) | set(
+            self.robot_view.get_ik_excluded_movegroup_ids()
+        )
+        mgs_except_gripper = [x for x in self.robot_view.move_group_ids() if x not in excluded_mgs]
 
         jp = kinematics.ik(
             mg_id,
@@ -582,10 +624,15 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
             robot_view = self.task.env.current_robot.robot_view
             parallel_kinematics = self.task.env.current_robot.parallel_kinematics
             gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
+            unlocked_mgs = [
+                x
+                for x in robot_view.move_group_ids()
+                if x not in robot_view.get_ik_excluded_movegroup_ids()
+            ]
             jp_dicts = parallel_kinematics.ik(
                 gripper_mg_id,
                 pose,
-                None,
+                unlocked_mgs,
                 robot_view.get_qpos_dict(),
                 robot_view.base.pose,
                 rel_to_base=False,
@@ -596,10 +643,15 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
             robot_view = self.task.env.current_robot.robot_view
             kinematics = self.task.env.current_robot.kinematics
             gripper_mg_id = robot_view.get_gripper_movegroup_ids()[0]
+            unlocked_mgs = [
+                x
+                for x in robot_view.move_group_ids()
+                if x not in robot_view.get_ik_excluded_movegroup_ids()
+            ]
             jp_dict = kinematics.ik(
                 gripper_mg_id,
                 pose,
-                robot_view.move_group_ids(),
+                unlocked_mgs,
                 robot_view.get_qpos_dict(),
                 base_pose=robot_view.base.pose,
             )
@@ -655,17 +707,47 @@ class BaseObjectManipulationPlannerPolicy(PlannerPolicy):
                 i += 1
         viewer.user_scn.ngeom = ngeom + i
 
+    def _show_axes(self, pose: np.ndarray, length: float = 0.1, radius: float = 0.004) -> None:
+        """Draw an X/Y/Z axis triad at the given 4x4 world pose.
+
+        Red=X, Green=Y, Blue=Z. Useful for confirming a body's local frame
+        (e.g. where the place-receptacle origin sits relative to its AABB).
+        """
+        if self.task.viewer is None:
+            return
+        assert pose.shape == (4, 4)
+        viewer = self.task.viewer
+        ngeom = viewer.user_scn.ngeom
+        half_length = length / 2
+        rot = pose[:3, :3]
+        origin = pose[:3, 3]
+        # MuJoCo cylinders extend along their local Z. For each axis, rotate so
+        # the cylinder's Z aligns with the desired world axis, then translate the
+        # cylinder's center half_length along that axis from `origin`.
+        axes = [
+            ((1, 0, 0, 1), np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], dtype=float)),  # X
+            ((0, 1, 0, 1), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=float)),  # Y
+            ((0, 0, 1, 1), np.eye(3)),  # Z
+        ]
+        for i, (color, R_local) in enumerate(axes):
+            R_world = rot @ R_local
+            center = origin + R_world @ np.array([0.0, 0.0, half_length])
+            mujoco.mjv_initGeom(
+                viewer.user_scn.geoms[ngeom + i],
+                type=mujoco.mjtGeom.mjGEOM_CYLINDER,
+                size=np.array([radius, half_length, 0.0]),
+                pos=center,
+                mat=R_world.flatten(),
+                rgba=color,
+            )
+        viewer.user_scn.ngeom = ngeom + 3
+
     @staticmethod
     def add_auxiliary_objects(config: MlSpacesExpConfig, spec: MjSpec) -> None:
         PlannerPolicy.add_auxiliary_objects(config, spec)
         policy_config = config.policy_config
         assert isinstance(policy_config, ObjectManipulationPlannerPolicyConfig)
-        if policy_config.filter_colliding_grasps:
-            add_grasp_collision_bodies(
-                spec,
-                policy_config.grasp_collision_batch_size,
-                policy_config.grasp_width,
-                policy_config.grasp_length,
-                policy_config.grasp_height,
-                np.array(policy_config.grasp_base_pos),
-            )
+        # Grasp probes are NOT added here. The scene build owns them
+        # (task_sampler._apply_spec_ops -> spec_ops.add_grasp_probes),
+        # so there is one producer and one set of bodies; adding them here too
+        # is what used to leave a duplicate probe in every scene.

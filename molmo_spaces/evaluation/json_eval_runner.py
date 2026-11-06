@@ -111,6 +111,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
         self,
         exp_config: MlSpacesExpConfig,
         benchmark_dir: Path,
+        house_inds: list[int] | None = None,
     ) -> None:
         """
         Initialize the JSON eval runner.
@@ -142,6 +143,23 @@ class JsonEvalRunner(ParallelRolloutRunner):
         for ep in all_episodes:
             self._episodes_by_house[ep.house_index].append(ep)
         self._episodes_by_house = dict(self._episodes_by_house)
+
+        if house_inds is not None:
+            requested = set(house_inds)
+            missing = requested - self._episodes_by_house.keys()
+            if missing:
+                log.warning(
+                    "Requested house_inds %s not present in benchmark; ignoring them.",
+                    sorted(missing),
+                )
+            self._episodes_by_house = {
+                h: eps for h, eps in self._episodes_by_house.items() if h in requested
+            }
+            if not self._episodes_by_house:
+                raise ValueError(
+                    f"After filtering by house_inds={sorted(requested)}, no episodes remain "
+                    f"in benchmark at {self.benchmark_dir}."
+                )
 
         # If episode_idx is specified, only process the house containing that episode
         episode_idx = eval_params.episode_idx
@@ -225,7 +243,7 @@ class JsonEvalRunner(ParallelRolloutRunner):
         house_episodes = [ep for ep in all_episodes if ep.house_index == house_id]
 
         if not house_episodes:
-            available_houses = sorted(set(ep.house_index for ep in all_episodes))
+            available_houses = sorted({ep.house_index for ep in all_episodes})
             worker_logger.error(
                 f"House {house_id} not found in benchmark. Available houses: {available_houses}"
             )

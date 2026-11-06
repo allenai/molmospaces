@@ -47,6 +47,47 @@ Some TODOs:
 """
 
 
+def split_by_max_dist(waypoints: np.ndarray, max_dist: float) -> np.ndarray:
+    """Split the segment `waypoints` (shape (2, 2)) into a chain of waypoints no
+    more than `max_dist` apart, excluding the start point.
+
+    Module level because the interactive shell's direct-drive moves chunk their
+    straight-line segments with this same function, so a hand-driven step and a
+    planned path command the base at the same spacing (and so at the same speed).
+    """
+    assert waypoints.shape == (2, 2)
+
+    direction = waypoints[-1] - waypoints[0]
+
+    dist = np.linalg.norm(direction)
+    num_points = int(np.ceil(dist / max_dist))
+    if num_points <= 1:
+        return waypoints[1:]
+
+    stops = np.linspace(0, 1, num_points + 1)[1:]
+    return waypoints[:1] + direction[None, :] * stops[:, None]
+
+
+def split_by_max_angle(angles: np.ndarray, max_angle: float) -> np.ndarray:
+    """Slerp `angles` (shape (2, 1)) into a chain of yaws no more than
+    `max_angle` apart, excluding the start angle. See `split_by_max_dist`."""
+    assert angles.shape == (2, 1)
+
+    angle = float(abs(normalize_ang_error(angles[1] - angles[0])).squeeze())
+    num_points = int(np.ceil(angle / max_angle))
+    if num_points <= 1:
+        # Enforce always at least one orientation correction
+        return angles[1:]
+
+    steps = np.linspace(0, 1, num_points + 1)[1:]
+    r0 = R.from_euler("z", angles[0], degrees=False)
+    r1 = R.from_euler("z", angles[1], degrees=False)
+    rots = Slerp([0, 1], R.concatenate([r0, r1]))(steps)
+    new_angles = rots.as_euler("xyz", degrees=False)[:, 2:]
+
+    return new_angles
+
+
 class AStarPlannerPolicy(PlannerPolicy):
     def __init__(self, config: MlSpacesExpConfig, task: BaseMujocoTask) -> None:
         super().__init__(config, task)
@@ -217,34 +258,10 @@ class AStarPlannerPolicy(PlannerPolicy):
         return np.concatenate([waypoints[: last_out + 1], intersection[None, :]])
 
     def max_dist_waypoints(self, waypoints: np.ndarray) -> np.ndarray:
-        assert waypoints.shape == (2, 2)
-
-        direction = waypoints[-1] - waypoints[0]
-
-        dist = np.linalg.norm(direction)
-        num_points = int(np.ceil(dist / self.config.policy_config.path_max_inter_waypoint_dist))
-        if num_points <= 1:
-            return waypoints[1:]
-
-        stops = np.linspace(0, 1, num_points + 1)[1:]
-        return waypoints[:1] + direction[None, :] * stops[:, None]
+        return split_by_max_dist(waypoints, self.config.policy_config.path_max_inter_waypoint_dist)
 
     def max_angle_waypoints(self, angles: np.ndarray) -> np.ndarray:
-        assert angles.shape == (2, 1)
-
-        angle = float(abs(normalize_ang_error(angles[1] - angles[0])).squeeze())
-        num_points = int(np.ceil(angle / self.config.policy_config.path_max_inter_waypoint_angle))
-        if num_points <= 1:
-            # Enofrce always at least one orientation correction
-            return angles[1:]
-
-        steps = np.linspace(0, 1, num_points + 1)[1:]
-        r0 = R.from_euler("z", angles[0], degrees=False)
-        r1 = R.from_euler("z", angles[1], degrees=False)
-        rots = Slerp([0, 1], R.concatenate([r0, r1]))(steps)
-        new_angles = rots.as_euler("xyz", degrees=False)[:, 2:]
-
-        return new_angles
+        return split_by_max_angle(angles, self.config.policy_config.path_max_inter_waypoint_angle)
 
     def interpolate_waypoints(self, waypoints: np.ndarray) -> np.ndarray:
         """
@@ -271,6 +288,16 @@ class AStarPlannerPolicy(PlannerPolicy):
 
         return np.vstack([waypoints[0:1]] + segments)
 
+    def _current_base_theta(self) -> float:
+        """Current base yaw in the world frame.
+
+        Derived from `base.pose` rather than `get_noop_ctrl_dict(["base"])["base"][2]`
+        so it works for both holonomic [x, y, theta] bases (e.g. RBY1) and floating
+        6-DOF bases (e.g. FloatingRUM), whose noop ctrl isn't a planar [x, y, theta].
+        """
+        pose = self.robot_view.base.pose
+        return float(R.from_matrix(pose[:3, :3]).as_euler("xyz")[2])
+
     def build_policy_plan(self, world_waypoints):
         world_waypoints = self.stop_plan(world_waypoints)
 
@@ -282,7 +309,7 @@ class AStarPlannerPolicy(PlannerPolicy):
         combined_waypoints = []
 
         # First, we orient toward the 1st waypoint from the 0-th waypoint
-        start_theta = self.robot_view.get_noop_ctrl_dict(["base"])["base"][2]
+        start_theta = self._current_base_theta()
         for theta in self.max_angle_waypoints(np.stack([[start_theta], thetas[0]])):
             combined_waypoints.append(np.concatenate((world_waypoints[0], theta)))
 
@@ -499,7 +526,17 @@ class AStarPlannerPolicy(PlannerPolicy):
 
 class AStarSmoothPlannerPolicy(AStarPlannerPolicy):
     def build_policy_plan(self, world_waypoints):
-        world_waypoints = self.stop_plan(world_waypoints)
+        stopped_waypoints = self.stop_plan(world_waypoints)
+
+        # splprep fits a cubic spline (k=3) by default, which requires more data
+        # points than the degree (m > k). Short paths - e.g. a nav target within
+        # the same room - can leave too few waypoints after stop_plan trims the
+        # final approach, so fall back to the base class's simpler per-segment
+        # plan instead of crashing.
+        if len(stopped_waypoints) <= 3:
+            return super().build_policy_plan(world_waypoints)
+
+        world_waypoints = stopped_waypoints
 
         plan_length = sum(
             np.linalg.norm(world_waypoints[it] - world_waypoints[it - 1])
@@ -522,7 +559,7 @@ class AStarSmoothPlannerPolicy(AStarPlannerPolicy):
         combined_waypoints = []
 
         # First, we orient toward the 1st waypoint from the 0-th waypoint
-        start_theta = self.robot_view.get_noop_ctrl_dict(["base"])["base"][2]
+        start_theta = self._current_base_theta()
         for theta in self.max_angle_waypoints(np.stack([start_theta, thetas[0]])[:, None]):
             combined_waypoints.append(np.concatenate((world_waypoints[0], theta)))
 

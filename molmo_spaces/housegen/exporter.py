@@ -98,7 +98,7 @@ def run_procthor_generation(house_index: int) -> tuple[bool, str]:
                     False,
                     f"House {house_json_filepath.as_posix()} not found in pre-saved houses",
                 )
-            with open(house_json_filepath, "r") as fhandle:
+            with open(house_json_filepath) as fhandle:
                 house_json = json.load(fhandle)
 
         if house_json is None:
@@ -427,7 +427,7 @@ def main() -> int:
         )
         return 1
 
-    with open(ID_TO_CATEGORY_FILE, "r") as fhandle:
+    with open(ID_TO_CATEGORY_FILE) as fhandle:
         ASSET_ID_TO_OBJECT_TYPE = json.load(fhandle)
 
     # ----------------------------------------------------------------------------------------------
@@ -436,7 +436,7 @@ def main() -> int:
         log.error(f"Couldn't retrieve mat-to-tex file @ '{MATERIALS_TO_TEXTURES_FILE.as_posix()}'")
         return 1
 
-    with open(MATERIALS_TO_TEXTURES_FILE, "r") as fhandle:
+    with open(MATERIALS_TO_TEXTURES_FILE) as fhandle:
         MATERIALS_TO_TEXTURES = json.load(fhandle)
 
     # ----------------------------------------------------------------------------------------------

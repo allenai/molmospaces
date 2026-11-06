@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Iterator, Collection, Callable
+from collections.abc import Iterator, Collection, Callable
 
 from pxr import Sdf, Usd, Ar
 

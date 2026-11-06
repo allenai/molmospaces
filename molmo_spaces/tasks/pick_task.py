@@ -40,6 +40,11 @@ class PickupObjGoalPoseSensor(Sensor):
 class PickTask(BaseMujocoTask):
     """Pick task implementation."""
 
+    def __init__(self, env, config, *args, **kwargs):
+        super().__init__(env, config, *args, **kwargs)
+        # Store the original pickup object name before the planner may mutate it
+        self._original_pickup_obj_name = config.task_config.pickup_obj_name
+
     def get_task_description(self) -> str:
         pickup_obj_name = self.config.task_config.referral_expressions["pickup_obj_name"]
         return f"Pick up the {pickup_obj_name}"
@@ -76,11 +81,7 @@ class PickTask(BaseMujocoTask):
 
     def judge_success(self) -> bool:
         """Judge if the task was successful (for data generation)."""
-
-        if self.config.task_type == "pick":
-            return self.get_info()[0]["success"]
-        else:
-            raise ValueError(f"Invalid action_type {self.config.task_type}")
+        return self.get_info()[0]["success"]
 
     def get_reward(self) -> np.ndarray:
         """Calculate reward for each environment in the batch."""
@@ -117,10 +118,8 @@ class PickTask(BaseMujocoTask):
         for i in range(self._env.n_batch):
             data = self._env.mj_datas[i]
 
-            # Get pickup object using Object class for proper positioning
-            pickup_obj = MlSpacesObject(
-                data=data, object_name=self.config.task_config.pickup_obj_name
-            )
+            # Get pickup object — use original name to avoid mutation by packing planner
+            pickup_obj = MlSpacesObject(data=data, object_name=self._original_pickup_obj_name)
 
             place_target_pos = self.config.task_config.pickup_obj_goal_pose[:3]
             place_target_quat = self.config.task_config.pickup_obj_goal_pose[3:7]
@@ -178,6 +177,12 @@ class PickTask(BaseMujocoTask):
                     "rotation_error": rot_error,
                     "success": success,
                     "episode_step": self.episode_step_count,
+                    # The two terms success is made of, so a caller can tell a
+                    # missed grasp from a lift that fell short or an object
+                    # still touching something else.
+                    "lift_height": float(lift_height),
+                    "only_robot_contact": bool(only_robot_collision),
+                    "robot_contact": bool(robot_collision),
                 }
             )
 

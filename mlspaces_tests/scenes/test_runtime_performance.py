@@ -303,7 +303,7 @@ def show_results_summary_from_file(house_path: Path, settings: TestSettings) -> 
         return
 
     results_info = dict(results=dict(), warnings=dict(), settings=dict())
-    with open(settings.results_path, "r") as fhandle:
+    with open(settings.results_path) as fhandle:
         results_info = json.load(fhandle)
 
     if house_path.stem not in results_info["results"]:
@@ -427,7 +427,7 @@ def run_performance_test(house_path: Path, settings: TestSettings, lock: LockTyp
         with lock if lock is not None else nullcontext():
             errors_dict = dict()
             if settings.errors_path.exists():
-                with open(settings.errors_path, "r") as fhandle:
+                with open(settings.errors_path) as fhandle:
                     errors_dict = json.load(fhandle)
             errors_dict[house_path.stem] = f"Got an error while processing house: {e}"
             with open(settings.errors_path, "w") as fhandle:
@@ -484,7 +484,7 @@ def compare_results(results_a: Path, results_b: Path) -> None:
 def save_results(results_scene: ResultsCache, settings: TestSettings) -> None:
     results_all = dict(results=dict(), warnings=dict(), settings=dict())
     if settings.results_path.is_file():
-        with open(settings.results_path, "r") as fhandle:
+        with open(settings.results_path) as fhandle:
             results_all = json.load(fhandle)
     results_all["settings"] = settings.to_dict()
     results_all["results"][results_scene.house_name] = results_scene.to_dict()

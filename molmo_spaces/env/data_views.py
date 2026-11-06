@@ -1,5 +1,7 @@
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Collection
+from dataclasses import dataclass, field
 from functools import cached_property
 
 import mujoco
@@ -462,6 +464,88 @@ class MlSpacesObject(MlSpacesBody):
         return list(children_lists[body_id])
 
     @staticmethod
+    def collect_joints(
+        model: mujoco.MjModel,
+        body_id: int,
+        *,
+        joint_name_map: dict[str, str] | None = None,
+        scope: "str | Collection[int]" = "subtree",
+        children_lists: list[list[int]] | None = None,
+        joint_types: "Collection[int] | None" = None,
+        exclude_free: bool = False,
+    ) -> tuple[list[str], list[int], list[str], list[int]]:
+        """Enumerate an object's joints. Single implementation behind
+        ObjectManager.get_object_joints / get_articulation_joints,
+        MlSpacesArticulationObject and Door.
+
+        joint_name_map: metadata `name_map.joints` (xml name -> THOR name). When
+            given, only mapped joints are considered and iteration follows the
+            map's order; when None, every joint is considered in joint-id order
+            and the returned THOR names are all "".
+        scope: "subtree" = body_id plus its descendants; "rootid" = every body
+            whose kinematic root is body_id; "all" = no scope filter; or an
+            explicit collection of body ids to test membership against.
+        joint_types: keep only these mjtJoint values (None = any).
+        exclude_free: drop free joints, both by jnt_type and by a THOR name
+            containing "free".
+
+        Returns (joint_xml_names, joint_ids, joint_thor_names, joint_body_ids),
+        all the same length.
+        """
+        if isinstance(scope, str):
+            if scope == "subtree":
+                if children_lists is None:
+                    children_lists = MlSpacesObject.build_children_lists(model)
+                in_scope = {body_id, *MlSpacesObject.get_descendants(children_lists, body_id)}
+            elif scope == "rootid":
+                in_scope = None  # tested per joint below, no set to build
+            elif scope == "all":
+                in_scope = None
+            else:
+                raise ValueError(f"Unknown joint scope {scope!r}")
+        else:
+            in_scope = {int(b) for b in scope}
+            scope = "explicit"
+
+        if joint_name_map is not None:
+            items = [
+                (xml_name, thor_name, mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, xml_name))
+                for xml_name, thor_name in joint_name_map.items()
+            ]
+        else:
+            items = [
+                (mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, jid) or "", "", jid)
+                for jid in range(model.njnt)
+            ]
+
+        xml_names: list[str] = []
+        jids: list[int] = []
+        thor_names: list[str] = []
+        body_ids: list[int] = []
+        for xml_name, thor_name, jid in items:
+            if exclude_free and "free" in thor_name.lower():
+                continue
+            if jid < 0:
+                continue
+            jtype = int(model.jnt_type[jid])
+            if exclude_free and jtype == int(mujoco.mjtJoint.mjJNT_FREE):
+                continue
+            if joint_types is not None and jtype not in joint_types:
+                continue
+            jbid = int(model.jnt_bodyid[jid])
+            if in_scope is not None:
+                if jbid not in in_scope:
+                    continue
+            elif scope == "rootid" and int(model.body(jbid).rootid[0]) != body_id:
+                continue
+            xml_names.append(xml_name)
+            jids.append(int(jid))
+            thor_names.append(thor_name)
+            body_ids.append(jbid)
+
+        return xml_names, jids, thor_names, body_ids
+
+    @staticmethod
     def is_child_name_of(parent_name: str, child_name: str) -> bool:
         return child_name.startswith(parent_name + "_")
 
@@ -542,14 +626,16 @@ class MlSpacesArticulationObject(MlSpacesObject):
     # getters
     def _get_joint_info(self) -> None:
         """Get joint information for the articulation object."""
-        for joint_id in range(self.mj_model.njnt):
-            body_id = self.mj_model.joint(joint_id).bodyid[0]
-            root_body_id = self.mj_model.body(body_id).rootid[0]
-            if root_body_id == self.object_root_id:
-                self.joint_ids.append(joint_id)
-                self.joint_names.append(self.mj_model.joint(joint_id).name)
-                self.joint_id2qpos_adr[joint_id] = self.mj_model.joint(joint_id).qposadr[0]
-                self.joint_id2name[joint_id] = self.mj_model.joint(joint_id).name
+        self._record_joints(
+            MlSpacesObject.collect_joints(self.mj_model, self.object_root_id, scope="rootid")[1]
+        )
+
+    def _record_joints(self, joint_ids: list[int]) -> None:
+        for joint_id in joint_ids:
+            self.joint_ids.append(joint_id)
+            self.joint_names.append(self.mj_model.joint(joint_id).name)
+            self.joint_id2qpos_adr[joint_id] = self.mj_model.joint(joint_id).qposadr[0]
+            self.joint_id2name[joint_id] = self.mj_model.joint(joint_id).name
 
     def get_joint_position(self, i: int) -> float:
         return self.mj_data.qpos[self.get_joint_qpos_adr(i)].copy()
@@ -663,20 +749,10 @@ class Door(MlSpacesArticulationObject):
         """Get joint information for the door object.
 
         Differs from parent by only considering joints that belong to child bodies of the door body."""
-        children_lists = MlSpacesObject.build_children_lists(self.mj_model)
-        child_body_ids = {
-            self.object_id,
-            *MlSpacesObject.get_descendants(children_lists, self.object_id),
-        }
-
-        for joint_id in range(self.mj_model.njnt):
-            body_id = self.mj_model.joint(joint_id).bodyid[0]
-            # Only include joints that belong to child bodies of the door body
-            if body_id in child_body_ids:
-                self.joint_ids.append(joint_id)
-                self.joint_names.append(self.mj_model.joint(joint_id).name)
-                self.joint_id2qpos_adr[joint_id] = self.mj_model.joint(joint_id).qposadr[0]
-                self.joint_id2name[joint_id] = self.mj_model.joint(joint_id).name
+        # Only include joints that belong to the door body or its children.
+        self._record_joints(
+            MlSpacesObject.collect_joints(self.mj_model, self.object_id, scope="subtree")[1]
+        )
 
     def get_hinge_joint_index(self) -> int:
         """Get the index of the door hinge joint (the joint that does not have 'handle' in its name).
@@ -807,3 +883,46 @@ class Door(MlSpacesArticulationObject):
         # Check if point is within circle
         dist_from_center = np.linalg.norm(point_2d - center[:2])  # pyright: ignore[reportIndexIssue] # ty: ignore
         return (dist_from_center <= radius).item()
+
+
+@dataclass
+class SceneObject:
+    """Static metadata record for one object in a loaded scene: identity,
+    category, and (for articulated objects) its joint indices.
+
+    From the FetchMan (g1_molmo) repo, relocated here out of
+    projects/fetchman/components/object.py while dissolving that package.
+
+    Deliberately not merged into MlSpacesObject above, which is a different
+    thing: a live view that resolves position/quat as properties off an
+    MjData. This is an immutable record produced once at scene-load time,
+    carrying the metadata (category, asset_id, THOR joint names) MlSpacesObject
+    does not, and exposing position()/quat() as functions of an explicitly
+    passed `data` -- the contract FetchMan's task/sampler code is written
+    against and verified bit-exact on.
+    """
+
+    body_id: int
+    name: str
+    category: str
+    asset_id: str
+    is_static: bool
+    has_freejoint: bool
+    # Articulation metadata (set by the scene loader for objects with
+    # hinge/slide joints that survive optimization). Empty dicts/lists for
+    # non-articulated objects so the pick task is unaffected.
+    thor_name: str = ""  # e.g. "Dresser_220_1"
+    joint_xml_names: list = field(default_factory=list)  # XML joint names (children)
+    joint_ids: list = field(default_factory=list)  # mj joint ids (same order)
+    joint_thor_names: list = field(default_factory=list)  # THOR names (same order)
+    joint_body_ids: list = field(default_factory=list)  # moving body for each joint
+
+    @property
+    def is_articulated(self) -> bool:
+        return len(self.joint_ids) > 0
+
+    def position(self, data):
+        return data.xpos[self.body_id].copy()
+
+    def quat(self, data):
+        return data.xquat[self.body_id].copy()

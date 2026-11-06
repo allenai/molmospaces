@@ -9,7 +9,7 @@ from collections.abc import Collection
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import mujoco as mj
 import numpy as np
@@ -22,6 +22,7 @@ from molmo_spaces.env.data_views import (
     MlSpacesObject,
     create_mlspaces_body,
 )
+from molmo_spaces.env.scene.spec_ops import is_grasp_probe_body_name
 from molmo_spaces.utils.constants.object_constants import (
     AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA,
 )
@@ -676,8 +677,10 @@ class ObjectManager:
 
         if "excluded" not in cache_in_use[oname]:
             is_excluded = (
-                self._env.config.robot_config.robot_namespace in oname
-            ) or not self._has_visible_geom(self.get_object_body_id(object_or_name_or_id))
+                (self._env.config.robot_config.robot_namespace in oname)
+                or is_grasp_probe_body_name(oname)
+                or not self._has_visible_geom(self.get_object_body_id(object_or_name_or_id))
+            )
             if self._caching_enabled:
                 cache_in_use[oname]["excluded"] = is_excluded
             else:
@@ -746,24 +749,97 @@ class ObjectManager:
 
         return sorted(results, key=lambda x: x.name)
 
+    def get_object_joints(
+        self,
+        object_or_name_or_id: ObjectOrNameOrIdType,
+        *,
+        source: Literal["metadata", "model"] = "metadata",
+        scope: Literal["subtree", "rootid", "all"] = "subtree",
+        joint_types: Collection[int] | None = None,
+        exclude_free: bool = True,
+    ) -> tuple[list[str], list[int], list[str], list[int]]:
+        """Enumerate an object's joints, cached per argument combination.
+
+        The single entry point for every joint scan on an object; the various
+        historical variants are the argument combinations named below.
+
+        source: "metadata" walks the scene metadata's `name_map.joints` (so only
+            mapped joints, in the map's order, with THOR names filled in);
+            "model" walks every joint in joint-id order and returns "" for the
+            THOR names.
+        scope/joint_types/exclude_free: see MlSpacesObject.collect_joints.
+
+        Returns (joint_xml_names, joint_ids, joint_thor_names, joint_body_ids),
+        all the same length.
+        """
+        cache_in_use = self._model_cache
+        oname = self.get_object_name(object_or_name_or_id)
+        cache_key = (
+            "object_joints__"
+            f"{source}__{scope}__"
+            f"{None if joint_types is None else sorted(int(t) for t in joint_types)}__"
+            f"{exclude_free}"
+        )
+
+        if cache_key not in cache_in_use[oname]:
+            result: tuple[list[str], list[int], list[str], list[int]] = ([], [], [], [])
+            jmap: dict[str, str] | None = None
+            if source == "metadata":
+                jmap = (self.object_metadata(oname).get("name_map") or {}).get("joints") or {}
+
+            # No mapped joints at all: skip the body lookup entirely, as the
+            # pre-merge get_articulation_joints did.
+            if jmap or source == "model":
+                # Deliberately NOT get_object_body_id: that builds an
+                # MlSpacesObject, and get_object_by_name asks
+                # is_object_articulable -- i.e. asks us -- before it can pick
+                # the class. Same id, no cycle.
+                root_body_id = int(self.model.body(oname).id)
+                result = MlSpacesObject.collect_joints(
+                    self.model,
+                    root_body_id,
+                    joint_name_map=jmap,
+                    scope=(
+                        {root_body_id, *self.descendants(root_body_id)}
+                        if scope == "subtree"
+                        else scope
+                    ),
+                    joint_types=joint_types,
+                    exclude_free=exclude_free,
+                )
+
+            if self._caching_enabled:
+                cache_in_use[oname][cache_key] = result
+            else:
+                cache_in_use.pop(oname, None)
+                return result
+
+        return cache_in_use[oname][cache_key]
+
+    def get_articulation_joints(
+        self, object_or_name_or_id: ObjectOrNameOrIdType
+    ) -> tuple[list[str], list[int], list[str], list[int]]:
+        """For a top-level object, enumerate every non-free joint in its subtree
+        whose xml name maps to a THOR joint name in the scene metadata's
+        `name_map.joints`. Returns (joint_xml_names, joint_ids, joint_thor_names,
+        joint_body_ids), all the same length -- empty for non-articulated objects.
+        """
+        return self.get_object_joints(object_or_name_or_id)
+
     def is_object_articulable(self, object_name: str) -> bool:
         """
         If it has at least one hinge or slide joint, return True
         else return False
         """
-        body_id = self.model.body(object_name).id
-
-        # go through all joints
-        for joint_id in range(self.model.njnt):
-            # if root body is same as the body_id, then joint is part of object
-            if self.model.body(self.model.joint(joint_id).bodyid[0]).rootid[0] == body_id:
-                if self.model.joint(joint_id).type in [
-                    mj.mjtJoint.mjJNT_HINGE,
-                    mj.mjtJoint.mjJNT_SLIDE,
-                ]:
-                    return True
-
-        return False
+        return bool(
+            self.get_object_joints(
+                object_name,
+                source="model",
+                scope="rootid",
+                joint_types=(mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE),
+                exclude_free=False,
+            )[1]
+        )
 
     def get_object_by_name(self, object_name: str) -> MlSpacesObject | None:
         """Return the top-level object with the specified name, or None if not found."""
@@ -1008,7 +1084,10 @@ class ObjectManager:
                             for tt in self.get_possible_object_types(aname):
                                 if tt == "room":
                                     return aname
-                        raise ValueError("BUG? Floor has no room ancestor")
+                        # Scenes without room-level geometry (e.g. iTHOR floor plans,
+                        # which are single-room and have no "room_"-prefixed bodies)
+                        # have no room ancestor to find - there's just the one room.
+                        return None
 
                 # else: keep searching
                 return dfs(support_name)
@@ -1029,13 +1108,13 @@ class ObjectManager:
         obj = self.get_object(object_or_name_or_id)
         name = obj.name
         category = self.get_annotation_category(obj)
-        synset = self.get_annotation_synset(obj)
-        pos = obj.position
         support = self.get_support_below(obj, receptacle_types)
         room = self.infer_room_name(obj, receptacle_types)
-        on_str = f"on {support}" if support else "on <unknown>"
-        room_str = f"in {room}" if room else "in <unknown>"
-        return f"{name} (category={category} synset={synset}) center=({pos[0]:.3f},{pos[1]:.3f},{pos[2]:.3f}) {on_str}, {room_str}"
+        if support and support != room:
+            loc_str = f"on {support} ({room})" if room else f"on {support}"
+        else:
+            loc_str = f"in {room}" if room else "in <unknown>"
+        return f"{name} [{category}] {loc_str}"
 
     @staticmethod
     def prefilter_with_clip(
@@ -1547,7 +1626,23 @@ class ObjectManager:
         angle_threshold: float = np.radians(30),
         fallback_thres=0.01,  # 1 cm
         attempt_contact: bool = True,
+        full_depth: bool = False,
+        use_raycast_xy: bool = False,
+        use_aabb_fallback: bool = True,
     ) -> list[MlSpacesObject]:
+        """Check which objects are on/in a receptacle using cascading logic:
+
+        1. Contact-based check (if attempt_contact=True)
+        2. Raycast XY check (if use_raycast_xy=True)
+        3. AABB footprint check (if use_aabb_fallback=True)
+
+        An object passes if any level succeeds (combined with Z range check).
+
+        The AABB fallback treats the receptacle's full bounding-box footprint as
+        "on the receptacle". For open containers whose AABB is much larger than the
+        opening (e.g. a box with open flaps) it over-counts; such callers should pass
+        use_aabb_fallback=False and use_raycast_xy=True instead.
+        """
         from shapely.geometry import Point, Polygon
 
         from molmo_spaces.utils.mujoco_scene_utils import body_aabb
@@ -1559,10 +1654,10 @@ class ObjectManager:
 
         cos_threshold = np.cos(angle_threshold)
 
-        object_names = set()
+        matched_names = set()
 
+        # --- Stage 1: Contact-based check ---
         if attempt_contact:
-            # Based on contact with the bench geom id:
             for c in data.contact:
                 root_body1, root_body2 = model.body_rootid[model.geom_bodyid[c.geom]]
                 if (c.geom[0] in bench_geom_ids) ^ (c.geom[1] in bench_geom_ids):
@@ -1574,9 +1669,9 @@ class ObjectManager:
                     if c.pos[2] < body_aabb_center[2] and normal[2] >= cos_threshold:
                         cname = model.body(other_body_id).name
                         if cname in valid_names:
-                            object_names.add(cname)
+                            matched_names.add(cname)
 
-        contactless_object_names = set()
+        # --- Compute receptacle geometry (shared by stages 2 & 3) ---
         seen_poly_z = set()
 
         meta_objs = (self.scene_metadata or {}).get("objects", {})
@@ -1584,59 +1679,145 @@ class ObjectManager:
         # Fallback: list with objects with aabbs overlapping >= 50% in xy with the bench and "just above" in z
         for geom_id in bench_geom_ids:
             # Take full body
-            bc, be = body_aabb(
-                model, data, model.body_rootid[model.geom_bodyid[geom_id].item()].item()
-            )
+            bench_body_id = model.body_rootid[model.geom_bodyid[geom_id].item()].item()
+            bc, be = body_aabb(model, data, bench_body_id)
 
-            # Avoid recomputing if all geom ids are part of the same body
             cur_str = f"{np.round(bc, 3).tolist() + np.round(be, 3).tolist()}"
             if cur_str in seen_poly_z:
                 continue
             seen_poly_z.add(cur_str)
 
-            bench_poly = Polygon(
-                [
-                    Point(bc[0] - be[0] / 2, bc[1] - be[1] / 2),
-                    Point(bc[0] + be[0] / 2, bc[1] - be[1] / 2),
-                    Point(bc[0] + be[0] / 2, bc[1] + be[1] / 2),
-                    Point(bc[0] - be[0] / 2, bc[1] + be[1] / 2),
-                ]
-            )
             bench_z = bc[2] + be[2] / 2
 
-            # # Debug
-            # for object_name in object_names:
-            #     body_id = model.body(object_name).id
-            #     obj_center, obj_ext = body_aabb(model, data, body_id)
-            #     assert bench_poly.contains(Point(*obj_center[:2]))
-            #     obj_base_z = obj_center[2] - obj_ext[2] / 2
-            #     print(body_id, object_name, abs(bench_z - obj_base_z) <= fallback_thres)
+            bench_poly = None
+            if use_aabb_fallback:
+                hx = be[0] / 2
+                hy = be[1] / 2
+                bench_poly = Polygon(
+                    [
+                        Point(bc[0] - hx, bc[1] - hy),
+                        Point(bc[0] + hx, bc[1] - hy),
+                        Point(bc[0] + hx, bc[1] + hy),
+                        Point(bc[0] - hx, bc[1] + hy),
+                    ]
+                )
 
             for obj in objs_to_check:
                 object_name = obj.name
 
-                if object_name in object_names:
+                if object_name in matched_names:
                     continue
                 if object_name not in meta_objs:
-                    continue
-                if object_name in contactless_object_names:
                     continue
 
                 body_id = model.body(object_name).id
                 obj_center, obj_ext = body_aabb(model, data, body_id)
-                if bench_poly.contains(Point(*obj_center[:2])):
-                    obj_base_z = obj_center[2] - obj_ext[2] / 2
-                    # Check the base of the object is somewhere between the bbox center below and the fallback thres above
-                    if -be[2] / 2 <= obj_base_z - bench_z <= fallback_thres:
-                        contactless_object_names.add(object_name)
+                obj_base_z = obj_center[2] - obj_ext[2] / 2
+                z_diff = obj_base_z - bench_z
+                z_lower = -be[2] if full_depth else -be[2] / 2
+                z_inside = z_lower <= z_diff <= fallback_thres
+
+                if not z_inside:
+                    log.debug(
+                        f"[CONTAINMENT] {object_name}: z_inside=False "
+                        f"z_diff={z_diff:.4f} z_range=[{z_lower:.4f}, {fallback_thres:.4f}]"
+                    )
+                    continue
+
+                # --- Stage 2: Raycast XY check ---
+                if use_raycast_xy:
+                    raycast_ok = self._raycast_xy_inside(
+                        model,
+                        data,
+                        obj_center,
+                        bench_body_id,
+                        bc,
+                        be,
+                        object_name,
+                    )
+                    if raycast_ok:
+                        matched_names.add(object_name)
+                        continue
+
+                # --- Stage 3: AABB footprint check ---
+                if bench_poly is not None and bench_poly.contains(Point(*obj_center[:2])):
+                    matched_names.add(object_name)
 
         # Combine all objects in a single list
         object_list = []
-        for object_name in sorted(object_names | contactless_object_names):
+        for object_name in sorted(matched_names):
             if mls_object := self.get_object_by_name(object_name):
                 object_list.append(mls_object)
 
         return object_list
+
+    @staticmethod
+    def _raycast_xy_inside(
+        model,
+        data,
+        obj_center: np.ndarray,
+        bench_body_id: int,
+        bench_center: np.ndarray,
+        bench_extents: np.ndarray,
+        object_name: str = "",
+    ) -> bool:
+        """Check if obj_center is inside the receptacle in XY using raycasts.
+
+        Casts rays in ±X and ±Y from the object's XY position at a Z just above
+        the receptacle base. The point is inside if both rays along each axis
+        hit the receptacle body. The object's own body is excluded from raycasts.
+        """
+        import mujoco as mj
+
+        # Cast from 1cm above the box base so rays hit the walls
+        ray_z = bench_center[2] - bench_extents[2] / 2 + 0.01
+        ray_origin = np.array([obj_center[0], obj_center[1], ray_z], dtype=np.float64)
+
+        geomid = np.zeros(1, dtype=np.int32)
+        dir_labels = ["+X", "-X", "+Y", "-Y"]
+        directions = [
+            np.array([1, 0, 0], dtype=np.float64),
+            np.array([-1, 0, 0], dtype=np.float64),
+            np.array([0, 1, 0], dtype=np.float64),
+            np.array([0, -1, 0], dtype=np.float64),
+        ]
+
+        max_ray_dist = 0.5  # meters
+
+        ray_results = {}
+        inside = True
+        for i in range(0, 4, 2):
+            hits = 0
+            for j in (i, i + 1):
+                # March along the ray, skipping any non-box bodies until we
+                # hit the box or exceed max distance
+                origin = ray_origin.copy()
+                direction = directions[j]
+                total_dist = 0.0
+                found = False
+                for _ in range(20):  # max iterations to skip through other objects
+                    dist = mj.mj_ray(model, data, origin, direction, None, 1, -1, geomid)
+                    if dist < 0:
+                        break
+                    total_dist += dist
+                    if total_dist > max_ray_dist:
+                        break
+                    hit_root = model.body_rootid[model.geom_bodyid[geomid[0]]]
+                    if hit_root == bench_body_id:
+                        ray_results[dir_labels[j]] = f"hit d={total_dist:.3f}"
+                        hits += 1
+                        found = True
+                        break
+                    # Skip past this non-box geom
+                    origin = origin + direction * (dist + 1e-4)
+                if not found:
+                    ray_results[dir_labels[j]] = f"miss (d={total_dist:.3f})"
+            if hits < 2:
+                inside = False
+        log.debug(
+            f"[RAYCAST] {object_name}: origin={np.round(ray_origin, 3).tolist()} inside={inside} rays={ray_results}"
+        )
+        return inside
 
     def objects_on_bench(
         self,

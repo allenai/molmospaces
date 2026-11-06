@@ -319,7 +319,7 @@ def main() -> int:  # noqa: PLR0915
             use_metadata_file = Path(METADATA_FILENAME)
             usd_metadata = {}
             if use_metadata_file.is_file():
-                with open(use_metadata_file, "r") as fhandle:
+                with open(use_metadata_file) as fhandle:
                     usd_metadata = json.load(fhandle)
 
             def grab_thor_assets_xmls(folder_path: Path) -> list[Path]:

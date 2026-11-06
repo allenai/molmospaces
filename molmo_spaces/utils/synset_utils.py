@@ -1,6 +1,75 @@
+import os
+import shutil
+import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Sequence
+from contextlib import contextmanager
 from functools import cache, lru_cache
+from pathlib import Path
+
+
+def _get_nltk_data_dir() -> Path:
+    data_dir = Path(os.environ.get("NLTK_DATA", str(Path.home() / "nltk_data"))).expanduser()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    os.environ["NLTK_DATA"] = str(data_dir)
+    return data_dir
+
+
+@contextmanager
+def _nltk_download_lock(lock_path: Path):
+    import fcntl
+
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("w") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _has_corpus(nltk, corpus: str) -> bool:
+    candidates = (
+        f"corpora/{corpus}",
+        f"corpora/{corpus}.zip",
+        f"corpora/{corpus}.zip/{corpus}",
+    )
+    for candidate in candidates:
+        try:
+            nltk.data.find(candidate)
+            return True
+        except LookupError:
+            continue
+        except (OSError, zipfile.BadZipFile):
+            return False
+    return False
+
+
+def _purge_corpus_artifacts(data_dir: Path, corpus: str) -> None:
+    corpora_dir = data_dir / "corpora"
+    for path in (corpora_dir / corpus, corpora_dir / f"{corpus}.zip"):
+        if path.is_dir():
+            shutil.rmtree(path, ignore_errors=True)
+        elif path.exists():
+            path.unlink()
+
+
+def _ensure_nltk():
+    import nltk
+
+    data_dir = _get_nltk_data_dir()
+    if str(data_dir) not in nltk.data.path:
+        nltk.data.path.insert(0, str(data_dir))
+
+    with _nltk_download_lock(data_dir / ".nltk_download.lock"):
+        for corpus in ("wordnet", "wordnet2022"):
+            if _has_corpus(nltk, corpus):
+                continue
+            _purge_corpus_artifacts(data_dir, corpus)
+            success = nltk.download(corpus, download_dir=str(data_dir), quiet=True)
+            if not success or not _has_corpus(nltk, corpus):
+                raise RuntimeError(f"Failed to download required NLTK corpus: {corpus}")
+
 
 from nltk.corpus.reader import Synset
 
@@ -17,10 +86,7 @@ def get_wordnet():
     """
     global _WORDNET
     if _WORDNET is None:
-        import nltk
-
-        for corpus in ["wordnet", "wordnet2022"]:
-            nltk.download(corpus)
+        _ensure_nltk()
 
         from nltk.corpus import wordnet2022 as wn
 
@@ -930,12 +996,12 @@ def generate_all_hypernyms_with_exclusions(
     if isinstance(synset, str):
         synset = get_wordnet().synset(synset)
 
-    return set(
+    return {
         h
         for hp in synset.hypernym_paths()
         for h in hp
         if (include_self_synset or h != synset) and h.name() not in excluded
-    )
+    }
 
 
 @lru_cache(maxsize=10000, typed=True)
@@ -1003,10 +1069,10 @@ def filter_synsets_to_remove_hyponyms(synsets: Sequence[str] | Sequence[Synset])
 
 def get_all_synsets_in_metadata() -> list[Synset]:
     anns = ObjectMeta.annotation()
-    synsets = set(ann["synset"] for ann in anns.values() if "synset" in ann) | set(
+    synsets = {ann["synset"] for ann in anns.values() if "synset" in ann} | set(
         AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET.values()
     )
-    synsets = sorted(list(set([get_wordnet().synset(s) for s in synsets])), key=lambda s: s.name())
+    synsets = sorted(list({get_wordnet().synset(s) for s in synsets}), key=lambda s: s.name())
     return synsets
 
 
@@ -1054,7 +1120,7 @@ def get_singleton_highest_hypernyms():
     for syn in get_all_synsets_in_metadata():
         highest_hypernyms[get_highest_relevant_hypernym(syn)] += 1
 
-    return set([h for h in highest_hypernyms if highest_hypernyms[h] < 2])
+    return {h for h in highest_hypernyms if highest_hypernyms[h] < 2}
 
 
 def get_highest_relevant_hypernym(

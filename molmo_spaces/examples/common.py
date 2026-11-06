@@ -8,6 +8,7 @@ from molmo_spaces.configs.robot_configs import (
     FloatingRobotiq2f85RobotConfig,
     FloatingRUMRobotConfig,
     FrankaRobotConfig,
+    G1Config,
     I2rtYamRobotConfig,
     MobileFrankaRobotConfig,
     RBY1Config,
@@ -56,6 +57,11 @@ ROBOTS_INFO: dict[str, RobotInfo] = {
     ),
     "mobile-franka": RobotInfo(
         config=MobileFrankaRobotConfig(),
+        init_pos=(0, 0, 0),
+        init_quat=(1, 0, 0, 0),
+    ),
+    "g1": RobotInfo(
+        config=G1Config(),
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),

@@ -22,6 +22,10 @@ from molmo_spaces.utils.pose import pose_mat_to_7d
 
 log = logging.getLogger(__name__)
 
+# Cameras already warned about for missing segmentation-mask support (see the
+# NotImplementedError handler below); keyed by name so each camera says it once.
+_SEGMASK_UNIMPLEMENTED_WARNED: set[str] = set()
+
 
 def _cmd_joint_pos(robot: Robot):
     # if the unnoised cmd joint pos is available, use it
@@ -29,15 +33,14 @@ def _cmd_joint_pos(robot: Robot):
     if unnoised_cmd_jp is not None:
         return unnoised_cmd_jp
 
-    # robot.update_control() hasn't been called yet, recover the command from the controllers
+    # robot.update_control() hasn't been called yet, recover the command from the controllers.
+    # Non-position controllers (e.g. LegsWaistController, whose target is a velocity/height/waist
+    # command, not a joint position) have no sane "position" to report here, so they're omitted
+    # rather than raising -- this path only runs before the first update_control() call.
     cmd_jp: dict[str, np.ndarray] = {}
     for name, controller in robot.controllers.items():
         if isinstance(controller, AbstractPositionController):
             cmd_jp[name] = controller.target_pos
-        else:
-            raise NotImplementedError(
-                f"Controller '{name}' is not a position controller, saving is unsupported!"
-            )
     return cmd_jp
 
 
@@ -906,9 +909,14 @@ class ObjectImagePointsSensor(Sensor):
                         }
 
                 except NotImplementedError:
-                    log.warning(
-                        f"Segmentation mask retrieval not yet implemented for {camera_name}"
-                    )
+                    # Once per camera, not once per object per step: this is a
+                    # standing capability gap, and at the shell's control rate it
+                    # otherwise floods the log with the same line.
+                    if camera_name not in _SEGMASK_UNIMPLEMENTED_WARNED:
+                        _SEGMASK_UNIMPLEMENTED_WARNED.add(camera_name)
+                        log.warning(
+                            f"Segmentation mask retrieval not yet implemented for {camera_name}"
+                        )
                     # Keep empty result
                 except Exception as e:
                     log.exception(
@@ -971,6 +979,24 @@ class PolicyNumRetriesSensor(Sensor):
     def reset(self) -> None:
         super().reset()
         self._logged_warning = False
+
+
+class GraspPoseSensor(Sensor):
+    """Sensor for the planned grasp pose in 7D format."""
+
+    def __init__(self, uuid: str = "grasp_pose") -> None:
+        observation_space = gyms.Box(low=-np.inf, high=np.inf, shape=(7,), dtype=np.float32)
+        super().__init__(uuid=uuid, observation_space=observation_space)
+
+    def get_observation(self, env, task, batch_index: int = 0, *args, **kwargs) -> np.ndarray:
+        """Return the registered planner policy's planned grasp pose (zeros if unavailable)."""
+        if task._registered_policy is None or "grasp" not in task._registered_policy.target_poses:
+            return np.zeros(7, dtype=np.float32)
+        else:
+            return np.array(
+                pose_mat_to_7d(task._registered_policy.target_poses["grasp"]),
+                dtype=np.float32,
+            )
 
 
 def get_core_sensors(exp_config):

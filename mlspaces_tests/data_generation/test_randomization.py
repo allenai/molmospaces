@@ -41,7 +41,7 @@ OUTPUT_DATA_DIR = Path(__file__).resolve().parent / "test_output" / "randomizati
 
 def load_baseline_data(metadata_file: Path) -> dict:
     """Load baseline test data from metadata JSON file and associated NPY files."""
-    with open(metadata_file, "r") as f:
+    with open(metadata_file) as f:
         metadata = json.load(f)
 
     # Resolve file paths relative to metadata file directory
