@@ -33,7 +33,6 @@ from molmo_spaces.robots.i2rt_yam import I2rtYamRobot
 from molmo_spaces.robots.mobile_franka import MobileFrankaRobot
 from molmo_spaces.robots.rby1 import RBY1
 from molmo_spaces.robots.robot_views.abstract import RobotViewFactory
-from molmo_spaces.robots.robot_views.g1_dex3_view import G1Dex3RobotView
 from molmo_spaces.robots.robot_views.bimanual_yam_view import BimanualYamRobotView
 from molmo_spaces.robots.robot_views.franka_cap_view import (
     FrankaCAPRobotView,
@@ -42,6 +41,7 @@ from molmo_spaces.robots.robot_views.franka_droid_view import (
     FloatingRobotiq2f85RobotView,
     FrankaDroidRobotView,
 )
+from molmo_spaces.robots.robot_views.g1_dex3_view import G1Dex3RobotView
 from molmo_spaces.robots.robot_views.g1_view import G1RobotView
 from molmo_spaces.robots.robot_views.human_rb_view import HumanRBRobotView
 from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView

@@ -274,7 +274,7 @@ class G1Robot(Robot):
     ACTUATOR_NAME_MAP = ACTUATOR_NAME_MAP
 
     @staticmethod
-    def _low_level_cls():
+    def _low_level_cls() -> type:
         """The whole-body controller class this robot variant drives."""
         from molmo_spaces.controllers.g1_wbc import G1WholeBodyController
 

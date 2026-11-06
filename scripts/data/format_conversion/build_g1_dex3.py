@@ -15,7 +15,6 @@ site at the extended index fingertip (z along the finger, y = palm normal), and 
 
 import argparse
 import copy
-import shutil
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -51,7 +50,9 @@ def find_body(root: ET.Element, name: str) -> ET.Element:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out_dir", type=Path, default=ROBOTS_DIR / "g1_dex3")
-    ap.add_argument("--src_dir", type=Path, default=ROBOTS_DIR / "g1", help="molmospaces g1 robot dir")
+    ap.add_argument(
+        "--src_dir", type=Path, default=ROBOTS_DIR / "g1", help="molmospaces g1 robot dir"
+    )
     args = ap.parse_args()
     out, assets = args.out_dir, args.out_dir / "assets"
     assets.mkdir(parents=True, exist_ok=True)
@@ -66,7 +67,10 @@ def main() -> None:
     fetch(f"{MENAGERIE}/LICENSE", assets / "LICENSE_unitree_menagerie")
     for side in ("left", "right"):
         for link in HAND_LINKS:
-            fetch(f"{MENAGERIE}/assets/{side}_hand_{link}_link.STL", assets / f"{side}_hand_{link}_link.STL")
+            fetch(
+                f"{MENAGERIE}/assets/{side}_hand_{link}_link.STL",
+                assets / f"{side}_hand_{link}_link.STL",
+            )
 
     src = ET.parse(args.src_dir / "g1_dex.xml").getroot()
     hands = ET.parse(menagerie_xml).getroot()
@@ -100,7 +104,9 @@ def main() -> None:
                 if geom.get("name") in ("camera_box", "camera"):
                     wrist.append(copy.deepcopy(geom))
                     wrist[-1].set("name", f"left_{geom.get('name')}")
-            cam = copy.deepcopy(next(c for c in find_body(src, "right_wrist_yaw_link").iter("camera")))
+            cam = copy.deepcopy(
+                next(c for c in find_body(src, "right_wrist_yaw_link").iter("camera"))
+            )
             cam.set("name", "left_wrist_camera")
             wrist.append(cam)
 
@@ -125,7 +131,9 @@ def main() -> None:
         size.attrib.pop("nkey", None)
     contact = src.find("contact")
     for ex in list(contact):
-        if any("dex" in (ex.get(k) or "") or "Link" in (ex.get(k) or "") for k in ("body1", "body2")):
+        if any(
+            "dex" in (ex.get(k) or "") or "Link" in (ex.get(k) or "") for k in ("body1", "body2")
+        ):
             contact.remove(ex)
     actuator = src.find("actuator")
     for act in list(actuator):
@@ -159,8 +167,13 @@ def main() -> None:
     model = mujoco.MjModel.from_xml_path(str(path))
     for side in ("left", "right"):
         bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{side}_hand_index_1_link")
-        geom = next(g for g in range(model.ngeom) if model.geom_bodyid[g] == bid and model.geom_type[g] == 7)
-        adr, n = model.mesh_vertadr[model.geom_dataid[geom]], model.mesh_vertnum[model.geom_dataid[geom]]
+        geom = next(
+            g for g in range(model.ngeom) if model.geom_bodyid[g] == bid and model.geom_type[g] == 7
+        )
+        adr, n = (
+            model.mesh_vertadr[model.geom_dataid[geom]],
+            model.mesh_vertnum[model.geom_dataid[geom]],
+        )
         verts = model.mesh_vert[adr : adr + n]
         data = mujoco.MjData(model)
         mujoco.mj_forward(model, data)

@@ -25,7 +25,7 @@ class G1Dex3Robot(G1Robot):
     _UPPER_RAND_IDX = np.array([12, 13, 14, 22, 23, 24, 25, 26, 27, 28], dtype=np.int64)
 
     @staticmethod
-    def _low_level_cls():
+    def _low_level_cls() -> type:
         from molmo_spaces.controllers.g1_dex3_wbc import G1Dex3WholeBodyController
 
         return G1Dex3WholeBodyController
