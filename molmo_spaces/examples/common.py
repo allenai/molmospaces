@@ -24,7 +24,7 @@ class RobotInfo:
     init_quat: tuple[float, float, float, float]
 
 
-ROBOTS_INFO: dict[str, RobotInfo] = {
+ROBOTS_SINGLE_ARMS_INFO: dict[str, RobotInfo] = {
     "franka-droid": RobotInfo(
         config=FrankaRobotConfig(),
         init_pos=(0, 0, 0),
@@ -35,11 +35,17 @@ ROBOTS_INFO: dict[str, RobotInfo] = {
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),
+}
+
+ROBOTS_BIMANUAL_ARMS_INFO: dict[str, RobotInfo] = {
     "bimanual-yam": RobotInfo(
         config=BimanualYamRobotConfig(),
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),
+}
+
+ROBOTS_FLOATING_GRIPPERS_INFO: dict[str, RobotInfo] = {
     "floating-rum": RobotInfo(
         config=FloatingRUMRobotConfig(),
         init_pos=(0, 0, 0),
@@ -50,6 +56,9 @@ ROBOTS_INFO: dict[str, RobotInfo] = {
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),
+}
+
+ROBOTS_MOBILE_MANIPULATORS_INFO: dict[str, RobotInfo] = {
     "rby1": RobotInfo(
         config=RBY1Config(),
         init_pos=(0, 0, 0),
@@ -60,12 +69,23 @@ ROBOTS_INFO: dict[str, RobotInfo] = {
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),
+}
+
+ROBOTS_HUMANOIDS_INFO: dict[str, RobotInfo] = {
     "g1": RobotInfo(
         config=G1Config(),
         init_pos=(0, 0, 0),
         init_quat=(1, 0, 0, 0),
     ),
 }
+
+ALL_ROBOTS_INFO = (
+    ROBOTS_SINGLE_ARMS_INFO
+    | ROBOTS_BIMANUAL_ARMS_INFO
+    | ROBOTS_FLOATING_GRIPPERS_INFO
+    | ROBOTS_MOBILE_MANIPULATORS_INFO
+    | ROBOTS_HUMANOIDS_INFO
+)
 
 
 @dataclass

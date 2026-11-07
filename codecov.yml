@@ -27,4 +27,4 @@ ignore:
   - "molmo_spaces_maniskill/**"
   - "mlspaces_tests/**"
   - "scripts/**"
-  - "examples/**"
+  - "docs/snippets/**"

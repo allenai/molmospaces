@@ -34,6 +34,11 @@ from molmo_spaces.molmo_spaces_constants import (
     get_scenes,
     get_scenes_root,
 )
+from molmo_spaces.utils.human_rb_population import (
+    add_humans_to_scene,
+    ensure_human_rb_library_registered,
+    place_humans,
+)
 
 FILAMENT_ATTR_ENV_LIGHT_INTENSITY = "filament.fallback.environment_light_intensity"
 
@@ -298,6 +303,11 @@ class BaseMujocoTaskSampler:
         self.object_synset_counter = Counter()
         self.used_robot_positions: dict[str, list[np.ndarray]] = defaultdict(list)
 
+        # Humanoid avatars scattered around the scene (task_sampler_config.num_humans)
+        self._human_names: list[str] = []
+        if exp_config.task_sampler_config.num_humans > 0:
+            ensure_human_rb_library_registered(exp_config.task_sampler_config.human_variant)
+
         # Asset blacklist tracking - dynamic failures during this run
         self._asset_failure_counts: Counter = Counter()
         self._dynamic_blacklist: set[str] = set()
@@ -538,6 +548,7 @@ class BaseMujocoTaskSampler:
         scene_file_path,
         randomize_textures=False,
         environment_light_intensity: float = 15000.0,
+        override_pbr_materials: bool = False,
     ):
         """
         Complete function to set up a scene with robot and objects.
@@ -554,6 +565,14 @@ class BaseMujocoTaskSampler:
             self._datagen_profiler.start("compile_xml_load")
 
         spec = MjSpec.from_file(str(scene_file_path))
+
+        if override_pbr_materials:
+            # Our assets carry an albedo texture and nothing else, so without this
+            # every surface in the scene shades identically. Must happen before
+            # compile(): metallic/roughness are spec-level material properties.
+            from molmo_spaces.renderer.pbr_materials import apply_pbr_material_overrides
+
+            apply_pbr_material_overrides(spec)
 
         # Read by the Filament renderer as the intensity of its fallback environment light.
         spec.add_numeric(
@@ -619,6 +638,10 @@ class BaseMujocoTaskSampler:
         self.add_auxiliary_objects(spec)
         if self._datagen_profiler is not None:
             self._datagen_profiler.end("compile_aux_policy_objects")
+
+        self._human_names = []
+        if self.config.task_sampler_config.num_humans > 0:
+            self._human_names = add_humans_to_scene(spec, self.config.task_sampler_config)
 
         # Setup empty materials for texture randomization if enabled
         if randomize_textures:
@@ -842,6 +865,7 @@ class BaseMujocoTaskSampler:
                 randomize_textures=self.config.task_sampler_config.randomize_textures
                 or enable_door_randomization,  # Enable door joint randomization
                 environment_light_intensity=self.config.environment_light_intensity,
+                override_pbr_materials=self.config.override_pbr_materials,
             )
         except HouseInvalidForTask:
             if self._datagen_profiler is not None:
@@ -1209,6 +1233,7 @@ class BaseMujocoTaskSampler:
             self._datagen_profiler.start("task_specific_sample")
         try:
             task = self._sample_task(self.env)
+            self._place_humans(self.env)
         finally:
             if self._datagen_profiler is not None:
                 self._datagen_profiler.end("task_specific_sample")
@@ -1220,6 +1245,18 @@ class BaseMujocoTaskSampler:
         log.info(f"Sampled task '{task.get_task_description()}'")
 
         return task
+
+    def _place_humans(self, env: CPUMujocoEnv) -> None:
+        """Scatter the avatars added by add_humans_to_scene, away from the robot
+        and the task's pickup object (if it has one)."""
+        if not self._human_names:
+            return
+        exclude_xy = [env.current_robot.robot_view.base.pose[:2, 3]]
+        pickup_obj_name = getattr(self.config.task_config, "pickup_obj_name", None)
+        if pickup_obj_name is not None:
+            om = env.object_managers[env.current_batch_index]
+            exclude_xy.append(om.get_object(pickup_obj_name).position[:2])
+        place_humans(env, self._human_names, self.config.task_sampler_config, exclude_xy)
 
     def balance_sample_names(self, candidate_objects):
         # Do oversampling of objects if they are objaverse assets
