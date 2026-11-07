@@ -277,7 +277,7 @@ def filter_semantically_good_grasps(uid: str, grasps: np.ndarray) -> np.ndarray:
         log.warning(f"[SEMANTIC GRASP] No classification file for {uid}, using all grasps")
         return grasps
 
-    with open(classification_path, "r") as f:
+    with open(classification_path) as f:
         classifications = json.load(f)
     good_map = classifications.get("semantically_good_grasp", {})
     good_mask = np.array(
