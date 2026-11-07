@@ -218,7 +218,10 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
           packages: ffmpeg
-          version: 1
+          # Restoring only unpacks files; libblas3's postinst creates the
+          # libblas.so.3 alternatives symlink that libavfilter needs.
+          execute_install_scripts: true
+          version: 2
 
       - name: Set MuJoCo rendering backend
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
