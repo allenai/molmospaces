@@ -9,8 +9,7 @@ to example Objaverse asset galleries.
 Usage:
     python scripts/assets/render_objaverse_gallery.py --out gallery.png
 
-Requires the Filament-enabled mujoco wheel to be importable, e.g.:
-    PYTHONPATH=/path/to/filament/mujoco:$PYTHONPATH python scripts/assets/render_objaverse_gallery.py
+Uses MuJoCo's built-in Filament renderer (mujoco>=4.0, installed by the `mujoco` extra).
 """
 
 from __future__ import annotations
@@ -201,6 +200,10 @@ class RenderSettings:
     saturation,vibrance,temperature,tint}``, ``filament.msaa.enabled`` and MuJoCo's
     classic ``visual/headlight`` ambient -- so *exposure is controlled solely by the
     environment light intensity*, not by a camera exposure triad.
+
+    "This build" throughout means the pre-4.0 custom Filament wheel these values were
+    tuned on. MuJoCo 4.0's Filament renders brighter at the same light intensity and
+    may honor attributes listed as inert here; the values have not been re-tuned yet.
     """
 
     # -- Exposure. The env light is the dominant (and only real) exposure control.
