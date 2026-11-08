@@ -37,10 +37,11 @@ def _obs_ids(env) -> _ObsIds:
 
     ids = _ObsIds()
     ids.model = model
-    ids.qpos_ids = np.array([model.jnt_qposadr[_jid(n)] for n in JOINT_NAMES])
+    # Variants without the Dex1 gripper (g1_dex3) lack its joint: skip names the model lacks.
+    ids.qpos_ids = np.array([model.jnt_qposadr[_jid(n)] for n in JOINT_NAMES if _jid(n) >= 0])
     ids.fj_dadr = model.jnt_dofadr[_jid("floating_base_joint")]
     ids.r_sid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, f"{PREFIX}right_grasp")
-    ids.r_grip_qa = model.jnt_qposadr[_jid("right_Joint1_1")]
+    ids.r_grip_qa = model.jnt_qposadr[_jid("right_Joint1_1")] if _jid("right_Joint1_1") >= 0 else -1
     ids.pelvis_bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{PREFIX}pelvis")
     setattr(env, _IDS_ATTR, ids)
     return ids
@@ -311,6 +312,22 @@ def robot_sensors() -> list[Sensor]:
         UpperJointPosSensor(_N_UPPER_JOINTS),
         RightHandPoseSensor(),
         RightGripperPosSensor(),
+    ]
+
+
+def dex3_robot_sensors() -> list[Sensor]:
+    """robot_sensors() for the dual-Dex3 G1: the base-state sensors and the right-hand pose. The
+    Dex1 variant's joint-position and gripper sensors assume its 30-joint layout and are left out."""
+    return [
+        BasePositionSensor(),
+        BaseYawSensor(),
+        BaseRPYSensor(),
+        BaseRPSensor(),
+        LastBaseVelCmdSensor(),
+        BaseHeightSensor(),
+        BaseVelocitySensor(),
+        BaseAngularVelocitySensor(),
+        RightHandPoseSensor(),
     ]
 
 

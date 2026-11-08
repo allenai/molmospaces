@@ -6,9 +6,9 @@ import tyro
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces import MOLMO_SPACES_PACKAGED_ASSETS_DIR
-from molmo_spaces.configs.robot_configs import G1Config
-from molmo_spaces.controllers.g1_wbc import flat15_to_move_groups
-from molmo_spaces.robots.robot_views.g1_view import G1BaseGroup, G1RobotView
+from molmo_spaces.configs.robot_configs import G1Dex3Config
+from molmo_spaces.robots.robot_views.g1_dex3_view import G1Dex3RobotView
+from molmo_spaces.robots.robot_views.g1_view import G1BaseGroup
 
 SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
@@ -46,7 +46,7 @@ def main() -> int:
 
     _ = tyro.cli(Args)
 
-    robot_cfg = G1Config()
+    robot_cfg = G1Dex3Config()
     robot_cls = robot_cfg.robot_cls
     assert robot_cls, "Robot class for G1 is not defined for some reason LOL"
 
@@ -94,7 +94,7 @@ def main() -> int:
     robot = robot_cls(data, robot_cfg)
     robot_view = robot.robot_view
 
-    assert isinstance(robot_view, G1RobotView)
+    assert isinstance(robot_view, G1Dex3RobotView)
 
     # TODO(wilbert): Holo stuff is broken for G1 atm
     base_group = robot_view.base
@@ -123,8 +123,8 @@ def main() -> int:
                 waypoint_euler = R.from_quat(
                     data.body(MOCAP_WAYPOINT_NAME).xquat, scalar_first=True
                 ).as_euler("xyz", degrees=False)
-                action = robot.nav_action((*waypoint_xy, waypoint_euler[2].item()))
-                robot.update_control(flat15_to_move_groups(action))
+                # "base" waypoint -> legs_waist walking command; arms and hands hold their targets.
+                robot.update_control({"base": (*waypoint_xy, waypoint_euler[2].item())})
 
                 t_start = data.time
                 while data.time - t_start < 1.0 / 60.0:

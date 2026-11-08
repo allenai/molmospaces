@@ -97,6 +97,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "franka_fr3": "20260303",
         "i2rt_yam": "20260223",
         "g1": "20260815",
+        "g1_dex3": "20261106",
         # The Rocketbox-derived humanoids (scripts/assets/convert_human_rb.py).
         # HumanRBVariant reads this dict to decide which of its builds install on
         # demand rather than having to be generated locally.
