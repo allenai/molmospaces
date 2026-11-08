@@ -7,9 +7,9 @@ their "unset" sentinel of -1 and the whole scene is shaded by one undifferentiat
 legacy response. This module fills that gap at load time, from the material
 composition already recorded in the objathor metadata.
 
-What Filament's PBR shader (``pbr.filamat``; read from the pre-4.0 custom wheel's
-copy, MuJoCo 4.0 ships its own in ``mujoco/studio/assets``) actually
-does with the numbers we set -- this drives every decision below::
+What Filament's PBR shader (``pbr.filamat``, shipped with MuJoCo 4.0 in
+``mujoco/studio/assets``) actually does with the numbers we set -- this drives
+every decision below::
 
     material.roughness  = RoughnessFactor;                 // <- mat_roughness
     material.roughness *= texture(Roughness, uv).x;        // <- mjTEXROLE_ROUGHNESS
@@ -748,35 +748,28 @@ def _is_transparent(material) -> bool:
     return float(material.rgba[3]) < 1.0
 
 
-# The shader reads only the red channel of the roughness and metallic maps, but the
-# pre-4.0 custom Filament wheel's texture upload sized its KTX buffer for three
-# channels and aborted with "KTX buffer is too small" on a single-channel texture, so
-# the value is replicated across RGB. Three channels also work on MuJoCo 4.0 (whether
-# one would is unchecked).
-_TEXTURE_CHANNELS = 3
-
-
 def _add_data_texture(spec, name: str, data: np.ndarray):
-    """Add a 2D texture to the spec straight from a numpy array, HxW or HxWx3.
+    """Add a 2D texture to the spec straight from a numpy array, HxW or HxWxC.
+
+    An HxW array becomes a single-channel texture: the shader reads only the red
+    channel of the roughness and metallic maps. (The pre-4.0 custom Filament wheel
+    aborted on single-channel textures with "KTX buffer is too small"; MuJoCo 4.0
+    renders them identically to the same values replicated across RGB.)
 
     Roughness and metallic are linear quantities, not colours, so the texture is
     tagged linear -- letting it default to sRGB would put a gamma curve through the
     map and shift every roughness value.
     """
     height, width = int(data.shape[0]), int(data.shape[1])
-    if data.ndim == 2:
-        rgb = np.repeat(data.reshape(height, width, 1), _TEXTURE_CHANNELS, axis=2)
-    else:
-        assert data.shape[2] == _TEXTURE_CHANNELS, data.shape
-        rgb = data
+    nchannel = 1 if data.ndim == 2 else int(data.shape[2])
 
     texture = spec.add_texture()
     texture.name = name
     texture.type = mj.mjtTexture.mjTEXTURE_2D
     texture.colorspace = mj.mjtColorSpace.mjCOLORSPACE_LINEAR
     texture.height, texture.width = height, width
-    texture.nchannel = _TEXTURE_CHANNELS
-    texture.data = rgb.tobytes()
+    texture.nchannel = nchannel
+    texture.data = np.ascontiguousarray(data).tobytes()
     return texture
 
 
@@ -832,10 +825,11 @@ def apply_pbr_material_overrides(
         annotations = ObjectMeta.annotation()
 
     # The shader multiplies MetallicFactor by the metallic texture unconditionally.
-    # We bind an explicit all-ones 1x1 map rather than trusting whatever MuJoCo binds
+    # We bind an explicit all-ones map rather than trusting whatever MuJoCo binds
     # when the role is empty -- if that default were not white, every metal would
-    # silently come out as a dielectric.
-    _add_data_texture(spec, UNIT_TEXTURE, np.full((1, 1), 255, dtype=np.uint8))
+    # silently come out as a dielectric. 2x2 because MuJoCo 4.0's Filament upload
+    # throws on a 1x1 single-channel texture (2x2 and larger are fine).
+    _add_data_texture(spec, UNIT_TEXTURE, np.full((2, 2), 255, dtype=np.uint8))
 
     # Roughness maps live in UV space at full extent so they need no tiling (material
     # texrepeat applies to every layer at once, albedo included, so a tiled detail map

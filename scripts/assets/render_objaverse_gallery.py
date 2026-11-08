@@ -202,8 +202,9 @@ class RenderSettings:
     environment light intensity*, not by a camera exposure triad.
 
     "This build" throughout means the pre-4.0 custom Filament wheel these values were
-    tuned on. MuJoCo 4.0's Filament renders brighter at the same light intensity and
-    may honor attributes listed as inert here; the values have not been re-tuned yet.
+    tuned on, and the measurements quoted below are from it. MuJoCo 4.0's Filament
+    renders brighter at the same light intensity (mean luminance ~126 at 15k vs ~80);
+    15k was re-checked on 4.0 and kept. Attributes listed as inert were not re-checked.
     """
 
     # -- Exposure. The env light is the dominant (and only real) exposure control.

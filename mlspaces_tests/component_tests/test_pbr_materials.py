@@ -212,13 +212,13 @@ class TestApplyOverrides:
         )
         assert (model.tex_data[start : start + size] == 255).all()
 
-    def test_maps_have_three_channels(self):
-        """MuJoCo's filament texture upload rejects single-channel textures."""
+    def test_scalar_maps_are_single_channel(self):
+        """The shader reads only the red channel, so roughness/metallic need no RGB."""
         spec = _spec("material_Metal")
         apply_pbr_material_overrides(spec, annotations={})
         model = spec.compile()
         for role in (_ROUGHNESS_ROLE, _METALLIC_ROLE):
-            assert model.tex_nchannel[model.mat_texid[0, role]] == 3
+            assert model.tex_nchannel[model.mat_texid[0, role]] == 1
 
     def test_maps_are_linear_not_srgb(self):
         """Roughness is not a colour; an sRGB tag would bend every value."""
