@@ -153,3 +153,18 @@ def test_material_texture_swap_is_rendered(scene):
     finally:
         model.mat_texid[boxmat] = orig
     assert after[0] > 150 and after[1] < 50 and after[2] < 50, (before, after)
+
+
+def test_pbr_material_overrides_upload():
+    """The single-channel maps pbr_materials injects must load into Filament."""
+    from molmo_spaces.renderer.pbr_materials import apply_pbr_material_overrides
+
+    spec = mj.MjSpec.from_string(XML)
+    apply_pbr_material_overrides(spec, annotations={})
+    model = spec.compile()
+    renderer = MjFilamentRenderer(model, width=W, height=H)
+    try:
+        renderer.update(mj.MjData(model))
+        assert renderer.render().shape == (H, W, 3)
+    finally:
+        renderer.close()
