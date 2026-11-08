@@ -3,21 +3,18 @@ Convert MlSpaces h5 data to LeRobot format.
 
 This script only works for MlSpaces data with Franka-DROID robots, not RB-Y1.
 """
+
 import argparse
 import json
 from pathlib import Path
 
-import decord
 import h5py
 import numpy as np
-from decord import VideoReader
+from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from PIL import Image
 from scipy.spatial.transform import Rotation
+from torchcodec.decoders import VideoDecoder
 from tqdm import tqdm
-
-from lerobot.datasets.lerobot_dataset import LeRobotDataset
-
-decord.bridge.set_bridge("native")
 
 MLSPACES_GRIPPER_MAX_POS = 0.824033  # Franka DROID gripper max position
 GRIPPER_ACTION_SCALE = 255.0
@@ -33,9 +30,18 @@ CAMERAS = [
 
 def parse_args():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("data_dir", type=Path, help="Postprocessed MlSpaces split dir (has valid_trajectory_index.json)")
+    ap.add_argument(
+        "data_dir",
+        type=Path,
+        help="Postprocessed MlSpaces split dir (has valid_trajectory_index.json)",
+    )
     ap.add_argument("--repo-id", default="local/molmobot_droid_format")
-    ap.add_argument("--root", type=Path, default=None, help="Output root (defaults to $HF_LEROBOT_HOME/<repo_id>)")
+    ap.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Output root (defaults to $HF_LEROBOT_HOME/<repo_id>)",
+    )
     ap.add_argument("--max-episodes", type=int, default=None, help="Limit episodes for quick tests")
     ap.add_argument("--image-writer-processes", type=int, default=2)
     ap.add_argument("--image-writer-threads", type=int, default=8)
@@ -57,18 +63,20 @@ def pose_quat_wxyz_to_eef9d(pose7: np.ndarray) -> np.ndarray:
 
 def load_video_frames(h5_dir: Path, traj_group: h5py.Group, ml_cam: str, count: int) -> np.ndarray:
     raw = traj_group[f"obs/sensor_data/{ml_cam}"][()]
-    filename = (raw.tobytes() if isinstance(raw, np.ndarray) else raw).decode("utf-8").rstrip("\x00")
-    vr = VideoReader(str(h5_dir / filename))
-    if count > len(vr):
-        raise RuntimeError(f"Requested {count} frames but video {filename} has {len(vr)}")
-    return vr.get_batch(list(range(count))).asnumpy()  # (count, H, W, 3) RGB uint8
+    filename = (
+        (raw.tobytes() if isinstance(raw, np.ndarray) else raw).decode("utf-8").rstrip("\x00")
+    )
+    decoder = VideoDecoder(str(h5_dir / filename), dimension_order="NHWC")
+    if count > len(decoder):
+        raise RuntimeError(f"Requested {count} frames but video {filename} has {len(decoder)}")
+    return decoder.get_frames_at(list(range(count))).data.numpy()  # (count, H, W, 3) RGB uint8
 
 
 def resize_rgb(frame: np.ndarray, hw: tuple[int, int]) -> np.ndarray:
     h, w = hw
     if frame.shape[:2] == (h, w):
         return frame
-    return np.array(Image.fromarray(frame).resize((w, h), resample=Image.BICUBIC))
+    return np.array(Image.fromarray(frame).resize((w, h), resample=Image.BICUBIC)) # ty: ignore
 
 
 def build_features() -> dict:
@@ -83,8 +91,16 @@ def build_features() -> dict:
     feats["action"] = {"dtype": "float32", "shape": (STATE_DIM,), "names": ["action"]}
     for prefix in ("observation.state", "action"):
         feats[f"{prefix}.eef_9d"] = {"dtype": "float32", "shape": (9,), "names": ["eef_9d"]}
-        feats[f"{prefix}.gripper_position"] = {"dtype": "float32", "shape": (1,), "names": ["gripper_position"]}
-        feats[f"{prefix}.joint_position"] = {"dtype": "float32", "shape": (7,), "names": ["joint_position"]}
+        feats[f"{prefix}.gripper_position"] = {
+            "dtype": "float32",
+            "shape": (1,),
+            "names": ["gripper_position"],
+        }
+        feats[f"{prefix}.joint_position"] = {
+            "dtype": "float32",
+            "shape": (7,),
+            "names": ["joint_position"],
+        }
     return feats
 
 
@@ -123,8 +139,10 @@ def convert_episode(dataset: LeRobotDataset, h5_path: Path, traj_key: str, traj_
         # action[i] pairs with state[i] after dropping the padded first action
         act_joint = [decode_json_bytes(tg["actions/joint_pos"][i + 1]) for i in range(effective)]
         act_ee_rows = np.stack(
-            [np.asarray(decode_json_bytes(tg["actions/ee_pose"][i + 1])["arm"], dtype=np.float32)
-             for i in range(effective)],
+            [
+                np.asarray(decode_json_bytes(tg["actions/ee_pose"][i + 1])["arm"], dtype=np.float32)
+                for i in range(effective)
+            ],
             axis=0,
         )
         act_eef9d = pose_quat_wxyz_to_eef9d(act_ee_rows)
@@ -136,9 +154,13 @@ def convert_episode(dataset: LeRobotDataset, h5_path: Path, traj_key: str, traj_
 
     for j in range(effective):
         joint_pos = np.asarray(qpos[j]["arm"], dtype=np.float32)
-        gripper_pos = np.asarray([qpos[j]["gripper"][0] / MLSPACES_GRIPPER_MAX_POS], dtype=np.float32)
+        gripper_pos = np.asarray(
+            [qpos[j]["gripper"][0] / MLSPACES_GRIPPER_MAX_POS], dtype=np.float32
+        )
         act_joint_pos = np.asarray(act_joint[j]["arm"], dtype=np.float32)
-        act_gripper = np.asarray([act_joint[j]["gripper"][0] / GRIPPER_ACTION_SCALE], dtype=np.float32)
+        act_gripper = np.asarray(
+            [act_joint[j]["gripper"][0] / GRIPPER_ACTION_SCALE], dtype=np.float32
+        )
 
         frame = {
             "observation.state": np.concatenate([obs_eef9d[j], gripper_pos, joint_pos]),
@@ -211,7 +233,9 @@ def main():
 
     write_modality_json(dataset.root)
 
-    print(f"\nDone. {total_frames} frames across {len(trajs) - skipped} episodes ({skipped} skipped).")
+    print(
+        f"\nDone. {total_frames} frames across {len(trajs) - skipped} episodes ({skipped} skipped)."
+    )
     print(f"Dataset at: {dataset.root}")
 
 

@@ -9,7 +9,7 @@ This tutorial will walk you through how to register custom asset and grasp libra
 ```bash
 mkdir my_project
 cd my_project
-uv venv -p 3.11
+uv venv -p 3.12
 source .venv/bin/activate
 uv pip install "git+https://github.com/allenai/molmospaces.git#egg=molmospaces[mujoco]"
 ```

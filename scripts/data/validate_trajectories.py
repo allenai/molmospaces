@@ -1,18 +1,16 @@
 import argparse
-from concurrent.futures import CancelledError, ProcessPoolExecutor, Future, as_completed
-from threading import Semaphore, Lock
-from pathlib import Path
-import json
 import glob
+import json
 import os
 import traceback
+from concurrent.futures import CancelledError, Future, ProcessPoolExecutor, as_completed
+from pathlib import Path
+from threading import Lock, Semaphore
 
-import numpy as np
 import h5py
+import numpy as np
+from torchcodec.decoders import VideoDecoder
 from tqdm import tqdm
-import decord
-from decord.ndarray import DECORDContext
-
 
 VALID_TRAJECTORY_KEY = "valid_traj_mask"
 
@@ -63,9 +61,7 @@ def get_args():
     return parser.parse_args()
 
 
-def is_traj_valid(
-    args, data_file_path: Path, traj_idx: int, traj_group: h5py.Group, decord_ctx: DECORDContext
-) -> bool:
+def is_traj_valid(args, data_file_path: Path, traj_idx: int, traj_group: h5py.Group) -> bool:
     if "actions" not in traj_group:
         print(f"Trajectory {traj_idx} in {data_file_path} does not have an actions group")
         return False
@@ -74,7 +70,7 @@ def is_traj_valid(
         print(f"Trajectory {traj_idx} in {data_file_path} does not have any actions")
         return False
     n_actions = None
-    for action_key in actions_group.keys():
+    for action_key in actions_group:
         actions = actions_group[action_key]
         if n_actions is None:
             n_actions = actions.shape[0]
@@ -105,7 +101,7 @@ def is_traj_valid(
     if "qpos" not in agent_group or "qvel" not in agent_group:
         print(f"Trajectory {traj_idx} in {data_file_path} does not have a qpos or qvel group")
         return False
-    for obs_key in agent_group.keys():
+    for obs_key in agent_group:
         obs = agent_group[obs_key]
         if obs.shape[0] != n_actions:
             print(
@@ -145,14 +141,11 @@ def is_traj_valid(
                         return False
             else:
                 # Old format: JSON byte-string array
-                image_points_str = (
-                    obj_points_group[0][:]
-                    .tobytes()
-                    .decode("utf-8")
-                    .rstrip("\x00")
-                )
+                image_points_str = obj_points_group[0][:].tobytes().decode("utf-8").rstrip("\x00")
                 try:
-                    image_points: dict[str, dict[str, list[list[float]]]] = json.loads(image_points_str)
+                    image_points: dict[str, dict[str, list[list[float]]]] = json.loads(
+                        image_points_str
+                    )
                 except json.JSONDecodeError:
                     print(
                         f"Error decoding object_image_points in {data_file_path} for trajectory {traj_idx}"
@@ -185,7 +178,7 @@ def is_traj_valid(
         if len(sensor_data_group.keys()) == 0:
             print(f"Trajectory {traj_idx} in {data_file_path} does not have any cameras")
             return False
-        for camera_name in sensor_data_group.keys():
+        for camera_name in sensor_data_group:
             video_filename: str = (
                 sensor_data_group[camera_name][:].tobytes().decode("utf-8").rstrip("\x00")
             )
@@ -196,8 +189,8 @@ def is_traj_valid(
                 )
                 return False
             try:
-                vr = decord.VideoReader(str(video_path), ctx=decord_ctx)
-                n_frames = len(vr)
+                decoder = VideoDecoder(str(video_path))
+                n_frames = len(decoder)
                 traj_len = traj_group["obs/agent/qpos"].shape[0]
                 if n_frames != traj_len:
                     print(
@@ -207,8 +200,8 @@ def is_traj_valid(
                 frame_idxs = np.round(np.linspace(0, n_frames - 1, args.frames_to_check)).astype(
                     int
                 )
-                vr.get_batch(frame_idxs)
-            except (decord.DECORDError, RuntimeError) as e:
+                decoder.get_frames_at(frame_idxs.tolist())
+            except (ValueError, RuntimeError) as e:
                 print(
                     f"Error reading video file {video_filename} for trajectory {traj_idx} in {data_file_path}: {e}"
                 )
@@ -226,16 +219,15 @@ def process_data_file(args, data_file_path: Path) -> tuple[int, int]:
                 if not args.dry_run:
                     del f[VALID_TRAJECTORY_KEY]
 
-            traj_idxs = sorted([int(k.split("_")[-1]) for k in f.keys() if k.startswith("traj_")])
+            traj_idxs = sorted([int(k.split("_")[-1]) for k in f if k.startswith("traj_")])
             valid_traj_mask = np.zeros(len(traj_idxs), dtype=bool)
             # ensure trajectory indices are consecutive
             if traj_idxs != list(range(len(traj_idxs))):
                 print(f"Trajectory indices are not consecutive in {data_file_path}")
             else:
-                decord_ctx = decord.cpu() if not args.no_video else None
                 for i, traj_idx in enumerate(traj_idxs):
                     valid_traj_mask[i] = is_traj_valid(
-                        args, data_file_path, traj_idx, f[f"traj_{traj_idx}"], decord_ctx
+                        args, data_file_path, traj_idx, f[f"traj_{traj_idx}"]
                     )
 
             if not args.dry_run:
@@ -267,7 +259,7 @@ def find_valid_trajectories(args, data_files: list[str]):
                         n_invalid, n_total = future.result()
                     except CancelledError:
                         pass
-                    except:
+                    except Exception:
                         traceback.print_exc()
                         executor.shutdown(wait=False, cancel_futures=True)
                         return
@@ -342,7 +334,7 @@ def build_trajectory_index(args, data_files: list[str]):
             def on_done(future: Future):
                 try:
                     future.result()
-                except:
+                except Exception:
                     traceback.print_exc()
                     executor.shutdown(wait=False)
                     return

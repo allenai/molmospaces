@@ -15,17 +15,15 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "attrs",
     "beaker-py>2.0.0",
     "boto3>=1.35.0",
     "coacd>=1.0.7",
     "compress-json>=1.1.1",
-    "decord; sys_platform == 'linux'", # For Linux
-    "eva-decord; sys_platform == 'darwin'", # For macOS
     "einops>=0.8.1",
     "ffmpeg-python>=0.2.0",
     "future>=1.0.0",
@@ -104,19 +102,22 @@ housegen = [
     # "bpy==3.6.0; os_name == 'Linux'", # removed because of challenges with docker builds - is installed separately in needed docker images
 ]
 curobo = [
-    "nvidia-curobo @ git+https://github.com/allenai/curobo.git@87e857d46fa5398f268c7f31d26566351be8671d",
+    "nvidia-curobo @ git+https://github.com/allenai/curobo.git@7e1d38b1a2f27c949f04e5a109945d8c58a61b3c",
 ]
 torch-cpu = [
     "torch==2.7.1",
     "torchvision==0.22.1",
+    "torchcodec~=0.5.0",  # torchcodec pins the torch minor: 0.5 <-> 2.7
 ]
 torch-cu12 = [
     "torch==2.7.1",
     "torchvision==0.22.1",
+    "torchcodec~=0.5.0",  # torchcodec pins the torch minor: 0.5 <-> 2.7
 ]
 torch-cu13 = [
     "torch==2.11.0",
     "torchvision==0.26.0",
+    "torchcodec~=0.11.0",  # torchcodec pins the torch minor: 0.11 <-> 2.11
 ]
 g1_humanoid = [
     "ml-collections", # molmo_spaces/utils/prompt_samplers.py's g1_molmo-ported sampler
@@ -125,11 +126,11 @@ g1_humanoid = [
     "onnxruntime>=1.18.0", # G1 whole-body controller's learned policy: controllers/g1_wbc.py
 ]
 mujoco = [
-    "mujoco~=3.5.0",
-    "mujoco-warp~=3.5.0",  # keep the same minor as mujoco (see mujoco-warp above)
+    "mujoco~=3.17.0",
+    "mujoco-warp~=3.17.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 mujoco-filament = [
-    "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
     "mujoco-warp~=3.7.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
 docs = [
@@ -259,7 +260,7 @@ exclude_also = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 exclude = [
  "scripts/",
@@ -302,6 +303,9 @@ ignore = [
     "E501", # don't complain about line-length (handled by line-length setting)
     "B006", # defaults shouldn't be mutable
     "UP015", # redundant mode arguments in open should be fine for now
+    "UP040", # keep TypeAlias: `type X = ...` makes a lazy TypeAliasType, which pydantic unions handle differently
+    "UP046", # PEP 695 generics: not worth a rewrite with the 3.12 bump
+    "UP047", # PEP 695 generics: not worth a rewrite with the 3.12 bump
     "SIM117", # allow nested with statements for now
     "SIM102", # don't be picky about nested if statements
     "SIM114", # don't be picky about merging if branches using or
