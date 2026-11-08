@@ -111,6 +111,8 @@ def generate_droid_test_data():
     config.use_passive_viewer = False
     config.profile = True
     config.use_wandb = False
+    # Must match the test fixtures, which pin CLIP referral filtering on.
+    config.task_sampler_config.referral_expression_clip_filter = True
     generate_test_data_for_config(config, "droid")
 
 
@@ -120,6 +122,8 @@ def generate_randomized_test_data():
     config.use_passive_viewer = False
     config.profile = True
     config.use_wandb = False
+    # Must match the test fixtures, which pin CLIP referral filtering on.
+    config.task_sampler_config.referral_expression_clip_filter = True
     generate_test_data_for_config(config, "randomized")
 
 
