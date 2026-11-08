@@ -125,7 +125,7 @@ DATA_TYPE_TO_SOURCE_TO_VERSION = dict(
         "droid_objaverse": "20251218",
     },
     test_data={
-        "franka_pick": "20261108",
+        "franka_pick": "20261108_2",
         "franka_pick_and_place": "20261108",
         "rby1_door_opening": "20260812_2",
         "rby1_pnp": "20260610",
