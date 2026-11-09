@@ -13,7 +13,7 @@ SCENE_EMPTY_XML = MOLMO_SPACES_PACKAGED_ASSETS_DIR / "scene_empty.xml"
 
 @dataclass
 class Args(ExampleBaseArgs):
-    pass
+    paused: bool = False
 
 
 def main() -> int:
@@ -47,9 +47,12 @@ def main() -> int:
         model, data, key_callback=None, show_left_ui=False, show_right_ui=False
     ) as viewer:
         while viewer.is_running():
-            t_start = data.time
-            while data.time - t_start < 1.0 / 60.0:
-                mj.mj_step(model, data)
+            if not args.paused:
+                t_start = data.time
+                while data.time - t_start < 1.0 / 60.0:
+                    mj.mj_step(model, data)
+            else:
+                mj.mj_forward(model, data)
 
             viewer.sync()
 

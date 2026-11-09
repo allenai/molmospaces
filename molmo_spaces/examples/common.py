@@ -98,4 +98,5 @@ class ExampleBaseArgs:
         "floating-robotiq",
         "rby1",
         "mobile-franka",
+        "g1",
     ]

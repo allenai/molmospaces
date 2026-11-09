@@ -419,6 +419,34 @@ class G1Robot(Robot):
         self._apply_solver_overrides()
         self._fix_contacts()
 
+    @classmethod
+    def add_robot_to_scene(  # pyright: ignore[reportIncompatibleMethodOverride] # ty: ignore[invalid-method-override]
+        cls,
+        robot_config: G1Config,
+        spec: mj.MjSpec,
+        prefix: str,
+        pos: list[float],
+        quat: list[float],
+        randomize_textures: bool = False,
+        strip_meshes: bool = False,
+    ) -> None:
+        pos = pos + [0.0] if len(pos) == 2 else pos
+        robot_spec = cls._load_robot_spec(robot_config, strip_meshes=strip_meshes)
+        robot_root_name = cls.robot_model_root_name()
+        attach_frame = spec.worldbody.add_frame(pos=pos, quat=quat)
+
+        # NOTE(wilbert): the head visual geoms of the g1 are by default on group 5 on the resources LOL
+        mjs_torso_body = robot_spec.body("torso_link")
+        for mjs_geom in mjs_torso_body.geoms:
+            assert isinstance(mjs_geom, mj.MjsGeom)
+            if mjs_geom.classname.name == "visual":
+                mjs_geom.group = 2
+
+        robot_root = robot_spec.body(robot_root_name)
+        if robot_root is None:
+            raise ValueError(f"Robot {robot_root_name=} not found in {robot_spec}")
+        attach_frame.attach_body(robot_root, prefix, "")
+
     @property
     def robot_view(self):
         """Robot ABC's RobotView: the MoveGroup view of robot_views/g1_view.py
