@@ -42,6 +42,7 @@
 </p>
 
 ## Updates
+- **[2026/11/08]** 🚧 Working on upgrading to [MuJoCo](https://mujoco.org/) `4.0.0`, please use the latest release tag `v0.2.9` for `evals` and `datagen`.
 - **[2026/09/13]** 🚧 **Upgrades in progress** for a stable release please use v0.2.9.
 - **[2026/06/22]** 🔥 [**Projects using MolmoSpaces**](#papers-using-molmospaces) a list of MolmoSpaces projects.
 - **[2026/06/16]** 🔥 [**MolmoSpaces Policy Zoo**](https://github.com/allenai/molmospaces_policy_zoo) standalone third-party policies — contributions welcome.
