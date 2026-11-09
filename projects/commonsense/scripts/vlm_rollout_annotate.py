@@ -99,7 +99,7 @@ def episode_to_traj_key(episode_str: str) -> str:
     return f"traj_{int(digits)}"
 
 
-def ensure_target_image(job: VideoJob, frame_index: int = 10) -> bool:
+def ensure_target_image(job: "VideoJob", frame_index: int = 10) -> bool:
     """Lazily render ``job.target_image_path`` if it's missing.
 
     Reuses ``eval_target_preview._process_one`` so the rendering (boxed target,
@@ -131,7 +131,7 @@ def ensure_target_image(job: VideoJob, frame_index: int = 10) -> bool:
     return False
 
 
-def compute_density_for_jobs(jobs: list[VideoJob], radius_m: float) -> None:
+def compute_density_for_jobs(jobs: list["VideoJob"], radius_m: float) -> None:
     """Mutate each job to set ``num_nearby_graspable`` from its trajectory H5.
 
     Reuses the same definition as create_json_benchmark.compute_num_nearby_graspable
@@ -144,7 +144,7 @@ def compute_density_for_jobs(jobs: list[VideoJob], radius_m: float) -> None:
         parse_obs_scene,
     )
 
-    h5_cache: dict[Path, h5py.File] = {}
+    h5_cache: dict[Path, "h5py.File"] = {}
     n_ok = 0
     n_no_h5 = 0
     n_no_traj = 0
@@ -191,11 +191,11 @@ def compute_density_for_jobs(jobs: list[VideoJob], radius_m: float) -> None:
 
 
 def balance_jobs_by_density(
-    jobs: list[VideoJob],
+    jobs: list["VideoJob"],
     limit: int | None,
     seed: int,
     max_bucket: int = 10,
-) -> list[VideoJob]:
+) -> list["VideoJob"]:
     """Round-robin sample jobs across distractor-count buckets 0,1,...,max_bucket+.
 
     - Buckets 0..max_bucket-1 hold exact counts; the final bucket holds counts
@@ -205,8 +205,8 @@ def balance_jobs_by_density(
       portion is exhausted, so they're still annotatable as fallback.
     """
     rng = random.Random(seed)
-    buckets: list[list[VideoJob]] = [[] for _ in range(max_bucket + 1)]
-    unknown: list[VideoJob] = []
+    buckets: list[list["VideoJob"]] = [[] for _ in range(max_bucket + 1)]
+    unknown: list["VideoJob"] = []
     for j in jobs:
         n = j.num_nearby_graspable
         if n is None:
@@ -218,7 +218,7 @@ def balance_jobs_by_density(
         rng.shuffle(b)
     rng.shuffle(unknown)
 
-    balanced: list[VideoJob] = []
+    balanced: list["VideoJob"] = []
     bucket_pos = [0] * len(buckets)
     while True:
         progressed = False

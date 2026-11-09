@@ -1048,8 +1048,8 @@ class MlSpacesSceneBuilder:
         for joint in model_spec.joints:
             assert isinstance(joint, mj.MjsJoint)
             if joint.type == mj.mjtJoint.mjJNT_FREE:
-                joint.stiffness[0] = 0.0
-                joint.damping[0] = self.cfg.param_freejoint_damping
+                joint.stiffness = 0.0
+                joint.damping = self.cfg.param_freejoint_damping
                 joint.frictionloss = self.cfg.param_freejoint_frictionloss
                 joint.armature = 0.0
                 break
@@ -1319,8 +1319,8 @@ class MlSpacesSceneBuilder:
                     assert isinstance(joint, mj.MjsJoint)
                     if joint.type not in {mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE}:
                         continue
-                    joint.stiffness[0] = 0.0
-                    joint.damping[0] = 0.1
+                    joint.stiffness = 0.0
+                    joint.damping = 0.1
                     joint.armature = 0.01
                     joint.frictionloss = 1
             case "drawer":
@@ -1328,8 +1328,8 @@ class MlSpacesSceneBuilder:
                     assert isinstance(joint, mj.MjsJoint)
                     if joint.type not in {mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE}:
                         continue
-                    joint.stiffness[0] = 0.0
-                    joint.damping[0] = 0.025
+                    joint.stiffness = 0.0
+                    joint.damping = 0.025
                     joint.armature = 0.05
                     joint.frictionloss = 1.0
             case "showerdoor":
@@ -1337,8 +1337,8 @@ class MlSpacesSceneBuilder:
                     assert isinstance(joint, mj.MjsJoint)
                     if joint.type not in {mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE}:
                         continue
-                    joint.stiffness[0] = 0.0
-                    joint.damping[0] = 0.1
+                    joint.stiffness = 0.0
+                    joint.damping = 0.1
                     joint.armature = 0.05
                     joint.frictionloss = 0.5
             case "oven":
@@ -1346,8 +1346,8 @@ class MlSpacesSceneBuilder:
                     assert isinstance(joint, mj.MjsJoint)
                     if joint.type not in {mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE}:
                         continue
-                    joint.stiffness[0] = 1.0
-                    joint.damping[0] = 10.0
+                    joint.stiffness = 1.0
+                    joint.damping = 10.0
                     joint.armature = 0.1
                     joint.frictionloss = 10.0
             case "dishwasher":
@@ -1355,8 +1355,8 @@ class MlSpacesSceneBuilder:
                     assert isinstance(joint, mj.MjsJoint)
                     if joint.type not in {mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE}:
                         continue
-                    joint.stiffness[0] = 1.0
-                    joint.damping[0] = 10.0
+                    joint.stiffness = 1.0
+                    joint.damping = 10.0
                     joint.armature = 0.1
                     joint.frictionloss = 10.0
             case "stoveknob":
@@ -1364,8 +1364,8 @@ class MlSpacesSceneBuilder:
                     assert isinstance(joint, mj.MjsJoint)
                     if joint.type not in {mj.mjtJoint.mjJNT_HINGE, mj.mjtJoint.mjJNT_SLIDE}:
                         continue
-                    joint.stiffness[0] = 0.0
-                    joint.damping[0] = 0.1
+                    joint.stiffness = 0.0
+                    joint.damping = 0.1
                     joint.armature = 0.1
                     joint.frictionloss = 0.5
 
