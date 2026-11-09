@@ -532,18 +532,6 @@ class G1CameraSystem(CameraSystemConfig):
     ]
 
 
-class G1Dex3CameraSystem(G1CameraSystem):
-    """G1Dex3: the G1's head fisheye and right wrist camera, plus the mirrored left wrist camera
-    (`left_wrist_camera` in g1_dex3.xml), with identical lens, noise and group settings."""
-
-    cameras: list[AllCameraTypes] = [
-        *G1CameraSystem.model_fields["cameras"].default,
-        G1CameraSystem.model_fields["cameras"]
-        .default[1]
-        .model_copy(update={"name": "left_wrist_camera", "mjcf_name": "left_wrist_camera"}),
-    ]
-
-
 class FrankaRandomizedD405D455CameraSystem(CameraSystemConfig):
     """Camera system for Franka pick-and-place tasks with wrist cam and 2 randomized exo cams.
 
