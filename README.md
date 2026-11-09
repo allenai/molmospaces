@@ -104,13 +104,13 @@ cd molmospaces
 
 Then, set up the virtual environment and install.
 
-> Note: If you want to use the debug viewer on macOS you need to use conda or a Homebrew Python. This is because `mjpython` used by the debug viewer requires a shared `libpython3.12.dylib`, which `uv`'s standalone CPython does not ship.
+> Note: If you want to use the debug viewer on macOS you need to use conda or a Homebrew Python. This is because `mjpython` used by the debug viewer requires a shared `libpython3.11.dylib`, which `uv`'s standalone CPython does not ship.
 
 
 With conda:
 
 ```bash
-conda create -n mlspaces python=3.12
+conda create -n mlspaces python=3.11
 conda activate mlspaces
 pip install -e ".[mujoco]"
 ```
@@ -118,7 +118,7 @@ pip install -e ".[mujoco]"
 Or with `uv`:
 
 ```bash
-uv venv --python 3.12 .venv
+uv venv --python 3.11 .venv
 source .venv/bin/activate
 uv pip install -e ".[mujoco]"
 ```
