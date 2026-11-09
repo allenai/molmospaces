@@ -129,6 +129,10 @@ mujoco = [
     "mujoco~=4.0.0",
     "mujoco-warp~=4.0.0",  # keep the same minor as mujoco (see mujoco-warp above)
 ]
+mujoco-filament = [
+    "mujoco @ file://${PROJECT_ROOT}/bin/wheels/mujoco-3.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "mujoco-warp~=3.7.0",  # keep the same minor as mujoco (see mujoco-warp above)
+]
 docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",

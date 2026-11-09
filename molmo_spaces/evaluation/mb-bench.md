@@ -45,8 +45,11 @@ python molmo_spaces/evaluation/eval_main.py <YOUR_POLICY_CONFIG> \
 
 ## Benchmarks with filament renderer
 
-Filament ships with MuJoCo >= 4.0 (the `mujoco` extra), so no extra install is needed: pass the
-`--use-filament` option to the evaluation script.
+For benchmarks using filament we should install `mujoco-filament` from [our dependencies](../../pyproject.toml), e.g., by calling
+```bash
+pip install -e ".[mujoco-filament]"
+```
+from the project root directory and pass the `--use-filament` option to the evaluation script.
 
 ### Pick-Filament (Pick-v2-filament)
 

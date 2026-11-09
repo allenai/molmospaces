@@ -234,7 +234,7 @@ def get_args():
     parser.add_argument(
         "--use-filament",
         action="store_true",
-        help="Use MuJoCo's Filament renderer (mujoco>=4.0) instead of the classic OpenGL one",
+        help="Whether or not to use the filament renderer instead of the legacy opengl one (requires installing custom wheel for now)",
     )
     parser.add_argument(
         "--environment-light-intensity",
@@ -537,7 +537,6 @@ def run_evaluation(
     camera_config_override: Any | None = None,
     camera_names_override: list[str] | None = None,
     environment_light_intensity: float | None = None,
-    use_filament: bool = False,
     episode_idx: int | None = None,
     add_custom_object: bool = False,
     custom_object_path: str | Path | None = None,
@@ -787,9 +786,6 @@ def run_evaluation(
     if viewer:
         exp_config.use_passive_viewer = True
 
-    if use_filament:
-        exp_config.use_filament = True
-
     exp_config.environment_light_intensity = (
         environment_light_intensity or exp_config.environment_light_intensity
     )
@@ -933,7 +929,6 @@ def main() -> None:
         wandb_project=args.wandb_project,
         max_episodes=args.max_episodes,
         environment_light_intensity=args.environment_light_intensity,
-        use_filament=args.use_filament,
         camera_config_override=eval_camera_config,
         camera_names_override=args.camera_names,
         episode_idx=args.idx,

@@ -167,9 +167,6 @@ class MlSpacesExpConfig(Config, ABC):
     filter_for_successful_trajectories: bool = True
     """If True, only save successful trajectories to main output directory (failed episodes may be sampled 1% for debug directory). If False, save all trajectories to main output directory"""
 
-    use_filament: bool = False
-    """Render with MuJoCo's Filament backend (mujoco>=4.0) instead of the classic OpenGL one"""
-
     environment_light_intensity: float = 15000.0
     """The environment intensity value for the IBL when using the filament-based renderer"""
 
