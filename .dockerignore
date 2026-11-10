@@ -54,6 +54,3 @@ procthor-10k-cant-generate
 *.gz
 
 *.lock
-
-# Include the bin/ directory at the root (contains custom mujoco wheels with filament support)
-!/bin

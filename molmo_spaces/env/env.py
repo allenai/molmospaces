@@ -23,7 +23,7 @@ from molmo_spaces.env.data_views import (
     create_mlspaces_body,
 )
 from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
-from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
+from molmo_spaces.renderer.filament_rendering import HAS_FILAMENT, MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
@@ -43,7 +43,6 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-HAS_FILAMENT: bool = getattr(mj, "mjRENDERER", "classic") == "filament"
 DEFAULT_RENDERER_RESOLUTION = (640, 480)
 
 
@@ -269,12 +268,19 @@ class CPUMujocoEnv(BaseMujocoEnv):
             om.clear()
         self.object_managers = [ObjectManager(self, idx) for idx in range(len(self._mj_datas))]
 
+    @property
+    def _use_filament(self) -> bool:
+        use_filament = getattr(self.config, "use_filament", False)
+        if use_filament and not HAS_FILAMENT:
+            raise ImportError("use_filament requires mujoco>=4.0 with the `mujoco-studio` package.")
+        return use_filament
+
     def _create_renderer(self, width: int, height: int) -> MjAbstractRenderer | None:
         """The renderer `_render_frame` draws with. A subclass that renders
         through another path (G1CPUMujocoEnv's per-camera mujoco.Renderer pool
         and fisheye composite) returns None here and overrides the render_*
         methods."""
-        if HAS_FILAMENT:
+        if self._use_filament:
             log.info("Using MuJoCo renderer: filament")
             return MjFilamentRenderer(model=self.mj_model, width=width, height=height)
         log.info("Using MuJoCo renderer: classic")
@@ -851,7 +857,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     agent_radius=agent_radius,
                     px_per_m=px_per_m,
                     device_id=None,
-                    use_filament=HAS_FILAMENT,
+                    use_filament=self._use_filament,
                 )
                 thormap.save(precomputed_map.resolve().as_posix())
                 precomputed_map_symlink.symlink_to(precomputed_map)
@@ -878,7 +884,7 @@ class CPUMujocoEnv(BaseMujocoEnv):
                     px_per_m=px_per_m,
                     agent_radius=agent_radius,
                     device_id=None,
-                    use_filament=HAS_FILAMENT,
+                    use_filament=self._use_filament,
                 )
                 thormap.save(precomputed_map.resolve().as_posix())
                 precomputed_map_symlink.symlink_to(precomputed_map)

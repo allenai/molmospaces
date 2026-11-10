@@ -3,8 +3,33 @@ import numpy as np
 
 from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
 
+try:
+    # Registers the `filament:` resource provider that serves Filament's compiled
+    # materials (pbr.filamat, ...). Without it, the first render aborts the process.
+    import mujoco.studio.window  # noqa: F401
+    from mujoco import mjrf
+except ImportError:
+    mjrf = None
+
+# MuJoCo >= 4.0 ships Filament in the `mujoco-studio` package (installed by `mujoco`),
+# so no custom wheel is needed.
+HAS_FILAMENT: bool = mjrf is not None
+
+# Model numeric read by Filament when no light sets a positive `intensity` (the
+# "fallback" lighting mode); see MuJoCo's rendering docs, `reFlags`.
+_FALLBACK_HEADLIGHT_INTENSITY = "filament.fallback.head_light_intensity"
+_DEFAULT_FALLBACK_HEADLIGHT_INTENSITY = 40000.0
+
 
 class MjFilamentRenderer(MjAbstractRenderer):
+    """Renders through MuJoCo's Filament backend (`mujoco.mjrf`).
+
+    Filament keeps its own retained scene (`ModelRenderables`/`ModelLights`), which
+    `update()` syncs from MjData. An `MjvScene` is still filled on `update()` so
+    callers can read or override `scene.camera` before `render()`, as they do with
+    the OpenGL renderer.
+    """
+
     def __init__(
         self,
         model: mj.MjModel,
@@ -13,32 +38,44 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int = 1280,
         max_geom: int = 10000,
     ) -> None:
+        if mjrf is None:
+            raise ImportError(
+                "Filament rendering requires mujoco>=4.0 with the `mujoco-studio` package."
+            )
         super().__init__(model, device_id)
 
         self._width = width
         self._height = height
 
-        self._model = model
-
         self._scene = mj.MjvScene(model=model, maxgeom=max_geom)
         self._scene_option = mj.MjvOption()
-
         self._scene_option.sitegroup *= 0
-        self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
 
         self._depth_rendering = False
         self._segmentation_rendering = False
 
-        # MuJoCo's renderer requires an active GL context before MjrContext
-        # initialization. Without this, Filament jobs fail with gladLoadGL.
-        self._gl_context = mj.GLContext(width, height)
-        self._gl_context.make_current()
-        self._mjr_context = mj.MjrContext(model, mj.mjtFontScale.mjFONTSCALE_150.value)
-        # mj.mjr_resizeOffscreen(width, height, self._mjr_context)
-        mj.mjr_setBuffer(mj.mjtFramebuffer.mjFB_OFFSCREEN.value, self._mjr_context)
-        self._mjr_context.readDepthMap = mj.mjtDepthMap.mjDEPTH_ZEROFAR.value
+        self._ctx = mjrf.Context(mjrf.ContextConfig())
+        self._ctx.set_clear_color([0.0, 0.0, 0.0])
+        self._resources = mjrf.ModelResources(self._ctx, model)
+        self._fscene = self._ctx.create_scene(mjrf.SceneParams())
+        self._fscene.configure_from_model(model)
+        self._lights = mjrf.ModelLights(self._fscene, self._resources)
+        self._renderables = mjrf.ModelRenderables(self._fscene, self._resources)
+        self._renderables.set_options(self._scene_option)
+        self._headlight_intensity = self._get_headlight_intensity(model)
 
-        self._textures_need_upload = False
+        # (pixel_format, width, height) -> (RenderTarget, ReadRequest, buffer)
+        self._targets: dict[tuple, tuple] = {}
+
+    @staticmethod
+    def _get_headlight_intensity(model: mj.MjModel) -> float:
+        # Filament turns the headlight off once any light is photometric.
+        if model.nlight and np.any(model.light_intensity > 0):
+            return 0.0
+        nid = mj.mj_name2id(model, mj.mjtObj.mjOBJ_NUMERIC, _FALLBACK_HEADLIGHT_INTENSITY)
+        if nid >= 0:
+            return float(model.numeric_data[model.numeric_adr[nid]])
+        return _DEFAULT_FALLBACK_HEADLIGHT_INTENSITY
 
     @property
     def height(self):
@@ -65,6 +102,35 @@ class MjFilamentRenderer(MjAbstractRenderer):
     def geomid_to_bodyid(self, geomid):
         return self.model.geom_bodyid[geomid]
 
+    def _target(self, pixel_format, width: int, height: int, channels: int, dtype) -> tuple:
+        key = (pixel_format, width, height)
+        if key not in self._targets:
+            target = self._ctx.create_render_target(
+                mjrf.RenderTargetConfig(width=width, height=height, color_format=pixel_format)
+            )
+            shape = (height, width, channels) if channels > 1 else (height, width)
+            buffer = np.zeros(shape, dtype=dtype)
+            read = mjrf.ReadRequest(target=target)
+            # The ReadRequest holds a raw pointer, so the buffer lives as long as it.
+            read.set_buffer(buffer)
+            self._targets[key] = (target, read, buffer)
+        return self._targets[key]
+
+    def _camera(self) -> "mjrf.Camera":
+        gl = self._scene.camera[0]
+        return mjrf.Camera(
+            orthographic=bool(gl.orthographic),
+            pos=gl.pos,
+            forward=gl.forward,
+            up=gl.up,
+            frustum_center=gl.frustum_center,
+            frustum_width=gl.frustum_width,
+            frustum_bottom=gl.frustum_bottom,
+            frustum_top=gl.frustum_top,
+            frustum_near=gl.frustum_near,
+            frustum_far=gl.frustum_far,
+        )
+
     def render(
         self,
         *,
@@ -72,132 +138,100 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
-        self._gl_context.make_current()
-        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
-
         height = height or self._height
         width = width or self._width
-        rect = mj.MjrRect(0, 0, width, height)
-
-        original_flags = self._scene.flags.copy()
-
-        # Enable shadow rendering (required for shadows to appear in rendered images)
-        # Shadows are controlled by lights with castshadow enabled
-        self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
-
-        # Using segmented rendering for depth makes the calculated depth more
-        # accurate at far distances.
-        if self._depth_rendering or self._segmentation_rendering:
-            self._scene.flags[mj.mjtRndFlag.mjRND_SEGMENT] = True
-            self._scene.flags[mj.mjtRndFlag.mjRND_IDCOLOR] = True
-
-        # Upload textures to GPU before rendering if textures have been modified
-        # This is necessary when textures are modified via model.tex_data
-        # Only upload when needed to avoid performance overhead
-        if self._textures_need_upload:
-            self.upload_textures()
-            self._textures_need_upload = False
 
         if self._depth_rendering:
-            out_shape = (rect.height, rect.width)
-            out_dtype = np.float32
+            out_shape = (height, width)
+            draw_mode = mjrf.DrawMode.DRAW_MODE_DEPTH
+            target, read, buffer = self._target(
+                mjrf.PixelFormat.PIXEL_FORMAT_R32F, width, height, 1, np.float32
+            )
         else:
-            out_shape = (rect.height, rect.width, 3)
-            out_dtype = np.uint8
-
-        if out is None:
-            out = np.empty(out_shape, dtype=out_dtype)
-        else:
-            if out.shape != out_shape:
-                raise ValueError(
-                    f"Expected `out.shape == {out_shape}`. Got `out.shape={out.shape}`"
-                    " instead. When using depth rendering, the out array should be of"
-                    " shape `(width, height)` and otherwise (width, height, 3)."
-                    f" Got `(self.height, self.width)={(self.height, self.width)}` and"
-                    f" `self._depth_rendering={self._depth_rendering}`."
-                )
-
-        assert self._mjr_context, "MjrContext must be created by now, but it's None"
-        mj.mjr_render(rect, self._scene, self._mjr_context)
-
-        if self._depth_rendering:
-            mj.mjr_readPixels(rgb=None, depth=out, viewport=rect, con=self._mjr_context)
-
-            # Get the distances to the near and far clipping planes.
-            extent = self.model.stat.extent
-            near = self.model.vis.map.znear * extent
-            far = self.model.vis.map.zfar * extent
-
-            # Calculate OpenGL perspective matrix values in float32 precision
-            # so they are close to what glFrustum returns
-            # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/glFrustum.xml
-            zfar = np.float32(far)
-            znear = np.float32(near)
-            c_coef = -(zfar + znear) / (zfar - znear)
-            d_coef = -(np.float32(2) * zfar * znear) / (zfar - znear)
-
-            # In reverse Z mode the perspective matrix is transformed by the following
-            c_coef = np.float32(-0.5) * c_coef - np.float32(0.5)
-            d_coef = np.float32(-0.5) * d_coef
-
-            # We need 64 bits to convert Z from ndc to metric depth without noticeable
-            # losses in precision
-            out_64 = out.astype(np.float64)
-
-            # Undo OpenGL projection
-            # Note: We do not need to take action to convert from window coordinates
-            # to normalized device coordinates because in reversed Z mode the mapping
-            # is identity
-            out_64 = d_coef / (out_64 + c_coef)
-
-            # Cast result back to float32 for backwards compatibility
-            # This has a small accuracy cost
-            out[:] = out_64.astype(np.float32)
-
-            # Reset scene flags.
-            np.copyto(self._scene.flags, original_flags)
-        elif self._segmentation_rendering:
-            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
-
-            # Convert 3-channel uint8 to 1-channel uint32.
-            image3 = out.astype(np.uint32)
-            segimage = image3[:, :, 0] + image3[:, :, 1] * (2**8) + image3[:, :, 2] * (2**16)
-            # Remap segid to 3-channel (object ID, object type, body ID) triplet
-            # Seg ID 0 is background -- will be remapped to (-1, -1, -1).
-
-            # Find the maximum segment ID in the image to size the output array correctly
-            max_segid = np.max(segimage) if segimage.size > 0 else 0
-
-            # Create output array with size to accommodate all possible segment IDs
-            # Add 1 to account for 0-based indexing and ensure we have enough space
-            segid2output = np.full((max_segid + 1, 3), fill_value=-1, dtype=np.int32)
-
-            visible_geoms = [g for g in self._scene.geoms[: self._scene.ngeom] if g.segid != -1]
-            visible_segids = np.array([g.segid + 1 for g in visible_geoms], np.int32)
-            visible_objid = np.array([g.objid for g in visible_geoms], np.int32)
-            visible_objtype = np.array([g.objtype for g in visible_geoms], np.int32)
-            visible_bodyid = np.array(
-                [self.geomid_to_bodyid(g.objid) for g in visible_geoms], np.int32
+            out_shape = (height, width, 3)
+            draw_mode = (
+                mjrf.DrawMode.DRAW_MODE_SEGMENTATION_BY_ID
+                if self._segmentation_rendering
+                else mjrf.DrawMode.DRAW_MODE_DEFAULT
+            )
+            target, read, buffer = self._target(
+                mjrf.PixelFormat.PIXEL_FORMAT_RGB8, width, height, 3, np.uint8
             )
 
-            # Only set values for valid segment IDs that are within bounds
-            valid_mask = (visible_segids >= 0) & (visible_segids < segid2output.shape[0])
-            if np.any(valid_mask):
-                segid2output[visible_segids[valid_mask], 0] = visible_objid[valid_mask]
-                segid2output[visible_segids[valid_mask], 1] = visible_objtype[valid_mask]
-                segid2output[visible_segids[valid_mask], 2] = visible_bodyid[valid_mask]
+        if out is not None and out.shape != out_shape:
+            raise ValueError(
+                f"Expected `out.shape == {out_shape}`. Got `out.shape={out.shape}`"
+                " instead. When using depth rendering, the out array should be of"
+                " shape `(height, width)` and otherwise (height, width, 3)."
+                f" Got `self._depth_rendering={self._depth_rendering}`."
+            )
 
-            out = segid2output[segimage]
+        # Depth and segmentation must not be tone mapped or dithered.
+        plain = self._depth_rendering or self._segmentation_rendering
+        request = mjrf.RenderRequest()
+        request.scene = self._fscene
+        request.target = target
+        request.camera = self._camera()
+        request.viewport.left = 0
+        request.viewport.bottom = 0
+        request.viewport.width = width
+        request.viewport.height = height
+        request.draw_mode = draw_mode
+        request.post_processing = not plain
+        request.shadows = True
+        request.reflections = True
+        request.skybox = True
+        request.haze = True
+        request.headlight = self.model.vis.headlight.active != 0
+        request.headlight_color = tuple(self.model.vis.headlight.diffuse)
+        request.headlight_intensity = self._headlight_intensity
 
-            # Reset scene flags.
-            np.copyto(self._scene.flags, original_flags)
+        self._ctx.wait_for_frame(self._ctx.render([request], [read]))
+
+        if self._depth_rendering:
+            # Filament writes reverse-Z depth with a finite far plane:
+            #   z = near * (far - d) / (d * (far - near))
+            gl = self._scene.camera[0]
+            near = np.float64(gl.frustum_near)
+            far = np.float64(gl.frustum_far)
+            z = buffer.astype(np.float64)
+            if gl.orthographic:
+                depth = far - z * (far - near)
+            else:
+                depth = near * far / (z * (far - near) + near)
+            result = depth.astype(np.float32)
+        elif self._segmentation_rendering:
+            result = self._decode_segmentation(buffer)
         else:
-            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
-            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
+            result = buffer
 
-        out[:] = np.flipud(out)
-
+        if out is None:
+            return result.copy() if result is buffer else result
+        out[:] = result
         return out
+
+    def _decode_segmentation(self, image: np.ndarray) -> np.ndarray:
+        """Maps Filament's per-pixel IDs to (object ID, object type, body ID).
+
+        Filament colors each pixel by ID + 1 over all model geoms, then all sites
+        (0 is background). Background and any other object maps to (-1, -1, -1).
+        """
+        image3 = image.astype(np.int64)
+        ids = image3[..., 0] + image3[..., 1] * (2**8) + image3[..., 2] * (2**16) - 1
+
+        model = self.model
+        ngeom, nsite = model.ngeom, model.nsite
+        lut = np.full((ngeom + nsite + 1, 3), -1, dtype=np.int32)
+        lut[:ngeom, 0] = np.arange(ngeom)
+        lut[:ngeom, 1] = int(mj.mjtObj.mjOBJ_GEOM)
+        lut[:ngeom, 2] = model.geom_bodyid
+        lut[ngeom : ngeom + nsite, 0] = np.arange(nsite)
+        lut[ngeom : ngeom + nsite, 1] = int(mj.mjtObj.mjOBJ_SITE)
+        lut[ngeom : ngeom + nsite, 2] = model.site_bodyid
+
+        # Background (-1) and IDs past the sites index the trailing (-1, -1, -1) row.
+        ids[(ids < 0) | (ids >= ngeom + nsite)] = ngeom + nsite
+        return lut[ids]
 
     def render_rgb(
         self,
@@ -206,75 +240,15 @@ class MjFilamentRenderer(MjAbstractRenderer):
         width: int | None = None,
         height: int | None = None,
     ) -> np.ndarray:
-        self._gl_context.make_current()
-        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
-
-        height = height or self._height
-        width = width or self._width
-        rect = mj.MjrRect(0, 0, width, height)
-
-        # Enable shadow rendering (required for shadows to appear in rendered images)
-        # Shadows are controlled by lights with castshadow enabled
-        self._scene.flags[mj.mjtRndFlag.mjRND_SHADOW] = True
-
-        # Using segmented rendering for depth makes the calculated depth more
-        # accurate at far distances.
-        if self._depth_rendering or self._segmentation_rendering:
-            self._scene.flags[mj.mjtRndFlag.mjRND_SEGMENT] = True
-            self._scene.flags[mj.mjtRndFlag.mjRND_IDCOLOR] = True
-
-        # Upload textures to GPU before rendering if textures have been modified
-        # This is necessary when textures are modified via model.tex_data
-        # Only upload when needed to avoid performance overhead
-        if self._textures_need_upload:
-            self.upload_textures()
-            self._textures_need_upload = False
-
-        if self._depth_rendering:
-            out_shape = (rect.height, rect.width)
-            out_dtype = np.float32
-        else:
-            out_shape = (rect.height, rect.width, 3)
-            out_dtype = np.uint8
-
-        if out is None:
-            out = np.empty(out_shape, dtype=out_dtype)
-        else:
-            if out.shape != out_shape:
-                raise ValueError(
-                    f"Expected `out.shape == {out_shape}`. Got `out.shape={out.shape}`"
-                    " instead. When using depth rendering, the out array should be of"
-                    " shape `(width, height)` and otherwise (width, height, 3)."
-                    f" Got `(self.height, self.width)={(self.height, self.width)}` and"
-                    f" `self._depth_rendering={self._depth_rendering}`."
-                )
-
-        assert self._mjr_context, "MjrContext must be created by now, but it's None"
-        mj.mjr_render(rect, self._scene, self._mjr_context)
-
-        if self._depth_rendering:
-            mj.mjr_readPixels(rgb=None, depth=out, viewport=rect, con=self._mjr_context)
-        elif self._segmentation_rendering:
-            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
-        else:
-            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
-            mj.mjr_readPixels(rgb=out, depth=None, viewport=rect, con=self._mjr_context)
-
-        out[:] = np.flipud(out)
-
-        return out
+        return self.render(out=out, width=width, height=height)
 
     def upload_textures(self) -> None:
-        self._gl_context.make_current()
-        assert self._mjr_context, "MjrContext must be created by now, but it's None"
-        if self.model.ntex == 0:
-            return
-
-        for tex_id in range(self.model.ntex):
-            mj.mjr_uploadTexture(self.model, self._mjr_context, tex_id)
+        # Filament's ModelRenderables re-read materials and texture assignments
+        # (mat_texid, mat_rgba, geom_rgba) on every update(), so nothing to do.
+        pass
 
     def mark_textures_dirty(self) -> None:
-        self._textures_need_upload = True
+        pass
 
     def update(
         self,
@@ -282,9 +256,6 @@ class MjFilamentRenderer(MjAbstractRenderer):
         camera: int | str | mj.MjvCamera = -1,
         scene_option: mj.MjvOption | None = None,
     ) -> None:
-        self._gl_context.make_current()
-        assert self._scene is not None, "Internal scene:MjvScene must be initialized by now"
-
         if not isinstance(camera, mj.MjvCamera):
             camera_id = camera
             if isinstance(camera_id, str):
@@ -306,6 +277,7 @@ class MjFilamentRenderer(MjAbstractRenderer):
                 camera.type = mj.mjtCamera.mjCAMERA_FIXED
 
         scene_option = scene_option or self._scene_option
+        # Fills scene.camera, which callers may override before render().
         mj.mjv_updateScene(
             self.model,
             data,
@@ -315,14 +287,18 @@ class MjFilamentRenderer(MjAbstractRenderer):
             mj.mjtCatBit.mjCAT_ALL.value,
             self._scene,
         )
+        self._renderables.set_options(scene_option)
+        self._lights.update(data)
+        self._renderables.update(data)
 
     def close(self) -> None:
-        if hasattr(self, "_mjr_context") and self._mjr_context:
-            self._mjr_context.free()
-        self._mjr_context = None
-        if hasattr(self, "_gl_context") and self._gl_context:
-            self._gl_context.free()
-        self._gl_context = None
+        # Release Filament objects before the context that owns them.
+        self._targets = {}
+        self._renderables = None
+        self._lights = None
+        self._fscene = None
+        self._resources = None
+        self._ctx = None
 
 
 if __name__ == "__main__":
