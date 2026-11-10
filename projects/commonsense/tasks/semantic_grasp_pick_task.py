@@ -93,7 +93,7 @@ class SemanticGraspPickTask(PickTask):
         classifications_data = None
         for path in classification_paths:
             if path.exists():
-                with open(path, "r") as f:
+                with open(path) as f:
                     classifications_data = json.load(f)
                 log.info(f"Loaded grasp classifications from {path}")
                 break
