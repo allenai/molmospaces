@@ -13,14 +13,15 @@ managed by the RBY1 RobotView class.
 
 from typing import Literal
 
+import mujoco as mj
 import numpy as np
-from mujoco import MjData
 
 from molmo_spaces.robots.robot_views.abstract import (
     FreeJointRobotBaseGroup,
     GripperGroup,
     HoloJointsRobotBaseGroup,
     MJCFFrameMixin,
+    MoveGroup,
     RobotBaseGroup,
     RobotView,
     SimplyActuatedMoveGroup,
@@ -34,7 +35,7 @@ class RBY1ArmGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
 
     def __init__(
         self,
-        mj_data: MjData,
+        mj_data: mj.MjData,
         side: Literal["left", "right"],
         base: RobotBaseGroup,
         namespace: str = "",
@@ -77,7 +78,7 @@ class RBY1GripperGroup(MJCFFrameMixin, GripperGroup):
 
     def __init__(
         self,
-        mj_data: MjData,
+        mj_data: mj.MjData,
         side: Literal["left", "right"],
         base: RobotBaseGroup,
         namespace: str = "",
@@ -175,7 +176,7 @@ class RBY1TorsoGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
     upper body's position and orientation relative to the base.
     """
 
-    def __init__(self, mj_data: MjData, base: RobotBaseGroup, namespace: str = "") -> None:
+    def __init__(self, mj_data: mj.MjData, base: RobotBaseGroup, namespace: str = "") -> None:
         """Initialize the RBY1 torso.
 
         Args:
@@ -210,7 +211,7 @@ class RBY1BaseGroup(FreeJointRobotBaseGroup):
     The wheels are controlled independently, allowing for differential drive motion.
     """
 
-    def __init__(self, mj_data: MjData, namespace: str = "") -> None:
+    def __init__(self, mj_data: mj.MjData, namespace: str = "") -> None:
         """Initialize the RBY1 base.
 
         Args:
@@ -234,7 +235,7 @@ class RBY1HoloBaseGroup(HoloJointsRobotBaseGroup):
     The RBY1 base uses three virtual holonomic joints for x, y and theta control.
     """
 
-    def __init__(self, mj_data: MjData, namespace: str = "") -> None:
+    def __init__(self, mj_data: mj.MjData, namespace: str = "") -> None:
         """Initialize the RBY1 holo base.
 
         Args:
@@ -257,7 +258,7 @@ class RBY1HeadGroup(MJCFFrameMixin, SimplyActuatedMoveGroup):
     to look around the environment.
     """
 
-    def __init__(self, mj_data: MjData, base: RobotBaseGroup, namespace: str = "") -> None:
+    def __init__(self, mj_data: mj.MjData, base: RobotBaseGroup, namespace: str = "") -> None:
         """Initialize the RBY1 head.
 
         Args:
@@ -298,7 +299,7 @@ class RBY1RobotView(RobotView):
     managed by this class.
     """
 
-    def __init__(self, mj_data: MjData, namespace: str = "", holo_base: bool = False) -> None:
+    def __init__(self, mj_data: mj.MjData, namespace: str = "", holo_base: bool = False) -> None:
         """Initialize the RBY1 robot.
 
         Args:
@@ -311,7 +312,7 @@ class RBY1RobotView(RobotView):
             if not holo_base
             else RBY1HoloBaseGroup(mj_data, namespace=namespace)
         )
-        move_groups = {
+        move_groups: dict[str, MoveGroup] = {
             "base": base,
             "torso": RBY1TorsoGroup(mj_data, base, namespace=namespace),
             "left_arm": RBY1ArmGroup(mj_data, "left", base, namespace=namespace),
@@ -320,10 +321,7 @@ class RBY1RobotView(RobotView):
             "right_gripper": RBY1GripperGroup(mj_data, "right", base, namespace=namespace),
             "head": RBY1HeadGroup(mj_data, base, namespace=namespace),
         }
-        super().__init__(
-            mj_data,
-            move_groups,
-        )
+        super().__init__(mj_data, move_groups)
 
     @property
     def name(self) -> str:
@@ -332,11 +330,9 @@ class RBY1RobotView(RobotView):
     @property
     def base(self):
         base = self.get_move_group("base")
-        # assert isinstance(base, RBY1BaseGroup)
         return base
 
     def get_joint_position(self, move_group_ids: list[str]) -> np.ndarray:
-        """Get the current joint positions of the move groups"""
         return np.concatenate(
             [
                 self.get_move_group(move_group_id).joint_pos.copy()

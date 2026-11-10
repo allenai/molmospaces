@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import abc
 import logging
-from abc import abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-import mujoco
+import mujoco as mj
 import numpy as np
-from mujoco import MjData, MjSpec
 from scipy.spatial.transform import Rotation as R
 from scipy.stats import truncnorm
 
@@ -25,8 +23,8 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class Robot:
-    def __init__(self, mj_data: MjData, robot_config: BaseRobotConfig) -> None:
+class Robot(abc.ABC):
+    def __init__(self, mj_data: mj.MjData, robot_config: BaseRobotConfig) -> None:
         self.mj_model = mj_data.model
         self.mj_data = mj_data
         self.robot_config = robot_config
@@ -36,31 +34,27 @@ class Robot:
     @property
     @abc.abstractmethod
     def namespace(self) -> str:
-        """robot namespace used to differentiate between one or multiple robots and the environment"""
-        raise NotImplementedError
+        """A prefix used to differentiate between one or multiple robots and the environment"""
 
     @property
     @abc.abstractmethod
     def robot_view(self) -> RobotView:
-        """robot view for interfacing with joints / links / actuators"""
+        """Robot view for interfacing with joints / links / actuators"""
 
     @property
     @abc.abstractmethod
     def kinematics(self) -> MlSpacesKinematics:
-        """kinematic solver for the robot"""
-        raise NotImplementedError
+        """Kinematic solver for the robot"""
 
     @property
     @abc.abstractmethod
     def parallel_kinematics(self) -> ParallelKinematics:
-        """parallel kinematic solver for the robot"""
-        raise NotImplementedError
+        """Parallel kinematic solver for the robot"""
 
     @property
     @abc.abstractmethod
     def controllers(self) -> dict[str, Controller]:
         """One or more controllers for the robot joints / wheels / etc."""
-        raise NotImplementedError
 
     def set_stationary(self) -> None:
         """Set all controllers of the robot to stationary mode (if not already set),
@@ -311,23 +305,21 @@ class Robot:
     @abc.abstractmethod
     def reset(self) -> None:
         """Reset the robot to its initial state or a provided state."""
-        raise NotImplementedError
 
     @staticmethod
-    @abstractmethod
+    @abc.abstractmethod
     def robot_model_root_name() -> str:
         """The name of the root body of the robot model. This is NOT necessarily the root body of the robot after insertion."""
-        raise NotImplementedError
 
     @classmethod
-    def apply_control_overrides(cls, spec: MjSpec, robot_config: BaseRobotConfig):
+    def apply_control_overrides(cls, spec: mj.MjSpec, robot_config: BaseRobotConfig):
         if robot_config.gravcomp:
             log.debug(f"Applying gravity compensation to robot {robot_config.name}")
             body_name = robot_config.robot_namespace + cls.robot_model_root_name()
             robot_body = spec.body(body_name)
             assert robot_body is not None, f"Robot body {body_name} not found in spec"
             for body in robot_body.find_all("body"):
-                body: mujoco.MjsBody
+                body: mj.MjsBody
                 body.gravcomp = 1.0
 
         # TODO: control overrides will break if non-robot actuators are present
@@ -337,7 +329,7 @@ class Robot:
                 "K_stiffness and K_damping must have the same length"
             )
 
-        actuators: list[mujoco.MjsActuator] = spec.actuators
+        actuators: list[mj.MjsActuator] = spec.actuators
         if stiffness is not None:
             log.debug(f"Applying stiffness gains to robot {cls.robot_model_root_name()}")
             assert len(stiffness) <= len(actuators), (
@@ -365,7 +357,9 @@ class Robot:
                 actuator.forcerange[:] = [-force_limit[i], force_limit[i]]
 
     @classmethod
-    def _load_robot_spec(cls, robot_config: BaseRobotConfig, strip_meshes: bool = False) -> MjSpec:
+    def _load_robot_spec(
+        cls, robot_config: BaseRobotConfig, strip_meshes: bool = False
+    ) -> mj.MjSpec:
         """Load the robot MjSpec from the robot config's XML path.
 
         Args:
@@ -373,13 +367,13 @@ class Robot:
             strip_meshes: If True, remove all mesh geometries from the spec.
                 Useful for kinematics-only models that don't need visual/collision meshes.
         """
-        robot_spec = MjSpec.from_file(str(robot_config.get_robot_xml_path()))
+        robot_spec = mj.MjSpec.from_file(str(robot_config.get_robot_xml_path()))
         if strip_meshes:
             for body in robot_spec.bodies:
-                body: mujoco.MjsBody
+                body: mj.MjsBody
                 for geom in body.geoms:
-                    geom: mujoco.MjsGeom
-                    if geom.type == mujoco.mjtGeom.mjGEOM_MESH:
+                    geom: mj.MjsGeom
+                    if geom.type == mj.mjtGeom.mjGEOM_MESH:
                         robot_spec.delete(geom)
         return robot_spec
 
@@ -387,7 +381,7 @@ class Robot:
     def add_robot_to_scene(
         cls,
         robot_config: BaseRobotConfig,
-        spec: MjSpec,
+        spec: mj.MjSpec,
         prefix: str,
         pos: list[float],
         quat: list[float],
