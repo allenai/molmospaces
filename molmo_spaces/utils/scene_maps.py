@@ -495,6 +495,21 @@ class ProcTHORMap(THORMap):
         # ret[~in_range_mask] = True
         return ret
 
+    def dilate_for_agent(self, agent_radius: float) -> None:
+        """Inflate obstacles by the agent's radius, in place -- the step `load` performs,
+        exposed so a freshly generated map need not round-trip through disk (what is
+        STORED must stay undilated, or loading dilates it twice). Uses `load`'s integer
+        px_per_m: on the raw 199.9997 float a 0.35 m radius truncates to 69 px instead
+        of 70, and the two maps then differ by thousands of cells.
+        """
+        rad_px = int(agent_radius * int(np.ceil(self.px_per_m)))
+        occupied = cv2.dilate((~self.occupancy).astype(np.uint8), circular_kernel(rad_px)).astype(
+            bool
+        )
+        if self.room_map is not None:
+            self.room_map[occupied] = 0
+        self.occupancy = ~occupied
+
     def is_free(self, xy) -> bool:
         """True=free -- same convention and result as check_collision (its name
         is misleading: `occupancy` is already True=free here), given the
@@ -754,6 +769,72 @@ class ProcTHORMap(THORMap):
         data: mj.MjData | None = None,
         device_id: int | None = None,
         use_filament: bool = False,
+        method: str = "render",
+    ):
+        """Occupancy and room map of a ProcTHOR / Holodeck house.
+
+        ``method="render"`` (default): the top-down segmentation render with the open door
+        path cleared (`_from_mj_model_path_render`). The default because the door-opening
+        and navigation task samplers build their maps through this call at runtime.
+
+        ``method="slice"``: the geometry sliced through the band a robot's body sweeps
+        (`_slice_band`, as iTHOR's maps, up to `PROCTHOR_SLICE_HEIGHT`). The floor is the
+        house's room geoms (``room_<n>`` / ``room|...``), so outdoors is never free and each
+        free cell carries its room id. Nothing is rendered: a rug no longer reads as an
+        obstacle, a ceiling light or a table's overhang no longer hides the floor under it,
+        and a doorway is open because its frame's header is above the band (no door
+        special-casing -- a CLOSED door in the band stays an obstacle).
+        """
+        if method == "render":
+            return cls._from_mj_model_path_render(
+                model_path, camera, agent_radius, px_per_m, data, device_id, use_filament
+            )
+        if method != "slice":
+            raise ValueError(f"unknown map method {method!r}")
+        model, data = cls.safe_model_data(mj.MjSpec.from_file(model_path), data)
+        floor_ids, room_ids_to_name, room_ids = [], {}, {}
+        for geom_id in range(model.ngeom):
+            geom_name = mj.mj_id2name(model, mj.mjtObj.mjOBJ_GEOM, geom_id)
+            if geom_name and (geom_name.startswith("room|") or geom_name.startswith("room_")):
+                floor_ids.append(geom_id)
+                room_ids_to_name[geom_id + 1] = model.body(model.geom(geom_id).bodyid.item()).name
+                room_ids[geom_id] = geom_id + 1  # 0 is background, as the render's room map
+        assert len(floor_ids) > 0, "No floors found in the model"
+        occupancy, rooms, world_to_map, map_to_world, px_per_m = _slice_band(
+            model,
+            data,
+            floor_ids,
+            px_per_m,
+            camera=camera,
+            floor_from_geometry=False,
+            room_ids=room_ids,
+            fill_enclosed=True,
+            height=PROCTHOR_SLICE_HEIGHT,
+        )
+        instance = cls(
+            occupancy=occupancy,
+            room_map=rooms,
+            room_ids_to_name=room_ids_to_name,
+            world_to_map=world_to_map,
+            map_to_world=map_to_world,
+            px_per_m=px_per_m,
+        )
+        if agent_radius is not None:
+            instance.dilate_for_agent(agent_radius)
+        del model, data
+        gc.collect()
+        return instance
+
+    @classmethod
+    def _from_mj_model_path_render(
+        cls,
+        model_path: str,
+        camera: str | None = None,
+        agent_radius: float | None = None,
+        px_per_m: int = 100,
+        data: mj.MjData | None = None,
+        device_id: int | None = None,
+        use_filament: bool = False,
     ):
         """
         Generate a ProcTHORMap from a MuJoCo model with the open door path cleared.
@@ -904,7 +985,11 @@ class ProcTHORMap(THORMap):
             if cam_distance == 5.0:
                 # Extract camera-to-world transformation from the first camera in the scene.
                 cam_to_world = np.eye(4)
-                cam_to_world[:3, 3] = renderer.scene.camera[0].pos
+                # Not `renderer.scene.camera[0].pos`: that is the LEFT eye, ipd / 2 (3.4 cm with
+                # MuJoCo's default 0.068) beside the camera, which shifted every map's
+                # world_to_map by 6.8 px at 200 px/m while the pixels sat where the centred
+                # camera put them.
+                cam_to_world[:3, 3] = np.asarray(aabb_center) + [0.0, 0.0, cam_distance]
                 camera_x_ax = np.cross(
                     renderer.scene.camera[0].up, -renderer.scene.camera[0].forward
                 )
@@ -1012,6 +1097,332 @@ class ProcTHORMap(THORMap):
         return instance
 
 
+#: The band a navigating robot's body sweeps, relative to the floor surface.
+ITHOR_SLICE_EPS = 0.02
+#: The band's top: above the tallest driving pose (a mobile manipulator's arm at home on its
+#: full lift, 1.56 m) and a loft bed's deck (1.50-1.52 m, iTHOR FloorPlan318 and
+#: 5 of 51 ProcTHOR-Objaverse houses), which nothing drives under; below the lowest opening a robot
+#: passes (FloorPlan218's archway at 1.72 m -- 1.8 m sealed off its dining room) and the doorway
+#: headers (~2.0 m). Was 1.5 m.
+ITHOR_SLICE_HEIGHT = 1.65
+#: ProcTHOR / Holodeck use the same band.
+PROCTHOR_SLICE_HEIGHT = ITHOR_SLICE_HEIGHT
+#: Smallest free region that can be a room: 0.5 m^2 at 200 px/m.
+ITHOR_MIN_REGION_PX = 20_000
+#: Root-body name prefixes of a house's shell, never closed as one object (`fill_enclosed`).
+ITHOR_ROOM_SHELL = (
+    "wall",
+    "room",
+    "world",
+    "doorway",
+    "doorframe",
+    "door_",
+    "window",
+    "floor",
+    "ceiling",
+)
+
+
+def _ithor_floor_geoms(model: mj.MjModel) -> list[int]:
+    """Visual floor geoms, matched on a `floor_` PREFIX -- `"floor" in name` also
+    matches FLOORLAMP, which lifted the floor height by ~2 m wherever one stands."""
+    return [
+        g
+        for g in range(model.ngeom)
+        if (n := (mj.mj_id2name(model, mj.mjtObj.mjOBJ_GEOM, g) or "").lower())
+        and (n.startswith("floor_") or ":floor_" in n)
+        and model.geom_contype[g] == 0
+    ]
+
+
+def _ithor_tris(model: mj.MjModel, data: mj.MjData, g: int):
+    """World-space triangles of mesh geom `g` as (n, 3, 3), or None if not a mesh."""
+    if model.geom_type[g] != mj.mjtGeom.mjGEOM_MESH or model.geom_dataid[g] < 0:
+        return None
+    m = model.geom_dataid[g]
+    v0, nv = model.mesh_vertadr[m], model.mesh_vertnum[m]
+    f0, nf = model.mesh_faceadr[m], model.mesh_facenum[m]
+    world = (
+        model.mesh_vert[v0 : v0 + nv].reshape(-1, 3) @ data.geom_xmat[g].reshape(3, 3).T
+        + data.geom_xpos[g]
+    )
+    return world[model.mesh_face[f0 : f0 + nf].reshape(-1, 3)]
+
+
+def _ithor_corners(model: mj.MjModel, data: mj.MjData, g: int) -> np.ndarray:
+    """World-space corners of a non-mesh geom's local bounding box, as (8, 3).
+
+    `model.geom_aabb` is MuJoCo's own local centre + half-extents, so every primitive
+    kind -- plane, box, sphere, capsule, cylinder, ellipsoid -- is already sized here.
+    """
+    aabb = model.geom_aabb[g]
+    signs = np.array([[x, y, z] for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)])
+    return (aabb[:3] + signs * aabb[3:]) @ data.geom_xmat[g].reshape(3, 3).T + data.geom_xpos[g]
+
+
+def _ithor_flatness(tris: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per triangle: the cosine of its normal against +z (signed), and its area."""
+    nrm = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
+    ln = np.linalg.norm(nrm, axis=1)
+    ok = ln > 1e-12
+    cos = np.zeros(len(tris))
+    cos[ok] = nrm[ok, 2] / ln[ok]
+    return cos, ln / 2.0
+
+
+def _ithor_floor_height(model: mj.MjModel, data: mj.MjData, fids, fallback: float) -> float:
+    """Height of the floor's UPWARD surfaces: the topmost of the broad ones.
+
+    Not the floor geoms' AABB top -- a `floor_*` body also carries platforms and steps
+    (FloorPlan227 read 0.583 m for a floor at 0.525 and lost every free cell). Upward
+    only, and topmost among comparable areas, because a floor slab is a box whose two
+    faces have equal area and whose underside can carry more triangles (FloorPlan309).
+    """
+    zs, ws = [], []
+    for g in fids:
+        t = _ithor_tris(model, data, g)
+        if t is None:
+            continue
+        cos, area = _ithor_flatness(t)
+        flat = cos > 0.95
+        if not flat.any():  # inverted winding: fall back to unsigned
+            flat = np.abs(cos) > 0.95
+        if flat.any():
+            zs.append(t[flat][:, :, 2].mean(1))
+            ws.append(area[flat])
+    if not zs:
+        return fallback
+    z, wt = np.concatenate(zs), np.concatenate(ws)
+    order = np.argsort(np.round(z / 0.01).astype(int))
+    edges = np.flatnonzero(np.diff(np.round(z[order] / 0.01).astype(int))) + 1
+    cand = [
+        (float(np.average(gz, weights=gw)), float(gw.sum()))
+        for gz, gw in zip(np.split(z[order], edges), np.split(wt[order], edges))
+    ]
+    peak = max(w for _, w in cand)
+    return max(zc for zc, w in cand if w >= 0.5 * peak)
+
+
+def _clip_to_slab(tri: np.ndarray, z0: float, z1: float):
+    """The part of triangle `tri` within z in [z0, z1], as a convex polygon, or None."""
+    poly = tri
+    for keep_above, zc in ((True, z0), (False, z1)):
+        out = []
+        for i in range(len(poly)):
+            a, b = poly[i], poly[(i + 1) % len(poly)]
+            da = (a[2] - zc) if keep_above else (zc - a[2])
+            db = (b[2] - zc) if keep_above else (zc - b[2])
+            if da >= 0:
+                out.append(a)
+            if (da >= 0) != (db >= 0):
+                out.append(a + (b - a) * (da / (da - db)))
+        if len(out) < 3:
+            return None
+        poly = np.asarray(out)
+    return poly
+
+
+def _fill_tris(img: np.ndarray, polys) -> None:
+    """Rasterise a UNION of convex polygons -- one call each, never one `fillPoly` over
+    the list, whose even-odd rule cancels a closed mesh's top face against its bottom."""
+    for p in polys:
+        if np.ptp(p[:, 0]) or np.ptp(p[:, 1]):
+            cv2.fillConvexPoly(img, p, 1)
+
+
+def _ithor_interior(thormap, model_path: str) -> np.ndarray:
+    """Keep the free region nearest the scene's authored agent spawn.
+
+    The floor mesh runs on past the walls and area cannot decide which side is indoors:
+    FloorPlan201's exterior slab is 998456 px against the room's 289940. Membership goes
+    through `get_free_points()`, not by indexing the labels directly -- `world_to_map`
+    returns (u, v), which is not numpy's (row, col).
+    """
+    occ0 = thormap.occupancy.copy()
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(occ0.astype(np.uint8), 4)
+    if n <= 2:
+        return occ0
+    stem = os.path.basename(str(model_path)).replace(".xml", "").replace("_ceiling", "")
+    meta = os.path.join(os.path.dirname(str(model_path)), stem, f"{stem}.json")
+    try:  # THOR is y-up, so the ground-plane coordinates are (x, z)
+        with open(meta) as fh:
+            p = json.load(fh)["metadata"]["agent"]["position"]
+        seed = np.array([float(p["x"]), float(p["z"])])
+    except Exception:  # noqa: BLE001 - absent or malformed metadata: keep every region
+        log.warning("[iTHORMap] no agent spawn in %s; keeping all regions", meta)
+        return occ0
+    best, best_dist = None, None
+    for i in range(1, n):
+        if stats[i, cv2.CC_STAT_AREA] < ITHOR_MIN_REGION_PX:
+            continue
+        thormap.occupancy = lab == i
+        pts = thormap.get_free_points()[:, :2]
+        if not len(pts):
+            continue
+        dist = float(np.linalg.norm(pts - seed, axis=1).min())
+        if best_dist is None or dist < best_dist:
+            best, best_dist = i, dist
+    thormap.occupancy = occ0
+    return occ0 if best is None else (lab == best)
+
+
+def _slice_band(
+    model: mj.MjModel,
+    data: mj.MjData,
+    floor_ids: list[int],
+    px_per_m: float,
+    camera: str | None = None,
+    floor_from_geometry: bool = True,
+    room_ids: dict[int, int] | None = None,
+    fill_enclosed: bool = False,
+    height: float = ITHOR_SLICE_HEIGHT,
+):
+    """Occupancy by SLICING the geometry through the band a robot's body sweeps,
+    [floor + ITHOR_SLICE_EPS, floor + ITHOR_SLICE_HEIGHT], rather than rendering it from above.
+
+    A top-down render answers "is the floor the topmost thing in this column": anything
+    overhead (a soffit, a ceiling light, a hanging plant, a table's overhang) hides the floor
+    under it, and anything flat on the floor (a rug) reads as an obstacle. Slicing asks
+    whether geometry passes through the band, clipping triangles to it first so a wall
+    contributes only the material beside its doorway. Obstacles come from VISUAL **and**
+    COLLISION geoms: THOR's visual walls are zero-thickness quads; the colliders carry the
+    thickness.
+
+    Floor: the `floor_ids` geoms, plus -- with `floor_from_geometry` -- any near-horizontal
+    triangle at floor height (iTHOR spreads one floor over differently-named bodies).
+    `room_ids` (geom id -> room id) also returns a room map: each room geom's floor painted
+    with its id, 0 elsewhere and on every occupied cell.
+
+    `fill_enclosed`: per object (root body), what its own cross-section encloses is blocked
+    too. A tall hollow mesh -- a fridge's shell, a wardrobe -- crosses the band only as its
+    walls and shelves, so its empty compartments read as free islands inside it (train_17480's
+    fridge: 35% of its footprint). Room shells (walls, rooms, doorways, windows, the world
+    body) are skipped: a room is what walls enclose.
+
+    Framed as the renderer framed it -- floor AABB plus 1 m per side, seen from 5 m up -- so
+    maps stay comparable with stored ones. Returns (occupancy [free = True], room map or None,
+    world_to_map, map_to_world, px_per_m).
+    """
+    aabb_center, aabb_size = geom_aabb(model, data, floor_ids, tight_mesh=False)
+    floor_top = _ithor_floor_height(model, data, floor_ids, aabb_center[2] + aabb_size[2] / 2)
+    z0, z1 = floor_top + ITHOR_SLICE_EPS, floor_top + height
+
+    aabb_size = aabb_size + np.array([2, 2, 0])
+    if camera is not None:
+        cam_model = model.cam(camera)
+        w, h = model.cam_resolution[cam_model.id]
+        px_per_m = h / cam_model.fovy.item()
+    else:
+        h, w = round(px_per_m * aabb_size[0]), round(px_per_m * aabb_size[1])
+        px_per_m = h / aabb_size[0]  # recompute to account for rounding
+
+    cam_to_world = np.eye(4)
+    cam_to_world[:3, 3] = [aabb_center[0], aabb_center[1], aabb_center[2] + 5.0]
+    # The free camera's own axes at azimuth 0 / elevation -90, as the renderer
+    # derived them. The identity instead leaves the map rotated a quarter turn.
+    cam_to_world[:3, :3] = np.column_stack(([0, -1, 0], [1, 0, 0], [0, 0, 1]))
+    # transforms (x,y,z,1) in camera frame to (row, col) in the map
+    cam_to_map = np.array([[0, -px_per_m, 0, h / 2], [px_per_m, 0, 0, w / 2]])
+    # transforms (x,y,z,1) in world frame to (row, col) in the map
+    world_to_map = cam_to_map @ inverse_homogeneous_matrix(cam_to_world)
+
+    def to_px(pts):
+        """World (n,3) -> (n,2) int (col,row), the order cv2 wants."""
+        return np.round((world_to_map @ homogenize(pts).T).T[:, ::-1]).astype(np.int32)
+
+    floor = np.zeros((h, w), np.uint8)  # where there is walkable floor at all
+    block = np.zeros((h, w), np.uint8)  # where the band is obstructed
+    rooms = np.zeros((h, w), np.int32) if room_ids is not None else None
+    fset = set(floor_ids)
+    order = range(model.ngeom)
+    if fill_enclosed:  # one object's geoms together, so each object's mask can be closed
+        order = sorted(order, key=lambda g: int(model.body_rootid[model.geom_bodyid[g]]))
+    obj_root, obj_block = None, block
+    for geom_id in order:
+        if fill_enclosed:
+            root = int(model.body_rootid[model.geom_bodyid[geom_id]])
+            if root != obj_root:
+                if obj_block is not block:
+                    _block_enclosed(block, obj_block)
+                obj_root = root
+                name = (model.body(root).name or "world").lower()
+                obj_block = block if name.startswith(ITHOR_ROOM_SHELL) else np.zeros_like(block)
+        tris = _ithor_tris(model, data, geom_id)
+        if tris is None:
+            corners = _ithor_corners(model, data, geom_id)
+            if geom_id in fset:
+                cv2.fillConvexPoly(floor, cv2.convexHull(to_px(corners)), 1)
+                if rooms is not None and geom_id in room_ids:
+                    cv2.fillConvexPoly(
+                        rooms, cv2.convexHull(to_px(corners)), int(room_ids[geom_id])
+                    )
+            elif corners[:, 2].max() > z0 and corners[:, 2].min() < z1:
+                cv2.fillConvexPoly(obj_block, cv2.convexHull(to_px(corners)), 1)
+            continue
+
+        cos, _ = _ithor_flatness(tris)
+        if floor_from_geometry:
+            # Floor by GEOMETRY, not by name: FloorPlan204 spreads one floor over four
+            # differently-named bodies, so a name match left its doorway threshold as a
+            # seam of un-rasterised floor and split the house in half.
+            at_floor = (np.abs(cos) > 0.95) & (np.abs(tris[:, :, 2].mean(1) - floor_top) < 0.06)
+            if at_floor.any():
+                _fill_tris(floor, [to_px(t) for t in tris[at_floor]])
+        if geom_id in fset:
+            if not floor_from_geometry:  # the floor is exactly these geoms' flat faces
+                flat = [to_px(t) for t in tris[np.abs(cos) > 0.95]]
+                _fill_tris(floor, flat)
+                if rooms is not None and geom_id in room_ids:
+                    for p in flat:
+                        if np.ptp(p[:, 0]) or np.ptp(p[:, 1]):
+                            cv2.fillConvexPoly(rooms, p, int(room_ids[geom_id]))
+            continue
+
+        zmin, zmax = tris[:, :, 2].min(1), tris[:, :, 2].max(1)
+        sel = (zmax > z0) & (zmin < z1)
+        whole = sel & (zmin >= z0) & (zmax <= z1)
+        polys = [to_px(t) for t in tris[whole]]
+        for tri in tris[sel & ~whole]:
+            if (clipped := _clip_to_slab(tri, z0, z1)) is not None:
+                polys.append(to_px(clipped))
+        _fill_tris(obj_block, polys)
+    if obj_block is not block:
+        _block_enclosed(block, obj_block)
+
+    # Adjacent rooms carry separate floor meshes that abut without overlapping, and
+    # the 1-2 px seam between them splits the house. Closed on the floor mask only,
+    # so nothing real is bridged.
+    floor = cv2.morphologyEx(floor, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    occupancy = floor.astype(bool) & ~block.astype(bool)  # 1 is free, 0 is occupied
+    if rooms is not None:
+        rooms[~occupancy] = 0
+
+    # converts (row, col, 1) to (x, y, 1) in camera frame, in pixels
+    map_to_centered = np.array([[0, 1, -w / 2], [-1, 0, h / 2], [0, 0, 1]])
+    # transforms (x, y, 1) from pixels to to (x, y, 1) in camera frame
+    centered_to_cam = np.array([[1 / px_per_m, 0, 0], [0, 1 / px_per_m, 0], [0, 0, 1]])
+    # transforms (x, y, 1) in camera frame to (x, y, 0) in world frame
+    cam_to_world_floor = cam_to_world[:-1, [0, 1, 3]].copy()
+    cam_to_world_floor[2, 2] = 0
+    # transforms (row, col, 1) in map to (x, y, 0) in world frame
+    map_to_world = cam_to_world_floor @ centered_to_cam @ map_to_centered
+    return occupancy, rooms, world_to_map, map_to_world, px_per_m
+
+
+def _block_enclosed(block: np.ndarray, obj: np.ndarray) -> None:
+    """OR one object's band mask into `block`, with every hole it encloses filled: what a
+    flood from outside its bounding box cannot reach."""
+    ys, xs = np.nonzero(obj)
+    if not len(ys):
+        return
+    r0, r1, c0, c1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    crop = np.pad(obj[r0:r1, c0:c1], 1)
+    reach = crop.copy()
+    cv2.floodFill(reach, np.zeros((reach.shape[0] + 2, reach.shape[1] + 2), np.uint8), (0, 0), 1)
+    solid = (crop | (reach == 0)).astype(np.uint8)[1:-1, 1:-1]
+    block[r0:r1, c0:c1] |= solid
+
+
 class iTHORMap(ProcTHORMap):
     def __init__(
         self,
@@ -1038,167 +1449,40 @@ class iTHORMap(ProcTHORMap):
         device_id: int | None = None,
         use_filament: bool = False,
     ):
-        # We make two passes of spec/model loading:
-        #  1. determine which objects are more than 1.5m above the floor
-        #  2. compute the occupancy map with high objects removed
+        """Occupancy by SLICING the geometry rather than rendering it from above.
 
-        # Pass 1.
+        A top-down render answers "is the floor the topmost thing in this column", so
+        anything overhead hides the floor beneath it, and no body- or geom-level deletion
+        rule repairs that: FloorPlan224 merges its walls and the soffit over a doorway
+        into ONE mesh geom spanning z=-0.30..2.99. Slicing instead asks whether geometry
+        passes through the band the robot's body sweeps, clipping triangles to it first
+        so a wall contributes only the material beside its doorway. Obstacles come from
+        VISUAL **and** COLLISION geoms: THOR's visual walls are zero-thickness quads that
+        project to a 1-px line from overhead (FloorPlan22's came to 16269 px) and rooms
+        leaked outdoors; the colliders carry the real thickness.
+
+        `device_id` and `use_filament` are unused -- nothing is rendered -- and kept for
+        signature compatibility. `camera`, if given, only frames the grid.
+        """
         spec = mj.MjSpec.from_file(model_path)
         model, data = cls.safe_model_data(spec)
 
-        # Find floor geoms
-        floor_ids = []
-        for geom_id in range(model.ngeom):
-            geom_name = mj.mj_id2name(model, mj.mjtObj.mjOBJ_GEOM, geom_id)
-            if geom_name and "floor" in geom_name.lower():
-                if model.geom(geom_id).contype == 0:  # is "__VISUAL_MJT__":
-                    floor_ids.append(geom_id)
+        floor_ids = _ithor_floor_geoms(model)
         assert len(floor_ids) > 0, "No floors found in the model"
-
-        # Compute top of floor and height threshold (1.5m above floor)
-        aabb_center, aabb_size = geom_aabb(model, data, floor_ids, tight_mesh=False)
-        z_threshold = 1.5 + (aabb_center[2] + aabb_size[2] / 2)  # floor top + 1.5
-
-        # Find top-level body names
-        high_names = set()
-        low_names = set()
-        for geom_id in range(model.ngeom):
-            aabb_center, aabb_size = geom_aabb(model, data, [geom_id], tight_mesh=False)
-            if model.geom(geom_id).contype == 0:  # is "__VISUAL_MJT__":
-                min_z = aabb_center[2] - aabb_size[2] / 2
-                body_id = model.geom_bodyid[geom_id]
-                body_name = mj.mj_id2name(model, mj.mjtObj.mjOBJ_BODY, body_id)
-
-                # Get top-level body name
-                parts = body_name.split("_")
-                parts[-2] = "0"
-                body_name = "_".join(parts)
-
-                if min_z > z_threshold:
-                    high_names.add(body_name)
-                else:
-                    low_names.add(body_name)
-
-        # If any low-level body is low, the top-level one cannot be considered high
-        high_names -= low_names
-
-        del data, model
-
-        # Pass 2.
-        spec = mj.MjSpec.from_file(model_path)
-
-        # Delete high bodies
-        for body in spec.worldbody.bodies:
-            body_name = body.name
-            if body_name and "ceiling" in body_name.lower():
-                spec.delete(body)
-            elif body_name and "light" in body_name.lower():
-                spec.delete(body)
-            elif body_name in high_names:
-                spec.delete(body)
-
-        model, data = cls.safe_model_data(spec)
-
-        floor_ids = []
-        for geom_id in range(model.ngeom):
-            geom_name = mj.mj_id2name(model, mj.mjtObj.mjOBJ_GEOM, geom_id)
-            if geom_name and "floor" in geom_name.lower():
-                if model.geom(geom_id).contype == 0:  # is "__VISUAL_MJT__":
-                    floor_ids.append(geom_id)
-        assert len(floor_ids) > 0, "No floors found in the model"
-
-        if camera is None:
-            aabb_center, aabb_size = geom_aabb(model, data, floor_ids, tight_mesh=False)
-            aabb_size += np.array([2, 2, 0])  # add 1m buffer to each side
-            cam = mj.MjvCamera()
-            cam.type = mj.mjtCamera.mjCAMERA_FREE
-            cam.lookat[:] = aabb_center
-            cam.distance = 5.0
-            cam.azimuth = 0
-            cam.elevation = -90
-            cam.orthographic = 1
-            h, w = round(px_per_m * aabb_size[0]), round(px_per_m * aabb_size[1])
-            px_per_m = h / aabb_size[0]  # recompute to account for rounding
-            renderer = _get_renderer(
-                model, width=w, height=h, device_id=device_id, use_filament=use_filament
-            )
-            renderer.update(data, cam)
-            for camera in renderer.scene.camera:
-                camera: mj.MjvGLCamera
-                camera.orthographic = 1
-                camera.frustum_bottom = -aabb_size[0] / 2
-                camera.frustum_top = aabb_size[0] / 2
-        else:
-            cam_model = model.cam(camera)
-            assert model.cam_orthographic[cam_model.id], "Camera must be orthographic"
-            w, h = model.cam_resolution[cam_model.id]
-            px_per_m = h / cam_model.fovy.item()
-            renderer = _get_renderer(
-                model, width=w, height=h, device_id=device_id, use_filament=use_filament
-            )
-            renderer.update(data, camera)
-
-        cam_to_world = np.eye(4)
-        cam_to_world[:3, 3] = renderer.scene.camera[0].pos
-        camera_x_ax = np.cross(renderer.scene.camera[0].up, -renderer.scene.camera[0].forward)
-        cam_to_world[:3, :3] = np.column_stack(
-            (camera_x_ax, renderer.scene.camera[0].up, -renderer.scene.camera[0].forward)
+        occupancy, _, world_to_map, map_to_world, px_per_m = _slice_band(
+            model, data, floor_ids, px_per_m, camera=camera, floor_from_geometry=True
         )
-        assert np.allclose(cam_to_world[:3, 2], [0, 0, 1]), "Camera must be pointing straight down"
 
-        renderer.enable_segmentation_rendering()
-        seg = renderer.render()[..., 0]
-        renderer.close()
+        thormap = cls(occupancy, world_to_map, map_to_world, px_per_m)
+        thormap.occupancy = _ithor_interior(thormap, model_path)
 
-        # Assemble occumancy map from segmentation
-        occupancy = np.ones_like(seg, dtype=bool)
-        for floor_id in floor_ids:
-            occupancy &= seg != floor_id
         # Dilate to account for agent radius
         if agent_radius is not None:
             rad_px = int(agent_radius * px_per_m)
-            kernel = circular_kernel(rad_px)
-            occupancy = cv2.dilate(occupancy.astype(np.uint8), kernel).astype(bool)
-        # cv2.imwrite("ithor_occupancy.png", occupancy * 255)
-
-        # Remove small isolated islands (likely region outside of the wall)
-        # Find connected components in the free space (black regions)
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
-            (~occupancy).astype(np.uint8), connectivity=8
-        )
-
-        # Find the largest component
-        # But sometimes the largest component is outside of the wall
-        """
-        if num_labels > 1:  # More than just background
-            areas = stats[1:, cv2.CC_STAT_AREA]  # Skip background (label 0)
-            largest_label = np.argmax(areas) + 1  # +1 because we skipped background
-
-            # Create a mask with only the largest component
-            largest_component_mask = (labels == largest_label)
-
-            # Remove all other small components by setting them to occupied
-            occupancy = occupancy | ~largest_component_mask
-        """
-        # cv2.imwrite("ithor_occupancy_cleaned.png", occupancy * 255)
-
-        # transforms (x,y,z,1) in camera frame to (row, col) in the map
-        cam_to_map = np.array([[0, -px_per_m, 0, h / 2], [px_per_m, 0, 0, w / 2]])
-        # transforms (x,y,z,1) in world frame to (row, col) in the map
-        world_to_map = cam_to_map @ inverse_homogeneous_matrix(cam_to_world)
-
-        # converts (row, col, 1) to (x, y, 1) in camera frame, in pixels
-        map_to_centered = np.array([[0, 1, -w / 2], [-1, 0, h / 2], [0, 0, 1]])
-        # transforms (x, y, 1) from pixels to to (x, y, 1) in camera frame
-        centered_to_cam = np.array([[1 / px_per_m, 0, 0], [0, 1 / px_per_m, 0], [0, 0, 1]])
-        # transforms (x, y, 1) in camera frame to (x, y, 0) in world frame
-        cam_to_world_floor = cam_to_world[:-1, [0, 1, 3]].copy()
-        cam_to_world_floor[2, 2] = 0
-        # transforms (row, col, 1) in map to (x, y, 0) in world frame
-        map_to_world = cam_to_world_floor @ centered_to_cam @ map_to_centered
-
-        # Flip the occupancy map. 1 is free, 0 is occupied
-        occupancy = ~occupancy
+            occupied = cv2.dilate(
+                (~thormap.occupancy).astype(np.uint8), circular_kernel(rad_px)
+            ).astype(bool)
+            thormap.occupancy = ~occupied
 
         # Explicitly delete temporary MuJoCo objects before garbage collection
         # These were created for map generation and are no longer needed
@@ -1208,7 +1492,7 @@ class iTHORMap(ProcTHORMap):
         # Force garbage collection to free MuJoCo objects
         gc.collect()
 
-        return cls(occupancy, world_to_map, map_to_world, px_per_m)
+        return thormap
 
     def save(self, path: str):
         if path.endswith(".png"):
