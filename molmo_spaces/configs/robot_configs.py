@@ -168,6 +168,11 @@ class BaseRobotConfig(Config):
         return self.get_robot_dir() / self.robot_xml_path
 
 
+#: Franka FR3 arm gains, sim2real "medium" profile (kp, kd per joint 1..7).
+FRANKA_ARM_KP = [300.0, 300.0, 300.0, 300.0, 150.0, 100.0, 50.0]
+FRANKA_ARM_KD = [35.0, 35.0, 35.0, 35.0, 20.0, 15.0, 10.0]
+
+
 # Concrete robot configurations
 
 
@@ -197,6 +202,11 @@ class FrankaRobotConfig(BaseRobotConfig):
         "gripper": "joint_position",
     }
     gravcomp: bool = True
+    # Arm PD gains: the sim2real-identified "medium" profile (fr3_robotiq_gripper_sysid), not the Menagerie FR3
+    # defaults in model.xml (kp 4500..2000, kv kp/10), which are far stiffer than a real FR3's controller.
+    # At kp 2000 the 12 Nm wrist saturates at 6 mrad of error, and held thin items creep out of the grip.
+    K_stiffness: list[float] | None = FRANKA_ARM_KP
+    K_damping: list[float] | None = FRANKA_ARM_KD
     # texture randomization parameters, ignored if texture randomization is disabled
     perturb_texture_probability: float = 0.7
 
@@ -230,6 +240,11 @@ class MobileFrankaRobotConfig(BaseRobotConfig):
         "gripper": "joint_position",
     }
     gravcomp: bool = True
+    # Arm PD gains: the sim2real-identified "medium" profile (fr3_robotiq_gripper_sysid), not the Menagerie FR3
+    # defaults in model.xml (kp 4500..2000, kv kp/10), which are far stiffer than a real FR3's controller.
+    # At kp 2000 the 12 Nm wrist saturates at 6 mrad of error, and held thin items creep out of the grip.
+    K_stiffness: list[float] | None = FRANKA_ARM_KP
+    K_damping: list[float] | None = FRANKA_ARM_KD
 
     base_control_params: dict[str, dict[str, float]] = {
         "base_x_act": {
@@ -275,6 +290,11 @@ class FrankaCAPRobotConfig(BaseRobotConfig):
         "gripper": "joint_position",
     }
     gravcomp: bool = True
+    # Arm PD gains: the sim2real-identified "medium" profile (fr3_robotiq_gripper_sysid), not the Menagerie FR3
+    # defaults in model.xml (kp 4500..2000, kv kp/10), which are far stiffer than a real FR3's controller.
+    # At kp 2000 the 12 Nm wrist saturates at 6 mrad of error, and held thin items creep out of the grip.
+    K_stiffness: list[float] | None = FRANKA_ARM_KP
+    K_damping: list[float] | None = FRANKA_ARM_KD
 
     def model_post_init(self, _context: Any):
         super().model_post_init(_context)
