@@ -98,14 +98,14 @@ def randomize_door_joints(  # TODO: do these defaults make sense?
             log.debug(f"[DOOR JOINT MOD] Modifying door joint: {name}")
 
             # only adust the ref/springref if the joint is not already set to be a spring
-            if joint.stiffness == 0.0:
+            if joint.stiffness[0] == 0.0:
                 joint.springref = joint.range[0].item()
 
-            old_stiffness = joint.stiffness
-            old_damping = joint.damping
+            old_stiffness = joint.stiffness[0]
+            old_damping = joint.damping[0]
             old_frictionloss = joint.frictionloss
-            joint.stiffness = np.random.uniform(*door_stiffness_range)
-            joint.damping = np.random.uniform(*door_damping_range)
+            joint.stiffness[0] = np.random.uniform(*door_stiffness_range)
+            joint.damping[0] = np.random.uniform(*door_damping_range)
             joint.frictionloss = np.random.uniform(*door_frictionloss_range)
             joint.limited = 1
             if joint.armature == 0.0:
@@ -113,28 +113,28 @@ def randomize_door_joints(  # TODO: do these defaults make sense?
 
             modifications_count["doors"] += 1
 
-            log.debug(f"[DOOR JOINT MOD] stiffness: {old_stiffness} -> {joint.stiffness}")
-            log.debug(f"[DOOR JOINT MOD] damping: {old_damping} -> {joint.damping}")
+            log.debug(f"[DOOR JOINT MOD] stiffness: {old_stiffness} -> {joint.stiffness[0]}")
+            log.debug(f"[DOOR JOINT MOD] damping: {old_damping} -> {joint.damping[0]}")
             log.debug(f"[DOOR JOINT MOD] frictionloss: {old_frictionloss} -> {joint.frictionloss}")
         elif is_handle_joint:
             log.debug(f"Modifying handle joint: {name}")
 
             if add_handle_limits:
                 joint.limited = 1
-                if joint.stiffness == 0.0:
+                if joint.stiffness[0] == 0.0:
                     joint.springref = joint.range[0].item()
 
-            old_stiffness = joint.stiffness
-            old_damping = joint.damping
+            old_stiffness = joint.stiffness[0]
+            old_damping = joint.damping[0]
             old_frictionloss = joint.frictionloss
-            joint.stiffness = np.random.uniform(*handle_stiffness_range)
-            joint.damping = np.random.uniform(*handle_damping_range)
+            joint.stiffness[0] = np.random.uniform(*handle_stiffness_range)
+            joint.damping[0] = np.random.uniform(*handle_damping_range)
             joint.frictionloss = np.random.uniform(*handle_frictionloss_range)
             joint.armature = 1.0  # TODO(abhay): why set armature to 1.0?
             modifications_count["handles"] += 1
 
-            log.debug(f"[HANDLE JOINT MOD] stiffness: {old_stiffness} -> {joint.stiffness}")
-            log.debug(f"[HANDLE JOINT MOD] damping: {old_damping} -> {joint.damping}")
+            log.debug(f"[HANDLE JOINT MOD] stiffness: {old_stiffness} -> {joint.stiffness[0]}")
+            log.debug(f"[HANDLE JOINT MOD] damping: {old_damping} -> {joint.damping[0]}")
             log.debug(
                 f"[HANDLE JOINT MOD] frictionloss: {old_frictionloss} -> {joint.frictionloss}"
             )

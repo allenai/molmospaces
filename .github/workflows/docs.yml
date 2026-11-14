@@ -26,10 +26,10 @@ jobs:
       - name: Install UV package manager
         uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Create virtual environment
-        run: uv venv --python 3.11
+        run: uv venv --python 3.12
 
       - name: Install docs dependencies
         run: |

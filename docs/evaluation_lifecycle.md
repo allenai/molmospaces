@@ -346,7 +346,7 @@ affects. For full details on a flag, see `get_args()` in
 | --- | --- | --- |
 | `--use_eval_cameras` | (via `camera_config_override`) | Enable `FrankaEvalCameraSystem` — replaces JSON-recorded cameras with a deterministic, visibility-checked spherical perturbation. |
 | `--camera_rand_level` | (via `camera_config_override`) | 0–100 randomization scale for the eval camera system. Only relevant with `--use_eval_cameras`. |
-| `--use-filament` | (build separately) | Switch to the filament renderer (requires the custom wheel). |
+| `--use-filament` | `use_filament` | Switch to MuJoCo's Filament renderer (mujoco>=4.0). |
 | `--environment-light-intensity` | `environment_light_intensity` | Override default ambient intensity (filament only). |
 
 ### Custom objects (asset-swap experiments)
