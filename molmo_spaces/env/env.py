@@ -223,6 +223,9 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self._occupancy_maps = OrderedDict()
 
         # scenes
+        # MuJoCo 4.0: with constraint islands, Newton diverges on resting contact stacks (a cup
+        # holding utensils) once the robot's island merges with them. Islands off matches 3.5.
+        mj_model.opt.disableflags |= int(mj.mjtDisableBit.mjDSBL_ISLAND)
         self._mj_model = mj_model
         self._mj_base_scene_path = mj_base_scene_path
         self._scene_metadata = (
