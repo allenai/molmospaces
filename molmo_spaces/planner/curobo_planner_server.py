@@ -148,8 +148,8 @@ def _get_planner(body: dict, context: grpc.ServicerContext) -> CuroboPlanner:
 
 
 def _apply_world(p: CuroboPlanner, obstacles: list[dict], context: grpc.ServicerContext) -> None:
-    """Build a WorldConfig from obstacles and update the planner. Must be called inside GPU worker."""
-    from curobo.geom.types import Cuboid, WorldConfig
+    """Build a Scene from obstacles and update the planner. Must be called inside GPU worker."""
+    from curobo.scene import Cuboid, Scene
 
     cuboids = []
     for obj in obstacles:
@@ -159,14 +159,12 @@ def _apply_world(p: CuroboPlanner, obstacles: list[dict], context: grpc.Servicer
                 f"obstacle missing required fields (name, pose, dims): {obj}",
             )
         cuboids.append(Cuboid(name=obj["name"], pose=obj["pose"], dims=obj["dims"]))
-    world_cfg = WorldConfig(cuboid=cuboids)
-    p.motion_gen.update_world(world_cfg)
-    p.world_config = world_cfg
+    p.set_world(Scene(cuboid=cuboids))
 
 
 def _apply_lock_joints(p: CuroboPlanner, lock_joints: dict) -> None:
     """Apply locked joints to the planner. Must be called inside GPU worker."""
-    p.motion_gen.update_locked_joints(lock_joints, p.curobo_robot_config_dict)
+    p.update_locked_joints(lock_joints)
 
 
 # ---------------------------------------------------------------------------
@@ -256,9 +254,9 @@ class _CuroboPlannerServicer:
                 goal_pose_lists=req["goal_poses"],
                 verbose=req.get("verbose", False),
             )
-            success = result.success.item()
-            solve_time = float(result.solve_time) if result.solve_time is not None else None
-            status = str(result.status)
+            success = result is not None and result.success.any().item()
+            solve_time = float(result.solve_time) if result is not None else None
+            status = "success" if success else ("ik_fail" if result is None else "trajopt_fail")
             del result
             torch.cuda.empty_cache()
             _wandb_log(
@@ -298,33 +296,15 @@ class _CuroboPlannerServicer:
                 _apply_world(p, req["obstacles"], context)
             if "lock_joints" in req:
                 _apply_lock_joints(p, req["lock_joints"])
-            result = p.plan_batch(
+            t_plan = time.perf_counter()
+            successes, trajectories = p.plan_batch(
                 joint_positions=joint_positions,
                 goal_pose_lists=goal_poses,
                 verbose=req.get("verbose", False),
             )
-            # Immediately pull everything to CPU then release the GPU result.
-            successes = result.success.cpu().numpy().tolist()
-            solve_time = float(result.solve_time) if result.solve_time is not None else None
-            position_cpu = None
-            if result.optimized_plan is not None and result.optimized_plan.position is not None:
-                pos = result.optimized_plan.position
-                if pos.ndim == 2:
-                    pos = pos.unsqueeze(0)
-                position_cpu = pos.cpu()
-            del result
+            solve_time = time.perf_counter() - t_plan
             torch.cuda.empty_cache()
-            # Build trajectories entirely from CPU tensor — no GPU access after this point.
-            trajectories = []
-            for i, ok in enumerate(successes):
-                if ok and position_cpu is not None:
-                    try:
-                        trajectories.append(position_cpu[i].tolist())
-                    except Exception as e:
-                        log.warning(f"Failed to extract trajectory at index {i}: {e}")
-                        trajectories.append([])
-                else:
-                    trajectories.append([])
+
             n = len(successes)
             _wandb_log(
                 {
@@ -345,7 +325,7 @@ class _CuroboPlannerServicer:
     def UpdateWorld(self, req: dict, context) -> dict:
         if "obstacles" not in req:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "missing 'obstacles'")
-        from curobo.geom.types import Cuboid, WorldConfig
+        from curobo.scene import Cuboid, Scene
 
         p = _get_planner(req, context)
 
@@ -358,9 +338,7 @@ class _CuroboPlannerServicer:
                         f"obstacle missing required fields (name, pose, dims): {obj}",
                     )
                 cuboids.append(Cuboid(name=obj["name"], pose=obj["pose"], dims=obj["dims"]))
-            new_world_cfg = WorldConfig(cuboid=cuboids)
-            p.motion_gen.update_world(new_world_cfg)
-            p.world_config = new_world_cfg
+            p.set_world(Scene(cuboid=cuboids))
             return {"status": "ok", "num_obstacles": len(cuboids)}
 
         return _run_on_gpu(_run)

@@ -5,7 +5,7 @@ from typing import Any
 
 import mujoco
 import numpy as np
-from curobo.geom.types import Cuboid
+from curobo.scene import Cuboid
 from scipy.spatial.transform import Rotation as R
 
 from molmo_spaces.configs.abstract_exp_config import MlSpacesExpConfig

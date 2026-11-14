@@ -24,22 +24,22 @@ from molmo_spaces.configs.abstract_config import Config
 if TYPE_CHECKING:
     # Type checkers and IDEs resolve the real curobo type; at runtime the alias below
     # keeps this module curobo-free. A bare string annotation (`world_config:
-    # "WorldConfig"`) does NOT work here -- pydantic cannot resolve the forward ref
+    # "Scene"`) does NOT work here -- pydantic cannot resolve the forward ref
     # without curobo installed and raises PydanticUserError ("is not fully defined")
     # on the first instantiation.
-    from curobo.geom.types import WorldConfig
+    from curobo.scene import Scene
 else:
-    WorldConfig = Any
+    Scene = Any
 
 
 class CuroboPlannerConfig(Config):
     # --- Curobo setup parameters ---
     curobo_robot_config_path: str
-    # curobo.geom.types.WorldConfig under a type checker, Any at runtime (see the
+    # curobo.scene.Scene under a type checker, Any at runtime (see the
     # TYPE_CHECKING block above), so this module -- and so every config that
     # references it -- stays importable without curobo installed. Only ever assigned
     # at runtime (curobo_planner_server) by code that has curobo.
-    world_config: WorldConfig = None
+    world_config: Scene = None
     kinematics_config: dict = None
     lock_joints: dict | None = None  # Override locked joint values: {joint_name: value}
 
@@ -50,6 +50,9 @@ class CuroboPlannerConfig(Config):
     collision_spheres_path: str | None = None
 
     # --- Motion planner parameters ---
+    # trajopt_tsteps, time_dilation_factor, fixed_iters_trajopt, maximum_trajectory_dt and
+    # check_start_validity configured cuRobo v1 and have no cuRoboV2 equivalent; they are
+    # kept so existing configs still load, but are ignored.
     trajopt_tsteps: int = 20
     interpolation_dt: float = 0.02  # Match control_dt for smooth execution in MuJoCo
     time_dilation_factor: float = 1.0
