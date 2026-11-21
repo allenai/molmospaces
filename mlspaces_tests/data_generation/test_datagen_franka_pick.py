@@ -19,7 +19,7 @@ class FrankaDroidPickTestConfig(PickBaseConfig):
     output_dir: Path = Path(__file__).parent / "test_output" / "franka_droid_pick_test"
 
     num_envs: int = 1
-    seed: int = 42
+    seed: int | None = 42
     num_workers: int = 1
 
     scene_dataset: str = "procthor-10k"
@@ -43,7 +43,7 @@ class FrankaDroidPickTestConfig(PickBaseConfig):
         ("train", 1001),
     ],
 )
-def test_droid_pick(split: str, house: int):
+def test_datagen_franka_droid_pick(split: str, house: int):
     exp_config = FrankaDroidPickTestConfig()
     exp_config.data_split = split
     exp_config.task_sampler_config.house_inds = [house]
