@@ -15,6 +15,7 @@ from scipy.stats import truncnorm
 from molmo_spaces.controllers.abstract import AbstractPositionController, Controller
 from molmo_spaces.kinematics.mujoco_kinematics import MlSpacesKinematics
 from molmo_spaces.robots.robot_views.abstract import RobotView
+from molmo_spaces.robots.sysid import apply_sysid_params
 
 if TYPE_CHECKING:
     from molmo_spaces.configs.robot_configs import ActionNoiseConfig, BaseRobotConfig
@@ -329,6 +330,9 @@ class Robot:
             for body in robot_body.find_all("body"):
                 body: mujoco.MjsBody
                 body.gravcomp = 1.0
+
+        if robot_config.sysid_params_file is not None:
+            apply_sysid_params(spec, robot_config.robot_namespace, robot_config.sysid_params_file)
 
         # TODO: control overrides will break if non-robot actuators are present
         stiffness, damping = robot_config.K_stiffness, robot_config.K_damping

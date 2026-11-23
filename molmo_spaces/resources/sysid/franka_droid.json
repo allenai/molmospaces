@@ -1,0 +1,140 @@
+{
+    "robot": "franka_droid",
+    "joints": [
+        "fr3_joint1",
+        "fr3_joint2",
+        "fr3_joint3",
+        "fr3_joint4",
+        "fr3_joint5",
+        "fr3_joint6",
+        "fr3_joint7"
+    ],
+    "actuators": [
+        "fr3_joint1",
+        "fr3_joint2",
+        "fr3_joint3",
+        "fr3_joint4",
+        "fr3_joint5",
+        "fr3_joint6",
+        "fr3_joint7"
+    ],
+    "params": {
+        "kp": [
+            96.06059,
+            90.914509,
+            97.22832,
+            114.22602,
+            56.139383,
+            141.29991,
+            316.074015
+        ],
+        "kv": [
+            21.682739,
+            20.562276,
+            20.686416,
+            24.465243,
+            5.998184,
+            16.353976,
+            37.999941
+        ],
+        "frictionloss": [
+            0.808868,
+            0.465836,
+            0.651097,
+            1.254152,
+            0.433598,
+            0.459804,
+            2.456074
+        ],
+        "armature": [
+            0.62327,
+            0.459589,
+            0.602282,
+            0.748858,
+            0.149907,
+            0.347226,
+            1.02803
+        ]
+    },
+    "created": "2026-11-23T11:25:45",
+    "environment": {
+        "mujoco_version": "4.0.0",
+        "python": "3.12.13",
+        "git_sha": "67acef9a17bb8212a18aadfc8f62ff6171d84891-dirty",
+        "timestep": 0.002,
+        "integrator": "mjINT_IMPLICITFAST"
+    },
+    "nominal_params": {
+        "kp": [
+            4500.0,
+            4500.0,
+            3500.0,
+            3500.0,
+            2000.0,
+            2000.0,
+            2000.0
+        ],
+        "kv": [
+            450.0,
+            450.0,
+            350.0,
+            350.0,
+            200.0,
+            200.0,
+            200.0
+        ],
+        "frictionloss": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "armature": [
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1
+        ]
+    },
+    "fit": {
+        "data": "real_joints.csv",
+        "data_notes": "Real FR3 + Robotiq 2F85 (open, fixed), 40 s multi-sine around DROID home, 25 Hz joint-position targets, real controller kp=[100,100,100,100,75,150,50] kd=[20,20,20,20,7.5,15,5]. Recorded 2026-09-02 (rcs sysid_data3).",
+        "n_samples": 1000,
+        "control_dt": 0.04,
+        "obs_offset": 1,
+        "start": "current",
+        "start_results": {
+            "xml": 0.2154,
+            "real": 0.194,
+            "current": 0.1939
+        },
+        "n_rollouts": 2233,
+        "optimizer_status": "`xtol` termination condition is satisfied.",
+        "rms_deg_nominal": [
+            1.8276,
+            1.7966,
+            1.9519,
+            1.7383,
+            0.7987,
+            0.5573,
+            0.9452
+        ],
+        "rms_deg_fitted": [
+            0.087,
+            0.6476,
+            0.0868,
+            0.2302,
+            0.1823,
+            0.063,
+            0.0607
+        ],
+        "rms_deg_nominal_mean": 1.3737,
+        "rms_deg_fitted_mean": 0.1939
+    }
+}
