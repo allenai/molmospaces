@@ -212,6 +212,7 @@ exclude = ["molmo_spaces_isaac*", "molmo_spaces_maniskill*"]
     "resources/asset_id_to_object_type.json",
     "resources/material_to_textures.json",
     "resources/base_scene.xml",
+    "resources/sysid/*.json",
 ]
 
 [tool.pytest.ini_options]
@@ -265,6 +266,7 @@ exclude = [
  "scripts/",
  "projects/fetchman/scripts/",
  "projects/commonsense/scripts/",
+ "projects/sysid/scripts/",
  "tests/",
  "mlspaces_tests/scenes/",
 ]

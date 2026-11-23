@@ -71,3 +71,6 @@ coverage.json
 htmlcov/
 
 /references
+
+# sysid recordings are not committed (see projects/sysid/README.md)
+projects/sysid/data/

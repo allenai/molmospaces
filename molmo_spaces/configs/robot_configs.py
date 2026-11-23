@@ -46,6 +46,7 @@ from molmo_spaces.robots.robot_views.i2rt_yam_view import I2rtYamRobotView
 from molmo_spaces.robots.robot_views.mobile_franka_droid_view import MobileFrankaDroidRobotView
 from molmo_spaces.robots.robot_views.rby1_view import RBY1RobotView
 from molmo_spaces.robots.robot_views.rum_gripper_view import FloatingRUMRobotView
+from molmo_spaces.robots.sysid import SYSID_RESOURCES_DIR
 
 
 class ActionNoiseConfig(Config):
@@ -115,6 +116,9 @@ class BaseRobotConfig(Config):
 
     # configurable control parameters for low-level mujoco controllers
     gravcomp: bool = False  # apply gravity compensation to every body in the robot
+    # System-identified joint/actuator params (JSON, see molmo_spaces/robots/sysid.py), applied
+    # over the XML's nominal values before K_stiffness/K_damping/force_limit. None = XML values.
+    sysid_params_file: Path | None = None
     K_stiffness: list[float] | None = None  # if None use values from model
     K_damping: list[float] | None = None  # if None use values from model
     force_limit: list[float] | None = (
@@ -180,6 +184,8 @@ class FrankaRobotConfig(BaseRobotConfig):
     robot_view_factory: RobotViewFactory | None = FrankaDroidRobotView
     name: str | None = "franka_droid"
     robot_xml_path: Path = Path("model.xml")
+    # fitted to a real FR3 + Robotiq 2F85, see projects/sysid
+    sysid_params_file: Path | None = SYSID_RESOURCES_DIR / "franka_droid.json"
     base_size: list[float] | None = [0.5, 0.5, 0.58]
     init_qpos: dict[str, list[float]] = {
         "arm": [0, -0.7853, 0, -2.35619, 0, 1.57079, 0.0],
