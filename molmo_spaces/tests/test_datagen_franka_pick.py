@@ -12,8 +12,11 @@ from molmo_spaces.configs.task_sampler_configs import (
 )
 from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner
 from molmo_spaces.tasks.pick_task_sampler import PickTaskSampler
+from molmo_spaces.tests.utils import push_datagen_results_to_wandb
 
 TEST_OUTPUT_DIR = Path(__file__).parent / "test_output" / "franka_droid_pick_test"
+TEST_HOUSES_SPLIT = ["train", "train", "train", "train"]
+TEST_HOUSES_INDICES = [1, 11, 21, 31]
 
 
 class FrankaDroidPickTestConfig(PickBaseConfig):
@@ -43,13 +46,7 @@ class FrankaDroidPickTestConfig(PickBaseConfig):
 
 
 @pytest.mark.parametrize(
-    ["split", "house"],
-    [
-        ("train", 1),
-        ("train", 11),
-        ("train", 101),
-        ("train", 1001),
-    ],
+    ["split", "house"], [(split, idx) for split, idx in zip(TEST_HOUSES_SPLIT, TEST_HOUSES_INDICES)]
 )
 def test_datagen_franka_droid_pick(split: str, house: int):
     exp_config = FrankaDroidPickTestConfig()
@@ -77,5 +74,7 @@ def setup_fn():
     print("TEST STARTED !!!!!")
 
     yield
+
+    push_datagen_results_to_wandb(TEST_OUTPUT_DIR, [1, 11, 21, 31])
 
     print("TEST FINISHED !!!!!")
