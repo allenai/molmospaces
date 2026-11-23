@@ -67,14 +67,14 @@ def test_datagen_franka_droid_pick_and_place(split: str, house: int):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_fn():
+def setup_fn(pytestconfig):
+    capture_manager = pytestconfig.pluginmanager.getplugin("capturemanager")
+
     if TEST_OUTPUT_DIR.is_dir():
         shutil.rmtree(TEST_OUTPUT_DIR, ignore_errors=True)
 
-    print("TEST STARTED !!!!!")
-
     yield
 
-    push_datagen_results_to_wandb(TEST_OUTPUT_DIR, [1, 11, 21, 31])
-
-    print("TEST FINISHED !!!!!")
+    capture_manager.suspend_global_capture(in_=True)
+    push_datagen_results_to_wandb(TEST_OUTPUT_DIR, TEST_HOUSES_INDICES)
+    capture_manager.resume_global_capture()
