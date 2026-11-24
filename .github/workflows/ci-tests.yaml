@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   ci-unittests:
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -54,7 +54,12 @@ jobs:
           source .venv/bin/activate
           uv pip install --no-cache -e .[dev,mujoco,g1_humanoid,torch-cpu]
 
-      - name: Run datagen tests
+      - name: Run datagen test for franka-droid pick task
         run: |
           source .venv/bin/activate
-          pytest molmo_spaces/tests
+          pytest molmo_spaces/tests/test_datagen_franka_pick.py
+
+      - name: Run datagen test for franka-droid pick-and-place task
+        run: |
+          source .venv/bin/activate
+          pytest molmo_spaces/tests/test_datagen_franka_pick_and_place.py
