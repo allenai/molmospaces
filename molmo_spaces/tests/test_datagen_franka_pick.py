@@ -48,8 +48,9 @@ class FrankaDroidPickTestConfig(PickBaseConfig):
 @pytest.mark.parametrize(
     ["split", "house"], [(split, idx) for split, idx in zip(TEST_HOUSES_SPLIT, TEST_HOUSES_INDICES)]
 )
-def test_datagen_franka_droid_pick(split: str, house: int):
+def test_datagen_franka_droid_pick(num_workers: int, split: str, house: int):
     exp_config = FrankaDroidPickTestConfig()
+    exp_config.num_workers = num_workers
     exp_config.data_split = split
     exp_config.task_sampler_config.house_inds = [house]
 
