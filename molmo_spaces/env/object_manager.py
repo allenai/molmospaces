@@ -28,6 +28,7 @@ from molmo_spaces.utils.constants.object_constants import (
 )
 from molmo_spaces.utils.lemma_utils import normalize_expression
 from molmo_spaces.utils.mj_model_and_data_utils import descendant_geoms, geom_aabb
+from molmo_spaces.utils.mp_logging import _human_log_level_to_int
 from molmo_spaces.utils.object_metadata import ObjectMeta, clip_sim, compute_text_clip
 from molmo_spaces.utils.synset_utils import (
     filter_synsets_to_remove_hyponyms,
@@ -92,6 +93,8 @@ class ObjectManager:
         self._caching_enabled = caching_enabled
         self._model_cache: dict[str, Any] = defaultdict(dict)
         self._data_cache: dict[str, Any] = defaultdict(dict)
+
+        log.setLevel(_human_log_level_to_int(env.config.log_level))
 
     @cached_property
     def scene_metadata(self) -> dict | None:

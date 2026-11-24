@@ -26,6 +26,7 @@ from molmo_spaces.renderer.abstract_renderer import MjAbstractRenderer
 from molmo_spaces.renderer.filament_rendering import MjFilamentRenderer
 from molmo_spaces.renderer.opengl_rendering import MjOpenGLRenderer
 from molmo_spaces.robots.abstract import Robot
+from molmo_spaces.utils.mp_logging import _human_log_level_to_int
 from molmo_spaces.utils.rendering_utils import get_geom_seg_mask
 from molmo_spaces.utils.scene_maps import (
     ProcTHORMap,
@@ -185,6 +186,8 @@ class CPUMujocoEnv(BaseMujocoEnv):
         self._occupancy_maps: OrderedDict = OrderedDict()
         self.occupancy_map_impl = exp_config.task_sampler_config.occupancy_map_impl
         self.occupancy_map_cache_size = exp_config.task_sampler_config.occupancy_map_cache_size
+
+        log.setLevel(_human_log_level_to_int(exp_config.log_level))
 
         if mj_model is not None:
             self._initialize_with_model(mj_model, mj_base_scene_path)

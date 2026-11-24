@@ -13,6 +13,7 @@ from molmo_spaces.configs.task_sampler_configs import (
 from molmo_spaces.data_generation.pipeline import ParallelRolloutRunner
 from molmo_spaces.tasks.pick_and_place_task_sampler import PickAndPlaceTaskSampler
 from molmo_spaces.tests.utils import push_datagen_results_to_wandb
+from molmo_spaces.utils.mp_logging import _human_log_level_to_int
 
 TEST_OUTPUT_DIR = Path(__file__).parent / "test_output" / "franka_droid_pick_and_place_test"
 TEST_HOUSES_SPLIT = ["train", "train", "train", "train"]
@@ -32,6 +33,8 @@ class FrankaDroidPickAndPlaceTestConfig(PickAndPlaceDataGenConfig):
 
     scene_dataset: str = "procthor-10k"
     data_split: str = "train"
+
+    log_level: str = "none"
 
     task_sampler_config: BaseMujocoTaskSamplerConfig = PickAndPlaceTaskSamplerConfig(
         task_sampler_class=PickAndPlaceTaskSampler,
@@ -55,6 +58,8 @@ def test_datagen_franka_droid_pick_and_place(num_workers: int, split: str, house
     exp_config.task_sampler_config.house_inds = [house]
 
     runner = ParallelRolloutRunner(exp_config)
+    runner.logger.setLevel(_human_log_level_to_int(exp_config.log_level))
+
     success_count, total_count = runner.run()
 
     assert total_count > 0, (
@@ -70,12 +75,14 @@ def test_datagen_franka_droid_pick_and_place(num_workers: int, split: str, house
 @pytest.fixture(scope="module", autouse=True)
 def setup_fn(pytestconfig):
     capture_manager = pytestconfig.pluginmanager.getplugin("capturemanager")
+    push_wandb = pytestconfig.getoption("--push-wandb")
 
     if TEST_OUTPUT_DIR.is_dir():
         shutil.rmtree(TEST_OUTPUT_DIR, ignore_errors=True)
 
     yield
 
-    capture_manager.suspend_global_capture(in_=True)
-    push_datagen_results_to_wandb(TEST_OUTPUT_DIR, TEST_HOUSES_INDICES)
-    capture_manager.resume_global_capture()
+    if push_wandb:
+        capture_manager.suspend_global_capture(in_=True)
+        push_datagen_results_to_wandb(TEST_OUTPUT_DIR, TEST_HOUSES_INDICES)
+        capture_manager.resume_global_capture()
