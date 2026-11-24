@@ -55,11 +55,15 @@ jobs:
           uv pip install --no-cache -e .[dev,mujoco,g1_humanoid,torch-cpu]
 
       - name: Run datagen test for franka-droid pick task
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
         run: |
           source .venv/bin/activate
           pytest molmo_spaces/tests/test_datagen_franka_pick.py
 
       - name: Run datagen test for franka-droid pick-and-place task
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
         run: |
           source .venv/bin/activate
           pytest molmo_spaces/tests/test_datagen_franka_pick_and_place.py
