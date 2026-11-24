@@ -52,7 +52,7 @@ jobs:
       - name: Install MolmoSpaces
         run: |
           source .venv/bin/activate
-          uv pip install --no-cache -e .[dev,mujoco,torch-cpu]
+          uv pip install --no-cache -e .[dev,mujoco,g1_humanoid,torch-cpu]
 
       - name: Run datagen tests
         run: |
