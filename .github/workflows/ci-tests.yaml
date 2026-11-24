@@ -30,13 +30,13 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install dependencies (Linux)
-        if: runner.os == "Linux"
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev libglew-dev libosmesa6-dev
 
       - name: Set MuJoCo rendering backend
-        if: runner.os == "Linux"
+        if: runner.os == 'Linux'
         run: echo "MUJOCO_GL=osmesa" >> $GITHUB_ENV
 
       - name: Install UV package manager
