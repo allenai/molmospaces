@@ -1,4 +1,6 @@
+import os
 import shutil
+import warnings
 from pathlib import Path
 
 import pytest
@@ -78,6 +80,13 @@ def test_datagen_franka_droid_pick_and_place(num_workers: int, split: str, house
 def setup_fn(pytestconfig):
     capture_manager = pytestconfig.pluginmanager.getplugin("capturemanager")
     push_wandb = pytestconfig.getoption("--push-wandb")
+    if push_wandb and not os.environ.get("WANDB_API_KEY"):
+        warnings.warn(
+            "--push-wandb was given but WANDB_API_KEY is not set (e.g. PR from a fork); "
+            "skipping the wandb push",
+            stacklevel=1,
+        )
+        push_wandb = False
 
     if TEST_OUTPUT_DIR.is_dir():
         shutil.rmtree(TEST_OUTPUT_DIR, ignore_errors=True)
