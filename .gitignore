@@ -50,6 +50,8 @@ mlspaces_tests/**/test_debug_images
 mlspaces_tests/**/profiling_results.txt
 mlspaces_tests/**/test_data
 
+molmo_spaces/tests/**/test_output
+
 # pytest
 .pytest_cache/
 __pycache__/

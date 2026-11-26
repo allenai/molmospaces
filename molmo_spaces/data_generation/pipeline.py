@@ -25,6 +25,7 @@ from molmo_spaces.policy.base_policy import BasePolicy
 from molmo_spaces.tasks.task import BaseMujocoTask
 from molmo_spaces.tasks.task_sampler_errors import HouseInvalidForTask
 from molmo_spaces.utils.mp_logging import (
+    _human_log_level_to_int,
     get_logger,
     get_worker_logger,
     init_logging,
@@ -408,6 +409,7 @@ def house_processing_worker(
 
     # Create worker-specific logger
     worker_logger = get_worker_logger(worker_id)
+    worker_logger.setLevel(_human_log_level_to_int(exp_config.log_level))
 
     # Create per-worker profiler for timing analysis
     if hasattr(exp_config, "datagen_profiler") and exp_config.datagen_profiler:
@@ -1075,7 +1077,8 @@ class ParallelRolloutRunner:
                         )
 
                 except HouseInvalidForTask as e:
-                    traceback.print_exc()
+                    if exp_config.log_level != "none":
+                        traceback.print_exc()
                     worker_logger.warning(
                         f"Worker {worker_id} house {house_id} episode {episode_idx} {e}"
                     )
@@ -1086,7 +1089,8 @@ class ParallelRolloutRunner:
                         )
 
                 except Exception as e:
-                    traceback.print_exc()
+                    if exp_config.log_level != "none":
+                        traceback.print_exc()
                     worker_logger.error(
                         f"Worker {worker_id} house {house_id} episode {episode_idx} "
                         f"task sampling error: {str(e)}"
@@ -1185,7 +1189,8 @@ class ParallelRolloutRunner:
                         worker_logger.error(
                             f"Worker {worker_id} house {house_id} episode {episode_idx} rollout error: {str(e)}"
                         )
-                        traceback.print_exc()
+                        if exp_config.log_level != "none":
+                            traceback.print_exc()
                         num_sequential_rollout_failures += 1
 
                         # Report failure for this asset (may lead to dynamic blacklisting)
