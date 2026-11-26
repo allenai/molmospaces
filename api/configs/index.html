@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -79633,7 +79633,7 @@ Provides methods to convert to dict, json, and to save/load from files.</p>
   </span>
 
 <a href="#molmo_spaces.configs.abstract_exp_config.log" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -110572,7 +110572,7 @@ properly integrated into the modular task sampler architecture.</p>
   </span>
 
 <a href="#molmo_spaces.configs.camera_configs.logger" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">logger</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">logger</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -169356,7 +169356,7 @@ which of the knobs below feed it.</p>
   </span>
 
 <a href="#molmo_spaces.configs.robot_configs.HumanRBRobotConfig.init_qpos" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">init_qpos</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="float">float</span></span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n"><span title="mg_id">mg_id</span></span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n"><span title="n_dofs">n_dofs</span></span> <span class="k">for</span> <span class="n"><span title="mg_id">mg_id</span></span><span class="p">,</span> <span class="n"><span title="n_dofs">n_dofs</span></span> <span class="ow">in</span> <span class="n"><a class="autorefs autorefs-internal" title="            human_rb_move_group_dofs (molmo_spaces.robots.human_rb.human_rb_move_group_dofs)" href="../robots/#molmo_spaces.robots.human_rb.human_rb_move_group_dofs">human_rb_move_group_dofs</a></span><span class="p">()</span><span class="o">.</span><span class="n"><span title="items">items</span></span><span class="p">()}</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">init_qpos</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="float">float</span></span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n">mg_id</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_dofs</span> <span class="k">for</span> <span class="n">mg_id</span><span class="p">,</span> <span class="n">n_dofs</span> <span class="ow">in</span> <span class="n"><a class="autorefs autorefs-internal" title="            human_rb_move_group_dofs (molmo_spaces.robots.human_rb.human_rb_move_group_dofs)" href="../robots/#molmo_spaces.robots.human_rb.human_rb_move_group_dofs">human_rb_move_group_dofs</a></span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -177389,7 +177389,7 @@ tasks sampled by the task sampler.</p>
   </span>
 
 <a href="#molmo_spaces.configs.task_configs.DoorOpeningTaskConfig.additional_tcp_rotation_offset_mat" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">additional_tcp_rotation_offset_mat</span><span class="p">:</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span> <span class="o">=</span> <span class="n"><span title="scipy.spatial.transform.Rotation">R</span></span><span class="o">.</span><span class="n"><span title="scipy.spatial.transform.Rotation.from_euler">from_euler</span></span><span class="p">(</span><span class="s1">'Y'</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="n"><span title="scipy.spatial.transform.Rotation.from_euler(degrees)">degrees</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n"><span title="as_matrix">as_matrix</span></span><span class="p">()</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">additional_tcp_rotation_offset_mat</span><span class="p">:</span> <span class="n"><span title="numpy.ndarray">ndarray</span></span> <span class="o">=</span> <span class="n"><span title="scipy.spatial.transform.Rotation">R</span></span><span class="o">.</span><span class="n"><span title="scipy.spatial.transform.Rotation.from_euler">from_euler</span></span><span class="p">(</span><span class="s1">'Y'</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="n"><span title="scipy.spatial.transform.Rotation.from_euler(degrees)">degrees</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

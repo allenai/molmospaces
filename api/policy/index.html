@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -18061,7 +18061,7 @@ for bimanual manipulation with the YAM robot.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -18676,7 +18676,7 @@ for bimanual manipulation with the YAM robot.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.BimanualYamPiPolicy.camera_mapping" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">camera_mapping</span> <span class="o">=</span> <span class="n"><span title="getattr">getattr</span></span><span class="p">(</span><span class="n"><span title="policy_config">policy_config</span></span><span class="p">,</span> <span class="s1">'camera_mapping'</span><span class="p">,</span> <span class="p">{</span><span class="s1">'left_wrist_camera'</span><span class="p">:</span> <span class="s1">'observation.images.left'</span><span class="p">,</span> <span class="s1">'right_wrist_camera'</span><span class="p">:</span> <span class="s1">'observation.images.right'</span><span class="p">,</span> <span class="s1">'exo_camera'</span><span class="p">:</span> <span class="s1">'observation.images.top'</span><span class="p">})</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">camera_mapping</span> <span class="o">=</span> <span class="n"><span title="getattr">getattr</span></span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="s1">'camera_mapping'</span><span class="p">,</span> <span class="p">{</span><span class="s1">'left_wrist_camera'</span><span class="p">:</span> <span class="s1">'observation.images.left'</span><span class="p">,</span> <span class="s1">'right_wrist_camera'</span><span class="p">:</span> <span class="s1">'observation.images.right'</span><span class="p">,</span> <span class="s1">'exo_camera'</span><span class="p">:</span> <span class="s1">'observation.images.top'</span><span class="p">})</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -18698,7 +18698,7 @@ for bimanual manipulation with the YAM robot.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.BimanualYamPiPolicy.checkpoint_path" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n"><span title="policy_config">policy_config</span></span><span class="o">.</span><span class="n"><span title="policy_config.checkpoint_path">checkpoint_path</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">checkpoint_path</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -18786,7 +18786,7 @@ for bimanual manipulation with the YAM robot.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.BimanualYamPiPolicy.grasping_type" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">grasping_type</span> <span class="o">=</span> <span class="n"><span title="getattr">getattr</span></span><span class="p">(</span><span class="n"><span title="policy_config">policy_config</span></span><span class="p">,</span> <span class="s1">'grasping_type'</span><span class="p">,</span> <span class="s1">'binary'</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">grasping_type</span> <span class="o">=</span> <span class="n"><span title="getattr">getattr</span></span><span class="p">(</span><span class="n">policy_config</span><span class="p">,</span> <span class="s1">'grasping_type'</span><span class="p">,</span> <span class="s1">'binary'</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -18808,7 +18808,7 @@ for bimanual manipulation with the YAM robot.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.bimanual_yam_pi_policy.BimanualYamPiPolicy.remote_config" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">remote_config</span> <span class="o">=</span> <span class="n"><span title="policy_config">policy_config</span></span><span class="o">.</span><span class="n"><span title="policy_config.remote_config">remote_config</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">remote_config</span> <span class="o">=</span> <span class="n">policy_config</span><span class="o">.</span><span class="n">remote_config</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -20169,7 +20169,7 @@ on its per-step path.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.cap_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -21845,7 +21845,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.dreamzero_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -23517,7 +23517,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.keyboard_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -24829,7 +24829,7 @@ the gRPC protocol for sending observations and receiving actions.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.lerobot_grpc_client.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -25929,7 +25929,7 @@ including connection setup, observation streaming, and action retrieval.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.phone_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -27258,7 +27258,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.pi_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -28975,7 +28975,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.rum_client.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -29732,7 +29732,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.spacemouse_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -31205,7 +31205,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.learned_policy.websocket_policy.logger" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">logger</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">logger</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -32519,7 +32519,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.random_policy.RandomPolicy.action_space" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">action_space</span> <span class="o">=</span> <span class="n"><span title="action_space">action_space</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">action_space</span> <span class="o">=</span> <span class="n">action_space</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -33225,7 +33225,7 @@ Must be json serializable.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.curobo_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -35809,7 +35809,7 @@ This lazy initialization saves ~11GB of GPU memory by only loading one arm's pla
   </span>
 
 <a href="#molmo_spaces.policy.solvers.navigation.astar_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -39866,7 +39866,7 @@ planned path command the base at the same spacing (and so at the same speed).</p
   </span>
 
 <a href="#molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -41168,7 +41168,7 @@ and the goal can be a grasping standoff (see _sample_goal).</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.navigation.fetchman_base_planner_policy_port.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -43043,7 +43043,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.base_object_manipulation_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -49528,7 +49528,7 @@ plus the settling period.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.curobo_open_close_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -52926,7 +52926,7 @@ with the request to avoid races when multiple workers share the same server.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.curobo_pick_and_place_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -56301,7 +56301,7 @@ Must be json serializable.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.open_close_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -60661,7 +60661,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_and_place_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -62160,7 +62160,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -64286,7 +64286,7 @@ It is typically called at the beginning of each episode or task.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.object_manipulation.pick_planner_policy_g1.log" class="headerlink" title="Permanent link">&para;</a></h6>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -69813,7 +69813,7 @@ to keep the unfiltered sampling.</p>
   </span>
 
 <a href="#molmo_spaces.policy.solvers.opening_solver.log" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">log</span> <span class="o">=</span> <span class="n"><span title="logging">logging</span></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
